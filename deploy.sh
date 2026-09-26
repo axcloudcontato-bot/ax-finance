@@ -10,9 +10,12 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 echo "==> Verificando o repositório..."
-if [ -n "$(git status --porcelain)" ]; then
-  echo "Há alterações locais não commitadas neste checkout:"
-  git status --short
+# Só considera arquivos RASTREADOS (--untracked-files=no): um download solto
+# na pasta (ex.: um .deb) nunca é tocado por `git pull` e não deve travar o
+# deploy — o que importa é não ter edição não commitada em arquivo do projeto.
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+  echo "Há alterações locais não commitadas em arquivos do projeto:"
+  git status --short --untracked-files=no
   echo "Aborta pra não perder nada — resolva (commit/stash) e rode de novo."
   exit 1
 fi
