@@ -24,6 +24,12 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 FROM deps AS builder
 COPY . .
 RUN pnpm --filter @ax-finance/db exec prisma generate
+# `next build` importa as rotas (inclusive as de API) para coletar metadados
+# — mesmo sem executar nenhuma query — e `packages/db` lança erro se
+# APP_DATABASE_URL não estiver definida assim que o módulo é carregado. Esse
+# valor nunca é usado de fato nesta etapa (o Prisma só conecta na primeira
+# query, em runtime); em produção o valor real vem do docker-compose.
+ENV APP_DATABASE_URL="postgresql://build:build@localhost:5432/build_placeholder"
 RUN pnpm --filter web build
 
 # ---- imagem da aplicação web ----
