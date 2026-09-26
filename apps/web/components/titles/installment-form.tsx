@@ -34,72 +34,88 @@ export function InstallmentForm({
         </p>
       ) : (
         <form action={action}>
-          <label htmlFor="description">Descrição</label>
-          <input id="description" name="description" type="text" required maxLength={500} />
+          <div className="form-grid">
+            <div className="span-2">
+              <label htmlFor="description">Descrição</label>
+              <input id="description" name="description" type="text" required maxLength={500} />
+            </div>
 
-          <label htmlFor="categoryId">Categoria</label>
-          <select id="categoryId" name="categoryId" required defaultValue="">
-            <option value="" disabled>
-              Selecione
-            </option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.parentId ? `  ↳ ${category.name}` : category.name}
-              </option>
-            ))}
-          </select>
-
-          {parties && parties.length > 0 ? (
-            <>
-              <label htmlFor="partyId">{partyLabel ?? "Cliente/fornecedor"} (opcional)</label>
-              <select id="partyId" name="partyId" defaultValue="">
-                <option value="">Nenhum</option>
-                {parties.map((party) => (
-                  <option key={party.id} value={party.id}>
-                    {party.name}
+            <div>
+              <label htmlFor="categoryId">Categoria</label>
+              <select id="categoryId" name="categoryId" required defaultValue="">
+                <option value="" disabled>
+                  Selecione
+                </option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.parentId ? `  ↳ ${category.name}` : category.name}
                   </option>
                 ))}
               </select>
-            </>
-          ) : null}
+            </div>
 
-          <label htmlFor="totalAmount">Valor total (R$)</label>
-          <input
-            id="totalAmount"
-            name="totalAmount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            required
-          />
+            {parties && parties.length > 0 ? (
+              <div>
+                <label htmlFor="partyId">{partyLabel ?? "Cliente/fornecedor"} (opcional)</label>
+                <select id="partyId" name="partyId" defaultValue="">
+                  <option value="">Nenhum</option>
+                  {parties.map((party) => (
+                    <option key={party.id} value={party.id}>
+                      {party.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
-          <label htmlFor="installmentCount">Quantidade de parcelas</label>
-          <input
-            id="installmentCount"
-            name="installmentCount"
-            type="number"
-            min={2}
-            step={1}
-            defaultValue={2}
-            required
-          />
+            <div>
+              <label htmlFor="totalAmount">Valor total (R$)</label>
+              <input
+                id="totalAmount"
+                name="totalAmount"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                required
+              />
+            </div>
 
-          <label htmlFor="firstDueDate">Vencimento da 1ª parcela</label>
-          <input id="firstDueDate" name="firstDueDate" type="date" defaultValue={today} required />
+            <div>
+              <label htmlFor="installmentCount">Quantidade de parcelas</label>
+              <input
+                id="installmentCount"
+                name="installmentCount"
+                type="number"
+                min={2}
+                step={1}
+                defaultValue={2}
+                required
+              />
+            </div>
 
-          <label htmlFor="intervalMonths">Intervalo entre parcelas (meses)</label>
-          <input
-            id="intervalMonths"
-            name="intervalMonths"
-            type="number"
-            min={1}
-            step={1}
-            defaultValue={1}
-            required
-          />
+            <div>
+              <label htmlFor="firstDueDate">Vencimento da 1ª parcela</label>
+              <input id="firstDueDate" name="firstDueDate" type="date" defaultValue={today} required />
+            </div>
 
-          <label htmlFor="notes">Observações</label>
-          <input id="notes" name="notes" type="text" maxLength={2000} />
+            <div>
+              <label htmlFor="intervalMonths">Intervalo entre parcelas (meses)</label>
+              <input
+                id="intervalMonths"
+                name="intervalMonths"
+                type="number"
+                min={1}
+                step={1}
+                defaultValue={1}
+                required
+              />
+            </div>
+
+            <div className="span-2">
+              <label htmlFor="notes">Observações</label>
+              <input id="notes" name="notes" type="text" maxLength={2000} />
+            </div>
+          </div>
 
           <button type="submit">Parcelar</button>
         </form>

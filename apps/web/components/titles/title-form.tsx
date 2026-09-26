@@ -29,53 +29,67 @@ export function TitleForm({
         </p>
       ) : (
         <form action={action}>
-          <label htmlFor="description">Descrição</label>
-          <input id="description" name="description" type="text" required maxLength={500} />
+          <div className="form-grid">
+            <div className="span-2">
+              <label htmlFor="description">Descrição</label>
+              <input id="description" name="description" type="text" required maxLength={500} />
+            </div>
 
-          <label htmlFor="categoryId">Categoria</label>
-          <select id="categoryId" name="categoryId" required defaultValue="">
-            <option value="" disabled>
-              Selecione
-            </option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.parentId ? `  ↳ ${category.name}` : category.name}
-              </option>
-            ))}
-          </select>
-
-          {parties && parties.length > 0 ? (
-            <>
-              <label htmlFor="partyId">{partyLabel ?? "Cliente/fornecedor"} (opcional)</label>
-              <select id="partyId" name="partyId" defaultValue="">
-                <option value="">Nenhum</option>
-                {parties.map((party) => (
-                  <option key={party.id} value={party.id}>
-                    {party.name}
+            <div>
+              <label htmlFor="categoryId">Categoria</label>
+              <select id="categoryId" name="categoryId" required defaultValue="">
+                <option value="" disabled>
+                  Selecione
+                </option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.parentId ? `  ↳ ${category.name}` : category.name}
                   </option>
                 ))}
               </select>
-            </>
-          ) : null}
+            </div>
 
-          <label htmlFor="amount">Valor (R$)</label>
-          <input
-            id="amount"
-            name="amount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            required
-          />
+            {parties && parties.length > 0 ? (
+              <div>
+                <label htmlFor="partyId">{partyLabel ?? "Cliente/fornecedor"} (opcional)</label>
+                <select id="partyId" name="partyId" defaultValue="">
+                  <option value="">Nenhum</option>
+                  {parties.map((party) => (
+                    <option key={party.id} value={party.id}>
+                      {party.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
-          <label htmlFor="competenceDate">Competência</label>
-          <input id="competenceDate" name="competenceDate" type="date" defaultValue={today} required />
+            <div>
+              <label htmlFor="amount">Valor (R$)</label>
+              <input
+                id="amount"
+                name="amount"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                required
+              />
+            </div>
 
-          <label htmlFor="dueDate">Vencimento</label>
-          <input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
+            <div>
+              <label htmlFor="competenceDate">Competência</label>
+              <input id="competenceDate" name="competenceDate" type="date" defaultValue={today} required />
+            </div>
 
-          <label htmlFor="notes">Observações</label>
-          <input id="notes" name="notes" type="text" maxLength={2000} />
+            <div>
+              <label htmlFor="dueDate">Vencimento</label>
+              <input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
+            </div>
+
+            <div className="span-2">
+              <label htmlFor="notes">Observações</label>
+              <input id="notes" name="notes" type="text" maxLength={2000} />
+            </div>
+          </div>
 
           <button type="submit">Salvar</button>
         </form>

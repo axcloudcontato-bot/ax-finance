@@ -28,8 +28,9 @@ export async function createSaidaRecurrenceAction(formData: FormData) {
   const endDate = String(formData.get("endDate") ?? "") || undefined;
   const notes = String(formData.get("notes") ?? "");
 
+  let rule: Awaited<ReturnType<typeof createRecurrenceRule>>;
   try {
-    await createRecurrenceRule(user.id, company.id, {
+    rule = await createRecurrenceRule(user.id, company.id, {
       type: "PAYABLE",
       description,
       categoryId,
@@ -45,7 +46,7 @@ export async function createSaidaRecurrenceAction(formData: FormData) {
     redirect(`/saidas/recorrencias?erro=${encodeURIComponent(message)}`);
   }
 
-  redirect("/saidas/recorrencias");
+  redirect(`/saidas/recorrencias?criado=${rule.id}`);
 }
 
 export async function pauseSaidaRecurrenceAction(formData: FormData) {

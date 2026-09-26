@@ -21,7 +21,7 @@ export default async function NovaEntradaPage({
   const clients = await listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" });
 
   return (
-    <main className="narrow">
+    <main>
       <h1 style={{ marginBottom: "1rem" }}>Nova entrada</h1>
       <TitleForm
         action={createEntradaAction}

@@ -8,9 +8,9 @@ import {
   ListChecks,
   LogOut,
   Settings,
-  Wallet,
 } from "lucide-react";
 import { NavItem, type NavItemData } from "@/components/nav-item";
+import { initialsOf } from "@/lib/user-display";
 
 interface NavGroup {
   heading?: string;
@@ -73,20 +73,11 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  const first = parts[0]?.[0] ?? "";
-  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
-  return (first + last).toUpperCase() || "?";
-}
-
 export function AppSidebar({
-  companyName,
   userName,
   userEmail,
   logoutAction,
 }: {
-  companyName: string;
   userName: string;
   userEmail: string;
   logoutAction: () => void | Promise<void>;
@@ -94,21 +85,7 @@ export function AppSidebar({
   return (
     <div className="h-full w-[260px] shrink-0 overflow-hidden border-r border-border bg-card/50">
       <div className="flex h-full w-[260px] flex-col p-3">
-        <div className="mb-4 flex items-center gap-3 rounded-lg px-2 py-2">
-          <div className="grid size-8 shrink-0 place-items-center rounded-[6px] bg-primary text-primary-foreground shadow-sm">
-            <Wallet className="size-4" />
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="mb-1 truncate text-[13px] leading-none font-medium text-foreground">
-              AX Finance
-            </span>
-            <span className="truncate text-[11px] leading-none text-muted-foreground">
-              {companyName}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {NAV_GROUPS.map((group, index) => (
             <div key={group.heading ?? index} className="flex flex-col gap-0.5">
               {group.heading ? (

@@ -23,8 +23,9 @@ export async function createPartyAction(formData: FormData) {
   const isClient = formData.get("isClient") === "true";
   const isSupplier = formData.get("isSupplier") === "true";
 
+  let party: Awaited<ReturnType<typeof createParty>>;
   try {
-    await createParty(user.id, company.id, {
+    party = await createParty(user.id, company.id, {
       name,
       tradeName,
       document,
@@ -41,7 +42,7 @@ export async function createPartyAction(formData: FormData) {
     redirect(`/cadastros/pessoas?erro=${encodeURIComponent(message)}`);
   }
 
-  redirect("/cadastros/pessoas");
+  redirect(`/cadastros/pessoas?criado=${party.id}`);
 }
 
 export async function deactivatePartyAction(formData: FormData) {

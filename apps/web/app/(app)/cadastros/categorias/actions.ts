@@ -16,14 +16,15 @@ export async function createCategoryAction(formData: FormData) {
   const nature = String(formData.get("nature") ?? "");
   const parentId = String(formData.get("parentId") ?? "") || undefined;
 
+  let category: Awaited<ReturnType<typeof createCategory>>;
   try {
-    await createCategory(user.id, company.id, { name, nature, parentId });
+    category = await createCategory(user.id, company.id, { name, nature, parentId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível criar a categoria.";
     redirect(`/cadastros/categorias?erro=${encodeURIComponent(message)}`);
   }
 
-  redirect("/cadastros/categorias");
+  redirect(`/cadastros/categorias?criado=${category.id}`);
 }
 
 export async function archiveCategoryAction(formData: FormData) {

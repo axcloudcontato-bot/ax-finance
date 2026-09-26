@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Wallet } from "lucide-react";
 import {
   CompanyAccessDeniedError,
   assertActiveMembership,
   generateDueOccurrences,
+  getMonthlyCashFlowSeries,
   listCompaniesForUser,
   listFinancialAccountsWithBalance,
   listTitles,
@@ -11,15 +13,30 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
+import { currentYearMonth, monthRange } from "@/lib/month";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { CashFlowLineChart } from "@/components/dashboard/cash-flow-line-chart";
+import { DonutChart } from "@/components/dashboard/donut-chart";
 
-function summarizeOpenTitles(titles: Awaited<ReturnType<typeof listTitles>>) {
+type TitleList = Awaited<ReturnType<typeof listTitles>>;
+
+function summarizeOpenTitles(titles: TitleList) {
   const today = todayDateOnlyString();
 
   const open = titles.filter((title) => title.status === "OPEN" || title.status === "PARTIALLY_SETTLED");
   const totalCents = open.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
-  const overdueCount = open.filter((title) => toDateOnlyString(title.dueDate) < today).length;
+  const overdue = open.filter((title) => toDateOnlyString(title.dueDate) < today);
+  const overdueCount = overdue.length;
+  const overdueCents = overdue.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
 
-  return { totalCents, overdueCount };
+  return { totalCents, overdueCount, overdueCents };
+}
+
+function filterByDueMonth(titles: TitleList, from: string, to: string): TitleList {
+  return titles.filter((title) => {
+    const due = toDateOnlyString(title.dueDate);
+    return due >= from && due <= to;
+  });
 }
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -31,7 +48,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { empresa?: string };
+  searchParams: { empresa?: string; mes?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -44,6 +61,8 @@ export default async function DashboardPage({
   }
 
   const activeCompanyId = searchParams.empresa ?? companies[0]!.id;
+  const month = searchParams.mes ?? currentYearMonth();
+  const { from: monthFrom, to: monthTo } = monthRange(month);
 
   let accounts: Awaited<ReturnType<typeof listFinancialAccountsWithBalance>>;
   try {
@@ -54,7 +73,7 @@ export default async function DashboardPage({
     if (error instanceof CompanyAccessDeniedError) {
       // Empresa na URL não existe ou não é sua: cai de volta para a primeira
       // que você realmente tem acesso, sem confirmar se o id era válido.
-      redirect(`/dashboard?empresa=${companies[0]!.id}`);
+      redirect(`/dashboard?empresa=${companies[0]!.id}&mes=${month}`);
     }
     throw error;
   }
@@ -63,47 +82,90 @@ export default async function DashboardPage({
     .filter((account) => account.includedInAvailableTotal)
     .reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
 
-  const [receivables, payables] = await Promise.all([
+  const [receivables, payables, cashFlowSeries] = await Promise.all([
     listTitles(user.id, activeCompanyId, { type: "RECEIVABLE" }),
     listTitles(user.id, activeCompanyId, { type: "PAYABLE" }),
+    getMonthlyCashFlowSeries(user.id, activeCompanyId, { months: 6, endMonth: month }),
   ]);
-  const toReceive = summarizeOpenTitles(receivables);
-  const toPay = summarizeOpenTitles(payables);
+
+  // Cards do topo: só títulos com vencimento dentro do mês selecionado.
+  const toReceiveMonth = summarizeOpenTitles(filterByDueMonth(receivables, monthFrom, monthTo));
+  const toPayMonth = summarizeOpenTitles(filterByDueMonth(payables, monthFrom, monthTo));
+  const overdueTotalCents = toReceiveMonth.overdueCents + toPayMonth.overdueCents;
+  const overdueTotalCount = toReceiveMonth.overdueCount + toPayMonth.overdueCount;
+
+  // Donuts: posição de hoje, independente do mês selecionado no topo.
+  const toReceiveToday = summarizeOpenTitles(receivables);
+  const toPayToday = summarizeOpenTitles(payables);
+
+  const balanceByType = new Map<string, bigint>();
+  for (const account of accounts) {
+    balanceByType.set(account.type, (balanceByType.get(account.type) ?? BigInt(0)) + account.currentBalanceCents);
+  }
+  const accountDonut = [
+    { label: "Bancária", value: Number(balanceByType.get("BANK") ?? BigInt(0)) / 100, color: "#4680ff" },
+    { label: "Caixa", value: Number(balanceByType.get("CASH") ?? BigInt(0)) / 100, color: "#0bc7b9" },
+    { label: "Carteira", value: Number(balanceByType.get("WALLET") ?? BigInt(0)) / 100, color: "#ffa235" },
+  ];
+  const titlesDonut = [
+    { label: "A receber", value: Number(toReceiveToday.totalCents) / 100, color: "#0bc7b9" },
+    { label: "A pagar", value: Number(toPayToday.totalCents) / 100, color: "#fc5296" },
+  ];
 
   return (
     <main className="wide">
-      <div className="card">
-        <h1>Saldo das contas</h1>
-        <p className="subtitle">
-          Saldo de abertura + baixas de títulos + transferências (Seção 18). Ainda não considera
-          importação/conciliação bancária.
-        </p>
-        <p style={{ fontSize: "1.75rem", fontWeight: 700 }}>{formatCents(totalCents)}</p>
+      <div className="stat-grid">
+        <StatCard
+          icon={<Wallet className="size-5" />}
+          label="Saldo disponível (hoje)"
+          value={formatCents(totalCents)}
+          footerLabel="Contas ativas"
+          footerValue={String(accounts.length)}
+          gradient="blue"
+        />
+        <StatCard
+          icon={<ArrowDownCircle className="size-5" />}
+          label="A receber no mês"
+          value={formatCents(toReceiveMonth.totalCents)}
+          footerLabel="Vencidos"
+          footerValue={String(toReceiveMonth.overdueCount)}
+          gradient="teal"
+        />
+        <StatCard
+          icon={<ArrowUpCircle className="size-5" />}
+          label="A pagar no mês"
+          value={formatCents(toPayMonth.totalCents)}
+          footerLabel="Vencidos"
+          footerValue={String(toPayMonth.overdueCount)}
+          gradient="orange"
+        />
+        <StatCard
+          icon={<AlertTriangle className="size-5" />}
+          label="Vencido no mês"
+          value={formatCents(overdueTotalCents)}
+          footerLabel="Título(s)"
+          footerValue={String(overdueTotalCount)}
+          gradient="pink"
+        />
       </div>
 
-      <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-        <div className="card" style={{ flex: "1 1 200px" }}>
-          <h1>A receber</h1>
-          <p className="subtitle">
-            {toReceive.overdueCount > 0
-              ? `${toReceive.overdueCount} título(s) vencido(s)`
-              : "Nada vencido"}
-          </p>
-          <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>{formatCents(toReceive.totalCents)}</p>
-          <Link href="/entradas" className="button-link" style={{ marginTop: "0.75rem" }}>
-            Ver entradas
-          </Link>
+      <div className="dashboard-charts">
+        <div className="card">
+          <h1>Fluxo de caixa</h1>
+          <p className="subtitle">Entradas e saídas realizadas nos 6 meses até o mês selecionado (Seção 13).</p>
+          <CashFlowLineChart data={cashFlowSeries} />
         </div>
 
-        <div className="card" style={{ flex: "1 1 200px" }}>
-          <h1>A pagar</h1>
-          <p className="subtitle">
-            {toPay.overdueCount > 0 ? `${toPay.overdueCount} título(s) vencido(s)` : "Nada vencido"}
-          </p>
-          <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>{formatCents(toPay.totalCents)}</p>
-          <Link href="/saidas" className="button-link" style={{ marginTop: "0.75rem" }}>
-            Ver saídas
-          </Link>
+        <div className="card">
+          <h1>Contas</h1>
+          <p className="subtitle">Saldo atual por tipo (hoje)</p>
+          <DonutChart segments={accountDonut} />
+        </div>
+
+        <div className="card">
+          <h1>Títulos em aberto</h1>
+          <p className="subtitle">A receber vs. a pagar (hoje)</p>
+          <DonutChart segments={titlesDonut} />
         </div>
       </div>
 

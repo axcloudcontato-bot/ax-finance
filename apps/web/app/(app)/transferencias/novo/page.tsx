@@ -19,7 +19,7 @@ export default async function NovaTransferenciaPage({
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <main className="narrow">
+    <main>
       <h1 style={{ marginBottom: "1rem" }}>Nova transferência</h1>
 
       <div className="card">
@@ -32,48 +32,69 @@ export default async function NovaTransferenciaPage({
           </p>
         ) : (
           <form action={createTransferAction}>
-            <label htmlFor="fromAccountId">Conta de origem</label>
-            <select id="fromAccountId" name="fromAccountId" required defaultValue="">
-              <option value="" disabled>
-                Selecione
-              </option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
+            <div className="form-grid">
+              <div>
+                <label htmlFor="fromAccountId">Conta de origem</label>
+                <select id="fromAccountId" name="fromAccountId" required defaultValue="">
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <label htmlFor="toAccountId">Conta de destino</label>
-            <select id="toAccountId" name="toAccountId" required defaultValue="">
-              <option value="" disabled>
-                Selecione
-              </option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
+              <div>
+                <label htmlFor="toAccountId">Conta de destino</label>
+                <select id="toAccountId" name="toAccountId" required defaultValue="">
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <label htmlFor="amount">Valor (R$)</label>
-            <input id="amount" name="amount" type="text" inputMode="decimal" placeholder="0,00" required />
+              <div>
+                <label htmlFor="amount">Valor (R$)</label>
+                <input
+                  id="amount"
+                  name="amount"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  required
+                />
+              </div>
 
-            <label htmlFor="fee">Tarifa (R$)</label>
-            <input
-              id="fee"
-              name="fee"
-              type="text"
-              inputMode="decimal"
-              placeholder="0,00"
-              defaultValue="0,00"
-            />
+              <div>
+                <label htmlFor="fee">Tarifa (R$)</label>
+                <input
+                  id="fee"
+                  name="fee"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  defaultValue="0,00"
+                />
+              </div>
 
-            <label htmlFor="transferDate">Data</label>
-            <input id="transferDate" name="transferDate" type="date" defaultValue={today} required />
+              <div>
+                <label htmlFor="transferDate">Data</label>
+                <input id="transferDate" name="transferDate" type="date" defaultValue={today} required />
+              </div>
 
-            <label htmlFor="description">Descrição</label>
-            <input id="description" name="description" type="text" maxLength={500} />
+              <div>
+                <label htmlFor="description">Descrição</label>
+                <input id="description" name="description" type="text" maxLength={500} />
+              </div>
+            </div>
 
             <button type="submit">Transferir</button>
           </form>

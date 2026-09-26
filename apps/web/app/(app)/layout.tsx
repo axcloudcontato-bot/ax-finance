@@ -6,10 +6,9 @@ import { AppShell } from "@/components/app-shell";
 import { logoutAction } from "./actions";
 
 // Casca compartilhada por toda tela autenticada (Seção 4 do DIRECAO.md: menu
-// principal fixo, empresa ativa sempre visível). P0 limita uma empresa por
-// assinatura (Seção 17), então a primeira da lista já é "a" empresa ativa
-// para fins de cabeçalho/sidebar — a página de cada rota ainda decide o que
-// fazer com múltiplas empresas via searchParams quando isso mudar.
+// principal fixo). P0 limita uma empresa por assinatura (Seção 17) — a
+// página de cada rota ainda decide o que fazer com múltiplas empresas via
+// searchParams quando isso mudar.
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -21,15 +20,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/onboarding");
   }
 
-  const primaryCompany = companies[0]!;
-
   return (
-    <AppShell
-      companyName={primaryCompany.name}
-      userName={user.name}
-      userEmail={user.email}
-      logoutAction={logoutAction}
-    >
+    <AppShell userName={user.name} userEmail={user.email} logoutAction={logoutAction}>
       {children}
     </AppShell>
   );

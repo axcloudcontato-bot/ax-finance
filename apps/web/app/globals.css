@@ -13,20 +13,27 @@
   --color-muted: #eef0f2;
   --color-muted-foreground: #5b6270;
   --color-border: #d9dce1;
-  --color-primary: #1f6f50;
+  --color-primary: #4680ff;
   --color-primary-foreground: #ffffff;
-  --color-ring: #1f6f50;
+  --color-ring: #4680ff;
 }
 
 :root {
   color-scheme: light;
-  --bg: #f5f6f8;
+  --bg: #f4f7fb;
   --card: #ffffff;
   --border: #d9dce1;
   --text: #1a1d23;
   --muted: #5b6270;
-  --accent: #1f6f50;
+  --accent: #4680ff;
   --danger: #a4302f;
+
+  /* Paleta de cards em gradiente do dashboard (Seção 5) — inspirada num
+     template de admin dashboard, não copiada de nenhum arquivo/asset dele. */
+  --grad-blue: linear-gradient(135deg, #4680ff, #7cb0ff);
+  --grad-teal: linear-gradient(135deg, #0bc7b9, #3fe0c5);
+  --grad-orange: linear-gradient(135deg, #ffa235, #ffc670);
+  --grad-pink: linear-gradient(135deg, #fc5296, #ff86ac);
 }
 
 * {
@@ -56,15 +63,19 @@ main.narrow {
 }
 
 main.wide {
-  max-width: 1320px;
+  /* Sem teto fixo — telas de dashboard/lista aproveitam a largura toda
+     disponível ao lado da sidebar, em vez de sobrar espaço morto nas
+     laterais em monitores grandes. */
+  max-width: 100%;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 1.75rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05);
 }
 
 h1 {
@@ -198,6 +209,40 @@ form.inline {
   border-color: var(--text);
 }
 
+.month-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.5rem;
+  background: var(--card);
+}
+
+.month-selector span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 9rem;
+  text-align: center;
+}
+
+.month-selector a {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.month-selector a:hover {
+  background: var(--muted);
+  color: white;
+}
+
 /* Lista (larga, à esquerda) + formulário de cadastro rápido (estreito, à
    direita) — evita tanto o formulário esticado feio até a borda quanto a
    lista espremida numa coluna estreita. Empilha em telas estreitas. */
@@ -212,4 +257,155 @@ form.inline {
   .split {
     grid-template-columns: 1fr;
   }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4rem 1rem;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.modal-dialog {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+/* Formulários com muitos campos (ex.: cadastro de pessoa) ficam menos
+   compridos em dois campos por linha — usa a largura extra do modal em vez
+   de empilhar tudo numa coluna só. */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.5rem;
+}
+
+.form-grid .span-2 {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modal-close {
+  margin-top: 0;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  line-height: 1;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  font-size: 1.5rem;
+}
+
+/* Cards de estatística em gradiente do dashboard (Seção 5). */
+.stat-card {
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(20, 30, 60, 0.12);
+}
+
+.stat-card .stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  margin-bottom: 0.75rem;
+}
+
+.stat-card .stat-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.stat-card .stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+.stat-card .stat-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.donut-legend-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  flex-shrink: 0;
 }

@@ -19,8 +19,7 @@ export function RecurrenceForm({
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="card">
-      <h1>Nova recorrência</h1>
+    <>
       <p className="subtitle">
         Gera um título por mês, no dia de vencimento escolhido, até 90 dias à frente — diferente de
         um parcelamento (que cria tudo de uma vez). Pausar interrompe a geração sem apagar os
@@ -83,6 +82,6 @@ export function RecurrenceForm({
           <button type="submit">Criar recorrência</button>
         </form>
       )}
-    </div>
+    </>
   );
 }

@@ -21,7 +21,7 @@ export default async function SaidaParceladaPage({
   const suppliers = await listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" });
 
   return (
-    <main className="narrow">
+    <main>
       <h1 style={{ marginBottom: "1rem" }}>Parcelar saída</h1>
       <InstallmentForm
         action={createSaidaInstallmentPlanAction}

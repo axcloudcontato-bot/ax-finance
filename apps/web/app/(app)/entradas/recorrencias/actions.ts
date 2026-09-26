@@ -28,8 +28,9 @@ export async function createEntradaRecurrenceAction(formData: FormData) {
   const endDate = String(formData.get("endDate") ?? "") || undefined;
   const notes = String(formData.get("notes") ?? "");
 
+  let rule: Awaited<ReturnType<typeof createRecurrenceRule>>;
   try {
-    await createRecurrenceRule(user.id, company.id, {
+    rule = await createRecurrenceRule(user.id, company.id, {
       type: "RECEIVABLE",
       description,
       categoryId,
@@ -45,7 +46,7 @@ export async function createEntradaRecurrenceAction(formData: FormData) {
     redirect(`/entradas/recorrencias?erro=${encodeURIComponent(message)}`);
   }
 
-  redirect("/entradas/recorrencias");
+  redirect(`/entradas/recorrencias?criado=${rule.id}`);
 }
 
 export async function pauseEntradaRecurrenceAction(formData: FormData) {

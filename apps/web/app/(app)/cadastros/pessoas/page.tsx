@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { Modal } from "@/components/ui/modal";
 import { createPartyAction } from "./actions";
 
 export default async function PessoasPage({
@@ -20,44 +21,9 @@ export default async function PessoasPage({
 
   return (
     <main className="wide">
-      <h1 style={{ marginBottom: "1rem" }}>Clientes e fornecedores</h1>
-
-      <div className="split">
-        <div className="card">
-          {parties.length === 0 ? (
-            <p className="muted">Nenhuma pessoa cadastrada ainda.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Papel</th>
-                  <th>Documento</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parties.map((party) => (
-                  <tr key={party.id}>
-                    <td>
-                      <Link href={`/cadastros/pessoas/${party.id}`}>{party.name}</Link>
-                    </td>
-                    <td>
-                      {[party.isClient ? "Cliente" : null, party.isSupplier ? "Fornecedor" : null]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </td>
-                    <td>{party.document ?? "—"}</td>
-                    <td>{party.status === "ACTIVE" ? "Ativa" : "Inativa"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        <div className="card">
-          <h1>Nova pessoa</h1>
+      <div className="page-header">
+        <h1>Clientes e fornecedores</h1>
+        <Modal triggerLabel="+ Nova pessoa" title="Nova pessoa" maxWidth="680px">
           <p className="subtitle">
             Cadastro unificado — a mesma pessoa pode ser cliente e fornecedor ao mesmo tempo
             (Seção 10).
@@ -66,26 +32,42 @@ export default async function PessoasPage({
           {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 
           <form action={createPartyAction}>
-            <label htmlFor="name">Nome</label>
-            <input id="name" name="name" type="text" required maxLength={200} />
+            <div className="form-grid">
+              <div>
+                <label htmlFor="name">Nome</label>
+                <input id="name" name="name" type="text" required maxLength={200} />
+              </div>
 
-            <label htmlFor="tradeName">Nome fantasia (opcional)</label>
-            <input id="tradeName" name="tradeName" type="text" maxLength={200} />
+              <div>
+                <label htmlFor="tradeName">Nome fantasia (opcional)</label>
+                <input id="tradeName" name="tradeName" type="text" maxLength={200} />
+              </div>
 
-            <label htmlFor="document">CPF/CNPJ (opcional)</label>
-            <input id="document" name="document" type="text" maxLength={30} />
+              <div>
+                <label htmlFor="document">CPF/CNPJ (opcional)</label>
+                <input id="document" name="document" type="text" maxLength={30} />
+              </div>
 
-            <label htmlFor="email">E-mail (opcional)</label>
-            <input id="email" name="email" type="email" maxLength={200} />
+              <div>
+                <label htmlFor="email">E-mail (opcional)</label>
+                <input id="email" name="email" type="email" maxLength={200} />
+              </div>
 
-            <label htmlFor="phone">Telefone (opcional)</label>
-            <input id="phone" name="phone" type="text" maxLength={30} />
+              <div>
+                <label htmlFor="phone">Telefone (opcional)</label>
+                <input id="phone" name="phone" type="text" maxLength={30} />
+              </div>
 
-            <label htmlFor="address">Endereço (opcional)</label>
-            <input id="address" name="address" type="text" maxLength={500} />
+              <div>
+                <label htmlFor="responsibleName">Responsável (opcional)</label>
+                <input id="responsibleName" name="responsibleName" type="text" maxLength={200} />
+              </div>
 
-            <label htmlFor="responsibleName">Responsável (opcional)</label>
-            <input id="responsibleName" name="responsibleName" type="text" maxLength={200} />
+              <div className="span-2">
+                <label htmlFor="address">Endereço (opcional)</label>
+                <input id="address" name="address" type="text" maxLength={500} />
+              </div>
+            </div>
 
             <div style={{ marginTop: "1rem", display: "flex", gap: "1.5rem" }}>
               <label
@@ -121,7 +103,40 @@ export default async function PessoasPage({
 
             <button type="submit">Criar pessoa</button>
           </form>
-        </div>
+        </Modal>
+      </div>
+
+      <div className="card">
+        {parties.length === 0 ? (
+          <p className="muted">Nenhuma pessoa cadastrada ainda.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Papel</th>
+                <th>Documento</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parties.map((party) => (
+                <tr key={party.id}>
+                  <td>
+                    <Link href={`/cadastros/pessoas/${party.id}`}>{party.name}</Link>
+                  </td>
+                  <td>
+                    {[party.isClient ? "Cliente" : null, party.isSupplier ? "Fornecedor" : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </td>
+                  <td>{party.document ?? "—"}</td>
+                  <td>{party.status === "ACTIVE" ? "Ativa" : "Inativa"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </main>
   );

@@ -21,7 +21,7 @@ export default async function NovaSaidaPage({
   const suppliers = await listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" });
 
   return (
-    <main className="narrow">
+    <main>
       <h1 style={{ marginBottom: "1rem" }}>Nova saída</h1>
       <TitleForm
         action={createSaidaAction}

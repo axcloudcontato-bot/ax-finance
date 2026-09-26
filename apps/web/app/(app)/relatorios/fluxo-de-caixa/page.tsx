@@ -3,17 +3,14 @@ import { getCashFlowReport } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
+import { formatDateOnly } from "@/lib/dates";
 import { NATURE_LABEL } from "@/lib/category-labels";
-
-function firstDayOfCurrentMonth(): string {
-  return `${todayDateOnlyString().slice(0, 8)}01`;
-}
+import { currentYearMonth, monthRange } from "@/lib/month";
 
 export default async function FluxoDeCaixaPage({
   searchParams,
 }: {
-  searchParams: { de?: string; ate?: string };
+  searchParams: { de?: string; ate?: string; mes?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -21,8 +18,10 @@ export default async function FluxoDeCaixaPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const from = searchParams.de || firstDayOfCurrentMonth();
-  const to = searchParams.ate || todayDateOnlyString();
+  const month = searchParams.mes ?? currentYearMonth();
+  const defaultRange = monthRange(month);
+  const from = searchParams.de || defaultRange.from;
+  const to = searchParams.ate || defaultRange.to;
 
   const report = await getCashFlowReport(user.id, company.id, { from, to });
   const exportHref = `/api/reports/cash-flow?de=${from}&ate=${to}`;
@@ -46,7 +45,7 @@ export default async function FluxoDeCaixaPage({
             <input id="ate" name="ate" type="date" defaultValue={to} />
           </div>
           <button type="submit" style={{ marginTop: 0 }}>
-            Filtrar
+            Filtrar intervalo customizado
           </button>
           <a href={exportHref} className="button-link">
             Exportar CSV
