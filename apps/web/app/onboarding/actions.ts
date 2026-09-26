@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createCompany, createFinancialAccount, seedDefaultCategories } from "@ax-finance/domain";
+import { completeOnboarding } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { parseAmountToCents } from "@/lib/currency";
 
@@ -23,17 +23,16 @@ export async function onboardingAction(formData: FormData) {
   let companyId: string;
 
   try {
-    const company = await createCompany(user.id, { name: companyName });
-
-    await createFinancialAccount(user.id, company.id, {
-      name: accountName,
-      type: accountType,
+    // Empresa + conta + categorias padrão numa única transação — ver
+    // complete-onboarding.ts para o motivo (evita empresa órfã sem conta se
+    // um passo do meio falhar).
+    const { company } = await completeOnboarding(user.id, {
+      companyName,
+      accountName,
+      accountType,
       openingBalanceCents: parseAmountToCents(openingBalanceRaw),
       openingDate,
     });
-
-    await seedDefaultCategories(user.id, company.id);
-
     companyId = company.id;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível concluir.";

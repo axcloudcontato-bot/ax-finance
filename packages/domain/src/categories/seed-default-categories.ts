@@ -1,3 +1,4 @@
+import type { TenantScopedClient } from "@ax-finance/db";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import type { CATEGORY_NATURES } from "./create-category";
@@ -63,47 +64,52 @@ const DEFAULT_CATEGORY_GROUPS: DefaultCategoryGroup[] = [
 ];
 
 /**
- * Chamado uma vez logo após `createCompany` (fluxo de onboarding). Não faz
- * nada se a empresa já tiver qualquer categoria — evita duplicar caso seja
- * chamado mais de uma vez para a mesma empresa.
+ * Núcleo puro (recebe `tx` de fora) — usado tanto por `seedDefaultCategories`
+ * (abre sua própria transação) quanto por `completeOnboarding` (roda dentro
+ * da mesma transação que já criou a empresa/conta, pra tudo ser atômico).
+ * Não faz nada se a empresa já tiver qualquer categoria — evita duplicar
+ * caso seja chamado mais de uma vez para a mesma empresa.
  */
+export async function createDefaultCategoriesInTx(tx: TenantScopedClient, companyId: string) {
+  const existingCount = await tx.category.count({ where: { companyId } });
+  if (existingCount > 0) {
+    return [];
+  }
+
+  const created = [];
+  for (const [groupIndex, group] of DEFAULT_CATEGORY_GROUPS.entries()) {
+    const parent = await tx.category.create({
+      data: {
+        companyId,
+        name: group.name,
+        nature: group.nature,
+        managerialGroup: group.managerialGroup,
+        order: groupIndex,
+      },
+    });
+    created.push(parent);
+
+    for (const [childIndex, childName] of group.children.entries()) {
+      const child = await tx.category.create({
+        data: {
+          companyId,
+          name: childName,
+          nature: group.nature,
+          managerialGroup: group.managerialGroup,
+          parentId: parent.id,
+          order: childIndex,
+        },
+      });
+      created.push(child);
+    }
+  }
+
+  return created;
+}
+
+/** Chamado uma vez logo após `createCompany` — para código chamando fora de uma transação já aberta. */
 export async function seedDefaultCategories(userId: string, companyId: string) {
   await assertActiveMembership(userId, companyId);
 
-  return withCompanyContext(userId, companyId, async (tx) => {
-    const existingCount = await tx.category.count({ where: { companyId } });
-    if (existingCount > 0) {
-      return [];
-    }
-
-    const created = [];
-    for (const [groupIndex, group] of DEFAULT_CATEGORY_GROUPS.entries()) {
-      const parent = await tx.category.create({
-        data: {
-          companyId,
-          name: group.name,
-          nature: group.nature,
-          managerialGroup: group.managerialGroup,
-          order: groupIndex,
-        },
-      });
-      created.push(parent);
-
-      for (const [childIndex, childName] of group.children.entries()) {
-        const child = await tx.category.create({
-          data: {
-            companyId,
-            name: childName,
-            nature: group.nature,
-            managerialGroup: group.managerialGroup,
-            parentId: parent.id,
-            order: childIndex,
-          },
-        });
-        created.push(child);
-      }
-    }
-
-    return created;
-  });
+  return withCompanyContext(userId, companyId, (tx) => createDefaultCategoriesInTx(tx, companyId));
 }
