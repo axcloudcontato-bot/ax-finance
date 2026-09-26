@@ -1,0 +1,215 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Tokens shadcn-style usados pelos componentes em components/ (Tailwind v4
+   gera utilities bg-background/text-foreground/border-border/etc. a partir
+   deste bloco @theme). Os valores espelham as variáveis --bg/--text/--border
+   abaixo para o app inteiro ficar visualmente consistente. */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #1a1d23;
+  --color-card: #ffffff;
+  --color-card-foreground: #1a1d23;
+  --color-muted: #eef0f2;
+  --color-muted-foreground: #5b6270;
+  --color-border: #d9dce1;
+  --color-primary: #1f6f50;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #1f6f50;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --border: #d9dce1;
+  --text: #1a1d23;
+  --muted: #5b6270;
+  --accent: #1f6f50;
+  --danger: #a4302f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Três larguras: forms de uma coluna ficam estranhos esticados até a borda,
+   mas tabela/dashboard em tela larga sobra muito espaço morto no meio se
+   ficar preso na mesma largura de formulário de login — por isso três
+   variantes em vez de uma largura única para tudo. */
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem;
+  width: 100%;
+}
+
+main.narrow {
+  max-width: 560px;
+}
+
+main.wide {
+  max-width: 1320px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  margin-top: 1rem;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+button {
+  margin-top: 1.5rem;
+  padding: 0.65rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.error {
+  color: var(--danger);
+  background: #fbeceb;
+  border: 1px solid #e3b3b1;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+nav a {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+form.inline {
+  display: inline;
+  margin: 0;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.button-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filters a {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.filters a.active {
+  background: var(--text);
+  color: white;
+  border-color: var(--text);
+}
+
+/* Lista (larga, à esquerda) + formulário de cadastro rápido (estreito, à
+   direita) — evita tanto o formulário esticado feio até a borda quanto a
+   lista espremida numa coluna estreita. Empilha em telas estreitas. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,80 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { listTransfers } from "@ax-finance/domain";
+import { getCurrentUser } from "@/lib/session";
+import { requirePrimaryCompany } from "@/lib/company";
+import { formatCents } from "@/lib/currency";
+import { formatDateOnly } from "@/lib/dates";
+import { reverseTransferAction } from "./actions";
+
+export default async function TransferenciasPage({
+  searchParams,
+}: {
+  searchParams: { erro?: string };
+}) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const company = await requirePrimaryCompany(user.id);
+
+  const transfers = await listTransfers(user.id, company.id);
+
+  return (
+    <main className="wide">
+      <div className="page-header">
+        <h1>Transferências</h1>
+        <Link href="/transferencias/novo" className="button-link">
+          Nova transferência
+        </Link>
+      </div>
+
+      {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+
+      <div className="card">
+        {transfers.length === 0 ? (
+          <p className="muted">Nenhuma transferência ainda.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Origem</th>
+                <th>Destino</th>
+                <th>Valor</th>
+                <th>Tarifa</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {transfers.map((transfer) => {
+                const reverseAction = reverseTransferAction.bind(null, transfer.id);
+                return (
+                  <tr key={transfer.id} style={transfer.reversedAt ? { opacity: 0.5 } : undefined}>
+                    <td>{formatDateOnly(transfer.transferDate)}</td>
+                    <td>{transfer.fromAccount.name}</td>
+                    <td>{transfer.toAccount.name}</td>
+                    <td>{formatCents(transfer.amountCents)}</td>
+                    <td>{formatCents(transfer.feeCents)}</td>
+                    <td>
+                      {transfer.reversedAt ? (
+                        "Estornada"
+                      ) : (
+                        <form action={reverseAction} className="inline">
+                          <input type="hidden" name="reason" value="Estornado pelo usuário" />
+                          <button type="submit" className="secondary">
+                            Estornar
+                          </button>
+                        </form>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </main>
+  );
+}

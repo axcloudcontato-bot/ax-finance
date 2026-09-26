@@ -1,0 +1,33 @@
+import { withCompanyContext } from "@ax-finance/db";
+import { assertActiveMembership } from "../companies/assert-membership";
+import { TitleNotFoundError } from "../errors";
+
+export async function getTitle(userId: string, companyId: string, titleId: string) {
+  await assertActiveMembership(userId, companyId);
+
+  const title = await withCompanyContext(userId, companyId, (tx) =>
+    tx.title.findFirst({
+      where: { id: titleId, companyId },
+      include: {
+        category: true,
+        settlements: {
+          orderBy: { createdAt: "asc" },
+          include: { financialAccount: true },
+        },
+      },
+    })
+  );
+
+  if (!title) {
+    throw new TitleNotFoundError();
+  }
+
+  const settledPrincipalEquivalent = title.settlements
+    .filter((settlement) => !settlement.reversedAt)
+    .reduce((sum, settlement) => sum + settlement.principalAmountCents + settlement.discountCents, BigInt(0));
+
+  return {
+    ...title,
+    remainingCents: title.originalAmountCents - settledPrincipalEquivalent,
+  };
+}

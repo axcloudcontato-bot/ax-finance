@@ -1,0 +1,27 @@
+{
+  "name": "ax-finance",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "db:generate": "pnpm --filter @ax-finance/db exec prisma generate",
+    "db:migrate": "pnpm --filter @ax-finance/db exec prisma migrate dev",
+    "db:migrate:deploy": "pnpm --filter @ax-finance/db exec prisma migrate deploy",
+    "db:seed": "pnpm --filter @ax-finance/db exec tsx prisma/seed.ts",
+    "db:studio": "pnpm --filter @ax-finance/db exec prisma studio",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r exec tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5",
+    "tsx": "^4.16.2",
+    "eslint": "^8.57.0"
+  }
+}
