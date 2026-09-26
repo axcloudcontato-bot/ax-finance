@@ -463,12 +463,12 @@ form.inline {
   margin-bottom: 1.5rem;
 }
 
-/* Cards de lançamento rápido (Nova receita/despesa) no topo do dashboard. */
+/* Cards de lançamento rápido (Nova receita/despesa) — via portal, na mesma
+   linha do seletor de mês global (ver PageActionsSlot/PortalToPageActions). */
 .quick-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-bottom: 1.25rem;
 }
 
 .quick-action-card {

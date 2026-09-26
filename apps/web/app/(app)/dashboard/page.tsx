@@ -24,6 +24,7 @@ import { CashFlowLineChart } from "@/components/dashboard/cash-flow-line-chart";
 import { DonutChart } from "@/components/dashboard/donut-chart";
 import { Modal } from "@/components/ui/modal";
 import { TitleForm } from "@/components/titles/title-form";
+import { PortalToPageActions } from "@/components/portal-to-page-actions";
 import { createEntradaAction, createEntradaAndContinueAction } from "../entradas/actions";
 import { createSaidaAction, createSaidaAndContinueAction } from "../saidas/actions";
 
@@ -129,6 +130,7 @@ export default async function DashboardPage({
 
   return (
     <main className="wide">
+      <PortalToPageActions>
       <div className="quick-actions">
         <Modal
           triggerLabel={
@@ -176,6 +178,7 @@ export default async function DashboardPage({
           />
         </Modal>
       </div>
+      </PortalToPageActions>
 
       <Reveal className="stat-grid">
         <StatCard
