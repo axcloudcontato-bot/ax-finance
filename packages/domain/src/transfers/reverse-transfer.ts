@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { recordAuditEvent } from "../audit/record-audit-event";
 import { TransferAlreadyReversedError, TransferNotFoundError } from "../errors";
 
 export const reverseTransferInput = z.object({
@@ -26,9 +27,20 @@ export async function reverseTransfer(
       throw new TransferAlreadyReversedError();
     }
 
-    return tx.transfer.update({
+    const reversed = await tx.transfer.update({
       where: { id: transferId },
       data: { reversedAt: new Date(), reversalReason: data.reason },
     });
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "TRANSFER_REVERSED",
+      resourceType: "Transfer",
+      resourceId: transferId,
+      summary: data.reason,
+    });
+
+    return reversed;
   });
 }

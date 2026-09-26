@@ -105,6 +105,10 @@ model Company {
   settlements       Settlement[]
   transfers         Transfer[]
   recurrenceRules   RecurrenceRule[]
+  importBatches       ImportBatch[]
+  bankStatementLines  BankStatementLine[]
+  auditEvents         AuditEvent[]
+  periodClosures      PeriodClosure[]
 
   @@index([tenantId])
   @@map("companies")
@@ -143,6 +147,8 @@ model FinancialAccount {
   settlements     Settlement[]
   transfersFrom   Transfer[]   @relation("TransferFromAccount")
   transfersTo     Transfer[]   @relation("TransferToAccount")
+  importBatches       ImportBatch[]
+  bankStatementLines  BankStatementLine[]
 
   @@index([companyId])
   @@map("financial_accounts")
@@ -318,6 +324,8 @@ model Settlement {
   reversalReason       String?   @map("reversal_reason")
   createdAt            DateTime  @default(now()) @map("created_at")
 
+  reconciledByLine BankStatementLine?
+
   @@index([companyId])
   @@index([titleId])
   @@map("settlements")
@@ -343,4 +351,92 @@ model Transfer {
   @@index([fromAccountId])
   @@index([toAccountId])
   @@map("transfers")
+}
+
+enum BankStatementLineStatus {
+  PENDING
+  RECONCILED
+  IGNORED
+}
+
+model ImportBatch {
+  id                 String   @id @default(uuid())
+  companyId          String   @map("company_id")
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId String   @map("financial_account_id")
+  financialAccount   FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  fileName           String   @map("file_name")
+  rowCount           Int      @map("row_count")
+  importedCount      Int      @map("imported_count")
+  duplicateCount     Int      @map("duplicate_count")
+  invalidCount       Int      @map("invalid_count")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  lines BankStatementLine[]
+
+  @@index([companyId])
+  @@map("import_batches")
+}
+
+model BankStatementLine {
+  id                     String                  @id @default(uuid())
+  companyId              String                  @map("company_id")
+  company                Company                 @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId     String                  @map("financial_account_id")
+  financialAccount       FinancialAccount        @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  importBatchId          String                  @map("import_batch_id")
+  importBatch            ImportBatch             @relation(fields: [importBatchId], references: [id], onDelete: Restrict)
+  lineDate               DateTime                @map("line_date") @db.Date
+  description            String
+  amountCents            BigInt                  @map("amount_cents")
+  dedupKey               String                  @map("dedup_key")
+  status                 BankStatementLineStatus @default(PENDING)
+  reconciledSettlementId String?                 @unique @map("reconciled_settlement_id")
+  reconciledSettlement   Settlement?             @relation(fields: [reconciledSettlementId], references: [id], onDelete: Restrict)
+  ignoreReason           String?                 @map("ignore_reason")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
+
+  @@unique([companyId, financialAccountId, dedupKey])
+  @@index([companyId])
+  @@index([financialAccountId])
+  @@map("bank_statement_lines")
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid())
+  companyId    String   @map("company_id")
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  actorUserId  String   @map("actor_user_id")
+  eventType    String   @map("event_type")
+  resourceType String   @map("resource_type")
+  resourceId   String   @map("resource_id")
+  summary      String
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, resourceType, resourceId])
+  @@index([companyId, createdAt])
+  @@map("audit_events")
+}
+
+enum PeriodClosureStatus {
+  CLOSED
+  REOPENED
+}
+
+model PeriodClosure {
+  id               String              @id @default(uuid())
+  companyId        String              @map("company_id")
+  company          Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  period           String
+  status           PeriodClosureStatus @default(CLOSED)
+  closedByUserId   String              @map("closed_by_user_id")
+  closedAt         DateTime            @default(now()) @map("closed_at")
+  reopenedByUserId String?             @map("reopened_by_user_id")
+  reopenedAt       DateTime?           @map("reopened_at")
+  reopenReason     String?             @map("reopen_reason")
+
+  @@unique([companyId, period])
+  @@map("period_closures")
 }

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { recordAuditEvent } from "../audit/record-audit-event";
+import { assertPeriodOpen } from "../closures/assert-period-open";
 import {
   FinancialAccountNotFoundError,
   SettlementExceedsBalanceError,
@@ -54,8 +56,8 @@ export async function registerSettlement(
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const locked = await tx.$queryRaw<
-      { id: string; original_amount_cents: bigint; status: string }[]
-    >`SELECT id, original_amount_cents, status FROM "titles" WHERE id = ${titleId} AND company_id = ${companyId} FOR UPDATE`;
+      { id: string; original_amount_cents: bigint; status: string; type: string }[]
+    >`SELECT id, original_amount_cents, status, type FROM "titles" WHERE id = ${titleId} AND company_id = ${companyId} FOR UPDATE`;
 
     const title = locked[0];
     if (!title) {
@@ -71,6 +73,8 @@ export async function registerSettlement(
     if (!account) {
       throw new FinancialAccountNotFoundError();
     }
+
+    await assertPeriodOpen(tx, companyId, data.effectiveDate);
 
     const existingSettlements = await tx.settlement.findMany({
       where: { titleId, reversedAt: null },
@@ -104,6 +108,21 @@ export async function registerSettlement(
     await tx.title.update({
       where: { id: titleId },
       data: { status: computeStatus(title.original_amount_cents, alreadySettled + principalEquivalent) },
+    });
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "SETTLEMENT_REGISTERED",
+      resourceType: "Title",
+      resourceId: titleId,
+      summary: "Baixa registrada",
+      metadata: {
+        settlementId: settlement.id,
+        titleType: title.type,
+        principalAmountCents: data.principalAmountCents,
+        financialAccountId: data.financialAccountId,
+      },
     });
 
     return settlement;

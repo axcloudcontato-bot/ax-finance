@@ -60,6 +60,15 @@ export default async function CategoriasPage({
               ))}
             </select>
 
+            <label htmlFor="managerialGroup">Grupo gerencial (opcional)</label>
+            <input
+              id="managerialGroup"
+              name="managerialGroup"
+              type="text"
+              maxLength={200}
+              placeholder="Ex.: Receita de serviços, Pessoal, Estrutura..."
+            />
+
             <button type="submit">Criar categoria</button>
           </form>
         </Modal>
@@ -74,6 +83,7 @@ export default async function CategoriasPage({
               <tr>
                 <th>Nome</th>
                 <th>Natureza</th>
+                <th>Grupo gerencial</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -83,6 +93,7 @@ export default async function CategoriasPage({
                 <tr key={category.id}>
                   <td>{category.parentId ? `↳ ${category.name}` : category.name}</td>
                   <td>{NATURE_LABEL[category.nature] ?? category.nature}</td>
+                  <td>{category.managerialGroup ?? "—"}</td>
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                   <td>
                     {category.status === "ACTIVE" ? (

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   CompanyAccessDeniedError,
+  EVENT_TYPE_LABEL,
   TitleNotFoundError,
   getTitle,
+  listAuditEvents,
   listFinancialAccounts,
   listInstallments,
 } from "@ax-finance/domain";
@@ -46,6 +48,10 @@ export default async function EntradaDetailPage({
   const installments = title.installmentGroupId
     ? await listInstallments(user.id, company.id, title.installmentGroupId)
     : [];
+  const auditEvents = await listAuditEvents(user.id, company.id, {
+    resourceType: "Title",
+    resourceId: title.id,
+  });
   const hasActiveSettlement = title.settlements.some((settlement) => !settlement.reversedAt);
   const registerSettlementAction = registerEntradaSettlementAction.bind(null, title.id);
   const cancelAction = cancelEntradaAction.bind(null, title.id);
@@ -202,6 +208,33 @@ export default async function EntradaDetailPage({
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        )}
+      </div>
+      <div className="card">
+        <h1>Histórico</h1>
+        {auditEvents.length === 0 ? (
+          <p className="muted">Nenhum evento registrado ainda.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Evento</th>
+                <th>Autor</th>
+                <th>Detalhe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditEvents.map((event) => (
+                <tr key={event.id}>
+                  <td>{new Date(event.createdAt).toLocaleString("pt-BR")}</td>
+                  <td>{EVENT_TYPE_LABEL[event.eventType] ?? event.eventType}</td>
+                  <td>{event.actorName}</td>
+                  <td>{event.summary}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}

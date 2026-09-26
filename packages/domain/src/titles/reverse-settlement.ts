@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { recordAuditEvent } from "../audit/record-audit-event";
+import { assertPeriodOpen } from "../closures/assert-period-open";
 import { SettlementAlreadyReversedError, TitleNotFoundError } from "../errors";
 
 export const reverseSettlementInput = z.object({
@@ -41,8 +43,10 @@ export async function reverseSettlement(
       throw new SettlementAlreadyReversedError();
     }
 
-    const locked = await tx.$queryRaw<{ id: string; original_amount_cents: bigint }[]>`
-      SELECT id, original_amount_cents FROM "titles" WHERE id = ${settlement.titleId} AND company_id = ${companyId} FOR UPDATE
+    await assertPeriodOpen(tx, companyId, settlement.effectiveDate);
+
+    const locked = await tx.$queryRaw<{ id: string; original_amount_cents: bigint; type: string }[]>`
+      SELECT id, original_amount_cents, type FROM "titles" WHERE id = ${settlement.titleId} AND company_id = ${companyId} FOR UPDATE
     `;
     const title = locked[0];
     if (!title) {
@@ -65,6 +69,16 @@ export async function reverseSettlement(
     await tx.title.update({
       where: { id: settlement.titleId },
       data: { status: computeStatus(title.original_amount_cents, settledPrincipalEquivalent) },
+    });
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "SETTLEMENT_REVERSED",
+      resourceType: "Title",
+      resourceId: settlement.titleId,
+      summary: data.reason,
+      metadata: { settlementId, titleType: title.type },
     });
 
     return reversed;

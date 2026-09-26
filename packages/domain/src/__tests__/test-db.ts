@@ -11,6 +11,6 @@ export const rootClient = createPrismaClient(process.env.DATABASE_URL!);
 
 export async function resetDatabase() {
   await rootClient.$executeRawUnsafe(
-    'TRUNCATE TABLE "transfers", "settlements", "titles", "recurrence_rules", "parties", "categories", "financial_accounts", "memberships", "companies", "tenants", "sessions", "users" RESTART IDENTITY CASCADE'
+    'TRUNCATE TABLE "period_closures", "audit_events", "bank_statement_lines", "import_batches", "transfers", "settlements", "titles", "recurrence_rules", "parties", "categories", "financial_accounts", "memberships", "companies", "tenants", "sessions", "users" RESTART IDENTITY CASCADE'
   );
 }

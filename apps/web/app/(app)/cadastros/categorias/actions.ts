@@ -15,10 +15,11 @@ export async function createCategoryAction(formData: FormData) {
   const name = String(formData.get("name") ?? "");
   const nature = String(formData.get("nature") ?? "");
   const parentId = String(formData.get("parentId") ?? "") || undefined;
+  const managerialGroup = String(formData.get("managerialGroup") ?? "") || undefined;
 
   let category: Awaited<ReturnType<typeof createCategory>>;
   try {
-    category = await createCategory(user.id, company.id, { name, nature, parentId });
+    category = await createCategory(user.id, company.id, { name, nature, parentId, managerialGroup });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível criar a categoria.";
     redirect(`/cadastros/categorias?erro=${encodeURIComponent(message)}`);

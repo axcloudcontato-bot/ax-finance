@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { recordAuditEvent } from "../audit/record-audit-event";
 import { FinancialAccountNotFoundError, TransferSameAccountError } from "../errors";
 
 export const createTransferInput = z.object({
@@ -39,7 +40,7 @@ export async function createTransfer(userId: string, companyId: string, input: u
       throw new FinancialAccountNotFoundError();
     }
 
-    return tx.transfer.create({
+    const transfer = await tx.transfer.create({
       data: {
         companyId,
         fromAccountId: data.fromAccountId,
@@ -50,5 +51,21 @@ export async function createTransfer(userId: string, companyId: string, input: u
         description: data.description,
       },
     });
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "TRANSFER_CREATED",
+      resourceType: "Transfer",
+      resourceId: transfer.id,
+      summary: "Transferência criada",
+      metadata: {
+        amountCents: data.amountCents,
+        fromAccountId: data.fromAccountId,
+        toAccountId: data.toAccountId,
+      },
+    });
+
+    return transfer;
   });
 }

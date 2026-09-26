@@ -94,6 +94,12 @@ export class SettlementAlreadyReversedError extends DomainError {
   }
 }
 
+export class SettlementNotFoundError extends DomainError {
+  constructor() {
+    super("Baixa não encontrada.", "SETTLEMENT_NOT_FOUND");
+  }
+}
+
 /** Seção 8: as duas pontas de uma transferência precisam ser contas diferentes. */
 export class TransferSameAccountError extends DomainError {
   constructor() {
@@ -156,5 +162,45 @@ export class RecurrenceRuleNotFoundError extends DomainError {
 export class RecurrenceEndDateBeforeStartError extends DomainError {
   constructor() {
     super("A data de término não pode ser anterior à data de início.", "RECURRENCE_END_DATE_BEFORE_START");
+  }
+}
+
+/** Seção 12: nenhuma linha válida no arquivo (todas em branco/malformadas). */
+export class ImportFileInvalidError extends DomainError {
+  constructor() {
+    super("Nenhuma linha válida encontrada no arquivo.", "IMPORT_FILE_INVALID");
+  }
+}
+
+export class BankStatementLineNotFoundError extends DomainError {
+  constructor() {
+    super("Linha do extrato não encontrada.", "BANK_STATEMENT_LINE_NOT_FOUND");
+  }
+}
+
+/** Seção 12: só dá pra conciliar ou ignorar uma linha ainda pendente. */
+export class BankStatementLineAlreadyProcessedError extends DomainError {
+  constructor() {
+    super("Esta linha já foi conciliada ou ignorada.", "BANK_STATEMENT_LINE_ALREADY_PROCESSED");
+  }
+}
+
+/** Seção 12: vínculo é 1:1 — uma baixa só pode ser conciliada com uma linha do extrato. */
+export class SettlementAlreadyReconciledError extends DomainError {
+  constructor() {
+    super("Esta baixa já está conciliada com outra linha do extrato.", "SETTLEMENT_ALREADY_RECONCILED");
+  }
+}
+
+/** Seção 18 regra 8: período fechado bloqueia baixa/estorno cuja data efetiva cai nele. */
+export class PeriodClosedError extends DomainError {
+  constructor(period: string) {
+    super(`O período ${period} está fechado e não aceita novas baixas ou estornos.`, "PERIOD_CLOSED");
+  }
+}
+
+export class PeriodClosureNotFoundError extends DomainError {
+  constructor() {
+    super("Este período não está fechado.", "PERIOD_CLOSURE_NOT_FOUND");
   }
 }

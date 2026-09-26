@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { recordAuditEvent } from "../audit/record-audit-event";
 import { TitleHasActiveSettlementsError, TitleNotFoundError } from "../errors";
 
 export const cancelTitleInput = z.object({
@@ -30,9 +31,21 @@ export async function cancelTitle(
       throw new TitleHasActiveSettlementsError();
     }
 
-    return tx.title.update({
+    const cancelled = await tx.title.update({
       where: { id: titleId },
       data: { status: "CANCELLED", cancelReason: data.reason },
     });
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "TITLE_CANCELLED",
+      resourceType: "Title",
+      resourceId: titleId,
+      summary: data.reason,
+      metadata: { titleType: title.type },
+    });
+
+    return cancelled;
   });
 }

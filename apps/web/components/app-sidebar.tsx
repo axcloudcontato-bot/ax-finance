@@ -3,9 +3,11 @@ import {
   ArrowUpCircle,
   BarChart3,
   BookUser,
+  History,
   Landmark,
   LayoutDashboard,
   ListChecks,
+  Lock,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -17,8 +19,8 @@ interface NavGroup {
   items: NavItemData[];
 }
 
-// Menu principal da Seção 4 do DIRECAO.md, agrupado. Só Conciliação, DRE
-// gerencial e Configurações ainda mostram "Em breve" em vez de virar link
+// Menu principal da Seção 4 do DIRECAO.md, agrupado. Só Configurações e
+// alguns cadastros planejados ainda mostram "Em breve" em vez de virar link
 // morto (Seção 24: separar disponível, piloto e planejado) — o resto já
 // navega para rotas reais.
 const NAV_GROUPS: NavGroup[] = [
@@ -39,7 +41,7 @@ const NAV_GROUPS: NavGroup[] = [
           { id: "transferencias", title: "Transferências", icon: Landmark, href: "/transferencias" },
         ],
       },
-      { id: "conciliacao", title: "Conciliação", icon: ListChecks, badge: "Em breve" },
+      { id: "conciliacao", title: "Conciliação", icon: ListChecks, href: "/conciliacao" },
     ],
   },
   {
@@ -57,7 +59,7 @@ const NAV_GROUPS: NavGroup[] = [
             icon: BarChart3,
             href: "/relatorios/em-aberto",
           },
-          { id: "rel-dre", title: "DRE gerencial", icon: BarChart3, badge: "Em breve" },
+          { id: "rel-dre", title: "DRE gerencial", icon: BarChart3, href: "/relatorios/dre" },
         ],
       },
       {
@@ -69,6 +71,8 @@ const NAV_GROUPS: NavGroup[] = [
           { id: "cad-pessoas", title: "Clientes e fornecedores", icon: BookUser, href: "/cadastros/pessoas" },
         ],
       },
+      { id: "auditoria", title: "Auditoria", icon: History, href: "/auditoria" },
+      { id: "fechamento", title: "Fechamento", icon: Lock, href: "/fechamento" },
     ],
   },
 ];
