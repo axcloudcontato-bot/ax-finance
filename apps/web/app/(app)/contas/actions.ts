@@ -18,19 +18,21 @@ export async function createAccountAction(formData: FormData) {
   const openingBalance = String(formData.get("openingBalance") ?? "0");
   const openingDate = String(formData.get("openingDate") ?? "");
 
+  let accountId: string;
   try {
-    await createFinancialAccount(user.id, company.id, {
+    const account = await createFinancialAccount(user.id, company.id, {
       name,
       type,
       openingBalanceCents: parseAmountToCents(openingBalance),
       openingDate,
     });
+    accountId = account.id;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível criar a conta.";
     redirect(`/contas?erro=${encodeURIComponent(message)}`);
   }
 
-  redirect("/contas");
+  redirect(`/contas?criado=${accountId}`);
 }
 
 /**
@@ -80,8 +82,10 @@ export async function reverseBalanceAdjustmentAction(adjustmentId: string, formD
   try {
     await reverseBalanceAdjustment(user.id, company.id, adjustmentId, { reason });
   } catch (error) {
+    // "erroEstorno" (não "erro") pra não abrir por engano o modal de "Nova
+    // conta", que observa "erro=" pra decidir se reabre.
     const message = error instanceof Error ? error.message : "Não foi possível estornar o ajuste.";
-    redirect(`/contas?erro=${encodeURIComponent(message)}`);
+    redirect(`/contas?erroEstorno=${encodeURIComponent(message)}`);
   }
 
   redirect("/contas");

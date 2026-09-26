@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Scale } from "lucide-react";
+import { Landmark, Scale } from "lucide-react";
 import { listBalanceAdjustments, listFinancialAccountsWithBalance } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
+import { Modal } from "@/components/ui/modal";
 import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction } from "./actions";
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -18,7 +19,14 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export default async function ContasPage({
   searchParams,
 }: {
-  searchParams: { erro?: string; erroAjuste?: string; contaAjuste?: string; ajustado?: string };
+  searchParams: {
+    erro?: string;
+    criado?: string;
+    erroAjuste?: string;
+    contaAjuste?: string;
+    ajustado?: string;
+    erroEstorno?: string;
+  };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -36,13 +44,48 @@ export default async function ContasPage({
     <main className="wide">
       <div className="page-header">
         <h1>Contas</h1>
-        <Link href="/transferencias" className="button-link">
-          Transferir entre contas
-        </Link>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <Link href="/transferencias" className="button-link">
+            Transferir entre contas
+          </Link>
+          <Modal
+            triggerLabel="+ Nova conta"
+            title="Nova conta"
+            icon={<Landmark className="size-5" strokeWidth={1.5} />}
+          >
+            {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+            <form action={createAccountAction}>
+              <label htmlFor="name">Nome</label>
+              <input id="name" name="name" type="text" required maxLength={200} />
+
+              <label htmlFor="type">Tipo</label>
+              <select id="type" name="type" defaultValue="BANK">
+                <option value="BANK">Conta bancária</option>
+                <option value="CASH">Dinheiro em caixa</option>
+                <option value="WALLET">Carteira de recebimentos</option>
+              </select>
+
+              <label htmlFor="openingBalance">Saldo de abertura (R$)</label>
+              <input
+                id="openingBalance"
+                name="openingBalance"
+                type="text"
+                inputMode="decimal"
+                placeholder="0,00"
+                defaultValue="0,00"
+                required
+              />
+
+              <label htmlFor="openingDate">Data do saldo de abertura</label>
+              <input id="openingDate" name="openingDate" type="date" defaultValue={today} required />
+
+              <button type="submit">Criar conta</button>
+            </form>
+          </Modal>
+        </div>
       </div>
 
-      <div className="split">
-        <div className="card">
+      <div className="card">
           {accounts.length === 0 ? (
             <p className="muted">Nenhuma conta cadastrada ainda.</p>
           ) : (
@@ -112,43 +155,11 @@ export default async function ContasPage({
               </tbody>
             </table>
           )}
-        </div>
-
-        <div className="card">
-          <h1>Nova conta</h1>
-          {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
-          <form action={createAccountAction}>
-            <label htmlFor="name">Nome</label>
-            <input id="name" name="name" type="text" required maxLength={200} />
-
-            <label htmlFor="type">Tipo</label>
-            <select id="type" name="type" defaultValue="BANK">
-              <option value="BANK">Conta bancária</option>
-              <option value="CASH">Dinheiro em caixa</option>
-              <option value="WALLET">Carteira de recebimentos</option>
-            </select>
-
-            <label htmlFor="openingBalance">Saldo de abertura (R$)</label>
-            <input
-              id="openingBalance"
-              name="openingBalance"
-              type="text"
-              inputMode="decimal"
-              placeholder="0,00"
-              defaultValue="0,00"
-              required
-            />
-
-            <label htmlFor="openingDate">Data do saldo de abertura</label>
-            <input id="openingDate" name="openingDate" type="date" defaultValue={today} required />
-
-            <button type="submit">Criar conta</button>
-          </form>
-        </div>
       </div>
 
       <div className="card">
         <h1>Histórico de ajustes de saldo</h1>
+        {searchParams.erroEstorno ? <p className="error">{searchParams.erroEstorno}</p> : null}
         {adjustments.length === 0 ? (
           <p className="muted">Nenhum ajuste registrado ainda.</p>
         ) : (
