@@ -14,6 +14,7 @@ import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
 import { currentYearMonth, monthRange } from "@/lib/month";
+import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { CashFlowLineChart } from "@/components/dashboard/cash-flow-line-chart";
 import { DonutChart } from "@/components/dashboard/donut-chart";
@@ -114,7 +115,7 @@ export default async function DashboardPage({
 
   return (
     <main className="wide">
-      <div className="stat-grid">
+      <Reveal className="stat-grid">
         <StatCard
           icon={<Wallet className="size-5" />}
           label="Saldo disponível (hoje)"
@@ -147,9 +148,9 @@ export default async function DashboardPage({
           footerValue={String(overdueTotalCount)}
           gradient="pink"
         />
-      </div>
+      </Reveal>
 
-      <div className="dashboard-charts">
+      <Reveal className="dashboard-charts">
         <div className="card">
           <h1>Fluxo de caixa</h1>
           <p className="subtitle">Entradas e saídas realizadas nos 6 meses até o mês selecionado (Seção 13).</p>
@@ -167,7 +168,7 @@ export default async function DashboardPage({
           <p className="subtitle">A receber vs. a pagar (hoje)</p>
           <DonutChart segments={titlesDonut} />
         </div>
-      </div>
+      </Reveal>
 
       <div className="card">
         <div className="page-header" style={{ marginBottom: "0.5rem" }}>

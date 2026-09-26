@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Reveal } from "@/components/gsap/reveal";
 import { loginAction } from "./actions";
 
 export default function LoginPage({
@@ -8,29 +9,31 @@ export default function LoginPage({
 }) {
   return (
     <main className="narrow">
-      <div className="card">
-        <h1>Entrar</h1>
-        <p className="subtitle">AX Finance — controle financeiro para empresas de serviços.</p>
+      <Reveal>
+        <div className="card">
+          <h1>Entrar</h1>
+          <p className="subtitle">AX Finance — controle financeiro para empresas de serviços.</p>
 
-        {searchParams.cadastrado && (
-          <p className="muted">Cadastro concluído. Faça login para continuar.</p>
-        )}
-        {searchParams.erro && <p className="error">{searchParams.erro}</p>}
+          {searchParams.cadastrado && (
+            <p className="muted">Cadastro concluído. Faça login para continuar.</p>
+          )}
+          {searchParams.erro && <p className="error">{searchParams.erro}</p>}
 
-        <form action={loginAction}>
-          <label htmlFor="email">E-mail</label>
-          <input id="email" name="email" type="email" required />
+          <form action={loginAction}>
+            <label htmlFor="email">E-mail</label>
+            <input id="email" name="email" type="email" required />
 
-          <label htmlFor="password">Senha</label>
-          <input id="password" name="password" type="password" required />
+            <label htmlFor="password">Senha</label>
+            <input id="password" name="password" type="password" required />
 
-          <button type="submit">Entrar</button>
-        </form>
-      </div>
+            <button type="submit">Entrar</button>
+          </form>
+        </div>
 
-      <p className="muted">
-        Ainda não tem conta? <Link href="/registro">Criar conta</Link>
-      </p>
+        <p className="muted">
+          Ainda não tem conta? <Link href="/registro">Criar conta</Link>
+        </p>
+      </Reveal>
     </main>
   );
 }
