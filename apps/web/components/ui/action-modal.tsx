@@ -2,26 +2,28 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
-export function StatCard({
+/**
+ * Modal de estado local (não observa a query string, ao contrário de
+ * `Modal`) — para ações que não são "criar um registro" mas ainda assim não
+ * devem ficar expostas por padrão na tela (ex.: "Registrar baixa" num
+ * título). `initiallyOpen` deixa o servidor decidir se já deve abrir de
+ * cara (ex.: a submissão anterior falhou e o erro precisa aparecer aqui).
+ */
+export function ActionModal({
+  triggerLabel,
+  title,
   icon,
-  label,
-  value,
-  footerLabel,
-  footerValue,
-  gradient,
-  modalTitle,
+  initiallyOpen = false,
   children,
 }: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  footerLabel: string;
-  footerValue: string;
-  gradient: "blue" | "teal" | "orange" | "pink";
-  modalTitle: string;
+  triggerLabel: string;
+  title: string;
+  /** Mesma família de ícones do sidebar (lucide-react), ex.: <Landmark className="size-5" strokeWidth={1.5} />. */
+  icon?: ReactNode;
+  initiallyOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
 
   useEffect(() => {
     if (!open) return;
@@ -36,26 +38,20 @@ export function StatCard({
     <>
       <button
         type="button"
-        className="stat-card"
-        style={{ background: `var(--grad-${gradient})` }}
+        className="button-link"
+        style={{ marginTop: 0, border: "none" }}
         onClick={() => setOpen(true)}
       >
-        <div className="stat-icon">{icon}</div>
-        <p className="stat-label">{label}</p>
-        <p className="stat-value">{value}</p>
-        <div className="stat-footer">
-          <span>{footerLabel}</span>
-          <span>{footerValue}</span>
-        </div>
+        {triggerLabel}
       </button>
 
       {open ? (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
-          <div className="modal-dialog" style={{ maxWidth: "640px" }} onClick={(event) => event.stopPropagation()}>
+          <div className="modal-dialog" onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 {icon}
-                <h1>{modalTitle}</h1>
+                <h1>{title}</h1>
               </div>
               <button
                 type="button"

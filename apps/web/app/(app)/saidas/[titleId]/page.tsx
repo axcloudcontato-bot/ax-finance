@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Landmark } from "lucide-react";
 import {
   CompanyAccessDeniedError,
   EVENT_TYPE_LABEL,
@@ -15,6 +16,7 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
+import { ActionModal } from "@/components/ui/action-modal";
 import {
   cancelSaidaAction,
   registerSaidaSettlementAction,
@@ -26,7 +28,7 @@ export default async function SaidaDetailPage({
   searchParams,
 }: {
   params: { titleId: string };
-  searchParams: { erro?: string };
+  searchParams: { erro?: string; erroBaixa?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -62,7 +64,24 @@ export default async function SaidaDetailPage({
       <div className="card">
         <div className="page-header" style={{ marginBottom: "0.5rem" }}>
           <h1>{title.description}</h1>
-          <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+            <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
+            {showSettlementForm ? (
+              <ActionModal
+                triggerLabel="Registrar pagamento"
+                title="Registrar pagamento"
+                icon={<Landmark className="size-5" strokeWidth={1.5} />}
+                initiallyOpen={Boolean(searchParams.erroBaixa)}
+              >
+                <SettlementForm
+                  action={registerSettlementAction}
+                  accounts={accounts}
+                  error={searchParams.erroBaixa}
+                  submitLabel="Registrar pagamento"
+                />
+              </ActionModal>
+            ) : null}
+          </div>
         </div>
         <p className="subtitle">
           {title.category.parentId ? "↳ " : ""}
@@ -242,23 +261,5 @@ export default async function SaidaDetailPage({
     </>
   );
 
-  return (
-    <main className={showSettlementForm ? "wide" : undefined}>
-      {showSettlementForm ? (
-        <div className="split">
-          <div>{infoAndHistory}</div>
-          <div>
-            <SettlementForm
-              action={registerSettlementAction}
-              accounts={accounts}
-              heading="Registrar pagamento"
-              submitLabel="Registrar pagamento"
-            />
-          </div>
-        </div>
-      ) : (
-        infoAndHistory
-      )}
-    </main>
-  );
+  return <main>{infoAndHistory}</main>;
 }

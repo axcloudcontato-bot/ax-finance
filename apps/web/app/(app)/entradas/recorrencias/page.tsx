@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Repeat } from "lucide-react";
 import { listActiveCategories, listParties, listRecurrenceRules } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -40,7 +41,12 @@ export default async function EntradasRecorrenciasPage({
     <main className="wide">
       <div className="page-header">
         <h1>Recorrências de entrada</h1>
-        <Modal triggerLabel="+ Nova recorrência" title="Nova recorrência" maxWidth="600px">
+        <Modal
+          triggerLabel="+ Nova recorrência"
+          title="Nova recorrência"
+          icon={<Repeat className="size-5" strokeWidth={1.5} />}
+          maxWidth="600px"
+        >
           <RecurrenceForm
             action={createEntradaRecurrenceAction}
             categories={sortCategoriesTree(categories)}

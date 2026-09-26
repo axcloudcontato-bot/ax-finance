@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Tag } from "lucide-react";
 import { listCategories } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -26,7 +27,11 @@ export default async function CategoriasPage({
     <main className="wide">
       <div className="page-header">
         <h1>Categorias</h1>
-        <Modal triggerLabel="+ Nova categoria" title="Nova categoria">
+        <Modal
+          triggerLabel="+ Nova categoria"
+          title="Nova categoria"
+          icon={<Tag className="size-5" strokeWidth={1.5} />}
+        >
           <p className="subtitle">
             Só dois níveis: categoria e subcategoria (Seção 9). Para uma subcategoria, selecione a
             categoria pai.

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { UserPlus } from "lucide-react";
 import { listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -23,7 +24,12 @@ export default async function PessoasPage({
     <main className="wide">
       <div className="page-header">
         <h1>Clientes e fornecedores</h1>
-        <Modal triggerLabel="+ Nova pessoa" title="Nova pessoa" maxWidth="680px">
+        <Modal
+          triggerLabel="+ Nova pessoa"
+          title="Nova pessoa"
+          icon={<UserPlus className="size-5" strokeWidth={1.5} />}
+          maxWidth="680px"
+        >
           <p className="subtitle">
             Cadastro unificado — a mesma pessoa pode ser cliente e fornecedor ao mesmo tempo
             (Seção 10).

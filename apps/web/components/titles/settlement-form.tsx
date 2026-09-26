@@ -6,20 +6,17 @@ export function SettlementForm({
   action,
   accounts,
   error,
-  heading = "Registrar baixa",
   submitLabel = "Registrar baixa",
 }: {
   action: (formData: FormData) => void | Promise<void>;
   accounts: AccountOption[];
   error?: string;
-  heading?: string;
   submitLabel?: string;
 }) {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="card">
-      <h1>{heading}</h1>
+    <>
       {error ? <p className="error">{error}</p> : null}
 
       {accounts.length === 0 ? (
@@ -87,6 +84,6 @@ export function SettlementForm({
           <button type="submit">{submitLabel}</button>
         </form>
       )}
-    </div>
+    </>
   );
 }

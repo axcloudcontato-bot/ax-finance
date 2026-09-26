@@ -12,13 +12,14 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
 
-export async function createEntradaAction(formData: FormData) {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
-  const company = await requirePrimaryCompany(user.id);
-
+/**
+ * Só a chamada ao domínio (que pode lançar DomainError) fica dentro do
+ * try/catch de cada action — resolver usuário/empresa aqui dentro seria um
+ * `redirect("/login")` escondido dentro de um try, que o catch da action
+ * engoliria e reportaria como "NEXT_REDIRECT" (mesmo bug já visto no fluxo
+ * de conciliação).
+ */
+async function createEntradaCore(userId: string, companyId: string, formData: FormData) {
   const description = String(formData.get("description") ?? "");
   const categoryId = String(formData.get("categoryId") ?? "");
   const partyId = String(formData.get("partyId") ?? "") || undefined;
@@ -27,25 +28,60 @@ export async function createEntradaAction(formData: FormData) {
   const dueDate = String(formData.get("dueDate") ?? "");
   const notes = String(formData.get("notes") ?? "");
 
+  const title = await createTitle(userId, companyId, {
+    type: "RECEIVABLE",
+    description,
+    categoryId,
+    partyId,
+    originalAmountCents: parseAmountToCents(amount),
+    competenceDate,
+    dueDate,
+    notes: notes || undefined,
+  });
+
+  return title.id;
+}
+
+/** Modal "Nova entrada" na lista — botão "Salvar": cria e fecha o modal. */
+export async function createEntradaAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const company = await requirePrimaryCompany(user.id);
+
   let titleId: string;
   try {
-    const title = await createTitle(user.id, company.id, {
-      type: "RECEIVABLE",
-      description,
-      categoryId,
-      partyId,
-      originalAmountCents: parseAmountToCents(amount),
-      competenceDate,
-      dueDate,
-      notes: notes || undefined,
-    });
-    titleId = title.id;
+    titleId = await createEntradaCore(user.id, company.id, formData);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível criar o lançamento.";
-    redirect(`/entradas/novo?erro=${encodeURIComponent(message)}`);
+    redirect(`/entradas?erro=${encodeURIComponent(message)}`);
   }
 
-  redirect(`/entradas/${titleId}`);
+  redirect(`/entradas?criado=${titleId}`);
+}
+
+/** Botão "Salvar e nova entrada": cria e mantém o modal aberto, formulário limpo. */
+export async function createEntradaAndContinueAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const company = await requirePrimaryCompany(user.id);
+
+  let titleId: string;
+  try {
+    titleId = await createEntradaCore(user.id, company.id, formData);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível criar o lançamento.";
+    redirect(`/entradas?erro=${encodeURIComponent(message)}`);
+  }
+
+  // O valor de "continuar" precisa mudar a cada envio (não um "1" fixo) —
+  // o form usa <input defaultValue>, que só é aplicado na montagem; um
+  // React key idêntico entre uma chamada e outra não força o remount que
+  // limpa os campos (ver TitleForm key={searchParams.continuar} na página).
+  redirect(`/entradas?continuar=${titleId}`);
 }
 
 export async function createEntradaInstallmentPlanAction(formData: FormData) {
@@ -111,7 +147,7 @@ export async function registerEntradaSettlementAction(titleId: string, formData:
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível registrar a baixa.";
-    redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
+    redirect(`/entradas/${titleId}?erroBaixa=${encodeURIComponent(message)}`);
   }
 
   redirect(`/entradas/${titleId}`);

@@ -5,12 +5,17 @@ type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
 
 export function TitleForm({
   action,
+  actionAndContinue,
   categories,
   parties,
   partyLabel,
   error,
 }: {
   action: (formData: FormData) => void | Promise<void>;
+  /** Segundo botão ("Salvar e nova entrada/saída") — mesma validação, mas o
+   * redirect de sucesso mantém o modal aberto com o formulário limpo em vez
+   * de fechar. Omitido quando o form não precisa dessa opção. */
+  actionAndContinue?: (formData: FormData) => void | Promise<void>;
   categories: CategoryOption[];
   parties?: PartyOption[];
   partyLabel?: string;
@@ -19,7 +24,7 @@ export function TitleForm({
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="card">
+    <>
       {error ? <p className="error">{error}</p> : null}
 
       {categories.length === 0 ? (
@@ -91,9 +96,16 @@ export function TitleForm({
             </div>
           </div>
 
-          <button type="submit">Salvar</button>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <button type="submit">Salvar</button>
+            {actionAndContinue ? (
+              <button type="submit" formAction={actionAndContinue} className="secondary">
+                Salvar e nova
+              </button>
+            ) : null}
+          </div>
         </form>
       )}
-    </div>
+    </>
   );
 }

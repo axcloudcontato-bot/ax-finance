@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { generateDueOccurrences, listTitles } from "@ax-finance/domain";
+import { ArrowDownCircle } from "lucide-react";
+import { generateDueOccurrences, listActiveCategories, listParties, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { sortCategoriesTree } from "@/lib/categories";
 import { TitleListTable } from "@/components/titles/title-list-table";
+import { TitleForm } from "@/components/titles/title-form";
+import { Modal } from "@/components/ui/modal";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
 import { currentYearMonth, monthRange } from "@/lib/month";
+import { createEntradaAction, createEntradaAndContinueAction } from "./actions";
 
 type Filter = "vencidas" | "hoje" | "proximas" | "quitadas" | "todas";
 
@@ -20,7 +25,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 export default async function EntradasPage({
   searchParams,
 }: {
-  searchParams: { filtro?: string; mes?: string };
+  searchParams: { filtro?: string; mes?: string; erro?: string; continuar?: string; criado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -29,7 +34,11 @@ export default async function EntradasPage({
   const company = await requirePrimaryCompany(user.id);
 
   await generateDueOccurrences(user.id, company.id);
-  const allTitles = await listTitles(user.id, company.id, { type: "RECEIVABLE" });
+  const [allTitles, categories, clients] = await Promise.all([
+    listTitles(user.id, company.id, { type: "RECEIVABLE" }),
+    listActiveCategories(user.id, company.id),
+    listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" }),
+  ]);
 
   const filter = (searchParams.filtro as Filter) ?? "todas";
   const month = searchParams.mes ?? currentYearMonth();
@@ -68,9 +77,22 @@ export default async function EntradasPage({
           <Link href="/entradas/parcelado" className="button-link">
             Parcelar
           </Link>
-          <Link href="/entradas/novo" className="button-link">
-            Novo lançamento
-          </Link>
+          <Modal
+            key={searchParams.continuar ?? "novo"}
+            triggerLabel="+ Novo lançamento"
+            title="Nova entrada"
+            icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />}
+            maxWidth="720px"
+          >
+            <TitleForm
+              action={createEntradaAction}
+              actionAndContinue={createEntradaAndContinueAction}
+              categories={sortCategoriesTree(categories)}
+              parties={clients}
+              partyLabel="Cliente"
+              error={searchParams.erro}
+            />
+          </Modal>
         </div>
       </div>
 
