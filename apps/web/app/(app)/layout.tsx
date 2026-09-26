@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { listCompaniesForUser } from "@ax-finance/domain";
+import { listCompaniesForUser, listDueSoonTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
+import { requirePrimaryCompany } from "@/lib/company";
 import { AppShell } from "@/components/app-shell";
 import { logoutAction } from "./actions";
 
@@ -20,8 +21,21 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/onboarding");
   }
 
+  const company = await requirePrimaryCompany(user.id);
+  const dueSoonTitles = await listDueSoonTitles(user.id, company.id);
+
   return (
-    <AppShell userName={user.name} userEmail={user.email} logoutAction={logoutAction}>
+    <AppShell
+      userName={user.name}
+      userEmail={user.email}
+      logoutAction={logoutAction}
+      dueSoonTitles={dueSoonTitles.map((title) => ({
+        id: title.id,
+        type: title.type,
+        description: title.description,
+        dueDate: title.dueDate,
+      }))}
+    >
       {children}
     </AppShell>
   );

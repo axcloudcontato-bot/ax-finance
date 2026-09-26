@@ -320,6 +320,86 @@ form.inline {
   font-size: 1.5rem;
 }
 
+/* Dropdowns de busca/notificações no topbar — pequenos, ancorados abaixo do
+   ícone (ao contrário do .modal-overlay, que centraliza na tela inteira). */
+.topbar-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.topbar-badge {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #f87171;
+  border: 1.5px solid var(--grad-blue-solid, #4680ff);
+}
+
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: -0.5rem;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(20, 30, 60, 0.18);
+  padding: 0.75rem;
+  z-index: 1000;
+}
+
+.topbar-dropdown h2 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin: 0.5rem 0.25rem;
+}
+
+.topbar-dropdown input {
+  width: 100%;
+  margin-top: 0;
+}
+
+.topbar-dropdown-item {
+  display: block;
+  padding: 0.6rem 0.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.topbar-dropdown-item:hover {
+  background: rgba(70, 128, 255, 0.08);
+}
+
+.topbar-dropdown-item .title {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.topbar-dropdown-item .subtitle {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+}
+
 /* Cards de estatística em gradiente do dashboard (Seção 5). É um <button>
    clicável (abre modal com o detalhe das movimentações) — reset dos estilos
    padrão de botão do navegador por cima do visual de card já existente. */

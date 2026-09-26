@@ -10,3 +10,4 @@ export * from "./create-installment-plan";
 export * from "./list-installments";
 export * from "./delete-title";
 export * from "./delete-installment-plan";
+export * from "./list-due-soon-titles";

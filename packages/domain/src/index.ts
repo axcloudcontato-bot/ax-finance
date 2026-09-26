@@ -11,3 +11,4 @@ export * from "./reports/index";
 export * from "./reconciliation/index";
 export * from "./audit/index";
 export * from "./closures/index";
+export * from "./search/index";
