@@ -28,12 +28,14 @@ export function Reveal({ children, className }: { children: ReactNode; className
     }
 
     const ctx = gsap.context(() => {
+      // Sem stagger: todos os cards entram juntos, alinhados — o efeito de
+      // "escadinha" (um atrás do outro) não combina com um grid de cards
+      // que devem parecer parte do mesmo bloco.
       gsap.from(targets, {
         y: 16,
         opacity: 0,
         duration: 0.5,
         ease: "power2.out",
-        stagger: 0.08,
       });
     }, containerRef);
 
