@@ -7,6 +7,15 @@ const nextConfig = {
   // A raiz do monorepo é detectada automaticamente (via pnpm-lock.yaml na
   // raiz) — não precisa de outputFileTracingRoot explícito.
   output: "standalone",
+  experimental: {
+    // O motor de consultas do Prisma (arquivo binário .so.node) é carregado
+    // via caminho calculado em runtime, não via `require()` estático — o
+    // rastreador de arquivos do Next não o detecta sozinho e a imagem final
+    // fica sem ele ("could not locate the Query Engine"). Força a inclusão.
+    outputFileTracingIncludes: {
+      "/**/*": ["../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*"],
+    },
+  },
 };
 
 export default nextConfig;
