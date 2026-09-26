@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { listTitles } from "@ax-finance/domain";
+import { generateDueOccurrences, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { TitleListTable } from "@/components/titles/title-list-table";
@@ -27,6 +27,7 @@ export default async function EntradasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
+  await generateDueOccurrences(user.id, company.id);
   const allTitles = await listTitles(user.id, company.id, { type: "RECEIVABLE" });
 
   const filter = (searchParams.filtro as Filter) ?? "todas";
@@ -49,9 +50,17 @@ export default async function EntradasPage({
     <main className="wide">
       <div className="page-header">
         <h1>Entradas</h1>
-        <Link href="/entradas/novo" className="button-link">
-          Novo lançamento
-        </Link>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <Link href="/entradas/recorrencias" className="button-link">
+            Recorrências
+          </Link>
+          <Link href="/entradas/parcelado" className="button-link">
+            Parcelar
+          </Link>
+          <Link href="/entradas/novo" className="button-link">
+            Novo lançamento
+          </Link>
+        </div>
       </div>
 
       <div className="filters">

@@ -1,5 +1,12 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CompanyAccessDeniedError, TitleNotFoundError, getTitle, listFinancialAccounts } from "@ax-finance/domain";
+import {
+  CompanyAccessDeniedError,
+  TitleNotFoundError,
+  getTitle,
+  listFinancialAccounts,
+  listInstallments,
+} from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
@@ -36,6 +43,9 @@ export default async function EntradaDetailPage({
   }
 
   const accounts = await listFinancialAccounts(user.id, company.id);
+  const installments = title.installmentGroupId
+    ? await listInstallments(user.id, company.id, title.installmentGroupId)
+    : [];
   const hasActiveSettlement = title.settlements.some((settlement) => !settlement.reversedAt);
   const registerSettlementAction = registerEntradaSettlementAction.bind(null, title.id);
   const cancelAction = cancelEntradaAction.bind(null, title.id);
@@ -51,12 +61,30 @@ export default async function EntradaDetailPage({
         <p className="subtitle">
           {title.category.parentId ? "↳ " : ""}
           {title.category.name}
+          {title.installmentGroupId ? ` · Parcela ${title.installmentNumber} de ${title.installmentCount}` : ""}
         </p>
+
+        {title.recurrenceRule ? (
+          <p className="subtitle">
+            Gerado pela recorrência:{" "}
+            <Link href={`/entradas/recorrencias/${title.recurrenceRule.id}`}>
+              {title.recurrenceRule.description}
+            </Link>
+          </p>
+        ) : null}
 
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 
         <table>
           <tbody>
+            {title.party ? (
+              <tr>
+                <td>Cliente</td>
+                <td>
+                  <Link href={`/cadastros/pessoas/${title.party.id}`}>{title.party.name}</Link>
+                </td>
+              </tr>
+            ) : null}
             <tr>
               <td>Valor original</td>
               <td>{formatCents(title.originalAmountCents, title.currency)}</td>
@@ -98,6 +126,38 @@ export default async function EntradaDetailPage({
           </form>
         ) : null}
       </div>
+
+      {installments.length > 0 ? (
+        <div className="card">
+          <h1>Parcelas</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Parcela</th>
+                <th>Vencimento</th>
+                <th>Saldo aberto</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {installments.map((installment) => (
+                <tr key={installment.id} style={installment.id === title.id ? { fontWeight: 600 } : undefined}>
+                  <td>
+                    <Link href={`/entradas/${installment.id}`}>
+                      {installment.installmentNumber} de {installment.installmentCount}
+                    </Link>
+                  </td>
+                  <td>{formatDateOnly(installment.dueDate)}</td>
+                  <td>{formatCents(installment.remainingCents, installment.currency)}</td>
+                  <td>
+                    <TitleStatusBadge status={installment.status} dueDate={installment.dueDate} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
 
       <div className="card">
         <h1>Baixas</h1>

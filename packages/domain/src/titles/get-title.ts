@@ -10,6 +10,8 @@ export async function getTitle(userId: string, companyId: string, titleId: strin
       where: { id: titleId, companyId },
       include: {
         category: true,
+        party: true,
+        recurrenceRule: { select: { id: true, description: true } },
         settlements: {
           orderBy: { createdAt: "asc" },
           include: { financialAccount: true },

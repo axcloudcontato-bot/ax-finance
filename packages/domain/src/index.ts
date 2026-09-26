@@ -3,6 +3,8 @@ export * from "./identity/index";
 export * from "./companies/index";
 export * from "./financial-accounts/index";
 export * from "./categories/index";
+export * from "./parties/index";
 export * from "./titles/index";
+export * from "./recurrences/index";
 export * from "./transfers/index";
 export * from "./reports/index";

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { listActiveCategories } from "@ax-finance/domain";
+import { listActiveCategories, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { sortCategoriesTree } from "@/lib/categories";
@@ -18,6 +18,7 @@ export default async function NovaEntradaPage({
   const company = await requirePrimaryCompany(user.id);
 
   const categories = await listActiveCategories(user.id, company.id);
+  const clients = await listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" });
 
   return (
     <main className="narrow">
@@ -25,6 +26,8 @@ export default async function NovaEntradaPage({
       <TitleForm
         action={createEntradaAction}
         categories={sortCategoriesTree(categories)}
+        parties={clients}
+        partyLabel="Cliente"
         error={searchParams.erro}
       />
     </main>

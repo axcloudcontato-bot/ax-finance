@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   CompanyAccessDeniedError,
   assertActiveMembership,
+  generateDueOccurrences,
   listCompaniesForUser,
   listFinancialAccountsWithBalance,
   listTitles,
@@ -47,6 +48,7 @@ export default async function DashboardPage({
   let accounts: Awaited<ReturnType<typeof listFinancialAccountsWithBalance>>;
   try {
     await assertActiveMembership(user.id, activeCompanyId);
+    await generateDueOccurrences(user.id, activeCompanyId);
     accounts = await listFinancialAccountsWithBalance(user.id, activeCompanyId);
   } catch (error) {
     if (error instanceof CompanyAccessDeniedError) {

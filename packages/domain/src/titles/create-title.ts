@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
-import { CategoryNotFoundError } from "../errors";
+import { CategoryNotFoundError, PartyNotFoundError } from "../errors";
 
 export const createTitleInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]),
   description: z.string().trim().min(1).max(500),
   categoryId: z.string().uuid(),
+  partyId: z.string().uuid().optional(),
   // Centavos inteiros — nunca float (Seção 18, regra 1).
   originalAmountCents: z.number().int().positive(),
   currency: z.string().length(3).default("BRL"),
@@ -34,12 +35,22 @@ export async function createTitle(userId: string, companyId: string, input: unkn
       throw new CategoryNotFoundError();
     }
 
+    if (data.partyId) {
+      const party = await tx.party.findFirst({
+        where: { id: data.partyId, companyId, status: "ACTIVE" },
+      });
+      if (!party) {
+        throw new PartyNotFoundError();
+      }
+    }
+
     return tx.title.create({
       data: {
         companyId,
         type: data.type,
         description: data.description,
         categoryId: data.categoryId,
+        partyId: data.partyId,
         originalAmountCents: BigInt(data.originalAmountCents),
         currency: data.currency,
         competenceDate: data.competenceDate,

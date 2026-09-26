@@ -3,7 +3,7 @@ import type { listActiveCategories, listParties } from "@ax-finance/domain";
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
 
-export function TitleForm({
+export function RecurrenceForm({
   action,
   categories,
   parties,
@@ -20,6 +20,13 @@ export function TitleForm({
 
   return (
     <div className="card">
+      <h1>Nova recorrência</h1>
+      <p className="subtitle">
+        Gera um título por mês, no dia de vencimento escolhido, até 90 dias à frente — diferente de
+        um parcelamento (que cria tudo de uma vez). Pausar interrompe a geração sem apagar os
+        títulos já criados.
+      </p>
+
       {error ? <p className="error">{error}</p> : null}
 
       {categories.length === 0 ? (
@@ -39,7 +46,7 @@ export function TitleForm({
             </option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.parentId ? `  ↳ ${category.name}` : category.name}
+                {category.parentId ? `  ↳ ${category.name}` : category.name}
               </option>
             ))}
           </select>
@@ -58,26 +65,22 @@ export function TitleForm({
             </>
           ) : null}
 
-          <label htmlFor="amount">Valor (R$)</label>
-          <input
-            id="amount"
-            name="amount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            required
-          />
+          <label htmlFor="amount">Valor mensal (R$)</label>
+          <input id="amount" name="amount" type="text" inputMode="decimal" placeholder="0,00" required />
 
-          <label htmlFor="competenceDate">Competência</label>
-          <input id="competenceDate" name="competenceDate" type="date" defaultValue={today} required />
+          <label htmlFor="dayOfMonth">Dia de vencimento</label>
+          <input id="dayOfMonth" name="dayOfMonth" type="number" min={1} max={31} step={1} required />
 
-          <label htmlFor="dueDate">Vencimento</label>
-          <input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
+          <label htmlFor="startDate">Início</label>
+          <input id="startDate" name="startDate" type="date" defaultValue={today} required />
+
+          <label htmlFor="endDate">Término (opcional)</label>
+          <input id="endDate" name="endDate" type="date" />
 
           <label htmlFor="notes">Observações</label>
           <input id="notes" name="notes" type="text" maxLength={2000} />
 
-          <button type="submit">Salvar</button>
+          <button type="submit">Criar recorrência</button>
         </form>
       )}
     </div>

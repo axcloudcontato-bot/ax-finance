@@ -5,3 +5,6 @@ export * from "./get-title";
 export * from "./register-settlement";
 export * from "./cancel-title";
 export * from "./reverse-settlement";
+export * from "./installment-dates";
+export * from "./create-installment-plan";
+export * from "./list-installments";

@@ -3,7 +3,7 @@ import type { listActiveCategories, listParties } from "@ax-finance/domain";
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
 
-export function TitleForm({
+export function InstallmentForm({
   action,
   categories,
   parties,
@@ -20,6 +20,11 @@ export function TitleForm({
 
   return (
     <div className="card">
+      <p className="subtitle">
+        Cria vários títulos de uma vez, com vencimentos mensais a partir da primeira parcela —
+        diferente de uma recorrência (que gera títulos ao longo do tempo e ainda não existe aqui).
+      </p>
+
       {error ? <p className="error">{error}</p> : null}
 
       {categories.length === 0 ? (
@@ -39,7 +44,7 @@ export function TitleForm({
             </option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
-                {category.parentId ? `  ↳ ${category.name}` : category.name}
+                {category.parentId ? `  ↳ ${category.name}` : category.name}
               </option>
             ))}
           </select>
@@ -58,26 +63,45 @@ export function TitleForm({
             </>
           ) : null}
 
-          <label htmlFor="amount">Valor (R$)</label>
+          <label htmlFor="totalAmount">Valor total (R$)</label>
           <input
-            id="amount"
-            name="amount"
+            id="totalAmount"
+            name="totalAmount"
             type="text"
             inputMode="decimal"
             placeholder="0,00"
             required
           />
 
-          <label htmlFor="competenceDate">Competência</label>
-          <input id="competenceDate" name="competenceDate" type="date" defaultValue={today} required />
+          <label htmlFor="installmentCount">Quantidade de parcelas</label>
+          <input
+            id="installmentCount"
+            name="installmentCount"
+            type="number"
+            min={2}
+            step={1}
+            defaultValue={2}
+            required
+          />
 
-          <label htmlFor="dueDate">Vencimento</label>
-          <input id="dueDate" name="dueDate" type="date" defaultValue={today} required />
+          <label htmlFor="firstDueDate">Vencimento da 1ª parcela</label>
+          <input id="firstDueDate" name="firstDueDate" type="date" defaultValue={today} required />
+
+          <label htmlFor="intervalMonths">Intervalo entre parcelas (meses)</label>
+          <input
+            id="intervalMonths"
+            name="intervalMonths"
+            type="number"
+            min={1}
+            step={1}
+            defaultValue={1}
+            required
+          />
 
           <label htmlFor="notes">Observações</label>
           <input id="notes" name="notes" type="text" maxLength={2000} />
 
-          <button type="submit">Salvar</button>
+          <button type="submit">Parcelar</button>
         </form>
       )}
     </div>

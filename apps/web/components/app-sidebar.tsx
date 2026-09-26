@@ -17,11 +17,10 @@ interface NavGroup {
   items: NavItemData[];
 }
 
-// Menu principal da Seção 4 do DIRECAO.md, agrupado. Dashboard, Entradas,
-// Saídas e Cadastros→Categorias já navegam de verdade — o resto mostra
-// "Em breve" em vez de virar link morto (Seção 24: separar disponível,
-// piloto e planejado). Os filhos de Relatórios só antecipam a estrutura da
-// Seção 13; nenhum deles é uma rota real ainda.
+// Menu principal da Seção 4 do DIRECAO.md, agrupado. Só Conciliação, DRE
+// gerencial e Configurações ainda mostram "Em breve" em vez de virar link
+// morto (Seção 24: separar disponível, piloto e planejado) — o resto já
+// navega para rotas reais.
 const NAV_GROUPS: NavGroup[] = [
   {
     items: [{ id: "dashboard", title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }],
@@ -67,7 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
         icon: BookUser,
         children: [
           { id: "cad-categorias", title: "Categorias", icon: BookUser, href: "/cadastros/categorias" },
-          { id: "cad-pessoas", title: "Clientes e fornecedores", icon: BookUser, badge: "Em breve" },
+          { id: "cad-pessoas", title: "Clientes e fornecedores", icon: BookUser, href: "/cadastros/pessoas" },
         ],
       },
     ],

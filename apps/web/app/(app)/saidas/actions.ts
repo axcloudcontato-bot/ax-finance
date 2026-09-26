@@ -1,7 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { cancelTitle, createTitle, registerSettlement, reverseSettlement } from "@ax-finance/domain";
+import {
+  cancelTitle,
+  createInstallmentPlan,
+  createTitle,
+  registerSettlement,
+  reverseSettlement,
+} from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -15,6 +21,7 @@ export async function createSaidaAction(formData: FormData) {
 
   const description = String(formData.get("description") ?? "");
   const categoryId = String(formData.get("categoryId") ?? "");
+  const partyId = String(formData.get("partyId") ?? "") || undefined;
   const amount = String(formData.get("amount") ?? "0");
   const competenceDate = String(formData.get("competenceDate") ?? "");
   const dueDate = String(formData.get("dueDate") ?? "");
@@ -26,6 +33,7 @@ export async function createSaidaAction(formData: FormData) {
       type: "PAYABLE",
       description,
       categoryId,
+      partyId,
       originalAmountCents: parseAmountToCents(amount),
       competenceDate,
       dueDate,
@@ -38,6 +46,42 @@ export async function createSaidaAction(formData: FormData) {
   }
 
   redirect(`/saidas/${titleId}`);
+}
+
+export async function createSaidaInstallmentPlanAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const company = await requirePrimaryCompany(user.id);
+
+  const description = String(formData.get("description") ?? "");
+  const categoryId = String(formData.get("categoryId") ?? "");
+  const partyId = String(formData.get("partyId") ?? "") || undefined;
+  const totalAmount = String(formData.get("totalAmount") ?? "0");
+  const installmentCount = Number(formData.get("installmentCount") ?? "0");
+  const firstDueDate = String(formData.get("firstDueDate") ?? "");
+  const intervalMonths = Number(formData.get("intervalMonths") ?? "1");
+  const notes = String(formData.get("notes") ?? "");
+
+  try {
+    await createInstallmentPlan(user.id, company.id, {
+      type: "PAYABLE",
+      description,
+      categoryId,
+      partyId,
+      totalAmountCents: parseAmountToCents(totalAmount),
+      installmentCount,
+      firstDueDate,
+      intervalMonths,
+      notes: notes || undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível criar o parcelamento.";
+    redirect(`/saidas/parcelado?erro=${encodeURIComponent(message)}`);
+  }
+
+  redirect("/saidas");
 }
 
 export async function registerSaidaSettlementAction(titleId: string, formData: FormData) {

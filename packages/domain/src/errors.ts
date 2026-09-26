@@ -112,3 +112,49 @@ export class TransferAlreadyReversedError extends DomainError {
     super("Esta transferência já foi estornada.", "TRANSFER_ALREADY_REVERSED");
   }
 }
+
+export class PartyNotFoundError extends DomainError {
+  constructor() {
+    super("Cliente/fornecedor não encontrado.", "PARTY_NOT_FOUND");
+  }
+}
+
+/** Seção 10: papéis cliente/fornecedor podem coexistir, mas pelo menos um é obrigatório. */
+export class PartyRoleRequiredError extends DomainError {
+  constructor() {
+    super("Selecione ao menos um papel: cliente ou fornecedor.", "PARTY_ROLE_REQUIRED");
+  }
+}
+
+/** Seção 10: impede duplicação evidente de documento normalizado na empresa; homônimos sem documento são permitidos. */
+export class PartyDocumentAlreadyExistsError extends DomainError {
+  constructor() {
+    super("Já existe uma pessoa com este documento nesta empresa.", "PARTY_DOCUMENT_ALREADY_EXISTS");
+  }
+}
+
+/** Seção 11: um parcelamento precisa de ao menos 2 parcelas — 1 seria um título avulso. */
+export class InstallmentCountInvalidError extends DomainError {
+  constructor() {
+    super("O parcelamento precisa de ao menos 2 parcelas.", "INSTALLMENT_COUNT_INVALID");
+  }
+}
+
+/** Seção 11: cada parcela precisa valer ao menos 1 centavo. */
+export class InstallmentAmountTooSmallError extends DomainError {
+  constructor() {
+    super("O valor total é pequeno demais para o número de parcelas.", "INSTALLMENT_AMOUNT_TOO_SMALL");
+  }
+}
+
+export class RecurrenceRuleNotFoundError extends DomainError {
+  constructor() {
+    super("Recorrência não encontrada.", "RECURRENCE_RULE_NOT_FOUND");
+  }
+}
+
+export class RecurrenceEndDateBeforeStartError extends DomainError {
+  constructor() {
+    super("A data de término não pode ser anterior à data de início.", "RECURRENCE_END_DATE_BEFORE_START");
+  }
+}

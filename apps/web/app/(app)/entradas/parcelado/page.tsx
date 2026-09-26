@@ -3,10 +3,10 @@ import { listActiveCategories, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { sortCategoriesTree } from "@/lib/categories";
-import { TitleForm } from "@/components/titles/title-form";
-import { createSaidaAction } from "../actions";
+import { InstallmentForm } from "@/components/titles/installment-form";
+import { createEntradaInstallmentPlanAction } from "../actions";
 
-export default async function NovaSaidaPage({
+export default async function EntradaParceladaPage({
   searchParams,
 }: {
   searchParams: { erro?: string };
@@ -18,16 +18,16 @@ export default async function NovaSaidaPage({
   const company = await requirePrimaryCompany(user.id);
 
   const categories = await listActiveCategories(user.id, company.id);
-  const suppliers = await listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" });
+  const clients = await listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" });
 
   return (
     <main className="narrow">
-      <h1 style={{ marginBottom: "1rem" }}>Nova saída</h1>
-      <TitleForm
-        action={createSaidaAction}
+      <h1 style={{ marginBottom: "1rem" }}>Parcelar entrada</h1>
+      <InstallmentForm
+        action={createEntradaInstallmentPlanAction}
         categories={sortCategoriesTree(categories)}
-        parties={suppliers}
-        partyLabel="Fornecedor"
+        parties={clients}
+        partyLabel="Cliente"
         error={searchParams.erro}
       />
     </main>

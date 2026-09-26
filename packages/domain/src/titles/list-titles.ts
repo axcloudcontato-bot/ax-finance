@@ -23,6 +23,7 @@ export async function listTitles(
       where: { companyId, ...(filter.type ? { type: filter.type } : {}) },
       include: {
         category: true,
+        party: true,
         settlements: { where: { reversedAt: null } },
       },
       orderBy: { dueDate: "asc" },

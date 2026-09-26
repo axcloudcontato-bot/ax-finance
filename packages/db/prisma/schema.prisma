@@ -100,9 +100,11 @@ model Company {
   memberships       Membership[]
   financialAccounts FinancialAccount[]
   categories        Category[]
+  parties           Party[]
   titles            Title[]
   settlements       Settlement[]
   transfers         Transfer[]
+  recurrenceRules   RecurrenceRule[]
 
   @@index([tenantId])
   @@map("companies")
@@ -177,11 +179,43 @@ model Category {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  titles Title[]
+  titles          Title[]
+  recurrenceRules RecurrenceRule[]
 
   @@index([companyId])
   @@index([parentId])
   @@map("categories")
+}
+
+enum PartyStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Party {
+  id                 String      @id @default(uuid())
+  companyId          String      @map("company_id")
+  company            Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  name               String
+  tradeName          String?     @map("trade_name")
+  document           String?
+  documentNormalized String?     @map("document_normalized")
+  email              String?
+  phone              String?
+  address            String?
+  responsibleName    String?     @map("responsible_name")
+  notes              String?
+  isClient           Boolean     @default(false) @map("is_client")
+  isSupplier         Boolean     @default(false) @map("is_supplier")
+  status             PartyStatus @default(ACTIVE)
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  titles          Title[]
+  recurrenceRules RecurrenceRule[]
+
+  @@index([companyId])
+  @@map("parties")
 }
 
 enum TitleType {
@@ -196,6 +230,37 @@ enum TitleStatus {
   CANCELLED
 }
 
+enum RecurrenceStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+model RecurrenceRule {
+  id           String           @id @default(uuid())
+  companyId    String           @map("company_id")
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  type         TitleType
+  description  String
+  categoryId   String           @map("category_id")
+  category     Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  partyId      String?          @map("party_id")
+  party        Party?           @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  amountCents  BigInt           @map("amount_cents")
+  dayOfMonth   Int              @map("day_of_month")
+  startDate    DateTime         @map("start_date") @db.Date
+  endDate      DateTime?        @map("end_date") @db.Date
+  status       RecurrenceStatus @default(ACTIVE)
+  notes        String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  titles Title[]
+
+  @@index([companyId])
+  @@map("recurrence_rules")
+}
+
 model Title {
   id                  String      @id @default(uuid())
   companyId           String      @map("company_id")
@@ -204,6 +269,8 @@ model Title {
   description         String
   categoryId          String      @map("category_id")
   category            Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  partyId             String?     @map("party_id")
+  party               Party?      @relation(fields: [partyId], references: [id], onDelete: Restrict)
   originalAmountCents BigInt      @map("original_amount_cents")
   currency            String      @default("BRL")
   competenceDate      DateTime    @map("competence_date") @db.Date
@@ -211,14 +278,24 @@ model Title {
   status              TitleStatus @default(OPEN)
   cancelReason        String?     @map("cancel_reason")
   notes               String?
+  installmentGroupId  String?     @map("installment_group_id")
+  installmentNumber   Int?        @map("installment_number")
+  installmentCount    Int?        @map("installment_count")
+  recurrenceRuleId         String?        @map("recurrence_rule_id")
+  recurrenceRule           RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: Restrict)
+  recurrenceOccurrenceDate DateTime?      @map("recurrence_occurrence_date") @db.Date
   createdAt           DateTime    @default(now()) @map("created_at")
   updatedAt           DateTime    @updatedAt @map("updated_at")
 
   settlements Settlement[]
 
+  @@unique([recurrenceRuleId, recurrenceOccurrenceDate])
   @@index([companyId])
   @@index([companyId, dueDate])
   @@index([categoryId])
+  @@index([partyId])
+  @@index([companyId, installmentGroupId])
+  @@index([companyId, recurrenceRuleId])
   @@map("titles")
 }
 
