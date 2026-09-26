@@ -210,3 +210,22 @@ export class InstallmentGroupNotFoundError extends DomainError {
     super("Parcelamento não encontrado.", "INSTALLMENT_GROUP_NOT_FOUND");
   }
 }
+
+/** Ajuste de saldo: o saldo alvo informado já é exatamente o saldo atual — nada a fazer. */
+export class BalanceAdjustmentNotNeededError extends DomainError {
+  constructor() {
+    super("O saldo informado já é o saldo atual desta conta.", "BALANCE_ADJUSTMENT_NOT_NEEDED");
+  }
+}
+
+export class BalanceAdjustmentNotFoundError extends DomainError {
+  constructor() {
+    super("Ajuste de saldo não encontrado.", "BALANCE_ADJUSTMENT_NOT_FOUND");
+  }
+}
+
+export class BalanceAdjustmentAlreadyReversedError extends DomainError {
+  constructor() {
+    super("Este ajuste já foi estornado.", "BALANCE_ADJUSTMENT_ALREADY_REVERSED");
+  }
+}

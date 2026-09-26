@@ -10,6 +10,7 @@ const RESOURCE_LABEL: Record<string, string> = {
   Transfer: "Transferência",
   Period: "Período",
   InstallmentGroup: "Parcelamento",
+  FinancialAccount: "Conta",
 };
 
 function resourceHref(

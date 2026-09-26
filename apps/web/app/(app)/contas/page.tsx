@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { listFinancialAccountsWithBalance } from "@ax-finance/domain";
+import { Scale } from "lucide-react";
+import { listBalanceAdjustments, listFinancialAccountsWithBalance } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
-import { createAccountAction } from "./actions";
+import { formatDateOnly } from "@/lib/dates";
+import { ActionModal } from "@/components/ui/action-modal";
+import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction } from "./actions";
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   BANK: "Conta bancária",
@@ -15,7 +18,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export default async function ContasPage({
   searchParams,
 }: {
-  searchParams: { erro?: string };
+  searchParams: { erro?: string; erroAjuste?: string; contaAjuste?: string; ajustado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -23,7 +26,10 @@ export default async function ContasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const accounts = await listFinancialAccountsWithBalance(user.id, company.id);
+  const [accounts, adjustments] = await Promise.all([
+    listFinancialAccountsWithBalance(user.id, company.id),
+    listBalanceAdjustments(user.id, company.id),
+  ]);
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -47,6 +53,7 @@ export default async function ContasPage({
                   <th>Tipo</th>
                   <th>Saldo de abertura</th>
                   <th>Saldo atual</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -57,6 +64,48 @@ export default async function ContasPage({
                     <td>{formatCents(account.openingBalanceCents, account.currency)}</td>
                     <td style={{ fontWeight: 600 }}>
                       {formatCents(account.currentBalanceCents, account.currency)}
+                    </td>
+                    <td>
+                      <ActionModal
+                        key={searchParams.ajustado ?? "novo"}
+                        triggerLabel="Ajustar saldo"
+                        title={`Ajustar saldo — ${account.name}`}
+                        icon={<Scale className="size-5" strokeWidth={1.5} />}
+                        initiallyOpen={Boolean(searchParams.erroAjuste) && searchParams.contaAjuste === account.id}
+                      >
+                        <p className="subtitle">
+                          Saldo atual: {formatCents(account.currentBalanceCents, account.currency)}. Informe o
+                          saldo real (ex.: do extrato) — o sistema calcula o ajuste sozinho.
+                        </p>
+                        {searchParams.contaAjuste === account.id && searchParams.erroAjuste ? (
+                          <p className="error">{searchParams.erroAjuste}</p>
+                        ) : null}
+                        <form action={createBalanceAdjustmentAction.bind(null, account.id)}>
+                          <label htmlFor={`targetBalance-${account.id}`}>Saldo real (R$)</label>
+                          <input
+                            id={`targetBalance-${account.id}`}
+                            name="targetBalance"
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            required
+                          />
+
+                          <label htmlFor={`effectiveDate-${account.id}`}>Data</label>
+                          <input
+                            id={`effectiveDate-${account.id}`}
+                            name="effectiveDate"
+                            type="date"
+                            defaultValue={today}
+                            required
+                          />
+
+                          <label htmlFor={`reason-${account.id}`}>Motivo</label>
+                          <input id={`reason-${account.id}`} name="reason" type="text" maxLength={500} required />
+
+                          <button type="submit">Ajustar saldo</button>
+                        </form>
+                      </ActionModal>
                     </td>
                   </tr>
                 ))}
@@ -96,6 +145,52 @@ export default async function ContasPage({
             <button type="submit">Criar conta</button>
           </form>
         </div>
+      </div>
+
+      <div className="card">
+        <h1>Histórico de ajustes de saldo</h1>
+        {adjustments.length === 0 ? (
+          <p className="muted">Nenhum ajuste registrado ainda.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Conta</th>
+                <th>Ajuste</th>
+                <th>Motivo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {adjustments.map((adjustment) => (
+                <tr key={adjustment.id} style={adjustment.reversedAt ? { opacity: 0.5 } : undefined}>
+                  <td>{formatDateOnly(adjustment.effectiveDate)}</td>
+                  <td>{adjustment.financialAccount.name}</td>
+                  <td>
+                    {formatCents(adjustment.amountCents, adjustment.financialAccount.currency)}
+                  </td>
+                  <td>{adjustment.reversedAt ? `${adjustment.reason} (estornado: ${adjustment.reversalReason})` : adjustment.reason}</td>
+                  <td>
+                    {adjustment.reversedAt ? (
+                      "Estornado"
+                    ) : (
+                      <form
+                        action={reverseBalanceAdjustmentAction.bind(null, adjustment.id)}
+                        className="inline"
+                      >
+                        <input type="hidden" name="reason" value="Estornado pelo usuário" />
+                        <button type="submit" className="secondary">
+                          Estornar
+                        </button>
+                      </form>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </main>
   );

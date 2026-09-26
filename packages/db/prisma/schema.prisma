@@ -109,6 +109,7 @@ model Company {
   bankStatementLines  BankStatementLine[]
   auditEvents         AuditEvent[]
   periodClosures      PeriodClosure[]
+  balanceAdjustments  BalanceAdjustment[]
 
   @@index([tenantId])
   @@map("companies")
@@ -149,9 +150,34 @@ model FinancialAccount {
   transfersTo     Transfer[]   @relation("TransferToAccount")
   importBatches       ImportBatch[]
   bankStatementLines  BankStatementLine[]
+  balanceAdjustments  BalanceAdjustment[]
 
   @@index([companyId])
   @@map("financial_accounts")
+}
+
+// Correção manual de saldo (ex.: divergência com o extrato real) — não é uma
+// baixa nem transferência, é um ajuste direto no saldo da conta. Guarda o
+// delta (amountCents, pode ser negativo) já calculado a partir do saldo alvo
+// informado pelo usuário; o cálculo em si (saldo alvo − saldo atual) fica no
+// domínio, não na UI. Reversível como settlement/transfer (nunca apaga).
+model BalanceAdjustment {
+  id                 String    @id @default(uuid())
+  companyId          String    @map("company_id")
+  company            Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId String    @map("financial_account_id")
+  financialAccount   FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  amountCents        BigInt    @map("amount_cents")
+  reason             String
+  effectiveDate      DateTime  @map("effective_date") @db.Date
+  createdByUserId    String    @map("created_by_user_id")
+  reversedAt         DateTime? @map("reversed_at")
+  reversalReason     String?   @map("reversal_reason")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  @@index([companyId])
+  @@index([financialAccountId])
+  @@map("balance_adjustments")
 }
 
 enum CategoryNature {

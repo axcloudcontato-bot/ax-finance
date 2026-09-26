@@ -8,4 +8,6 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   PERIOD_REOPENED: "Período reaberto",
   TITLE_DELETED: "Título excluído",
   INSTALLMENT_PLAN_DELETED: "Parcelamento excluído",
+  BALANCE_ADJUSTMENT_CREATED: "Ajuste de saldo",
+  BALANCE_ADJUSTMENT_REVERSED: "Ajuste de saldo estornado",
 };
