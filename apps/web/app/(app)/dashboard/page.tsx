@@ -16,6 +16,7 @@ import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
 import { currentYearMonth, monthRange } from "@/lib/month";
 import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { TitleDetailList } from "@/components/dashboard/title-detail-list";
 import { CashFlowLineChart } from "@/components/dashboard/cash-flow-line-chart";
 import { DonutChart } from "@/components/dashboard/donut-chart";
 
@@ -30,7 +31,7 @@ function summarizeOpenTitles(titles: TitleList) {
   const overdueCount = overdue.length;
   const overdueCents = overdue.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
 
-  return { totalCents, overdueCount, overdueCents };
+  return { totalCents, overdueCount, overdueCents, open, overdue };
 }
 
 function filterByDueMonth(titles: TitleList, from: string, to: string): TitleList {
@@ -94,6 +95,9 @@ export default async function DashboardPage({
   const toPayMonth = summarizeOpenTitles(filterByDueMonth(payables, monthFrom, monthTo));
   const overdueTotalCents = toReceiveMonth.overdueCents + toPayMonth.overdueCents;
   const overdueTotalCount = toReceiveMonth.overdueCount + toPayMonth.overdueCount;
+  const overdueTitlesMonth = [...toReceiveMonth.overdue, ...toPayMonth.overdue].sort((a, b) =>
+    toDateOnlyString(a.dueDate) < toDateOnlyString(b.dueDate) ? -1 : 1
+  );
 
   // Donuts: posição de hoje, independente do mês selecionado no topo.
   const toReceiveToday = summarizeOpenTitles(receivables);
@@ -123,7 +127,33 @@ export default async function DashboardPage({
           footerLabel="Contas ativas"
           footerValue={String(accounts.length)}
           gradient="blue"
-        />
+          modalTitle="Saldo por conta"
+        >
+          {accounts.length === 0 ? (
+            <p className="muted">Nenhuma conta cadastrada ainda.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Saldo atual</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((account) => (
+                  <tr key={account.id}>
+                    <td>{account.name}</td>
+                    <td>{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      {formatCents(account.currentBalanceCents, account.currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </StatCard>
         <StatCard
           icon={<ArrowDownCircle className="size-5" />}
           label="A receber no mês"
@@ -131,7 +161,10 @@ export default async function DashboardPage({
           footerLabel="Vencidos"
           footerValue={String(toReceiveMonth.overdueCount)}
           gradient="teal"
-        />
+          modalTitle="A receber no mês"
+        >
+          <TitleDetailList titles={toReceiveMonth.open} />
+        </StatCard>
         <StatCard
           icon={<ArrowUpCircle className="size-5" />}
           label="A pagar no mês"
@@ -139,7 +172,10 @@ export default async function DashboardPage({
           footerLabel="Vencidos"
           footerValue={String(toPayMonth.overdueCount)}
           gradient="orange"
-        />
+          modalTitle="A pagar no mês"
+        >
+          <TitleDetailList titles={toPayMonth.open} />
+        </StatCard>
         <StatCard
           icon={<AlertTriangle className="size-5" />}
           label="Vencido no mês"
@@ -147,7 +183,10 @@ export default async function DashboardPage({
           footerLabel="Título(s)"
           footerValue={String(overdueTotalCount)}
           gradient="pink"
-        />
+          modalTitle="Vencidos no mês"
+        >
+          <TitleDetailList titles={overdueTitlesMonth} />
+        </StatCard>
       </Reveal>
 
       <Reveal className="dashboard-charts">

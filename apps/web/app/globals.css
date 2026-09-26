@@ -318,12 +318,26 @@ form.inline {
   font-size: 1.5rem;
 }
 
-/* Cards de estatística em gradiente do dashboard (Seção 5). */
+/* Cards de estatística em gradiente do dashboard (Seção 5). É um <button>
+   clicável (abre modal com o detalhe das movimentações) — reset dos estilos
+   padrão de botão do navegador por cima do visual de card já existente. */
 .stat-card {
+  display: block;
+  width: 100%;
+  border: none;
   border-radius: 14px;
   padding: 1.5rem 1.75rem;
   color: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   box-shadow: 0 6px 16px rgba(20, 30, 60, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(20, 30, 60, 0.18);
 }
 
 .stat-card .stat-icon {
