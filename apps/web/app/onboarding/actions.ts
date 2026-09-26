@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createCompany, createFinancialAccount } from "@ax-finance/domain";
+import { createCompany, createFinancialAccount, seedDefaultCategories } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { parseAmountToCents } from "@/lib/currency";
 
@@ -31,6 +31,8 @@ export async function onboardingAction(formData: FormData) {
       openingBalanceCents: parseAmountToCents(openingBalanceRaw),
       openingDate,
     });
+
+    await seedDefaultCategories(user.id, company.id);
 
     companyId = company.id;
   } catch (error) {
