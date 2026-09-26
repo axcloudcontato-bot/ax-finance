@@ -9,7 +9,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 60px 32px 26px;
+  padding: 48px 26px 21px;
   overflow-x: hidden;
   color: var(--login-text);
   background:
@@ -27,16 +27,16 @@
 }
 
 .authCard {
-  width: min(1080px, 100%);
+  width: min(864px, 100%);
   max-width: none;
-  min-height: 760px;
+  min-height: 608px;
   display: grid;
   grid-template-columns: 1.015fr 1fr;
   padding: 0;
   margin: 0;
   overflow: hidden;
   border: 1px solid #fff;
-  border-radius: 30px;
+  border-radius: 24px;
   background: #fff;
   box-shadow: 0 25px 65px rgba(23, 77, 160, 0.11);
   animation: card-in 420ms ease-out both;
@@ -47,65 +47,65 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 64px 62px 48px 90px;
+  padding: 51px 50px 38px 72px;
   overflow: hidden;
   color: #fff;
   background: #2c75fa url("/assets/login-welcome.webp") center / cover no-repeat;
-  border-radius: 28px 140px 140px 28px;
+  border-radius: 22px 112px 112px 22px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 19px;
-  font-size: 28px;
+  gap: 15px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: -0.9px;
+  letter-spacing: -0.7px;
 }
 
 .welcomeCopy {
-  margin-top: 62px;
+  margin-top: 50px;
 }
 
 .welcomeCopy h1 {
   margin: 0;
   color: #fff;
-  font-size: 56px;
+  font-size: 45px;
   font-weight: 800;
   line-height: 1.045;
-  letter-spacing: -2.2px;
+  letter-spacing: -1.8px;
 }
 
 .welcomeCopy p {
   margin: 14px 0 0;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.6;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.5px;
   white-space: nowrap;
 }
 
 .welcomeAction {
   margin-top: auto;
-  padding-top: 180px;
+  padding-top: 144px;
 }
 
 .welcomeAction p {
   margin: 0 0 15px;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .outlineButton {
-  min-height: 54px;
+  min-height: 43px;
   width: fit-content;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 40px;
+  padding: 10px 32px;
   color: #fff;
   border: 1.5px solid #fff;
-  border-radius: 15px;
+  border-radius: 12px;
   background: transparent;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 800;
   text-decoration: none;
   transition: background 180ms ease, transform 180ms ease;
@@ -126,7 +126,7 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  padding: 72px 62px 62px 70px;
+  padding: 58px 50px 50px 56px;
 }
 
 .formContent {
@@ -136,18 +136,18 @@
 .formHeader h2 {
   margin: 0 0 12px;
   color: var(--login-text);
-  font-size: 46px;
+  font-size: 37px;
   font-weight: 800;
   line-height: 1.16;
-  letter-spacing: -1.9px;
+  letter-spacing: -1.5px;
 }
 
 .formHeader p {
-  margin: 0 0 40px;
+  margin: 0 0 32px;
   color: var(--login-muted);
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.5;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.5px;
 }
 
 .form {
@@ -155,26 +155,26 @@
 }
 
 .field {
-  margin-bottom: 26px;
+  margin-bottom: 21px;
 }
 
 .field label,
 .dialog label {
   display: block;
-  margin: 0 0 9px;
+  margin: 0 0 7px;
   color: var(--login-text);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .inputWrap {
-  min-height: 61px;
+  min-height: 49px;
   display: flex;
   align-items: center;
-  gap: 19px;
-  padding: 0 22px;
+  gap: 15px;
+  padding: 0 18px;
   border: 1px solid var(--login-border);
-  border-radius: 13px;
+  border-radius: 10px;
   background: #f7f8fb;
   box-shadow: 0 1px 2px rgba(16, 40, 90, 0.01);
   transition: border-color 180ms ease, box-shadow 180ms ease;
@@ -193,7 +193,7 @@
 .inputWrap input {
   width: 100%;
   min-width: 0;
-  padding: 16px 0;
+  padding: 13px 0;
   margin: 0;
   color: var(--login-text);
   border: 0;
@@ -201,7 +201,7 @@
   outline: none;
   background: transparent;
   font: inherit;
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .inputWrap input::placeholder {
@@ -222,11 +222,11 @@
 }
 
 .eyeButton {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 32px;
+  min-height: 32px;
   display: grid;
   place-items: center;
-  margin-right: -8px;
+  margin-right: -6px;
   color: #50668e;
 }
 
@@ -234,15 +234,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: 28px 0 30px;
-  font-size: 17px;
+  gap: 10px;
+  margin: 22px 0 24px;
+  font-size: 14px;
 }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   color: var(--login-muted);
   font-size: inherit;
@@ -251,8 +251,8 @@
 }
 
 .checkbox input {
-  width: 21px;
-  height: 21px;
+  width: 17px;
+  height: 17px;
   padding: 0;
   margin: 0;
   accent-color: var(--login-blue);
@@ -271,19 +271,19 @@
 .primaryButton,
 .dialogAction {
   width: 100%;
-  min-height: 67px;
+  min-height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 15px 18px;
+  gap: 11px;
+  padding: 12px 14px;
   margin: 0;
   color: #fff;
   border: 0;
-  border-radius: 14px;
+  border-radius: 11px;
   background: var(--login-blue);
   font: inherit;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
   transition: background 180ms ease, transform 180ms ease;
 }
@@ -302,11 +302,11 @@
 .tagline {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-top: 33px;
+  gap: 11px;
+  margin-top: 26px;
   color: var(--login-muted);
-  font-size: 15px;
-  letter-spacing: -0.4px;
+  font-size: 12px;
+  letter-spacing: -0.3px;
   white-space: nowrap;
 }
 
@@ -319,10 +319,10 @@
 }
 
 .status {
-  padding: 12px 15px;
-  margin: -18px 0 22px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 10px 12px;
+  margin: -14px 0 18px;
+  border-radius: 8px;
+  font-size: 11px;
   line-height: 1.55;
 }
 
@@ -341,14 +341,14 @@
 }
 
 .footer {
-  width: min(1080px, 100%);
+  width: min(864px, 100%);
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 21%;
-  margin-top: 30px;
+  margin-top: 24px;
   color: #637a9e;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .footer p {
@@ -358,7 +358,7 @@
 .footer nav {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 22px;
   margin: 0;
 }
 
@@ -435,59 +435,59 @@
 
 @media (min-width: 1500px) {
   .page {
-    padding-top: 92px;
+    padding-top: 74px;
   }
 }
 
 @media (max-width: 1250px) {
   .authCard {
-    min-height: 660px;
+    min-height: 528px;
   }
 
   .welcome {
-    padding: 52px 35px 44px 48px;
-    border-top-right-radius: 110px;
-    border-bottom-right-radius: 110px;
+    padding: 42px 28px 35px 38px;
+    border-top-right-radius: 88px;
+    border-bottom-right-radius: 88px;
   }
 
   .welcomeCopy {
-    margin-top: 55px;
+    margin-top: 44px;
   }
 
   .welcomeCopy h1 {
-    font-size: 44px;
-    letter-spacing: -1.8px;
+    font-size: 35px;
+    letter-spacing: -1.4px;
   }
 
   .welcomeCopy p {
-    font-size: 17px;
+    font-size: 14px;
   }
 
   .welcomeAction {
-    padding-top: 145px;
+    padding-top: 116px;
   }
 
   .formPanel {
-    padding: 50px 38px;
+    padding: 40px 30px;
   }
 
   .formHeader h2 {
-    font-size: 35px;
-    letter-spacing: -1.3px;
+    font-size: 28px;
+    letter-spacing: -1px;
   }
 
   .formHeader p,
   .primaryButton {
-    font-size: 17px;
-  }
-
-  .options {
     font-size: 14px;
   }
 
+  .options {
+    font-size: 11px;
+  }
+
   .tagline {
-    gap: 8px;
-    font-size: 12px;
+    gap: 6px;
+    font-size: 10px;
   }
 
   .footer {
@@ -498,46 +498,46 @@
 @media (max-width: 850px) {
   .page {
     justify-content: flex-start;
-    padding: 28px 20px;
+    padding: 22px 16px;
     background: #f1f6fd;
   }
 
   .authCard {
-    max-width: 560px;
+    max-width: 448px;
     min-height: auto;
     grid-template-columns: 1fr;
-    border-radius: 24px;
+    border-radius: 19px;
   }
 
   .welcome {
-    padding: 28px 30px 32px;
-    border-radius: 22px 22px 64px 22px;
+    padding: 22px 24px 26px;
+    border-radius: 18px 18px 51px 18px;
     background-position: center 12%;
   }
 
   .brand {
-    gap: 12px;
-    font-size: 23px;
+    gap: 10px;
+    font-size: 18px;
   }
 
   .brand svg {
-    width: 34px;
-    height: 34px;
+    width: 27px;
+    height: 27px;
   }
 
   .welcomeCopy {
-    margin-top: 28px;
+    margin-top: 22px;
   }
 
   .welcomeCopy h1 {
-    font-size: 30px;
+    font-size: 24px;
     line-height: 1.12;
-    letter-spacing: -1px;
+    letter-spacing: -0.8px;
   }
 
   .welcomeCopy p {
-    margin-top: 12px;
-    font-size: 14px;
+    margin-top: 10px;
+    font-size: 11px;
     white-space: normal;
   }
 
@@ -545,105 +545,105 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
-    padding-top: 23px;
+    gap: 12px;
+    padding-top: 18px;
   }
 
   .welcomeAction p {
     margin: 0;
-    font-size: 13px;
+    font-size: 10px;
   }
 
   .outlineButton {
-    min-height: 42px;
-    padding: 10px 16px;
-    border-radius: 10px;
-    font-size: 13px;
+    min-height: 34px;
+    padding: 8px 13px;
+    border-radius: 8px;
+    font-size: 10px;
   }
 
   .formPanel {
-    padding: 34px 30px 38px;
+    padding: 27px 24px 30px;
   }
 
   .formHeader h2 {
-    font-size: 29px;
-    letter-spacing: -1px;
+    font-size: 23px;
+    letter-spacing: -0.8px;
   }
 
   .formHeader p {
-    margin-bottom: 27px;
-    font-size: 15px;
+    margin-bottom: 22px;
+    font-size: 12px;
   }
 
   .field {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .field label,
   .dialog label {
-    font-size: 15px;
+    font-size: 12px;
   }
 
   .inputWrap {
-    min-height: 55px;
-    gap: 12px;
-    padding: 0 16px;
+    min-height: 44px;
+    gap: 10px;
+    padding: 0 13px;
   }
 
   .inputWrap input {
-    font-size: 16px;
-  }
-
-  .options {
-    margin: 23px 0;
     font-size: 13px;
   }
 
+  .options {
+    margin: 18px 0;
+    font-size: 10px;
+  }
+
   .checkbox {
-    gap: 7px;
+    gap: 6px;
   }
 
   .primaryButton {
-    min-height: 55px;
-    font-size: 16px;
+    min-height: 44px;
+    font-size: 13px;
   }
 
   .tagline {
-    margin-top: 25px;
-    font-size: 11px;
+    margin-top: 20px;
+    font-size: 9px;
     text-align: center;
     white-space: normal;
   }
 
   .tagline::before,
   .tagline::after {
-    min-width: 15px;
+    min-width: 12px;
   }
 
   .footer {
-    max-width: 560px;
+    max-width: 448px;
     flex-direction: column;
-    gap: 14px;
-    margin-top: 23px;
-    font-size: 12px;
+    gap: 11px;
+    margin-top: 18px;
+    font-size: 10px;
   }
 
   .footer nav {
-    gap: 24px;
+    gap: 19px;
   }
 }
 
 @media (max-width: 430px) {
   .page {
-    padding: 16px 12px 22px;
+    padding: 13px 10px 18px;
   }
 
   .welcome {
-    padding: 24px 22px 28px;
+    padding: 19px 18px 22px;
   }
 
   .formPanel {
-    padding: 30px 22px 34px;
+    padding: 24px 18px 27px;
   }
 
   .options {
