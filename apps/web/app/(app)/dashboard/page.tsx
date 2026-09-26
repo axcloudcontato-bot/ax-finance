@@ -6,19 +6,26 @@ import {
   assertActiveMembership,
   generateDueOccurrences,
   getMonthlyCashFlowSeries,
+  listActiveCategories,
   listCompaniesForUser,
   listFinancialAccountsWithBalance,
+  listParties,
   listTitles,
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
 import { currentYearMonth, monthRange } from "@/lib/month";
+import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TitleDetailList } from "@/components/dashboard/title-detail-list";
 import { CashFlowLineChart } from "@/components/dashboard/cash-flow-line-chart";
 import { DonutChart } from "@/components/dashboard/donut-chart";
+import { Modal } from "@/components/ui/modal";
+import { TitleForm } from "@/components/titles/title-form";
+import { createEntradaAction, createEntradaAndContinueAction } from "../entradas/actions";
+import { createSaidaAction, createSaidaAndContinueAction } from "../saidas/actions";
 
 type TitleList = Awaited<ReturnType<typeof listTitles>>;
 
@@ -84,10 +91,13 @@ export default async function DashboardPage({
     .filter((account) => account.includedInAvailableTotal)
     .reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
 
-  const [receivables, payables, cashFlowSeries] = await Promise.all([
+  const [receivables, payables, cashFlowSeries, categories, clients, suppliers] = await Promise.all([
     listTitles(user.id, activeCompanyId, { type: "RECEIVABLE" }),
     listTitles(user.id, activeCompanyId, { type: "PAYABLE" }),
     getMonthlyCashFlowSeries(user.id, activeCompanyId, { months: 6, endMonth: month }),
+    listActiveCategories(user.id, activeCompanyId),
+    listParties(user.id, activeCompanyId, { role: "CLIENT", status: "ACTIVE" }),
+    listParties(user.id, activeCompanyId, { role: "SUPPLIER", status: "ACTIVE" }),
   ]);
 
   // Cards do topo: só títulos com vencimento dentro do mês selecionado.
@@ -119,6 +129,54 @@ export default async function DashboardPage({
 
   return (
     <main className="wide">
+      <div className="quick-actions">
+        <Modal
+          triggerLabel={
+            <>
+              <span className="quick-action-icon">
+                <ArrowDownCircle className="size-5" strokeWidth={1.5} />
+              </span>
+              Nova receita
+            </>
+          }
+          triggerClassName="quick-action-card revenue"
+          title="Nova entrada"
+          icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />}
+          maxWidth="720px"
+        >
+          <TitleForm
+            action={createEntradaAction}
+            actionAndContinue={createEntradaAndContinueAction}
+            categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
+            parties={clients}
+            partyLabel="Cliente"
+          />
+        </Modal>
+
+        <Modal
+          triggerLabel={
+            <>
+              <span className="quick-action-icon">
+                <ArrowUpCircle className="size-5" strokeWidth={1.5} />
+              </span>
+              Nova despesa
+            </>
+          }
+          triggerClassName="quick-action-card expense"
+          title="Nova saída"
+          icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />}
+          maxWidth="720px"
+        >
+          <TitleForm
+            action={createSaidaAction}
+            actionAndContinue={createSaidaAndContinueAction}
+            categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
+            parties={suppliers}
+            partyLabel="Fornecedor"
+          />
+        </Modal>
+      </div>
+
       <Reveal className="stat-grid">
         <StatCard
           icon={<Wallet className="size-5" />}

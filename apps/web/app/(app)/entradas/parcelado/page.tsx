@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { listActiveCategories, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
-import { sortCategoriesTree } from "@/lib/categories";
+import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { InstallmentForm } from "@/components/titles/installment-form";
 import { createEntradaInstallmentPlanAction } from "../actions";
 
@@ -25,7 +25,7 @@ export default async function EntradaParceladaPage({
       <h1 style={{ marginBottom: "1rem" }}>Parcelar entrada</h1>
       <InstallmentForm
         action={createEntradaInstallmentPlanAction}
-        categories={sortCategoriesTree(categories)}
+        categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
         parties={clients}
         partyLabel="Cliente"
         error={searchParams.erro}

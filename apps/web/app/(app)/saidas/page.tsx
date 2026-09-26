@@ -4,7 +4,7 @@ import { ArrowUpCircle } from "lucide-react";
 import { generateDueOccurrences, listActiveCategories, listParties, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
-import { sortCategoriesTree } from "@/lib/categories";
+import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { TitleListTable } from "@/components/titles/title-list-table";
 import { TitleForm } from "@/components/titles/title-form";
 import { Modal } from "@/components/ui/modal";
@@ -87,7 +87,7 @@ export default async function SaidasPage({
             <TitleForm
               action={createSaidaAction}
               actionAndContinue={createSaidaAndContinueAction}
-              categories={sortCategoriesTree(categories)}
+              categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
               parties={suppliers}
               partyLabel="Fornecedor"
               error={searchParams.erro}

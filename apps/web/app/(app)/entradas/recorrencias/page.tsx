@@ -4,7 +4,7 @@ import { Repeat } from "lucide-react";
 import { listActiveCategories, listParties, listRecurrenceRules } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
-import { sortCategoriesTree } from "@/lib/categories";
+import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { Modal } from "@/components/ui/modal";
@@ -49,7 +49,7 @@ export default async function EntradasRecorrenciasPage({
         >
           <RecurrenceForm
             action={createEntradaRecurrenceAction}
-            categories={sortCategoriesTree(categories)}
+            categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
             parties={clients}
             partyLabel="Cliente"
             error={searchParams.erro}

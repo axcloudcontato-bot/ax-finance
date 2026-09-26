@@ -4,7 +4,7 @@ import { ArrowDownCircle } from "lucide-react";
 import { generateDueOccurrences, listActiveCategories, listParties, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
-import { sortCategoriesTree } from "@/lib/categories";
+import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { TitleListTable } from "@/components/titles/title-list-table";
 import { TitleForm } from "@/components/titles/title-form";
 import { Modal } from "@/components/ui/modal";
@@ -87,7 +87,7 @@ export default async function EntradasPage({
             <TitleForm
               action={createEntradaAction}
               actionAndContinue={createEntradaAndContinueAction}
-              categories={sortCategoriesTree(categories)}
+              categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
               parties={clients}
               partyLabel="Cliente"
               error={searchParams.erro}

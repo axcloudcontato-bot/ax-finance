@@ -5,6 +5,21 @@ interface CategoryLike {
   name: string;
 }
 
+/**
+ * Entrada só pode usar categoria de receita; saída, qualquer categoria que
+ * não seja de receita (custo/despesa/investimento e as demais naturezas que
+ * o usuário eventualmente crie) — evita o problema de uma "Nova entrada"
+ * listar categorias de despesa (e vice-versa) no seletor.
+ */
+export function filterCategoriesByTitleType<T extends { nature: string }>(
+  categories: T[],
+  titleType: "RECEIVABLE" | "PAYABLE"
+): T[] {
+  return categories.filter((category) =>
+    titleType === "RECEIVABLE" ? category.nature === "OPERATING_REVENUE" : category.nature !== "OPERATING_REVENUE"
+  );
+}
+
 /** Categoria pai logo seguida das próprias subcategorias, não a ordem crua do banco. */
 export function sortCategoriesTree<T extends CategoryLike>(categories: T[]): T[] {
   const byParent = new Map<string | null, T[]>();

@@ -383,6 +383,62 @@ form.inline {
   margin-bottom: 1.5rem;
 }
 
+/* Cards de lançamento rápido (Nova receita/despesa) no topo do dashboard. */
+.quick-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(20, 30, 60, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.quick-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(20, 30, 60, 0.1);
+}
+
+.quick-action-card .quick-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.quick-action-card.revenue .quick-action-icon {
+  color: #0bc7b9;
+  background: rgba(11, 199, 185, 0.12);
+}
+
+.quick-action-card.expense .quick-action-icon {
+  color: #fc5296;
+  background: rgba(252, 82, 150, 0.12);
+}
+
+@media (max-width: 560px) {
+  .quick-actions {
+    flex-direction: column;
+  }
+}
+
 .dashboard-charts {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;

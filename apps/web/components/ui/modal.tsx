@@ -15,12 +15,15 @@ import { useSearchParams } from "next/navigation";
  */
 export function Modal({
   triggerLabel,
+  triggerClassName,
   title,
   icon,
   maxWidth,
   children,
 }: {
-  triggerLabel: string;
+  triggerLabel: ReactNode;
+  /** Substitui o "button-link" padrão do gatilho — ex.: os cards de lançamento rápido do dashboard. */
+  triggerClassName?: string;
   title: string;
   /** Mesma família de ícones do sidebar (lucide-react), ex.: <ArrowDownCircle className="size-5" strokeWidth={1.5} />. */
   icon?: ReactNode;
@@ -54,8 +57,8 @@ export function Modal({
     <>
       <button
         type="button"
-        className="button-link"
-        style={{ marginTop: 0, border: "none" }}
+        className={triggerClassName ?? "button-link"}
+        style={triggerClassName ? undefined : { marginTop: 0, border: "none" }}
         onClick={() => setOpen(true)}
       >
         {triggerLabel}
