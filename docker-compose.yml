@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ax_finance
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Job de curta duração: aplica as migrations (inclui criar a role `ax_app`
+  # de baixo privilégio e as políticas de RLS) e encerra. `web` só sobe depois
+  # que este container termina com sucesso.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      # Superusuário — dono das tabelas, único capaz de rodar migrations
+      # (CREATE ROLE/GRANT/CREATE POLICY). Nunca usado pela aplicação em runtime.
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/ax_finance
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Role de baixo privilégio (`ax_app`) criado pela migration de RLS — é
+      # o que a aplicação de fato usa, sujeito às políticas de isolamento por
+      # empresa. A senha padrão vem do dev (.env.example); troque-a em
+      # produção com `ALTER ROLE ax_app WITH PASSWORD '...'` e atualize aqui.
+      APP_DATABASE_URL: postgresql://ax_app:${AX_APP_PASSWORD}@postgres:5432/ax_finance
+      SESSION_SECRET: ${SESSION_SECRET}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
