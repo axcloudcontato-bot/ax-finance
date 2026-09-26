@@ -1,7 +1,11 @@
 // Schema do AX Finance.
 // Fundação: identidade, isolamento multiempresa e contas financeiras (FIN-001, FIN-002).
-// Núcleo financeiro: categorias, títulos e baixas (Seções 6/7/9/18 do DIRECAO.md).
-// Razão auxiliar, clientes/fornecedores, parcelamento e conciliação ainda não existem.
+// Núcleo financeiro: categorias, títulos, baixas, transferências, clientes/fornecedores,
+// parcelamento, recorrências, conciliação bancária, trilha de auditoria, fechamento de
+// período e ajuste manual de saldo (Seções 5-13, 17-19 do DIRECAO.md).
+// Ainda não existem: anexos, billing/assinatura, outbox/worker, convites e permissões por
+// papel (OPERATOR/ACCOUNTANT/VIEWER estão modelados no enum mas não são aplicados), MFA e
+// recuperação de senha — ver "Estado atual e limitações conhecidas" no README.
 
 generator client {
   provider = "prisma-client-js"

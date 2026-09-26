@@ -1,39 +1,75 @@
-# AX Finance — fundação técnica
+# AX Finance
 
-Monólito modular para o SaaS descrito em [DIRECAO.md](./DIRECAO.md). Esta etapa cobre só
-identidade, isolamento multiempresa e contas financeiras (FIN-001/FIN-002) — títulos, baixas,
-conciliação, relatórios etc. vêm depois, sobre esta base.
+Monólito modular para o SaaS descrito em [DIRECAO.md](./DIRECAO.md) — controle financeiro
+multiempresa para empresas de serviços. Já é um MVP funcional: identidade, contas, títulos,
+baixas, transferências, clientes/fornecedores, parcelamento, recorrências, conciliação
+bancária, relatórios (fluxo de caixa, contas em aberto, DRE gerencial), trilha de auditoria,
+fechamento de período e ajuste manual de saldo — não só a fundação.
 
 ## Stack
 
 - `apps/web`: Next.js 14 (App Router) — UI + Route Handlers.
-- `packages/domain`: regras de negócio (identidade, empresas, contas). Sem Prisma direto na UI.
+- `packages/domain`: regras de negócio (identidade, empresas, contas, títulos, relatórios etc.).
+  Sem Prisma direto na UI.
 - `packages/db`: schema Prisma + migrations (inclui as políticas de Row Level Security).
-- PostgreSQL 17 nativo no Windows (sem Docker).
+- PostgreSQL 16/17. Dois caminhos de execução: nativo (dev local) ou Docker (`Dockerfile` +
+  `docker-compose.yml`, ver `deploy.sh`).
 
-## Setup local
+## Setup local (nativo, sem Docker)
 
-1. PostgreSQL 17 já instalado como serviço (`postgresql-x64-17`), bancos `ax_finance_dev` e
-   `ax_finance_test` criados, role de aplicação `ax_app` criado pela migration de RLS.
-2. Copie `.env.example` para `.env` se ainda não tiver um (já existe um `.env` de dev funcional
-   neste checkout — nunca commitado).
+1. PostgreSQL instalado como serviço, bancos `ax_finance_dev` e `ax_finance_test` criados, role
+   de aplicação `ax_app` criado pela migration de RLS.
+2. Copie `.env.example` para `.env` (nunca commitado).
 3. `pnpm install`
 4. `pnpm db:migrate` — aplica migrations pendentes em `ax_finance_dev`.
 5. `pnpm db:seed` — cria uma empresa de demonstração (`demo@ax.finance` / `demo12345`).
 6. `pnpm dev` — sobe o Next.js em http://localhost:3000.
 
+## Deploy via Docker
+
+`docker compose up -d --build` (ver `.env.docker.example` para as variáveis necessárias).
+`deploy.sh` automatiza atualização em produção (`git pull` + rebuild + prune de imagens antigas).
+
 ## Testes
 
-`pnpm test` roda os testes de integração (Vitest) contra `ax_finance_test`, incluindo o teste que
-prova isolamento entre empresas mesmo pulando a checagem de aplicação (a política de RLS de
-`financial_accounts` verifica membership por conta própria).
+`pnpm test` roda os testes de integração (Vitest) contra `ax_finance_test`, cobrindo isolamento
+multiempresa, regras de saldo/baixa/estorno, fechamento de período, auditoria, busca e mais.
+
+## Estado atual e limitações conhecidas
+
+Um levantamento (set/2026) comparando a especificação com o código encontrou os pontos abaixo.
+Nenhum é um bug ativo — são lacunas conscientes de um MVP em evolução, listadas aqui pra não se
+perderem:
+
+- **Permissões por papel não aplicadas**: `OPERATOR`/`ACCOUNTANT`/`VIEWER` estão no enum de
+  `MembershipRole`, mas hoje qualquer membership ATIVA concede acesso funcional amplo — nenhuma
+  ação checa o papel específico. Fica pro bloco de "login/acesso completo" (deliberadamente
+  deixado por último).
+- **Sem convites, recuperação de senha, verificação de e-mail ou MFA** — mesmo bloco acima.
+- **Sem idempotência geral**: a maioria das operações financeiras não tem uma chave de
+  idempotência própria (proteção contra reenvio duplicado além do que o navegador já evita).
+- **Sem anexos, billing/assinatura, outbox ou worker** — nenhum job assíncrono real existe ainda;
+  a geração de títulos recorrentes roda sob demanda (a cada acesso às páginas de Entradas/Saídas/
+  Dashboard), não por rotina agendada.
+- **Importação de extrato é só CSV síncrono** — sem OFX, mapeamento de colunas ou processamento
+  em background (ver "Fora do escopo" nos commits de conciliação).
+- **Sem chaves estrangeiras compostas por `companyId`**: o isolamento entre empresas depende da
+  validação no domínio + RLS, não de FKs compostas no schema. RLS cobre o caso de bypass da
+  camada de aplicação; FKs compostas cobririam bugs de referência cruzada dentro do próprio
+  domínio, que hoje só os testes de isolamento pegam.
+- **Exclusão física de título**: `deleteTitle`/`deleteInstallmentPlan` apagam de verdade (mesmo
+  com baixa) — decisão posterior explícita, diverge da diretriz original de nunca apagar eventos
+  efetivados. `cancelTitle` (soft, preserva a linha) continua existindo para quem preferir esse
+  caminho.
 
 ## Decisões que valem revisitar
 
 - **RLS**: `companies`/`memberships` confiam parcialmente em `app.current_company_id` ter sido
-  setado após checagem de aplicação; `financial_accounts` (dados de dinheiro) verifica membership
-  de forma independente. Ao adicionar títulos/baixas/razão, replicar o padrão de
-  `financial_accounts`, não o mais simples.
+  setado após checagem de aplicação; tabelas de dados financeiros (contas, títulos, baixas,
+  transferências, ajustes de saldo, auditoria etc.) verificam membership de forma independente
+  (política reforçada) — ao adicionar uma tabela nova, replicar esse padrão, não o mais simples.
 - **Autenticação**: e-mail+senha própria (scrypt), sessão em cookie httpOnly + tabela `sessions`
-  revogável. Sem MFA/verificação de e-mail ainda (stubs a implementar).
-- **Sem worker/fila** ainda — não há nenhum job assíncrono real nesta etapa.
+  revogável, com "lembrar de mim" controlando se o cookie persiste além da aba. Sem MFA/
+  verificação de e-mail ainda (stubs a implementar).
+- **Onboarding é atômico**: empresa + conta + categorias padrão numa única transação
+  (`completeOnboarding`) — evita empresa órfã sem conta/categorias se um passo do meio falhar.
