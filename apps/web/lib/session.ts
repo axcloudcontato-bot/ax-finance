@@ -19,7 +19,12 @@ export async function getCurrentUser() {
 export function setSessionCookie(rawToken: string, expiresAt: Date) {
   cookies().set(SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // Cookie "Secure" só é aceito pelo navegador em HTTPS — em produção sem
+    // TLS na frente (ex.: acesso direto por IP, atrás de um proxy que ainda
+    // não termina TLS), o navegador descarta o cookie e a sessão nunca
+    // persiste. COOKIE_SECURE=false permite destravar esse caso; o padrão
+    // continua seguro (true) assim que houver HTTPS.
+    secure: process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false",
     sameSite: "lax",
     expires: expiresAt,
     path: "/",

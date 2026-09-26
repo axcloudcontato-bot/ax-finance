@@ -38,6 +38,10 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      # Sem um proxy reverso com TLS na frente ainda, o cookie de sessão
+      # "Secure" nunca seria salvo pelo navegador (acesso é por HTTP puro).
+      # Troque para "true" (ou remova) assim que colocar HTTPS na frente.
+      COOKIE_SECURE: "false"
       # Role de baixo privilégio (`ax_app`) criado pela migration de RLS — é
       # o que a aplicação de fato usa, sujeito às políticas de isolamento por
       # empresa. A senha padrão vem do dev (.env.example); troque-a em
