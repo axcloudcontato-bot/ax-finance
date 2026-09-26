@@ -16,7 +16,7 @@ export async function getCurrentUser() {
   return session?.user ?? null;
 }
 
-export function setSessionCookie(rawToken: string, expiresAt: Date) {
+export function setSessionCookie(rawToken: string, expiresAt?: Date) {
   cookies().set(SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
     // Cookie "Secure" só é aceito pelo navegador em HTTPS — em produção sem

@@ -1,0 +1,666 @@
+.page {
+  --login-blue: #3478ff;
+  --login-blue-dark: #2164ea;
+  --login-text: #0c193d;
+  --login-muted: #586b92;
+  --login-border: #dce4f0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 32px 26px;
+  overflow-x: hidden;
+  color: var(--login-text);
+  background:
+    radial-gradient(circle at 96% 21%, rgba(183, 216, 255, 0.22) 0 12%, transparent 12.2%),
+    radial-gradient(circle at 8% 100%, rgba(184, 216, 255, 0.23) 0 20%, transparent 20.2%),
+    #f1f6fd;
+  font-family: Manrope, Arial, sans-serif;
+  font-weight: 500;
+}
+
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+.authCard {
+  width: min(1080px, 100%);
+  max-width: none;
+  min-height: 760px;
+  display: grid;
+  grid-template-columns: 1.015fr 1fr;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #fff;
+  border-radius: 30px;
+  background: #fff;
+  box-shadow: 0 25px 65px rgba(23, 77, 160, 0.11);
+  animation: card-in 420ms ease-out both;
+}
+
+.welcome {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 64px 62px 48px 90px;
+  overflow: hidden;
+  color: #fff;
+  background: #2c75fa url("/assets/login-welcome.webp") center / cover no-repeat;
+  border-radius: 28px 140px 140px 28px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.9px;
+}
+
+.welcomeCopy {
+  margin-top: 62px;
+}
+
+.welcomeCopy h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.045;
+  letter-spacing: -2.2px;
+}
+
+.welcomeCopy p {
+  margin: 14px 0 0;
+  font-size: 22px;
+  line-height: 1.6;
+  letter-spacing: -0.6px;
+  white-space: nowrap;
+}
+
+.welcomeAction {
+  margin-top: auto;
+  padding-top: 180px;
+}
+
+.welcomeAction p {
+  margin: 0 0 15px;
+  font-size: 18px;
+}
+
+.outlineButton {
+  min-height: 54px;
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 40px;
+  color: #fff;
+  border: 1.5px solid #fff;
+  border-radius: 15px;
+  background: transparent;
+  font-size: 18px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.outlineButton:hover {
+  background: rgba(255, 255, 255, 0.13);
+  transform: translateY(-1px);
+}
+
+.outlineButton:focus-visible,
+.page button:focus-visible {
+  outline: 3px solid rgba(12, 25, 61, 0.88);
+  outline-offset: 4px;
+}
+
+.formPanel {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 72px 62px 62px 70px;
+}
+
+.formContent {
+  width: 100%;
+}
+
+.formHeader h2 {
+  margin: 0 0 12px;
+  color: var(--login-text);
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -1.9px;
+}
+
+.formHeader p {
+  margin: 0 0 40px;
+  color: var(--login-muted);
+  font-size: 22px;
+  line-height: 1.5;
+  letter-spacing: -0.6px;
+}
+
+.form {
+  margin: 0;
+}
+
+.field {
+  margin-bottom: 26px;
+}
+
+.field label,
+.dialog label {
+  display: block;
+  margin: 0 0 9px;
+  color: var(--login-text);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.inputWrap {
+  min-height: 61px;
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  padding: 0 22px;
+  border: 1px solid var(--login-border);
+  border-radius: 13px;
+  background: #f7f8fb;
+  box-shadow: 0 1px 2px rgba(16, 40, 90, 0.01);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.inputWrap:focus-within {
+  border-color: var(--login-blue);
+  box-shadow: 0 0 0 4px rgba(52, 120, 255, 0.09);
+}
+
+.inputWrap > svg {
+  flex: 0 0 auto;
+  color: #50668e;
+}
+
+.inputWrap input {
+  width: 100%;
+  min-width: 0;
+  padding: 16px 0;
+  margin: 0;
+  color: var(--login-text);
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 18px;
+}
+
+.inputWrap input::placeholder {
+  color: #8393b2;
+  opacity: 1;
+}
+
+.eyeButton,
+.textButton,
+.footer button,
+.dialogClose {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+}
+
+.eyeButton {
+  min-width: 40px;
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  margin-right: -8px;
+  color: #50668e;
+}
+
+.options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 28px 0 30px;
+  font-size: 17px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--login-muted);
+  font-size: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--login-blue);
+}
+
+.textButton {
+  color: #2765ec;
+  font-weight: 600;
+}
+
+.textButton:hover,
+.footer button:hover {
+  text-decoration: underline;
+}
+
+.primaryButton,
+.dialogAction {
+  width: 100%;
+  min-height: 67px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 15px 18px;
+  margin: 0;
+  color: #fff;
+  border: 0;
+  border-radius: 14px;
+  background: var(--login-blue);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.primaryButton:hover:not(:disabled),
+.dialogAction:hover:not(:disabled) {
+  background: var(--login-blue-dark);
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.tagline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 33px;
+  color: var(--login-muted);
+  font-size: 15px;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.tagline::before,
+.tagline::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--login-border);
+}
+
+.status {
+  padding: 12px 15px;
+  margin: -18px 0 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.success {
+  color: #14603d;
+  background: #e9f8f0;
+}
+
+.error {
+  color: #a52035;
+  background: #fff0f0;
+}
+
+.spinner {
+  animation: spin 900ms linear infinite;
+}
+
+.footer {
+  width: min(1080px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 21%;
+  margin-top: 30px;
+  color: #637a9e;
+  font-size: 14px;
+}
+
+.footer p {
+  margin: 0;
+}
+
+.footer nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0;
+}
+
+.footer button {
+  color: inherit;
+  cursor: pointer;
+}
+
+.footer nav span {
+  color: #bcc9dc;
+}
+
+.dialog {
+  width: min(440px, calc(100% - 40px));
+  padding: 30px;
+  color: var(--login-text);
+  border: 1px solid var(--login-border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.18);
+  font-family: Manrope, Arial, sans-serif;
+}
+
+.dialog::backdrop {
+  background: rgba(16, 32, 71, 0.4);
+  backdrop-filter: blur(3px);
+}
+
+.dialog h2 {
+  margin: 0 36px 8px 0;
+  font-size: 25px;
+}
+
+.dialog p {
+  margin: 0 0 22px;
+  color: var(--login-muted);
+  line-height: 1.65;
+}
+
+.dialogClose {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  color: var(--login-muted);
+  cursor: pointer;
+}
+
+.dialogAction {
+  min-height: 50px;
+  margin-top: 20px;
+  font-size: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 1500px) {
+  .page {
+    padding-top: 92px;
+  }
+}
+
+@media (max-width: 1250px) {
+  .authCard {
+    min-height: 660px;
+  }
+
+  .welcome {
+    padding: 52px 35px 44px 48px;
+    border-top-right-radius: 110px;
+    border-bottom-right-radius: 110px;
+  }
+
+  .welcomeCopy {
+    margin-top: 55px;
+  }
+
+  .welcomeCopy h1 {
+    font-size: 44px;
+    letter-spacing: -1.8px;
+  }
+
+  .welcomeCopy p {
+    font-size: 17px;
+  }
+
+  .welcomeAction {
+    padding-top: 145px;
+  }
+
+  .formPanel {
+    padding: 50px 38px;
+  }
+
+  .formHeader h2 {
+    font-size: 35px;
+    letter-spacing: -1.3px;
+  }
+
+  .formHeader p,
+  .primaryButton {
+    font-size: 17px;
+  }
+
+  .options {
+    font-size: 14px;
+  }
+
+  .tagline {
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .footer {
+    gap: 12%;
+  }
+}
+
+@media (max-width: 850px) {
+  .page {
+    justify-content: flex-start;
+    padding: 28px 20px;
+    background: #f1f6fd;
+  }
+
+  .authCard {
+    max-width: 560px;
+    min-height: auto;
+    grid-template-columns: 1fr;
+    border-radius: 24px;
+  }
+
+  .welcome {
+    padding: 28px 30px 32px;
+    border-radius: 22px 22px 64px 22px;
+    background-position: center 12%;
+  }
+
+  .brand {
+    gap: 12px;
+    font-size: 23px;
+  }
+
+  .brand svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .welcomeCopy {
+    margin-top: 28px;
+  }
+
+  .welcomeCopy h1 {
+    font-size: 30px;
+    line-height: 1.12;
+    letter-spacing: -1px;
+  }
+
+  .welcomeCopy p {
+    margin-top: 12px;
+    font-size: 14px;
+    white-space: normal;
+  }
+
+  .welcomeAction {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding-top: 23px;
+  }
+
+  .welcomeAction p {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  .outlineButton {
+    min-height: 42px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .formPanel {
+    padding: 34px 30px 38px;
+  }
+
+  .formHeader h2 {
+    font-size: 29px;
+    letter-spacing: -1px;
+  }
+
+  .formHeader p {
+    margin-bottom: 27px;
+    font-size: 15px;
+  }
+
+  .field {
+    margin-bottom: 20px;
+  }
+
+  .field label,
+  .dialog label {
+    font-size: 15px;
+  }
+
+  .inputWrap {
+    min-height: 55px;
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .inputWrap input {
+    font-size: 16px;
+  }
+
+  .options {
+    margin: 23px 0;
+    font-size: 13px;
+  }
+
+  .checkbox {
+    gap: 7px;
+  }
+
+  .primaryButton {
+    min-height: 55px;
+    font-size: 16px;
+  }
+
+  .tagline {
+    margin-top: 25px;
+    font-size: 11px;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .tagline::before,
+  .tagline::after {
+    min-width: 15px;
+  }
+
+  .footer {
+    max-width: 560px;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 23px;
+    font-size: 12px;
+  }
+
+  .footer nav {
+    gap: 24px;
+  }
+}
+
+@media (max-width: 430px) {
+  .page {
+    padding: 16px 12px 22px;
+  }
+
+  .welcome {
+    padding: 24px 22px 28px;
+  }
+
+  .formPanel {
+    padding: 30px 22px 34px;
+  }
+
+  .options {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .authCard,
+  .spinner {
+    animation: none;
+  }
+
+  .page *,
+  .page *::before,
+  .page *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
