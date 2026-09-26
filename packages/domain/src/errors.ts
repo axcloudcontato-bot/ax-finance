@@ -204,3 +204,9 @@ export class PeriodClosureNotFoundError extends DomainError {
     super("Este período não está fechado.", "PERIOD_CLOSURE_NOT_FOUND");
   }
 }
+
+export class InstallmentGroupNotFoundError extends DomainError {
+  constructor() {
+    super("Parcelamento não encontrado.", "INSTALLMENT_GROUP_NOT_FOUND");
+  }
+}

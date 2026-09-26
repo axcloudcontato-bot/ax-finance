@@ -19,6 +19,8 @@ import { SettlementForm } from "@/components/titles/settlement-form";
 import { ActionModal } from "@/components/ui/action-modal";
 import {
   cancelSaidaAction,
+  deleteSaidaAction,
+  deleteSaidaInstallmentPlanAction,
   registerSaidaSettlementAction,
   reverseSaidaSettlementAction,
 } from "../actions";
@@ -57,6 +59,10 @@ export default async function SaidaDetailPage({
   const hasActiveSettlement = title.settlements.some((settlement) => !settlement.reversedAt);
   const registerSettlementAction = registerSaidaSettlementAction.bind(null, title.id);
   const cancelAction = cancelSaidaAction.bind(null, title.id);
+  const deleteAction = deleteSaidaAction.bind(null, title.id);
+  const deleteInstallmentPlanAction = title.installmentGroupId
+    ? deleteSaidaInstallmentPlanAction.bind(null, title.installmentGroupId, title.id)
+    : null;
   const showSettlementForm = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
 
   const infoAndHistory = (
@@ -150,11 +156,36 @@ export default async function SaidaDetailPage({
             </button>
           </form>
         ) : null}
+
+        <form action={deleteAction} style={{ marginTop: "1rem" }}>
+          <label htmlFor="deleteReason">Excluir este lançamento — motivo</label>
+          <input id="deleteReason" name="reason" type="text" maxLength={500} required />
+          <button type="submit" className="secondary">
+            Excluir título
+          </button>
+        </form>
       </div>
 
       {installments.length > 0 ? (
         <div className="card">
-          <h1>Parcelas</h1>
+          <div className="page-header" style={{ marginBottom: "0.5rem" }}>
+            <h1>Parcelas</h1>
+            {deleteInstallmentPlanAction ? (
+              <form action={deleteInstallmentPlanAction} style={{ display: "flex", gap: "0.5rem" }}>
+                <input
+                  type="text"
+                  name="reason"
+                  placeholder="Motivo da exclusão em massa"
+                  maxLength={500}
+                  required
+                  style={{ width: "auto" }}
+                />
+                <button type="submit" className="secondary" style={{ marginTop: 0 }}>
+                  Excluir parcelamento ({installments.length} parcelas)
+                </button>
+              </form>
+            ) : null}
+          </div>
           <table>
             <thead>
               <tr>

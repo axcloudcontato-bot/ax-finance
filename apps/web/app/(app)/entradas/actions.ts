@@ -5,6 +5,8 @@ import {
   cancelTitle,
   createInstallmentPlan,
   createTitle,
+  deleteInstallmentPlan,
+  deleteTitle,
   registerSettlement,
   reverseSettlement,
 } from "@ax-finance/domain";
@@ -191,4 +193,52 @@ export async function cancelEntradaAction(titleId: string, formData: FormData) {
   }
 
   redirect(`/entradas/${titleId}`);
+}
+
+/** Exclusão de verdade (remove a linha, diferente de cancelar) — some da lista, por isso volta pra /entradas. */
+export async function deleteEntradaAction(titleId: string, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const company = await requirePrimaryCompany(user.id);
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  try {
+    await deleteTitle(user.id, company.id, titleId, { reason });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível excluir.";
+    redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
+  }
+
+  redirect("/entradas");
+}
+
+/**
+ * Exclui todas as parcelas do parcelamento de uma vez. `titleId` é só a
+ * parcela que estava sendo vista quando o botão foi clicado — usada apenas
+ * para saber pra onde voltar se der erro (o "erro=" da lista de entradas já
+ * é usado pelo modal de criação; reaproveitar aqui abriria aquele modal por
+ * engano).
+ */
+export async function deleteEntradaInstallmentPlanAction(
+  installmentGroupId: string,
+  titleId: string,
+  formData: FormData
+) {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const company = await requirePrimaryCompany(user.id);
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  try {
+    await deleteInstallmentPlan(user.id, company.id, installmentGroupId, { reason });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível excluir o parcelamento.";
+    redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
+  }
+
+  redirect("/entradas");
 }

@@ -9,9 +9,19 @@ const RESOURCE_LABEL: Record<string, string> = {
   Title: "Título",
   Transfer: "Transferência",
   Period: "Período",
+  InstallmentGroup: "Parcelamento",
 };
 
-function resourceHref(resourceType: string, resourceId: string, metadata: unknown): string | null {
+function resourceHref(
+  resourceType: string,
+  resourceId: string,
+  eventType: string,
+  metadata: unknown
+): string | null {
+  // Título/parcelamento excluído não existe mais — não faz sentido linkar.
+  if (eventType === "TITLE_DELETED" || eventType === "INSTALLMENT_PLAN_DELETED") {
+    return null;
+  }
   if (resourceType === "Title") {
     const titleType = (metadata as { titleType?: string } | null)?.titleType;
     return titleType === "PAYABLE" ? `/saidas/${resourceId}` : `/entradas/${resourceId}`;
@@ -79,7 +89,7 @@ export default async function AuditoriaPage({
             </thead>
             <tbody>
               {events.map((event) => {
-                const href = resourceHref(event.resourceType, event.resourceId, event.metadata);
+                const href = resourceHref(event.resourceType, event.resourceId, event.eventType, event.metadata);
                 return (
                   <tr key={event.id}>
                     <td>{new Date(event.createdAt).toLocaleString("pt-BR")}</td>

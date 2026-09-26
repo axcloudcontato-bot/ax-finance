@@ -6,4 +6,6 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   TRANSFER_REVERSED: "Transferência estornada",
   PERIOD_CLOSED: "Período fechado",
   PERIOD_REOPENED: "Período reaberto",
+  TITLE_DELETED: "Título excluído",
+  INSTALLMENT_PLAN_DELETED: "Parcelamento excluído",
 };
