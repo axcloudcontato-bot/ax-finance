@@ -29,6 +29,9 @@ docker compose up -d --build
 echo "==> Status dos containers:"
 docker compose ps
 
+echo "==> Health checks da aplicação:"
+APP_BASE_URL="${APP_BASE_URL:-http://127.0.0.1:3000}" /bin/sh ./ops/smoke-check.sh
+
 echo "==> Limpando imagens Docker antigas (dangling)..."
 docker image prune -f
 

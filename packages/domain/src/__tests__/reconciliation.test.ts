@@ -13,6 +13,17 @@ import { listUnreconciledSettlements } from "../reconciliation/list-unreconciled
 import { reconcileBankStatementLine } from "../reconciliation/reconcile-bank-statement-line";
 import { ignoreBankStatementLine } from "../reconciliation/ignore-bank-statement-line";
 import { undoReconciliation } from "../reconciliation/undo-reconciliation";
+import { parseAmountCents, parseBankStatementContent, previewBankStatement } from "../reconciliation/bank-statement-parser";
+import {
+  claimImportJobs,
+  completeImportJob,
+  confirmBankImport,
+  createBankImportPreview,
+  failImportJob,
+  processBankImportBatch,
+} from "../reconciliation/import-batches";
+import { listNotifications } from "../notifications/notifications";
+import { decodeImportFailedPayload } from "../outbox/events";
 import { SettlementAlreadyReconciledError } from "../errors";
 import { rootClient, resetDatabase } from "./test-db";
 
@@ -46,6 +57,21 @@ const SAMPLE_CSV = [
   "11/09/2026,Tarifa bancária,-25,00",
   "12/09/2026,Linha sem valor,",
 ].join("\n");
+
+const CUSTOM_CSV = [
+  "Quando;Histórico;Débito;Crédito",
+  "15/09/2026;Mensalidade;;1.250,50",
+  "16/09/2026;Tarifa;20,00;",
+].join("\n");
+
+const SAMPLE_OFX = `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+ENCODING:USASCII
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><BANKTRANLIST>
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20260917120000[-3:BRT]<TRNAMT>750.25<FITID>ofx-001<NAME>Cliente OFX<MEMO>Pagamento</STMTTRN>
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20260918120000[-3:BRT]<TRNAMT>-15.90<FITID>ofx-002<NAME>Tarifa banco</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
 
 beforeEach(async () => {
   await resetDatabase();
@@ -98,6 +124,111 @@ describe("importação de extrato (Seção 12)", () => {
 
     const lines = await listBankStatementLines(user.id, company.id, { financialAccountId: account.id });
     expect(lines).toHaveLength(2);
+  });
+
+  it("sugere o mapeamento CSV e combina colunas separadas de débito/crédito", () => {
+    const preview = previewBankStatement("extrato.csv", CUSTOM_CSV);
+    expect(preview.suggestedMapping).toMatchObject({
+      dateColumn: "Quando",
+      descriptionColumn: "Histórico",
+      debitColumn: "Débito",
+      creditColumn: "Crédito",
+    });
+    const parsed = parseBankStatementContent("CSV", CUSTOM_CSV, {
+      dateColumn: "Quando",
+      descriptionColumn: "Histórico",
+      debitColumn: "Débito",
+      creditColumn: "Crédito",
+    });
+    expect(parsed.rows.map((row) => row.amountCents)).toEqual([125_050n, -2_000n]);
+    expect(parseAmountCents("1.250")).toBe(125_000n);
+    expect(parseAmountCents("1,250")).toBe(125_000n);
+  });
+
+  it("importa OFX e usa FITID na deduplicação", async () => {
+    const { user, company, account } = await setupCompany("ofx");
+    const parsed = parseBankStatementContent("OFX", SAMPLE_OFX);
+    expect(parsed.rows).toMatchObject([
+      { lineDate: "2026-09-17", amountCents: 75_025n, dedupKey: "ofx:ofx-001" },
+      { lineDate: "2026-09-18", amountCents: -1_590n, dedupKey: "ofx:ofx-002" },
+    ]);
+
+    const batchId = randomUUID();
+    await createBankImportPreview(user.id, company.id, {
+      id: batchId,
+      financialAccountId: account.id,
+      fileName: "banco.ofx",
+      fileFormat: "OFX",
+      fileSizeBytes: Buffer.byteLength(SAMPLE_OFX),
+      storageKey: `${company.id}/${batchId}/source.ofx`,
+      detectedRowCount: 2,
+    });
+    await confirmBankImport(user.id, company.id, batchId, { processInBackground: false });
+    const result = await processBankImportBatch(user.id, company.id, batchId, SAMPLE_OFX);
+    expect(result).toMatchObject({ status: "COMPLETED", importedCount: 2, invalidCount: 0 });
+  });
+
+  it("processa arquivo grande pela fila e notifica conclusão", async () => {
+    const { user, company, account } = await setupCompany("async");
+    const batchId = randomUUID();
+    await createBankImportPreview(user.id, company.id, {
+      id: batchId,
+      financialAccountId: account.id,
+      fileName: "grande.csv",
+      fileFormat: "CSV",
+      fileSizeBytes: 600_000,
+      storageKey: `${company.id}/${batchId}/source.csv`,
+      detectedRowCount: 2,
+    });
+    await confirmBankImport(user.id, company.id, batchId, {
+      processInBackground: true,
+      mapping: { dateColumn: "Quando", descriptionColumn: "Histórico", debitColumn: "Débito", creditColumn: "Crédito" },
+    });
+    const [job] = await claimImportJobs("worker-import", 1);
+    expect(job).toBeDefined();
+    const result = await processBankImportBatch(user.id, company.id, batchId, CUSTOM_CSV);
+    expect(result.importedCount).toBe(2);
+    expect(await completeImportJob(job!, "worker-import")).toBe(true);
+    expect((await listNotifications(user.id, company.id))[0]).toMatchObject({ type: "IMPORT_COMPLETED" });
+  });
+
+  it("notifica falha definitiva sem persistir a mensagem bruta", async () => {
+    const { user, company, account } = await setupCompany("async-fail");
+    const batchId = randomUUID();
+    await createBankImportPreview(user.id, company.id, {
+      id: batchId,
+      financialAccountId: account.id,
+      fileName: "invalido.csv",
+      fileFormat: "CSV",
+      fileSizeBytes: 600_000,
+      storageKey: `${company.id}/${batchId}/source.csv`,
+      detectedRowCount: 1,
+    });
+    await confirmBankImport(user.id, company.id, batchId, {
+      processInBackground: true,
+      mapping: { dateColumn: "data", descriptionColumn: "descricao", amountColumn: "valor" },
+    });
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const workerId = `worker-fail-${attempt}`;
+      const [job] = await claimImportJobs(workerId, 1);
+      expect(job).toBeDefined();
+      const failure = await failImportJob(job!, workerId, new Error("arquivo com dado privado"));
+      expect(failure.finalFailure).toBe(attempt === 3);
+      if (attempt < 3) {
+        await rootClient.importJob.update({ where: { id: job!.id }, data: { availableAt: new Date(0) } });
+      }
+    }
+    const failed = await rootClient.importBatch.findUniqueOrThrow({ where: { id: batchId } });
+    expect(failed.status).toBe("FAILED");
+    expect(failed.failureCode).toMatch(/^Error:sha256_[a-f0-9]{12}$/);
+    expect(failed.failureCode).not.toContain("privado");
+    expect((await listNotifications(user.id, company.id))[0]).toMatchObject({ type: "IMPORT_FAILED" });
+    const failedEmail = await rootClient.outboxEvent.findFirstOrThrow({ where: { type: "IMPORT_FAILED" } });
+    expect(decodeImportFailedPayload(failedEmail)).toMatchObject({
+      to: user.email,
+      companyName: company.name,
+    });
   });
 });
 

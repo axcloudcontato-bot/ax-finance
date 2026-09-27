@@ -286,6 +286,24 @@ export class ImportFileInvalidError extends DomainError {
   }
 }
 
+export class ImportFileTooManyRowsError extends DomainError {
+  constructor() {
+    super("O arquivo deve ter no máximo 100.000 lançamentos.", "IMPORT_FILE_TOO_MANY_ROWS");
+  }
+}
+
+export class ImportBatchNotFoundError extends DomainError {
+  constructor() {
+    super("Importação não encontrada.", "IMPORT_BATCH_NOT_FOUND");
+  }
+}
+
+export class ImportBatchInvalidStateError extends DomainError {
+  constructor() {
+    super("Esta importação não está disponível para essa operação.", "IMPORT_BATCH_INVALID_STATE");
+  }
+}
+
 export class BankStatementLineNotFoundError extends DomainError {
   constructor() {
     super("Linha do extrato não encontrada.", "BANK_STATEMENT_LINE_NOT_FOUND");

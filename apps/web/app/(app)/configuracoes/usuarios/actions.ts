@@ -10,10 +10,12 @@ import {
 } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
+import { emailPreviewEnabled } from "@/lib/email";
 
 export interface InviteUserState {
   error?: string;
   invitePath?: string;
+  emailQueued?: boolean;
 }
 
 export async function inviteUserAction(
@@ -30,7 +32,10 @@ export async function inviteUserAction(
       role: String(formData.get("role") ?? "VIEWER"),
     });
     revalidatePath("/configuracoes/usuarios");
-    return { invitePath: `/convites/${rawToken}` };
+    return {
+      emailQueued: true,
+      invitePath: emailPreviewEnabled() ? `/convites/${rawToken}` : undefined,
+    };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível criar o convite." };
   }

@@ -1,4 +1,5 @@
 import { prisma, type Prisma, type ScheduledJob, type ScheduledJobType } from "@ax-finance/db";
+import { operationalErrorFingerprint } from "../observability/logger";
 
 const LOCK_TIMEOUT_MS = 30 * 60 * 1000;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000, 30 * 60_000, 2 * 60 * 60_000] as const;
@@ -7,6 +8,7 @@ const JOB_TYPES = [
   "GENERATE_RECURRENCES",
   "DUE_NOTIFICATIONS",
   "WEEKLY_SUMMARY",
+  "SUBSCRIPTION_NOTIFICATIONS",
 ] as const satisfies readonly ScheduledJobType[];
 
 export async function scheduleCompanyJobsInTx(
@@ -94,7 +96,7 @@ export async function completeScheduledJob(job: ScheduledJob, workerId: string) 
 export async function failScheduledJob(job: ScheduledJob, workerId: string, error: unknown) {
   const attempts = job.attempts + 1;
   const delay = RETRY_DELAYS_MS[Math.min(attempts - 1, RETRY_DELAYS_MS.length - 1)]!;
-  const message = (error instanceof Error ? error.message : String(error)).slice(0, 1000);
+  const message = operationalErrorFingerprint(error);
   const result = await prisma.scheduledJob.updateMany({
     where: { id: job.id, lockedBy: workerId, attempts: job.attempts },
     data: {

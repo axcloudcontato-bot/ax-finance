@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withUserContext } from "@ax-finance/db";
 import { createDefaultCategoriesInTx } from "../categories/seed-default-categories";
 import { scheduleCompanyJobsInTx } from "../scheduled-jobs/jobs";
+import { createTrialSubscriptionInTx } from "../subscriptions/subscriptions";
 
 export const completeOnboardingInput = z.object({
   companyName: z.string().trim().min(1).max(200),
@@ -49,6 +50,8 @@ export async function completeOnboarding(userId: string, input: unknown) {
     // só definiu app.current_user_id. Como ainda estamos na mesma transação/
     // conexão, dá pra completar o contexto sem abrir uma nova.
     await tx.$executeRaw`SELECT set_config('app.current_company_id', ${companyId}, true)`;
+
+    await createTrialSubscriptionInTx(tx, companyId);
 
     const account = await tx.financialAccount.create({
       data: {

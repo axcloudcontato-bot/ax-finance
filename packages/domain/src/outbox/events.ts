@@ -7,6 +7,7 @@ import {
 import { prisma, type OutboxEvent, type OutboxEventType, type Prisma } from "@ax-finance/db";
 import { z } from "zod";
 import { OutboxConfigurationError } from "../errors";
+import { operationalErrorFingerprint } from "../observability/logger";
 
 const LOCK_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
@@ -44,9 +45,56 @@ const weeklySummaryPayloadSchema = deliveryBaseSchema.extend({
   dueNext7Count: z.number().int().nonnegative(),
 });
 
+const companyInvitationPayloadSchema = z.object({
+  to: z.string().email(),
+  companyName: z.string().min(1).max(200),
+  invitedByName: z.string().min(1).max(200),
+  role: z.enum(["FINANCE_ADMIN", "OPERATOR", "ACCOUNTANT", "VIEWER"]),
+  rawToken: z.string().regex(/^[a-f0-9]{64}$/i),
+  expiresAt: z.string().datetime(),
+});
+
+const accessChangedPayloadSchema = z.object({
+  to: z.string().email(),
+  name: z.string().min(1).max(200),
+  companyName: z.string().min(1).max(200),
+  kind: z.enum(["ROLE_CHANGED", "ACCESS_REVOKED", "INVITATION_ACCEPTED", "INVITATION_REVOKED"]),
+  role: z.enum(["FINANCE_ADMIN", "OPERATOR", "ACCOUNTANT", "VIEWER"]).optional(),
+  actorName: z.string().min(1).max(200).optional(),
+  targetName: z.string().min(1).max(200).optional(),
+});
+
+const importFailedPayloadSchema = z.object({
+  to: z.string().email(),
+  name: z.string().min(1).max(200),
+  companyName: z.string().min(1).max(200),
+});
+
+const billingNoticePayloadSchema = z.object({
+  to: z.string().email(),
+  name: z.string().min(1).max(200),
+  companyName: z.string().min(1).max(200),
+  noticeType: z.enum([
+    "BILLING_TRIAL_ENDING",
+    "BILLING_TRIAL_ENDED",
+    "BILLING_PAYMENT_DUE",
+    "BILLING_PAYMENT_FAILED",
+    "BILLING_GRACE_PERIOD",
+    "BILLING_CANCELLATION_SCHEDULED",
+    "BILLING_CANCELLED",
+  ]),
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(1000),
+  href: z.string().startsWith("/").max(500),
+});
+
 export type OutboxEmailPayload = z.infer<typeof emailPayloadSchema>;
 export type DueDateSummaryPayload = z.infer<typeof dueDateSummaryPayloadSchema>;
 export type WeeklySummaryPayload = z.infer<typeof weeklySummaryPayloadSchema>;
+export type CompanyInvitationPayload = z.infer<typeof companyInvitationPayloadSchema>;
+export type AccessChangedPayload = z.infer<typeof accessChangedPayloadSchema>;
+export type ImportFailedPayload = z.infer<typeof importFailedPayloadSchema>;
+export type BillingNoticePayload = z.infer<typeof billingNoticePayloadSchema>;
 
 function encryptionKey(): Buffer {
   const configured = process.env.OUTBOX_ENCRYPTION_KEY?.trim() || process.env.SESSION_SECRET?.trim();
@@ -106,6 +154,22 @@ export function decodeWeeklySummaryPayload(event: Pick<OutboxEvent, "payloadEncr
   return decodePayload(event, weeklySummaryPayloadSchema);
 }
 
+export function decodeCompanyInvitationPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, companyInvitationPayloadSchema);
+}
+
+export function decodeAccessChangedPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, accessChangedPayloadSchema);
+}
+
+export function decodeImportFailedPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, importFailedPayloadSchema);
+}
+
+export function decodeBillingNoticePayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, billingNoticePayloadSchema);
+}
+
 export async function enqueueOutboxEmail(
   tx: Prisma.TransactionClient,
   input: {
@@ -154,6 +218,52 @@ export async function enqueueWeeklySummaryEmail(
     }],
     skipDuplicates: true,
   });
+}
+
+async function enqueueTransactionalEmail(
+  tx: Prisma.TransactionClient,
+  type: Extract<OutboxEventType, "COMPANY_INVITATION" | "ACCESS_CHANGED" | "IMPORT_FAILED" | "BILLING_NOTICE">,
+  dedupKey: string,
+  payload: unknown,
+  schema: z.ZodType
+) {
+  const parsed = schema.parse(payload);
+  return tx.outboxEvent.createMany({
+    data: [{ type, dedupKey, payloadEncrypted: encryptPayload(parsed) }],
+    skipDuplicates: true,
+  });
+}
+
+export function enqueueCompanyInvitationEmail(
+  tx: Prisma.TransactionClient,
+  dedupKey: string,
+  payload: CompanyInvitationPayload
+) {
+  return enqueueTransactionalEmail(tx, "COMPANY_INVITATION", dedupKey, payload, companyInvitationPayloadSchema);
+}
+
+export function enqueueAccessChangedEmail(
+  tx: Prisma.TransactionClient,
+  dedupKey: string,
+  payload: AccessChangedPayload
+) {
+  return enqueueTransactionalEmail(tx, "ACCESS_CHANGED", dedupKey, payload, accessChangedPayloadSchema);
+}
+
+export function enqueueImportFailedEmail(
+  tx: Prisma.TransactionClient,
+  dedupKey: string,
+  payload: ImportFailedPayload
+) {
+  return enqueueTransactionalEmail(tx, "IMPORT_FAILED", dedupKey, payload, importFailedPayloadSchema);
+}
+
+export function enqueueBillingNoticeEmail(
+  tx: Prisma.TransactionClient,
+  dedupKey: string,
+  payload: BillingNoticePayload
+) {
+  return enqueueTransactionalEmail(tx, "BILLING_NOTICE", dedupKey, payload, billingNoticePayloadSchema);
 }
 
 export async function claimOutboxEvents(workerId: string, requestedLimit = 10) {
@@ -215,10 +325,7 @@ export async function failOutboxEvent(eventId: string, workerId: string, error: 
   const attempts = event.attempts + 1;
   const deadLetter = attempts >= MAX_ATTEMPTS;
   const delay = RETRY_DELAYS_MS[Math.min(attempts - 1, RETRY_DELAYS_MS.length - 1)]!;
-  const message = (error instanceof Error ? error.message : String(error))
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
-    .replace(/[a-f0-9]{64}/gi, "[token]")
-    .slice(0, 1000);
+  const message = operationalErrorFingerprint(error);
   const result = await prisma.outboxEvent.updateMany({
     where: { id: event.id, status: "PROCESSING", lockedBy: workerId, attempts: event.attempts },
     data: {

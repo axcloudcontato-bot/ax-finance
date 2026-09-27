@@ -26,6 +26,13 @@ export default async function NotificationSettingsPage({
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 
       <form action={updateNotificationPreferenceAction} className="card notification-settings-form">
+        <h1>Avisos operacionais</h1>
+        <p className="muted">
+          Convites, falhas de importação, alterações de acesso e eventos da assinatura são
+          comunicações transacionais de segurança e cobrança. Elas permanecem ativas na
+          campainha e por e-mail e não são tratadas como marketing.
+        </p>
+
         <h1>Vencimentos</h1>
         <p className="muted">Inclui títulos vencidos, do dia e dentro da antecedência escolhida.</p>
         <label className="notification-channel">

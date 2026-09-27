@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { requestPasswordReset } from "@ax-finance/domain";
+import { logOperationalError, requestPasswordReset } from "@ax-finance/domain";
 import { passwordResetPreviewPath, publicBaseUrl } from "@/lib/email";
 
 export async function requestPasswordResetAction(formData: FormData) {
@@ -17,7 +17,7 @@ export async function requestPasswordResetAction(formData: FormData) {
       previewPath = passwordResetPreviewPath(request.rawToken);
     }
   } catch (error) {
-    console.error("Falha ao agendar redefinição de senha", error);
+    logOperationalError("web.password_reset_schedule_failed", error);
   }
 
   // Resposta idêntica para e-mail existente ou inexistente: evita enumeração.

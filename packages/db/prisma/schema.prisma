@@ -3,8 +3,9 @@
 // Núcleo financeiro: categorias, títulos, baixas, transferências, clientes/fornecedores,
 // parcelamento, recorrências, conciliação bancária, trilha de auditoria, fechamento de
 // período e ajuste manual de saldo (Seções 5-13, 17-19 do DIRECAO.md).
-// Ainda não existe billing/assinatura. Anexos privados, recuperação de senha,
-// verificação de e-mail, limitação de tentativas, MFA e outbox/worker já fazem parte do núcleo.
+// Assinatura já mantém ciclo local e notificações; checkout, PSP e webhooks ainda não existem.
+// Anexos privados, recuperação de senha, verificação de e-mail, limitação de tentativas,
+// MFA e outbox/worker já fazem parte do núcleo.
 // Convites/revogação e permissões por papel já são aplicados no domínio; ver limitações e
 // próximos passos em "Estado atual e limitações conhecidas" no README.
 
@@ -32,6 +33,10 @@ enum OutboxEventType {
   PASSWORD_RESET
   DUE_DATE_SUMMARY
   WEEKLY_SUMMARY
+  COMPANY_INVITATION
+  ACCESS_CHANGED
+  IMPORT_FAILED
+  BILLING_NOTICE
 }
 
 enum OutboxEventStatus {
@@ -45,6 +50,7 @@ enum ScheduledJobType {
   GENERATE_RECURRENCES
   DUE_NOTIFICATIONS
   WEEKLY_SUMMARY
+  SUBSCRIPTION_NOTIFICATIONS
 }
 
 enum NotificationType {
@@ -52,6 +58,27 @@ enum NotificationType {
   TITLE_DUE_SOON
   TITLE_OVERDUE
   WEEKLY_SUMMARY
+  IMPORT_COMPLETED
+  IMPORT_FAILED
+  INVITATION_ACCEPTED
+  ACCESS_ROLE_CHANGED
+  BILLING_TRIAL_ENDING
+  BILLING_TRIAL_ENDED
+  BILLING_PAYMENT_DUE
+  BILLING_PAYMENT_FAILED
+  BILLING_GRACE_PERIOD
+  BILLING_CANCELLATION_SCHEDULED
+  BILLING_CANCELLED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAYMENT_PENDING
+  GRACE_PERIOD
+  SUSPENDED
+  CANCELLATION_SCHEDULED
+  CANCELLED
 }
 
 enum MembershipRole {
@@ -103,16 +130,18 @@ model User {
   createdAt             DateTime   @default(now()) @map("created_at")
   updatedAt             DateTime   @updatedAt @map("updated_at")
 
-  sessions           Session[]
-  memberships        Membership[]
-  invitationsCreated CompanyInvitation[] @relation("InvitationCreator")
-  accountTokens      AccountToken[]
-  mfaSetup           MfaSetup?
-  mfaChallenges      MfaChallenge[]
-  notifications      Notification[]
+  sessions                Session[]
+  memberships             Membership[]
+  invitationsCreated      CompanyInvitation[]      @relation("InvitationCreator")
+  accountTokens           AccountToken[]
+  mfaSetup                MfaSetup?
+  mfaChallenges           MfaChallenge[]
+  notifications           Notification[]
   notificationPreferences NotificationPreference[]
-  attachmentsUploaded Attachment[] @relation("AttachmentUploader")
-  scheduledJobs      ScheduledJob[] @relation("ScheduledJobRunner")
+  attachmentsUploaded     Attachment[]             @relation("AttachmentUploader")
+  scheduledJobs           ScheduledJob[]           @relation("ScheduledJobRunner")
+  importBatchesRequested  ImportBatch[]            @relation("ImportBatchRequester")
+  importJobsRun           ImportJob[]              @relation("ImportJobRunner")
 
   @@map("users")
 }
@@ -227,19 +256,19 @@ model Notification {
 }
 
 model NotificationPreference {
-  id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userId         String   @map("user_id")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  inAppDue       Boolean  @default(true) @map("in_app_due")
-  emailDue       Boolean  @default(true) @map("email_due")
-  inAppWeekly    Boolean  @default(true) @map("in_app_weekly")
-  emailWeekly    Boolean  @default(true) @map("email_weekly")
-  dueDaysAhead   Int      @default(0) @map("due_days_ahead")
-  deliveryHour   Int      @default(8) @map("delivery_hour")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  companyId    String   @map("company_id")
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inAppDue     Boolean  @default(true) @map("in_app_due")
+  emailDue     Boolean  @default(true) @map("email_due")
+  inAppWeekly  Boolean  @default(true) @map("in_app_weekly")
+  emailWeekly  Boolean  @default(true) @map("email_weekly")
+  dueDaysAhead Int      @default(0) @map("due_days_ahead")
+  deliveryHour Int      @default(8) @map("delivery_hour")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -282,28 +311,47 @@ model Company {
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
 
-  memberships        Membership[]
-  financialAccounts  FinancialAccount[]
-  categories         Category[]
-  parties            Party[]
-  titles             Title[]
-  settlements        Settlement[]
-  transfers          Transfer[]
-  recurrenceRules    RecurrenceRule[]
-  importBatches      ImportBatch[]
-  bankStatementLines BankStatementLine[]
-  auditEvents        AuditEvent[]
-  periodClosures     PeriodClosure[]
-  balanceAdjustments BalanceAdjustment[]
-  invitations        CompanyInvitation[]
-  idempotencyRecords IdempotencyRecord[]
-  notifications      Notification[]
+  memberships             Membership[]
+  financialAccounts       FinancialAccount[]
+  categories              Category[]
+  parties                 Party[]
+  titles                  Title[]
+  settlements             Settlement[]
+  transfers               Transfer[]
+  recurrenceRules         RecurrenceRule[]
+  importBatches           ImportBatch[]
+  bankStatementLines      BankStatementLine[]
+  auditEvents             AuditEvent[]
+  periodClosures          PeriodClosure[]
+  balanceAdjustments      BalanceAdjustment[]
+  invitations             CompanyInvitation[]
+  idempotencyRecords      IdempotencyRecord[]
+  notifications           Notification[]
   notificationPreferences NotificationPreference[]
-  attachments        Attachment[]
-  scheduledJobs      ScheduledJob[]
+  attachments             Attachment[]
+  scheduledJobs           ScheduledJob[]
+  importJobs              ImportJob[]
+  subscription            Subscription?
 
   @@index([tenantId])
   @@map("companies")
+}
+
+model Subscription {
+  id                    String             @id @default(uuid())
+  companyId             String             @unique @map("company_id")
+  company               Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status                SubscriptionStatus @default(TRIAL)
+  planCode              String             @default("TRIAL") @map("plan_code")
+  trialEndsAt           DateTime?           @map("trial_ends_at")
+  currentPeriodEnd      DateTime?           @map("current_period_end")
+  graceEndsAt           DateTime?           @map("grace_ends_at")
+  cancellationEffectiveAt DateTime?         @map("cancellation_effective_at")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("subscriptions")
 }
 
 model IdempotencyRecord {
@@ -634,23 +682,79 @@ enum BankStatementLineStatus {
   IGNORED
 }
 
+enum ImportFileFormat {
+  CSV
+  OFX
+}
+
+enum ImportBatchStatus {
+  PREVIEW
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ImportJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model ImportBatch {
-  id                 String           @id @default(uuid())
-  companyId          String           @map("company_id")
-  company            Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  financialAccountId String           @map("financial_account_id")
-  financialAccount   FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
-  fileName           String           @map("file_name")
-  rowCount           Int              @map("row_count")
-  importedCount      Int              @map("imported_count")
-  duplicateCount     Int              @map("duplicate_count")
-  invalidCount       Int              @map("invalid_count")
-  createdAt          DateTime         @default(now()) @map("created_at")
+  id                 String            @id @default(uuid())
+  companyId          String            @map("company_id")
+  company            Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId String            @map("financial_account_id")
+  financialAccount   FinancialAccount  @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  fileName           String            @map("file_name")
+  fileFormat         ImportFileFormat  @default(CSV) @map("file_format")
+  status             ImportBatchStatus @default(COMPLETED)
+  fileSizeBytes      Int               @default(0) @map("file_size_bytes")
+  storageKey         String?           @unique @map("storage_key")
+  columnMapping      Json?             @map("column_mapping")
+  requestedByUserId  String?           @map("requested_by_user_id")
+  requestedByUser    User?             @relation("ImportBatchRequester", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+  rowCount           Int               @default(0) @map("row_count")
+  importedCount      Int               @default(0) @map("imported_count")
+  duplicateCount     Int               @default(0) @map("duplicate_count")
+  invalidCount       Int               @default(0) @map("invalid_count")
+  startedAt          DateTime?         @map("started_at")
+  completedAt        DateTime?         @map("completed_at")
+  failureCode        String?           @map("failure_code")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
 
   lines BankStatementLine[]
+  job   ImportJob?
 
   @@index([companyId])
+  @@index([companyId, status, createdAt])
   @@map("import_batches")
+}
+
+model ImportJob {
+  id            String          @id @default(uuid())
+  importBatchId String          @unique @map("import_batch_id")
+  importBatch   ImportBatch     @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  companyId     String          @map("company_id")
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  runAsUserId   String          @map("run_as_user_id")
+  runAsUser     User            @relation("ImportJobRunner", fields: [runAsUserId], references: [id], onDelete: Cascade)
+  status        ImportJobStatus @default(PENDING)
+  attempts      Int             @default(0)
+  availableAt   DateTime        @default(now()) @map("available_at")
+  lockedAt      DateTime?       @map("locked_at")
+  lockedBy      String?         @map("locked_by")
+  lastError     String?         @map("last_error")
+  completedAt   DateTime?       @map("completed_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  @@index([status, availableAt, createdAt])
+  @@index([companyId])
+  @@map("import_jobs")
 }
 
 model BankStatementLine {

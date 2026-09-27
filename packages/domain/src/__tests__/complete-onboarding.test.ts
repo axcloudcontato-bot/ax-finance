@@ -6,6 +6,7 @@ import { listCompaniesForUser } from "../companies/list-companies";
 import { listFinancialAccountsWithBalance } from "../financial-accounts/account-balances";
 import { listCategories } from "../categories/list-categories";
 import { rootClient, resetDatabase } from "./test-db";
+import { getCompanySubscription } from "../subscriptions/subscriptions";
 
 function uniqueEmail(label: string) {
   return `${label}.${randomUUID()}@teste.ax.finance`;
@@ -47,6 +48,9 @@ describe("onboarding completo (empresa + conta + categorias numa transação)", 
 
     const categories = await listCategories(user.id, company.id);
     expect(categories.length).toBeGreaterThan(10);
+    const subscription = await getCompanySubscription(user.id, company.id);
+    expect(subscription).toMatchObject({ status: "TRIAL", planCode: "TRIAL" });
+    expect(subscription?.trialEndsAt).toBeInstanceOf(Date);
   });
 
   it("entrada inválida não cria nada — validação roda antes de qualquer escrita", async () => {

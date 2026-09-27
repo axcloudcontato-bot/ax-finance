@@ -1,4 +1,5 @@
-import { mkdir, open, readFile, rm } from "node:fs/promises";
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { ATTACHMENT_MAX_BYTES } from "@ax-finance/domain";
 
@@ -28,11 +29,19 @@ export function detectAttachmentMime(buffer: Buffer): string | null {
 export async function writeAttachmentObject(storageKey: string, buffer: Buffer) {
   const target = storagePath(storageKey);
   await mkdir(path.dirname(target), { recursive: true });
-  const file = await open(target, "wx", 0o600);
+  const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
+  const file = await open(temporary, "wx", 0o600);
   try {
     await file.writeFile(buffer);
+    await file.sync();
   } finally {
     await file.close();
+  }
+  try {
+    await rename(temporary, target);
+  } catch (error) {
+    await rm(temporary, { force: true });
+    throw error;
   }
 }
 

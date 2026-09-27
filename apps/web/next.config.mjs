@@ -11,7 +11,7 @@ const nextConfig = {
   output: process.platform === "win32" ? undefined : "standalone",
   experimental: {
     serverActions: {
-      bodySizeLimit: "11mb",
+      bodySizeLimit: "21mb",
     },
     // O motor de consultas do Prisma (arquivo binário .so.node) é carregado
     // via caminho calculado em runtime, não via `require()` estático — o

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import {
   listBankStatementLines,
   listFinancialAccounts,
+  listImportBatches,
   listUnreconciledSettlements,
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -22,6 +23,14 @@ const STATUS_LABEL: Record<string, string> = {
   IGNORED: "Ignorado",
 };
 
+const IMPORT_STATUS_LABEL: Record<string, string> = {
+  PREVIEW: "Aguardando confirmação",
+  QUEUED: "Na fila",
+  PROCESSING: "Processando",
+  COMPLETED: "Concluída",
+  FAILED: "Falhou",
+};
+
 export default async function ConciliacaoPage({
   searchParams,
 }: {
@@ -32,6 +41,7 @@ export default async function ConciliacaoPage({
     importado?: string;
     duplicado?: string;
     invalido?: string;
+    enfileirado?: string;
     mes?: string;
     de?: string;
     ate?: string;
@@ -60,9 +70,10 @@ export default async function ConciliacaoPage({
   const statusFilter = (searchParams.status as "PENDING" | "RECONCILED" | "IGNORED" | undefined) ?? undefined;
   const period = resolvePeriodRange(searchParams);
 
-  const [lines, unreconciledSettlements] = await Promise.all([
+  const [lines, unreconciledSettlements, importBatches] = await Promise.all([
     listBankStatementLines(user.id, company.id, { financialAccountId: activeAccountId, status: statusFilter, ...period }),
     listUnreconciledSettlements(user.id, company.id, activeAccountId),
+    listImportBatches(user.id, company.id, activeAccountId),
   ]);
 
   const periodQuery = period.mode === "custom"
@@ -87,9 +98,8 @@ export default async function ConciliacaoPage({
       <div className="card">
         <h1>Importar extrato</h1>
         <p className="subtitle">
-          CSV com cabeçalho <code>data,descricao,valor</code> — data em <code>DD/MM/AAAA</code> ou{" "}
-          <code>AAAA-MM-DD</code>, valor negativo para saída. Reimportar o mesmo arquivo não
-          duplica linhas.
+          Envie CSV ou OFX. Antes de confirmar, você poderá revisar a amostra e mapear as colunas
+          do CSV. Reimportar o mesmo extrato não duplica linhas.
         </p>
 
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
@@ -99,14 +109,43 @@ export default async function ConciliacaoPage({
             {searchParams.invalido} inválida(s).
           </p>
         ) : null}
+        {searchParams.enfileirado ? (
+          <p className="success-box">Importação adicionada à fila. Você receberá uma notificação ao terminar.</p>
+        ) : null}
 
         <form action={importBankStatementAction}>
           <input type="hidden" name="financialAccountId" value={activeAccountId} />
-          <label htmlFor="file">Arquivo CSV</label>
-          <input id="file" name="file" type="file" accept=".csv,text/csv" required />
-          <button type="submit">Importar</button>
+          <label htmlFor="file">Arquivo CSV ou OFX</label>
+          <input id="file" name="file" type="file" accept=".csv,.ofx,text/csv,application/x-ofx" required />
+          <button type="submit">Revisar arquivo</button>
         </form>
       </div>
+
+      {importBatches.length > 0 ? (
+        <div className="card">
+          <h1>Importações recentes</h1>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Arquivo</th><th>Formato</th><th>Status</th><th>Resultado</th><th></th></tr></thead>
+              <tbody>
+                {importBatches.slice(0, 20).map((batch) => (
+                  <tr key={batch.id}>
+                    <td>{batch.fileName}</td>
+                    <td>{batch.fileFormat}</td>
+                    <td>{IMPORT_STATUS_LABEL[batch.status] ?? batch.status}</td>
+                    <td>{batch.status === "COMPLETED"
+                      ? `${batch.importedCount} importada(s) · ${batch.duplicateCount} duplicada(s) · ${batch.invalidCount} inválida(s)`
+                      : batch.status === "FAILED" ? "Revise o arquivo e tente novamente." : "—"}</td>
+                    <td>{batch.status === "PREVIEW"
+                      ? <a href={`/conciliacao/importacoes/${batch.id}`}>Continuar</a>
+                      : null}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       <div className="card">
         <div className="page-header" style={{ marginBottom: "0.5rem" }}>

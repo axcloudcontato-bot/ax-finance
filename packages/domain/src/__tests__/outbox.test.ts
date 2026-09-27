@@ -92,7 +92,8 @@ describe("outbox transacional", () => {
         });
       }
     }
-    expect((await rootClient.outboxEvent.findUniqueOrThrow({ where: { id: eventId } })).lastError)
-      .toContain("SMTP indisponível");
+    const lastError = (await rootClient.outboxEvent.findUniqueOrThrow({ where: { id: eventId } })).lastError;
+    expect(lastError).toMatch(/^Error:sha256_[a-f0-9]{12}$/);
+    expect(lastError).not.toContain("SMTP indisponível");
   });
 });

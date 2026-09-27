@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "${LOG_MAX_SIZE:-10m}"
+    max-file: "${LOG_MAX_FILES:-5}"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -13,6 +19,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    logging: *default-logging
 
   # Job de curta duração: aplica as migrations (inclui criar a role `ax_app`
   # de baixo privilégio e as políticas de RLS) e encerra. `web` só sobe depois
@@ -29,6 +36,7 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    logging: *default-logging
 
   web:
     build:
@@ -37,6 +45,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      SERVICE_NAME: web
       PORT: "3000"
       # HTTPS de verdade é terminado na borda da Cloudflare (túnel
       # axcloud-infra-tunnel) — o cookie "Secure" volta ao padrão (true).
@@ -56,6 +65,11 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
       ATTACHMENTS_DIR: /data/attachments
+      IMPORTS_DIR: /data/imports
+      METRICS_TOKEN: ${METRICS_TOKEN}
+      OPERATIONS_TOKEN: ${OPERATIONS_TOKEN}
+      BACKUP_STATUS_FILE: /data/backups/.last_success
+      WORKER_HEALTH_FILE: /var/run/ax-finance/worker-heartbeat
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -67,6 +81,16 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - attachments_data:/data/attachments
+      - imports_data:/data/imports
+      - ${BACKUP_HOST_DIR:-./.backups}:/data/backups:ro
+      - worker_runtime:/var/run/ax-finance:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *default-logging
 
   worker:
     build:
@@ -75,6 +99,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      SERVICE_NAME: worker
       APP_DATABASE_URL: postgresql://ax_app:${AX_APP_PASSWORD}@postgres:5432/ax_finance
       SESSION_SECRET: ${SESSION_SECRET}
       OUTBOX_ENCRYPTION_KEY: ${OUTBOX_ENCRYPTION_KEY}
@@ -87,10 +112,84 @@ services:
       SMTP_FROM: ${SMTP_FROM}
       WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-5000}
       WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-10}
+      IMPORT_WORKER_BATCH_SIZE: ${IMPORT_WORKER_BATCH_SIZE:-2}
+      IMPORTS_DIR: /data/imports
+      WORKER_HEALTH_FILE: /var/run/ax-finance/worker-heartbeat
+      BACKUP_STATUS_FILE: /data/backups/.last_success
+      MONITOR_INTERVAL_MS: ${MONITOR_INTERVAL_MS:-60000}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_COOLDOWN_MINUTES: ${ALERT_COOLDOWN_MINUTES:-30}
+      ALERT_OUTBOX_PENDING_SECONDS: ${ALERT_OUTBOX_PENDING_SECONDS:-900}
+      ALERT_IMPORT_PENDING_SECONDS: ${ALERT_IMPORT_PENDING_SECONDS:-1800}
+      BACKUP_MAX_AGE_SECONDS: ${BACKUP_MAX_AGE_SECONDS:-129600}
+      DEPLOY_ENVIRONMENT: ${DEPLOY_ENVIRONMENT:-production}
+      RETENTION_PROCESSED_OUTBOX_DAYS: ${RETENTION_PROCESSED_OUTBOX_DAYS:-30}
+      RETENTION_DEAD_LETTER_DAYS: ${RETENTION_DEAD_LETTER_DAYS:-90}
+      RETENTION_IDENTITY_ARTIFACT_DAYS: ${RETENTION_IDENTITY_ARTIFACT_DAYS:-30}
+      RETENTION_COMPLETED_IMPORT_JOB_DAYS: ${RETENTION_COMPLETED_IMPORT_JOB_DAYS:-30}
+      RETENTION_FAILED_IMPORT_JOB_DAYS: ${RETENTION_FAILED_IMPORT_JOB_DAYS:-90}
     depends_on:
       migrate:
         condition: service_completed_successfully
+    volumes:
+      - worker_runtime:/var/run/ax-finance
+      - imports_data:/data/imports
+      - ${BACKUP_HOST_DIR:-./.backups}:/data/backups:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "const fs=require('fs');const p='/var/run/ax-finance/worker-heartbeat';const age=Date.now()/1000-Number(fs.readFileSync(p,'utf8').split(/\\r?\\n/)[0]);if(!Number.isFinite(age)||age>120)process.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    stop_grace_period: 30s
+    logging: *default-logging
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ax_finance
+      PGHOST: postgres
+      PGPORT: "5432"
+      BACKUP_DIR: /backups
+      ATTACHMENTS_SOURCE: /attachments
+      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+      BACKUP_MAX_AGE_SECONDS: ${BACKUP_MAX_AGE_SECONDS:-129600}
+    command: ["/bin/sh", "/ops/backup-entrypoint.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./ops:/ops:ro
+      - attachments_data:/attachments:ro
+      - ${BACKUP_HOST_DIR:-./.backups}:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /backups/.last_success && now=$$(date +%s) && last=$$(sed -n '1p' /backups/.last_success) && test $$((now-last)) -le $${BACKUP_MAX_AGE_SECONDS:-129600}"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 10m
+    logging: *default-logging
+
+  restore-verify:
+    image: postgres:16-alpine
+    profiles: ["operations"]
+    environment:
+      BACKUP_DIR: /backups
+    command: ["/bin/sh", "/ops/restore-verify.sh"]
+    depends_on:
+      backup:
+        condition: service_healthy
+    volumes:
+      - ./ops:/ops:ro
+      - ${BACKUP_HOST_DIR:-./.backups}:/backups:ro
+    logging: *default-logging
 
 volumes:
   postgres_data:
   attachments_data:
+  imports_data:
+  worker_runtime:

@@ -9,10 +9,17 @@ import {
   CompanyOwnerProtectedError,
 } from "../errors";
 import { recordAuditEvent } from "../audit/record-audit-event";
+import { enqueueAccessChangedEmail, enqueueCompanyInvitationEmail } from "../outbox/events";
 import { assertCompanyPermission } from "./permissions";
 
 const invitationRole = z.enum(["FINANCE_ADMIN", "OPERATOR", "ACCOUNTANT", "VIEWER"]);
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ROLE_LABEL = {
+  FINANCE_ADMIN: "Administrador financeiro",
+  OPERATOR: "Operador",
+  ACCOUNTANT: "Contador",
+  VIEWER: "Consulta",
+} as const;
 
 export const createCompanyInvitationInput = z.object({
   email: z.string().trim().email().max(254).toLowerCase(),
@@ -55,7 +62,10 @@ export async function createCompanyInvitation(userId: string, companyId: string,
   const expiresAt = new Date(Date.now() + INVITATION_TTL_MS);
 
   const invitation = await withCompanyContext(userId, companyId, async (tx) => {
-    const company = await tx.company.findUniqueOrThrow({ where: { id: companyId } });
+    const [company, inviter] = await Promise.all([
+      tx.company.findUniqueOrThrow({ where: { id: companyId } }),
+      tx.user.findUniqueOrThrow({ where: { id: userId } }),
+    ]);
     const activeMember = await tx.membership.findFirst({
       where: { companyId, status: "ACTIVE", user: { email: data.email } },
     });
@@ -92,6 +102,19 @@ export async function createCompanyInvitation(userId: string, companyId: string,
       summary: `Convite criado para ${data.email}`,
       metadata: { email: data.email, role: data.role },
     });
+
+    await enqueueCompanyInvitationEmail(
+      tx,
+      `company-invitation:${result.id}:${tokenHash.slice(0, 16)}`,
+      {
+        to: result.email,
+        companyName: company.name,
+        invitedByName: inviter.name,
+        role: data.role,
+        rawToken,
+        expiresAt: result.expiresAt.toISOString(),
+      }
+    );
 
     return result;
   });
@@ -170,6 +193,34 @@ export async function acceptCompanyInvitation(userId: string, rawToken: string) 
       metadata: { email: user.email, role: invitation.role },
     });
 
+    const inviter = await tx.user.findUnique({ where: { id: invitation.invitedByUserId } });
+    if (inviter) {
+      await tx.notification.createMany({
+        data: [{
+          companyId: invitation.companyId,
+          userId: inviter.id,
+          type: "INVITATION_ACCEPTED",
+          dedupKey: `invitation-accepted:${invitation.id}:${inviter.id}`,
+          title: "Convite aceito",
+          body: `${user.name} agora tem acesso como ${ROLE_LABEL[invitationRole.parse(invitation.role)]}.`,
+          href: "/configuracoes/usuarios",
+        }],
+        skipDuplicates: true,
+      });
+      await enqueueAccessChangedEmail(
+        tx,
+        `access-invitation-accepted:${invitation.id}:${inviter.id}`,
+        {
+          to: inviter.email,
+          name: inviter.name,
+          companyName: invitation.companyName,
+          kind: "INVITATION_ACCEPTED",
+          role: invitationRole.parse(invitation.role),
+          targetName: user.name,
+        }
+      );
+    }
+
     return membership;
   });
 }
@@ -194,6 +245,14 @@ export async function revokeCompanyInvitation(userId: string, companyId: string,
       resourceId: invitation.id,
       summary: `Convite de ${invitation.email} revogado`,
     });
+    const actor = await tx.user.findUniqueOrThrow({ where: { id: userId } });
+    await enqueueAccessChangedEmail(tx, `access-invitation-revoked:${invitation.id}`, {
+      to: invitation.email,
+      name: invitation.email.split("@")[0] || "Usuário",
+      companyName: invitation.companyName,
+      kind: "INVITATION_REVOKED",
+      actorName: actor.name,
+    });
     return revoked;
   });
 }
@@ -207,7 +266,10 @@ export async function updateCompanyMemberRole(
   const data = updateCompanyMemberRoleInput.parse(input);
   await assertCompanyPermission(userId, companyId, "MEMBERS_MANAGE");
   return withCompanyContext(userId, companyId, async (tx) => {
-    const membership = await tx.membership.findFirst({ where: { id: membershipId, companyId, status: "ACTIVE" } });
+    const membership = await tx.membership.findFirst({
+      where: { id: membershipId, companyId, status: "ACTIVE" },
+      include: { user: true },
+    });
     if (!membership) throw new CompanyMemberNotFoundError();
     if (membership.role === "OWNER") throw new CompanyOwnerProtectedError();
 
@@ -224,6 +286,30 @@ export async function updateCompanyMemberRole(
       summary: "Papel de usuário atualizado",
       metadata: { previousRole: membership.role, role: data.role },
     });
+    const [company, actor] = await Promise.all([
+      tx.company.findUniqueOrThrow({ where: { id: companyId } }),
+      tx.user.findUniqueOrThrow({ where: { id: userId } }),
+    ]);
+    await tx.notification.createMany({
+      data: [{
+        companyId,
+        userId: membership.userId,
+        type: "ACCESS_ROLE_CHANGED",
+        dedupKey: `access-role:${membership.id}:${updated.updatedAt.toISOString()}`,
+        title: "Seu acesso foi alterado",
+        body: `Seu novo papel em ${company.name} é ${ROLE_LABEL[data.role]}.`,
+        href: "/dashboard",
+      }],
+      skipDuplicates: true,
+    });
+    await enqueueAccessChangedEmail(tx, `access-role-email:${membership.id}:${updated.updatedAt.toISOString()}`, {
+      to: membership.user.email,
+      name: membership.user.name,
+      companyName: company.name,
+      kind: "ROLE_CHANGED",
+      role: data.role,
+      actorName: actor.name,
+    });
     return updated;
   });
 }
@@ -231,7 +317,10 @@ export async function updateCompanyMemberRole(
 export async function revokeCompanyMember(userId: string, companyId: string, membershipId: string) {
   await assertCompanyPermission(userId, companyId, "MEMBERS_MANAGE");
   return withCompanyContext(userId, companyId, async (tx) => {
-    const membership = await tx.membership.findFirst({ where: { id: membershipId, companyId, status: "ACTIVE" } });
+    const membership = await tx.membership.findFirst({
+      where: { id: membershipId, companyId, status: "ACTIVE" },
+      include: { user: true },
+    });
     if (!membership) throw new CompanyMemberNotFoundError();
     if (membership.role === "OWNER") throw new CompanyOwnerProtectedError();
 
@@ -247,6 +336,17 @@ export async function revokeCompanyMember(userId: string, companyId: string, mem
       resourceId: membership.id,
       summary: "Acesso de usuário revogado",
       metadata: { targetUserId: membership.userId, role: membership.role },
+    });
+    const [company, actor] = await Promise.all([
+      tx.company.findUniqueOrThrow({ where: { id: companyId } }),
+      tx.user.findUniqueOrThrow({ where: { id: userId } }),
+    ]);
+    await enqueueAccessChangedEmail(tx, `access-revoked:${membership.id}`, {
+      to: membership.user.email,
+      name: membership.user.name,
+      companyName: company.name,
+      kind: "ACCESS_REVOKED",
+      actorName: actor.name,
     });
     return revoked;
   });

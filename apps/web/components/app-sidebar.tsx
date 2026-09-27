@@ -5,6 +5,7 @@ import {
   ArrowUpCircle,
   BarChart3,
   Bell,
+  CreditCard,
   BookUser,
   History,
   Landmark,
@@ -125,7 +126,10 @@ export function AppSidebar({
           <NavItem item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
           <NavItem item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
           {canManageMembers ? (
-            <NavItem item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
+            <>
+              <NavItem item={{ id: "assinatura", title: "Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" }} />
+              <NavItem item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
+            </>
           ) : null}
 
           <div className="mt-2 flex items-center gap-3 overflow-hidden rounded-xl px-1 py-1">

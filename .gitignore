@@ -11,4 +11,5 @@ coverage/
 Thumbs.db
 *.deb
 .data/
+.backups/
 *.tsbuildinfo

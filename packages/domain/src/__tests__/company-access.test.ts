@@ -22,6 +22,8 @@ import {
   CompanyPermissionDeniedError,
 } from "../errors";
 import { rootClient, resetDatabase } from "./test-db";
+import { decodeAccessChangedPayload, decodeCompanyInvitationPayload } from "../outbox/events";
+import { listNotifications } from "../notifications/notifications";
 
 function uniqueEmail(label: string) {
   return `${label}.${randomUUID()}@teste.ax.finance`;
@@ -53,6 +55,16 @@ describe("convites e permissões por papel (FIN-014)", () => {
       email: invited.email,
       role: "ACCOUNTANT",
     });
+    const invitationEmail = await rootClient.outboxEvent.findFirstOrThrow({
+      where: { type: "COMPANY_INVITATION" },
+    });
+    expect(invitationEmail.payloadEncrypted).not.toContain(rawToken);
+    expect(decodeCompanyInvitationPayload(invitationEmail)).toMatchObject({
+      to: invited.email,
+      companyName: company.name,
+      role: "ACCOUNTANT",
+      rawToken,
+    });
     const publicInvitation = await getCompanyInvitationByToken(invited.id, rawToken);
     expect(publicInvitation.companyName).toBe("Empresa convite");
     expect(publicInvitation.tokenHash).not.toBe(rawToken);
@@ -68,6 +80,17 @@ describe("convites e permissões por papel (FIN-014)", () => {
     const membership = await acceptCompanyInvitation(invited.id, rawToken);
     expect(membership.role).toBe("ACCOUNTANT");
     expect(membership.status).toBe("ACTIVE");
+    expect((await listNotifications(owner.id, company.id))[0]).toMatchObject({
+      type: "INVITATION_ACCEPTED",
+    });
+    const acceptedEmail = await rootClient.outboxEvent.findFirstOrThrow({
+      where: { type: "ACCESS_CHANGED", dedupKey: { startsWith: "access-invitation-accepted:" } },
+    });
+    expect(decodeAccessChangedPayload(acceptedEmail)).toMatchObject({
+      to: owner.email,
+      kind: "INVITATION_ACCEPTED",
+      targetName: invited.name,
+    });
     await expect(getCompanyInvitationByToken(invited.id, rawToken)).rejects.toThrow();
   });
 
@@ -99,6 +122,17 @@ describe("convites e permissões por papel (FIN-014)", () => {
 
     const member = (await listCompanyMembers(owner.id, company.id)).find((item) => item.userId === viewer.id)!;
     await updateCompanyMemberRole(owner.id, company.id, member.id, { role: "OPERATOR" });
+    expect((await listNotifications(viewer.id, company.id))[0]).toMatchObject({
+      type: "ACCESS_ROLE_CHANGED",
+    });
+    const roleEmail = await rootClient.outboxEvent.findFirstOrThrow({
+      where: { type: "ACCESS_CHANGED", dedupKey: { startsWith: "access-role-email:" } },
+    });
+    expect(decodeAccessChangedPayload(roleEmail)).toMatchObject({
+      to: viewer.email,
+      kind: "ROLE_CHANGED",
+      role: "OPERATOR",
+    });
     await expect(
       createFinancialAccount(viewer.id, company.id, {
         name: "Caixa permitido",
@@ -124,6 +158,13 @@ describe("convites e permissões por papel (FIN-014)", () => {
     );
 
     await revokeCompanyMember(owner.id, company.id, operatorMembership.id);
+    const revokedEmail = await rootClient.outboxEvent.findFirstOrThrow({
+      where: { type: "ACCESS_CHANGED", dedupKey: { startsWith: "access-revoked:" } },
+    });
+    expect(decodeAccessChangedPayload(revokedEmail)).toMatchObject({
+      to: operator.email,
+      kind: "ACCESS_REVOKED",
+    });
     await expect(assertActiveMembership(operator.id, company.id)).rejects.toBeInstanceOf(
       CompanyAccessDeniedError
     );

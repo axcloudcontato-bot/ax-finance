@@ -1,0 +1,66 @@
+groups:
+  - name: ax-finance
+    rules:
+      - alert: AxFinanceMetricsUnavailable
+        expr: up{job="ax-finance"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: AX Finance não responde ao coletor de métricas
+
+      - alert: AxFinanceApplicationQueryFailed
+        expr: ax_finance_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Diagnóstico operacional do AX Finance falhou
+
+      - alert: AxFinanceBackupStale
+        expr: ax_finance_backup_age_seconds < 0 or ax_finance_backup_age_seconds > 129600
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: Backup do AX Finance ausente ou com mais de 36 horas
+
+      - alert: AxFinanceWorkerHeartbeatStale
+        expr: ax_finance_worker_heartbeat_age_seconds < 0 or ax_finance_worker_heartbeat_age_seconds > 120
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Worker do AX Finance sem heartbeat recente
+
+      - alert: AxFinanceOutboxDeadLetter
+        expr: ax_finance_outbox_events{status="dead_letter"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: AX Finance possui eventos em dead letter
+
+      - alert: AxFinanceScheduledJobFailure
+        expr: ax_finance_scheduled_jobs{state=~"failing|stale_lock|overdue"} > 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: AX Finance possui jobs com falha, atraso ou lock expirado
+
+      - alert: AxFinanceImportJobFailure
+        expr: ax_finance_import_jobs{state=~"failed|stale_lock"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: AX Finance possui importações com falha ou lock expirado
+
+      - alert: AxFinanceImportQueueDelayed
+        expr: ax_finance_import_oldest_pending_age_seconds > 1800
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: AX Finance possui importação pendente há mais de 30 minutos

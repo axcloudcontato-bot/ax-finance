@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { withUserContext } from "@ax-finance/db";
 import { scheduleCompanyJobsInTx } from "../scheduled-jobs/jobs";
+import { createTrialSubscriptionInTx } from "../subscriptions/subscriptions";
 
 export const createCompanyInput = z.object({
   name: z.string().trim().min(1).max(200),
@@ -47,6 +48,9 @@ export async function createCompany(userId: string, input: unknown) {
         role: "OWNER",
       },
     });
+
+    await tx.$executeRaw`SELECT set_config('app.current_company_id', ${companyId}, true)`;
+    await createTrialSubscriptionInTx(tx, companyId);
 
     await scheduleCompanyJobsInTx(tx, companyId, userId);
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { DomainError, CompanyAccessDeniedError, CompanyPermissionDeniedError, EmailNotVerifiedError, InvalidCredentialsError, InvalidMfaCodeError, MfaChallengeInvalidError, NotAuthenticatedError, EmailAlreadyRegisteredError, TooManyLoginAttemptsError } from "@ax-finance/domain";
+import { logOperationalError } from "@ax-finance/domain";
 
 /**
  * Serializa BigInt (centavos) como string no JSON — JSON.stringify nativo
@@ -49,6 +50,6 @@ export function errorResponse(error: unknown): NextResponse {
     return json({ error: error.code, message: error.message }, 400);
   }
 
-  console.error(error);
+  logOperationalError("web.unhandled_api_error", error);
   return json({ error: "INTERNAL_ERROR", message: "Erro interno." }, 500);
 }

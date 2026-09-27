@@ -1,10 +1,29 @@
 import nodemailer from "nodemailer";
 import type { OutboxEvent } from "@ax-finance/db";
+import { structuredLog } from "@ax-finance/domain";
 import {
+  decodeAccessChangedPayload,
+  decodeBillingNoticePayload,
+  decodeCompanyInvitationPayload,
   decodeDueDateSummaryPayload,
+  decodeImportFailedPayload,
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
 } from "@ax-finance/domain";
+
+const ROLE_LABEL: Record<string, string> = {
+  FINANCE_ADMIN: "Administrador financeiro",
+  OPERATOR: "Operador",
+  ACCOUNTANT: "Contador",
+  VIEWER: "Consulta",
+};
+
+function applicationBaseUrl() {
+  const configured = process.env.APP_BASE_URL?.trim();
+  if (configured) return configured.replace(/\/$/, "");
+  if (process.env.NODE_ENV === "production") throw new Error("APP_BASE_URL não configurada no worker.");
+  return "http://localhost:3000";
+}
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>'"]/g, (character) => ({
@@ -93,13 +112,52 @@ export async function sendOutboxEmail(event: OutboxEvent) {
     subject = `Resumo financeiro semanal — ${payload.companyName}`;
     text = `Olá, ${payload.name}.\nEntradas em aberto: ${money(payload.receivableOpenCents)}\nSaídas em aberto: ${money(payload.payableOpenCents)}\nVencidos: ${payload.overdueCount}\nPróximos 7 dias: ${payload.dueNext7Count}\n${url}`;
     html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>Resumo semanal de <strong>${escapeHtml(payload.companyName)}</strong>:</p><ul><li>Entradas em aberto: ${escapeHtml(money(payload.receivableOpenCents))}</li><li>Saídas em aberto: ${escapeHtml(money(payload.payableOpenCents))}</li><li>Vencidos: ${payload.overdueCount}</li><li>Próximos 7 dias: ${payload.dueNext7Count}</li></ul><p><a href="${escapeHtml(url)}">Abrir relatórios</a></p>`;
+  } else if (event.type === "COMPANY_INVITATION") {
+    const payload = decodeCompanyInvitationPayload(event);
+    recipient = payload.to;
+    const url = `${applicationBaseUrl()}/convites/${payload.rawToken}`;
+    const role = ROLE_LABEL[payload.role] || payload.role;
+    subject = `Convite para acessar ${payload.companyName}`;
+    text = `${payload.invitedByName} convidou você para acessar ${payload.companyName} como ${role}.\nAceite o convite: ${url}\nO convite expira em ${new Date(payload.expiresAt).toLocaleDateString("pt-BR", { timeZone: "UTC" })}.`;
+    html = `<p><strong>${escapeHtml(payload.invitedByName)}</strong> convidou você para acessar <strong>${escapeHtml(payload.companyName)}</strong> como ${escapeHtml(role)}.</p><p><a href="${escapeHtml(url)}">Aceitar convite</a></p><p>O convite expira em ${escapeHtml(new Date(payload.expiresAt).toLocaleDateString("pt-BR", { timeZone: "UTC" }))}.</p>`;
+  } else if (event.type === "ACCESS_CHANGED") {
+    const payload = decodeAccessChangedPayload(event);
+    recipient = payload.to;
+    const role = payload.role ? ROLE_LABEL[payload.role] || payload.role : undefined;
+    const messages = {
+      ROLE_CHANGED: `Seu papel em ${payload.companyName} foi alterado para ${role}.`,
+      ACCESS_REVOKED: `Seu acesso a ${payload.companyName} foi revogado.`,
+      INVITATION_ACCEPTED: `${payload.targetName || "O usuário convidado"} aceitou o convite para acessar ${payload.companyName}.`,
+      INVITATION_REVOKED: `O convite para acessar ${payload.companyName} foi revogado.`,
+    } as const;
+    const message = messages[payload.kind];
+    subject = payload.kind === "INVITATION_ACCEPTED" ? `Convite aceito — ${payload.companyName}` : `Alteração de acesso — ${payload.companyName}`;
+    text = `${message}${payload.actorName ? `\nAlteração realizada por ${payload.actorName}.` : ""}`;
+    html = `<p>${escapeHtml(message)}</p>${payload.actorName ? `<p>Alteração realizada por ${escapeHtml(payload.actorName)}.</p>` : ""}`;
+  } else if (event.type === "IMPORT_FAILED") {
+    const payload = decodeImportFailedPayload(event);
+    recipient = payload.to;
+    const url = `${applicationBaseUrl()}/conciliacao`;
+    subject = `Falha na importação — ${payload.companyName}`;
+    text = `Olá, ${payload.name}. Não foi possível processar uma importação em ${payload.companyName}. Revise o formato do arquivo e tente novamente: ${url}`;
+    html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>Não foi possível processar uma importação em <strong>${escapeHtml(payload.companyName)}</strong>.</p><p>Revise o formato do arquivo e tente novamente.</p><p><a href="${escapeHtml(url)}">Abrir conciliação</a></p>`;
+  } else if (event.type === "BILLING_NOTICE") {
+    const payload = decodeBillingNoticePayload(event);
+    recipient = payload.to;
+    const url = `${applicationBaseUrl()}${payload.href}`;
+    subject = `${payload.title} — ${payload.companyName}`;
+    text = `Olá, ${payload.name}.\n${payload.body}\n${url}`;
+    html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>${escapeHtml(payload.body)}</p><p><a href="${escapeHtml(url)}">Abrir assinatura</a></p>`;
   } else {
     throw new Error(`Tipo de e-mail não suportado: ${event.type}`);
   }
 
   const smtp = transport();
   if (!smtp) {
-    console.info(`[outbox:${event.id}] e-mail simulado em desenvolvimento para ${recipient}`);
+    structuredLog("info", "worker.email_simulated", {
+      outboxEventId: event.id,
+      outboxEventType: event.type,
+    });
     return;
   }
   await smtp.client.sendMail({

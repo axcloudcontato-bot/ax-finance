@@ -9,8 +9,8 @@ fechamento de período e ajuste manual de saldo — não só a fundação.
 ## Stack
 
 - `apps/web`: Next.js 14 (App Router) — UI + Route Handlers.
-- `apps/worker`: consumidor da outbox e dos jobs agendados — e-mails transacionais,
-  recorrências, notificações, retentativas e dead letter.
+- `apps/worker`: consumidor da outbox, dos jobs agendados e das importações grandes —
+  e-mails transacionais, recorrências, notificações, retentativas e dead letter.
 - `packages/domain`: regras de negócio (identidade, empresas, contas, títulos, relatórios etc.).
   Sem Prisma direto na UI.
 - `packages/db`: schema Prisma + migrations (inclui as políticas de Row Level Security).
@@ -26,14 +26,18 @@ fechamento de período e ajuste manual de saldo — não só a fundação.
 4. `pnpm db:migrate` — aplica migrations pendentes em `ax_finance_dev`.
 5. `pnpm db:seed` — cria uma empresa de demonstração (`demo@ax.finance` / `demo12345`).
 6. `pnpm dev` — sobe o Next.js em http://localhost:3000.
-7. Em outro terminal, `pnpm worker:dev` — processa a outbox, materializa recorrências e gera
-   notificações/resumos. Sem SMTP no ambiente local, o envio é simulado; os links continuam
-   visíveis na tela quando `EMAIL_PREVIEW=true`.
+7. Em outro terminal, `pnpm worker:dev` — processa a outbox, importações grandes, materializa
+   recorrências e gera notificações/resumos. Sem SMTP no ambiente local, o envio é simulado;
+   os links continuam visíveis na tela quando `EMAIL_PREVIEW=true`.
 
 ## Deploy via Docker
 
 `docker compose up -d --build` (ver `.env.docker.example` para as variáveis necessárias).
 `deploy.sh` automatiza atualização em produção (`git pull` + rebuild + prune de imagens antigas).
+
+O Compose também sobe backup diário do PostgreSQL + anexos, health checks do web/worker/backup,
+rotação de logs e monitoramento operacional. O teste isolado de restauração e o runbook completo
+estão em [docs/OPERACAO_PRODUCAO.md](./docs/OPERACAO_PRODUCAO.md).
 
 ## Testes
 
@@ -54,7 +58,8 @@ perderem:
   recuperação de uso único, proteção contra repetição de código e segredo cifrado no banco.
   Recuperação de senha e verificação de e-mail usam tokens de uso único, expiração e SMTP
   configurável. Os e-mails passam por outbox transacional com payload cifrado, retentativas e
-  worker separado. Convites de empresa continuam compartilhados manualmente por link.
+  worker separado. Convites de empresa são enviados por e-mail pela mesma outbox, com link
+  disponível diretamente apenas como prévia no ambiente de desenvolvimento.
 - **Idempotência financeira crítica implementada**: criação de títulos, baixas, transferências,
   ajustes de saldo e parcelamentos aceitam uma chave UUID por empresa/operação. Repetir a mesma
   chave e conteúdo devolve o recurso original; reutilizá-la com conteúdo diferente é recusado.
@@ -68,11 +73,17 @@ perderem:
 - **Anexos privados implementados**: títulos aceitam PDF/JPG/PNG/WebP de até 10 MB,
   validados pela assinatura binária e hash SHA-256. Metadados respeitam RLS e downloads
   exigem sessão/membership; no Docker, os arquivos ficam no volume persistente
-  `attachments_data`, que deve entrar na rotina de backup junto do PostgreSQL. Ainda não há
-  varredura antivírus nem armazenamento S3 compatível.
-- **Sem billing/assinatura**.
-- **Importação de extrato é só CSV síncrono** — sem OFX, mapeamento de colunas ou processamento
-  em background (ver "Fora do escopo" nos commits de conciliação).
+  `attachments_data`, incluído no backup automático junto do PostgreSQL. Ainda não há
+  varredura antivírus nem armazenamento S3 compatível; a cópia externa cifrada dos backups
+  depende da infraestrutura escolhida em produção.
+- **Ciclo de assinatura inicial**: cada empresa recebe trial de 14 dias e mantém estado de
+  assinatura para avisos de trial, renovação, pagamento pendente, carência, suspensão e
+  cancelamento. A integração com checkout, PSP e webhooks de cobrança ainda não foi implementada;
+  esses estados serão alimentados pelo provedor quando essa integração entrar.
+- **Importação e conciliação completas**: CSV com mapeamento assistido de valor ou de
+  débito/crédito, OFX 1.x/2.x, pré-visualização antes da confirmação, deduplicação por linha/FITID
+  e processamento persistente em segundo plano para arquivos grandes. A tela acompanha o status
+  e a campainha avisa tanto a conclusão quanto uma falha definitiva após as retentativas.
 - **Sem chaves estrangeiras compostas por `companyId`**: o isolamento entre empresas depende da
   validação no domínio + RLS, não de FKs compostas no schema. RLS cobre o caso de bypass da
   camada de aplicação; FKs compostas cobririam bugs de referência cruzada dentro do próprio

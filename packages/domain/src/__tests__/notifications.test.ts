@@ -6,12 +6,14 @@ import { registerUser } from "../identity/register";
 import {
   generateDueNotifications,
   generateWeeklySummary,
+  generateSubscriptionNotifications,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   getNotificationPreference,
   updateNotificationPreference,
 } from "../notifications";
+import { decodeBillingNoticePayload } from "../outbox/events";
 import { createTitle } from "../titles/create-title";
 import { claimScheduledJobs, completeScheduledJob } from "../scheduled-jobs/jobs";
 import { rootClient, resetDatabase } from "./test-db";
@@ -116,16 +118,71 @@ describe("notificações financeiras persistentes", () => {
 describe("agendamentos do worker", () => {
   it("cria os jobs por empresa e impede dois workers de reivindicarem o mesmo job", async () => {
     await setup();
-    expect(await rootClient.scheduledJob.count()).toBe(3);
+    expect(await rootClient.scheduledJob.count()).toBe(4);
 
     const [workerA, workerB] = await Promise.all([
       claimScheduledJobs("worker-a", 10),
       claimScheduledJobs("worker-b", 10),
     ]);
-    expect(workerA.length + workerB.length).toBe(2);
+    expect(workerA.length + workerB.length).toBe(3);
     const claimed = workerA[0] ?? workerB[0]!;
     const workerId = workerA.length ? "worker-a" : "worker-b";
     expect(await completeScheduledJob(claimed, workerId)).toBe(true);
     expect((await rootClient.scheduledJob.findUniqueOrThrow({ where: { id: claimed.id } })).lockedBy).toBeNull();
+  });
+});
+
+describe("notificações da assinatura", () => {
+  it("deduplica trial, cobrança, inadimplência e cancelamento para os proprietários", async () => {
+    const { user, company } = await setup();
+    const now = new Date("2026-09-27T12:00:00.000Z");
+    await rootClient.subscription.update({
+      where: { companyId: company.id },
+      data: { status: "TRIAL", trialEndsAt: new Date("2026-09-30T12:00:00.000Z") },
+    });
+
+    expect(await generateSubscriptionNotifications(user.id, company.id, now))
+      .toEqual({ notificationsCreated: 1, emailsQueued: 1 });
+    expect(await generateSubscriptionNotifications(user.id, company.id, now))
+      .toEqual({ notificationsCreated: 0, emailsQueued: 0 });
+
+    await rootClient.subscription.update({
+      where: { companyId: company.id },
+      data: { trialEndsAt: new Date("2026-09-26T12:00:00.000Z") },
+    });
+    expect(await generateSubscriptionNotifications(user.id, company.id, now))
+      .toEqual({ notificationsCreated: 1, emailsQueued: 1 });
+    expect((await listNotifications(user.id, company.id))[0]).toMatchObject({ type: "BILLING_TRIAL_ENDED" });
+
+    const states = [
+      { status: "PAYMENT_PENDING" as const, expected: "BILLING_PAYMENT_DUE" },
+      { status: "GRACE_PERIOD" as const, graceEndsAt: new Date("2026-10-04T12:00:00.000Z"), expected: "BILLING_GRACE_PERIOD" },
+      { status: "SUSPENDED" as const, expected: "BILLING_PAYMENT_FAILED" },
+      { status: "CANCELLATION_SCHEDULED" as const, cancellationEffectiveAt: new Date("2026-10-27T12:00:00.000Z"), expected: "BILLING_CANCELLATION_SCHEDULED" },
+      { status: "CANCELLED" as const, expected: "BILLING_CANCELLED" },
+    ];
+    for (const state of states) {
+      await rootClient.subscription.update({
+        where: { companyId: company.id },
+        data: state.status === "GRACE_PERIOD"
+          ? { status: state.status, graceEndsAt: state.graceEndsAt }
+          : state.status === "CANCELLATION_SCHEDULED"
+            ? { status: state.status, cancellationEffectiveAt: state.cancellationEffectiveAt }
+            : { status: state.status },
+      });
+      expect(await generateSubscriptionNotifications(user.id, company.id, now))
+        .toEqual({ notificationsCreated: 1, emailsQueued: 1 });
+      expect((await listNotifications(user.id, company.id))[0]).toMatchObject({ type: state.expected });
+    }
+
+    const billingEmails = await rootClient.outboxEvent.findMany({
+      where: { type: "BILLING_NOTICE" },
+      orderBy: { createdAt: "asc" },
+    });
+    expect(billingEmails).toHaveLength(7);
+    expect(decodeBillingNoticePayload(billingEmails[0]!)).toMatchObject({
+      to: user.email,
+      noticeType: "BILLING_TRIAL_ENDING",
+    });
   });
 });

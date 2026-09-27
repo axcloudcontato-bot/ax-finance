@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { requestEmailVerification } from "@ax-finance/domain";
+import { logOperationalError, requestEmailVerification } from "@ax-finance/domain";
 import { publicBaseUrl, verificationPreviewPath } from "@/lib/email";
 
 export async function resendVerificationAction(formData: FormData) {
@@ -16,7 +16,7 @@ export async function resendVerificationAction(formData: FormData) {
       previewPath = verificationPreviewPath(request.rawToken);
     }
   } catch (error) {
-    console.error("Falha ao agendar verificação de e-mail", error);
+    logOperationalError("web.email_verification_schedule_failed", error);
   }
   redirect(`/verificar-email?enviado=1${previewPath ? `&preview=${encodeURIComponent(previewPath)}` : ""}`);
 }
