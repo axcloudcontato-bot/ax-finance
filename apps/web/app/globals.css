@@ -809,6 +809,157 @@ form.inline {
   margin-bottom: 1.5rem;
 }
 
+.dashboard-filter-card {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 2px 8px rgba(20, 30, 60, 0.04);
+}
+
+.dashboard-filter-heading,
+.dashboard-filter-heading > span:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dashboard-filter-heading > span:first-child {
+  justify-content: flex-start;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.dashboard-filter-heading strong {
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.dashboard-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr)) auto;
+  gap: 0.85rem;
+  align-items: end;
+  margin-top: 0.85rem;
+}
+
+.dashboard-filter-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.dashboard-filter-grid select {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.dashboard-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.dashboard-filter-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.dashboard-filter-note {
+  margin: 0.7rem 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.dashboard-analysis-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-flow-card {
+  min-width: 0;
+}
+
+.category-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.category-ranking-row > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.84rem;
+}
+
+.category-ranking-row strong.positive { color: #078f85; }
+.category-ranking-row strong.negative { color: #df3c78; }
+
+.category-ranking-track {
+  display: block;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf0f5;
+}
+
+.category-ranking-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4680ff, #0bc7b9);
+}
+
+.dashboard-alerts {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-alert-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-alert {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: start;
+  padding: 0.9rem 1rem;
+  border: 1px solid;
+  border-radius: 12px;
+}
+
+.dashboard-alert p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.dashboard-alert a {
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dashboard-alert.warning { border-color: #f3cc7a; background: #fff9ec; color: #8a5a00; }
+.dashboard-alert.danger { border-color: #f3a8bf; background: #fff2f6; color: #a72255; }
+.dashboard-alert.success { border-color: #90ddd6; background: #effbf9; color: #087c73; }
+
 /* Cards de lançamento rápido (Nova receita/despesa) — via portal, na mesma
    linha do seletor de mês global (ver PageActionsSlot/PortalToPageActions). */
 .quick-actions {
@@ -876,6 +1027,16 @@ form.inline {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .dashboard-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-filter-actions {
+    grid-column: span 2;
+  }
+  .dashboard-analysis-grid,
+  .dashboard-alert-list {
+    grid-template-columns: 1fr;
+  }
   .dashboard-charts {
     grid-template-columns: 1fr;
   }
@@ -884,6 +1045,21 @@ form.inline {
 @media (max-width: 560px) {
   .stat-grid {
     grid-template-columns: 1fr;
+  }
+  .dashboard-filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-filter-actions {
+    grid-column: auto;
+  }
+  .dashboard-filter-actions button {
+    flex: 1;
+  }
+  .dashboard-alert {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .dashboard-alert a {
+    grid-column: 2;
   }
 }
 

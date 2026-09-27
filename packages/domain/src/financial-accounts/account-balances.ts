@@ -24,19 +24,20 @@ import { settlementCashDelta } from "../titles/settlement-cash-delta";
  */
 export async function computeAccountBalanceDeltas(
   tx: TenantScopedClient,
-  companyId: string
+  companyId: string,
+  asOfDate?: Date
 ): Promise<Map<string, bigint>> {
   const settlements = await tx.settlement.findMany({
-    where: { companyId, reversedAt: null },
+    where: { companyId, reversedAt: null, ...(asOfDate ? { effectiveDate: { lte: asOfDate } } : {}) },
     include: { title: { select: { type: true } } },
   });
 
   const transfers = await tx.transfer.findMany({
-    where: { companyId, reversedAt: null },
+    where: { companyId, reversedAt: null, ...(asOfDate ? { transferDate: { lte: asOfDate } } : {}) },
   });
 
   const adjustments = await tx.balanceAdjustment.findMany({
-    where: { companyId, reversedAt: null },
+    where: { companyId, reversedAt: null, ...(asOfDate ? { effectiveDate: { lte: asOfDate } } : {}) },
   });
 
   const deltas = new Map<string, bigint>();

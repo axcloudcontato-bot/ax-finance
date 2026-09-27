@@ -1,60 +1,84 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, CircleCheck, Landmark, TrendingUp, Wallet } from "lucide-react";
 import {
   CompanyAccessDeniedError,
   assertActiveMembership,
-  getMonthlyCashFlowSeries,
+  getDashboardOverview,
   listActiveCategories,
-  listCostCenters,
   listCompaniesForUser,
-  listFinancialAccountsWithBalance,
+  listCostCenters,
+  listFinancialAccounts,
   listParties,
-  listTitles,
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
-import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
+import { formatDateOnly } from "@/lib/dates";
 import { periodQuery, resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TitleDetailList } from "@/components/dashboard/title-detail-list";
-import { CashFlowLineChart } from "@/components/dashboard/cash-flow-line-chart";
-import { DonutChart } from "@/components/dashboard/donut-chart";
+import { RealizedForecastChart } from "@/components/dashboard/realized-forecast-chart";
+import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { Modal } from "@/components/ui/modal";
 import { TitleForm } from "@/components/titles/title-form";
 import { PortalToPageActions } from "@/components/portal-to-page-actions";
 import { createEntradaAction, createEntradaAndContinueAction } from "../entradas/actions";
 import { createSaidaAction, createSaidaAndContinueAction } from "../saidas/actions";
 
-type TitleList = Awaited<ReturnType<typeof listTitles>>;
+type DashboardData = Awaited<ReturnType<typeof getDashboardOverview>>;
+type OpenTitle = DashboardData["periodOpenTitles"][number];
 
-function summarizeOpenTitles(titles: TitleList) {
-  const today = todayDateOnlyString();
-
-  const open = titles.filter((title) => title.status === "OPEN" || title.status === "PARTIALLY_SETTLED");
-  const totalCents = open.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
-  const overdue = open.filter((title) => toDateOnlyString(title.dueDate) < today);
-  const overdueCount = overdue.length;
-  const overdueCents = overdue.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
-
-  return { totalCents, overdueCount, overdueCents, open, overdue };
-}
-
-function filterByDueMonth(titles: TitleList, from: string, to: string): TitleList {
-  return titles.filter((title) => {
-    const due = toDateOnlyString(title.dueDate);
-    return due >= from && due <= to;
-  });
+function summarizeOpenTitles(titles: OpenTitle[], type: "RECEIVABLE" | "PAYABLE") {
+  const items = titles.filter((title) => title.type === type);
+  return { items, totalCents: items.reduce((sum, title) => sum + title.remainingCents, BigInt(0)) };
 }
 
 function comparisonValue(current: bigint, previous: bigint) {
   if (previous === BigInt(0)) return current === BigInt(0) ? "Sem variação" : "Sem base comparável";
   const difference = current - previous;
   const percent = Number((difference * BigInt(10_000)) / (previous < BigInt(0) ? -previous : previous)) / 100;
-  const sign = difference > BigInt(0) ? "+" : "";
-  return `${formatCents(previous)} · ${sign}${percent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+  return `${formatCents(previous)} · ${difference > BigInt(0) ? "+" : ""}${percent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+}
+
+function SettlementList({ entries }: { entries: DashboardData["currentSettlements"] }) {
+  if (entries.length === 0) return <p className="muted">Nenhuma baixa realizada neste grupo.</p>;
+  return (
+    <table>
+      <thead><tr><th>Data</th><th>Título</th><th>Conta</th><th>Valor em caixa</th></tr></thead>
+      <tbody>{entries.map((entry) => (
+        <tr key={entry.id}>
+          <td>{formatDateOnly(entry.effectiveDate)}</td>
+          <td><Link href={entry.titleType === "RECEIVABLE" ? `/entradas/${entry.titleId}` : `/saidas/${entry.titleId}`}>{entry.titleDescription}</Link></td>
+          <td>{entry.accountName}</td>
+          <td>{formatCents(entry.cashDeltaCents < BigInt(0) ? -entry.cashDeltaCents : entry.cashDeltaCents)}</td>
+        </tr>
+      ))}</tbody>
+    </table>
+  );
+}
+
+function CategoryRanking({ ranking }: { ranking: DashboardData["categoryRanking"] }) {
+  if (ranking.length === 0) return <p className="muted">Nenhum movimento realizado no período.</p>;
+  const visible = ranking.slice(0, 5);
+  const remainder = ranking.slice(5);
+  const rows = remainder.length > 0
+    ? [...visible, { categoryId: "others", categoryName: "Outras", cents: remainder.reduce((sum, item) => sum + item.cents, BigInt(0)) }]
+    : visible;
+  const magnitude = (value: bigint) => value < BigInt(0) ? -value : value;
+  const maximum = rows.reduce((max, item) => magnitude(item.cents) > max ? magnitude(item.cents) : max, BigInt(1));
+  return (
+    <div className="category-ranking">{rows.map((item) => {
+      const width = Number((magnitude(item.cents) * BigInt(100)) / maximum);
+      return (
+        <div key={item.categoryId} className="category-ranking-row">
+          <div><span>{item.categoryName}</span><strong className={item.cents < BigInt(0) ? "negative" : "positive"}>{formatCents(item.cents)}</strong></div>
+          <span className="category-ranking-track"><span style={{ width: `${Math.max(width, 2)}%` }} /></span>
+        </div>
+      );
+    })}</div>
+  );
 }
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -63,272 +87,112 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   WALLET: "Carteira de recebimentos",
 };
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: { empresa?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string };
+export default async function DashboardPage({ searchParams }: {
+  searchParams: {
+    empresa?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string;
+    conta?: string; categoria?: string; pessoa?: string; centroCusto?: string;
+  };
 }) {
   const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
-
+  if (!user) redirect("/login");
   const companies = await listCompaniesForUser(user.id);
-  if (companies.length === 0) {
-    redirect("/onboarding");
-  }
+  if (companies.length === 0) redirect("/onboarding");
 
   const activeCompanyId = searchParams.empresa ?? companies[0]!.id;
   const period = resolvePeriodRange(searchParams);
   const comparison = resolveComparison(searchParams, period);
-  const month = period.to.slice(0, 7);
-  const { from: monthFrom, to: monthTo } = period;
-
-  let accounts: Awaited<ReturnType<typeof listFinancialAccountsWithBalance>>;
   try {
     await assertActiveMembership(user.id, activeCompanyId);
-    accounts = await listFinancialAccountsWithBalance(user.id, activeCompanyId);
   } catch (error) {
-    if (error instanceof CompanyAccessDeniedError) {
-      // Empresa na URL não existe ou não é sua: cai de volta para a primeira
-      // que você realmente tem acesso, sem confirmar se o id era válido.
-      const periodParams = periodQuery(period, comparison?.mode);
-      redirect(`/dashboard?empresa=${companies[0]!.id}&${periodParams}`);
-    }
+    if (error instanceof CompanyAccessDeniedError) redirect(`/dashboard?empresa=${companies[0]!.id}&${periodQuery(period, comparison?.mode)}`);
     throw error;
   }
 
-  const totalCents = accounts
-    .filter((account) => account.includedInAvailableTotal)
-    .reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
-
-  const [receivables, payables, cashFlowSeries, categories, clients, suppliers, costCenters] = await Promise.all([
-    listTitles(user.id, activeCompanyId, { type: "RECEIVABLE" }),
-    listTitles(user.id, activeCompanyId, { type: "PAYABLE" }),
-    getMonthlyCashFlowSeries(user.id, activeCompanyId, { months: 6, endMonth: month }),
+  const [accounts, categories, parties, costCenters] = await Promise.all([
+    listFinancialAccounts(user.id, activeCompanyId),
     listActiveCategories(user.id, activeCompanyId),
-    listParties(user.id, activeCompanyId, { role: "CLIENT", status: "ACTIVE" }),
-    listParties(user.id, activeCompanyId, { role: "SUPPLIER", status: "ACTIVE" }),
+    listParties(user.id, activeCompanyId, { status: "ACTIVE" }),
     listCostCenters(user.id, activeCompanyId),
   ]);
+  const activeAccounts = accounts.filter((account) => account.status === "ACTIVE");
+  const selected = {
+    conta: activeAccounts.some((item) => item.id === searchParams.conta) ? searchParams.conta : undefined,
+    categoria: categories.some((item) => item.id === searchParams.categoria) ? searchParams.categoria : undefined,
+    pessoa: parties.some((item) => item.id === searchParams.pessoa) ? searchParams.pessoa : undefined,
+    centroCusto: costCenters.some((item) => item.id === searchParams.centroCusto) ? searchParams.centroCusto : undefined,
+  };
+  const overview = await getDashboardOverview(user.id, activeCompanyId, {
+    from: period.from,
+    to: period.to,
+    comparisonFrom: comparison?.from,
+    comparisonTo: comparison?.to,
+    financialAccountId: selected.conta,
+    categoryId: selected.categoria,
+    partyId: selected.pessoa,
+    costCenterId: selected.centroCusto,
+  });
 
-  // Cards do topo: títulos com vencimento dentro do período global selecionado.
-  const toReceiveMonth = summarizeOpenTitles(filterByDueMonth(receivables, monthFrom, monthTo));
-  const toPayMonth = summarizeOpenTitles(filterByDueMonth(payables, monthFrom, monthTo));
-  const previousToReceive = comparison
-    ? summarizeOpenTitles(filterByDueMonth(receivables, comparison.from, comparison.to))
-    : null;
-  const previousToPay = comparison
-    ? summarizeOpenTitles(filterByDueMonth(payables, comparison.from, comparison.to))
-    : null;
-  const overdueTotalCents = toReceiveMonth.overdueCents + toPayMonth.overdueCents;
-  const overdueTotalCount = toReceiveMonth.overdueCount + toPayMonth.overdueCount;
-  const overdueTitlesMonth = [...toReceiveMonth.overdue, ...toPayMonth.overdue].sort((a, b) =>
-    toDateOnlyString(a.dueDate) < toDateOnlyString(b.dueDate) ? -1 : 1
-  );
-  const previousOverdueCents = (previousToReceive?.overdueCents ?? BigInt(0))
-    + (previousToPay?.overdueCents ?? BigInt(0));
-
-  // Donuts: posição de hoje, independente do mês selecionado no topo.
-  const toReceiveToday = summarizeOpenTitles(receivables);
-  const toPayToday = summarizeOpenTitles(payables);
-
-  const balanceByType = new Map<string, bigint>();
-  for (const account of accounts) {
-    balanceByType.set(account.type, (balanceByType.get(account.type) ?? BigInt(0)) + account.currentBalanceCents);
-  }
-  const accountDonut = [
-    { label: "Bancária", value: Number(balanceByType.get("BANK") ?? BigInt(0)) / 100, color: "#4680ff" },
-    { label: "Caixa", value: Number(balanceByType.get("CASH") ?? BigInt(0)) / 100, color: "#0bc7b9" },
-    { label: "Carteira", value: Number(balanceByType.get("WALLET") ?? BigInt(0)) / 100, color: "#ffa235" },
-  ];
-  const titlesDonut = [
-    { label: "A receber", value: Number(toReceiveToday.totalCents) / 100, color: "#0bc7b9" },
-    { label: "A pagar", value: Number(toPayToday.totalCents) / 100, color: "#fc5296" },
-  ];
+  const currentReceivables = summarizeOpenTitles(overview.periodOpenTitles, "RECEIVABLE");
+  const currentPayables = summarizeOpenTitles(overview.periodOpenTitles, "PAYABLE");
+  const previousReceivables = summarizeOpenTitles(overview.comparisonOpenTitles, "RECEIVABLE");
+  const previousPayables = summarizeOpenTitles(overview.comparisonOpenTitles, "PAYABLE");
+  const overdueTotalCents = overview.overdueTitles.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
+  const realizedReceipts = overview.currentSettlements.filter((entry) => entry.titleType === "RECEIVABLE");
+  const realizedPayments = overview.currentSettlements.filter((entry) => entry.titleType === "PAYABLE");
+  const flowSeries = overview.flowSeries.map((point) => ({
+    label: point.label,
+    recebimentosRealizados: Number(point.realizedReceiptsCents) / 100,
+    pagamentosRealizados: Number(point.realizedPaymentsCents) / 100,
+    recebimentosPrevistos: Number(point.forecastReceiptsCents) / 100,
+    pagamentosPrevistos: Number(point.forecastPaymentsCents) / 100,
+  }));
+  const alerts = [
+    overview.firstNegativeDate ? { tone: "danger", title: "Risco de caixa negativo", body: `A projeção cruza zero em ${formatDateOnly(overview.firstNegativeDate)}. Revise os compromissos dos próximos 30 dias.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" } : null,
+    overview.reconciliation.pendingCount > 0 ? { tone: "warning", title: "Conciliação pendente", body: `${overview.reconciliation.pendingCount} linha(s), somando ${formatCents(overview.reconciliation.pendingAmountCents)}, aguardam conferência${overview.reconciliation.oldestPendingDate ? ` desde ${formatDateOnly(overview.reconciliation.oldestPendingDate)}` : ""}.`, href: selected.conta ? `/conciliacao?conta=${selected.conta}` : "/conciliacao", action: "Conciliar" } : null,
+    overview.reconciliation.failedImportCount > 0 ? { tone: "danger", title: "Importação com falha", body: `${overview.reconciliation.failedImportCount} importação(ões) precisa(m) de atenção.`, href: "/conciliacao", action: "Diagnosticar" } : null,
+    overview.overdueTitles.length > 0 ? { tone: "warning", title: "Títulos vencidos", body: `${overview.overdueTitles.length} título(s) em aberto somam ${formatCents(overdueTotalCents)}.`, href: "/relatorios/em-aberto", action: "Ver vencidos" } : null,
+  ].filter((alert): alert is NonNullable<typeof alert> => Boolean(alert));
+  const clients = parties.filter((party) => party.isClient);
+  const suppliers = parties.filter((party) => party.isSupplier);
 
   return (
     <main className="wide">
-      <PortalToPageActions>
-      <div className="quick-actions">
-        <Modal
-          triggerLabel={
-            <>
-              <span className="quick-action-icon">
-                <ArrowDownCircle className="size-5" strokeWidth={1.5} />
-              </span>
-              Nova receita
-            </>
-          }
-          triggerClassName="quick-action-card revenue"
-          title="Nova entrada"
-          icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />}
-          maxWidth="720px"
-        >
-          <TitleForm
-            action={createEntradaAction}
-            actionAndContinue={createEntradaAndContinueAction}
-            categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
-            parties={clients}
-            costCenters={costCenters}
-            partyLabel="Cliente"
-          />
+      <PortalToPageActions><div className="quick-actions">
+        <Modal triggerLabel={<><span className="quick-action-icon"><ArrowDownCircle className="size-5" strokeWidth={1.5} /></span>Nova receita</>} triggerClassName="quick-action-card revenue" title="Nova entrada" icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
+          <TitleForm action={createEntradaAction} actionAndContinue={createEntradaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))} parties={clients} costCenters={costCenters} partyLabel="Cliente" />
         </Modal>
-
-        <Modal
-          triggerLabel={
-            <>
-              <span className="quick-action-icon">
-                <ArrowUpCircle className="size-5" strokeWidth={1.5} />
-              </span>
-              Nova despesa
-            </>
-          }
-          triggerClassName="quick-action-card expense"
-          title="Nova saída"
-          icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />}
-          maxWidth="720px"
-        >
-          <TitleForm
-            action={createSaidaAction}
-            actionAndContinue={createSaidaAndContinueAction}
-            categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
-            parties={suppliers}
-            costCenters={costCenters}
-            partyLabel="Fornecedor"
-          />
+        <Modal triggerLabel={<><span className="quick-action-icon"><ArrowUpCircle className="size-5" strokeWidth={1.5} /></span>Nova despesa</>} triggerClassName="quick-action-card expense" title="Nova saída" icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
+          <TitleForm action={createSaidaAction} actionAndContinue={createSaidaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" />
         </Modal>
-      </div>
-      </PortalToPageActions>
+      </div></PortalToPageActions>
 
-      <Reveal className="stat-grid">
-        <StatCard
-          icon={<Wallet className="size-5" />}
-          label="Saldo disponível (hoje)"
-          value={formatCents(totalCents)}
-          footerLabel="Contas ativas"
-          footerValue={String(accounts.length)}
-          gradient="blue"
-          modalTitle="Saldo por conta"
-        >
-          {accounts.length === 0 ? (
-            <p className="muted">Nenhuma conta cadastrada ainda.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Tipo</th>
-                  <th>Saldo atual</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accounts.map((account) => (
-                  <tr key={account.id}>
-                    <td>{account.name}</td>
-                    <td>{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td>
-                    <td style={{ fontWeight: 600 }}>
-                      {formatCents(account.currentBalanceCents, account.currency)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+      <DashboardFilters companyId={activeCompanyId} accounts={activeAccounts.map(({ id, name }) => ({ id, name }))}
+        categories={sortCategoriesTree(categories).map(({ id, name, parentId }) => ({ id, name: parentId ? `↳ ${name}` : name }))}
+        parties={parties.map(({ id, name }) => ({ id, name }))} costCenters={costCenters.map(({ id, name }) => ({ id, name }))} values={selected} />
+
+      <Reveal className="stat-grid dashboard-stat-grid">
+        <StatCard icon={<Wallet className="size-5" />} label="Saldo disponível (hoje)" value={formatCents(overview.availableBalanceCents)} footerLabel={selected.conta ? "Conta selecionada" : "Contas incluídas"} footerValue={String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
+          {overview.accounts.length === 0 ? <p className="muted">Nenhuma conta disponível.</p> : <table><thead><tr><th>Conta</th><th>Tipo</th><th>Saldo</th></tr></thead><tbody>{overview.accounts.map((account) => <tr key={account.id}><td>{account.name}</td><td>{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td><td>{formatCents(account.currentBalanceCents, account.currency)}</td></tr>)}</tbody></table>}
         </StatCard>
-        <StatCard
-          icon={<ArrowDownCircle className="size-5" />}
-          label="A receber no período"
-          value={formatCents(toReceiveMonth.totalCents)}
-          footerLabel="Vencidos"
-          footerValue={String(toReceiveMonth.overdueCount)}
-          comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined}
-          comparisonValue={previousToReceive ? comparisonValue(toReceiveMonth.totalCents, previousToReceive.totalCents) : undefined}
-          gradient="teal"
-          modalTitle="A receber no período"
-        >
-          <TitleDetailList titles={toReceiveMonth.open} />
-        </StatCard>
-        <StatCard
-          icon={<ArrowUpCircle className="size-5" />}
-          label="A pagar no período"
-          value={formatCents(toPayMonth.totalCents)}
-          footerLabel="Vencidos"
-          footerValue={String(toPayMonth.overdueCount)}
-          comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined}
-          comparisonValue={previousToPay ? comparisonValue(toPayMonth.totalCents, previousToPay.totalCents) : undefined}
-          gradient="orange"
-          modalTitle="A pagar no período"
-        >
-          <TitleDetailList titles={toPayMonth.open} />
-        </StatCard>
-        <StatCard
-          icon={<AlertTriangle className="size-5" />}
-          label="Vencido no período"
-          value={formatCents(overdueTotalCents)}
-          footerLabel="Título(s)"
-          footerValue={String(overdueTotalCount)}
-          comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined}
-          comparisonValue={comparison ? comparisonValue(overdueTotalCents, previousOverdueCents) : undefined}
-          gradient="pink"
-          modalTitle="Vencidos no período"
-        >
-          <TitleDetailList titles={overdueTitlesMonth} />
-        </StatCard>
+        <StatCard icon={<ArrowDownCircle className="size-5" />} label="Recebimentos realizados" value={formatCents(overview.current.receivedCents)} footerLabel="Baixas no período" footerValue={String(realizedReceipts.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.receivedCents, overview.comparison.receivedCents) : undefined} gradient="teal" modalTitle="Recebimentos realizados"><SettlementList entries={realizedReceipts} /></StatCard>
+        <StatCard icon={<ArrowUpCircle className="size-5" />} label="Pagamentos realizados" value={formatCents(overview.current.paidCents)} footerLabel="Baixas no período" footerValue={String(realizedPayments.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.paidCents, overview.comparison.paidCents) : undefined} gradient="pink" modalTitle="Pagamentos realizados"><SettlementList entries={realizedPayments} /></StatCard>
+        <StatCard icon={<TrendingUp className="size-5" />} label="Geração líquida operacional" value={formatCents(overview.current.operatingNetCents)} footerLabel="Recebido − pago" footerValue={`${formatCents(overview.current.operatingReceivedCents)} − ${formatCents(overview.current.operatingPaidCents)}`} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.operatingNetCents, overview.comparison.operatingNetCents) : undefined} gradient="blue" modalTitle="Geração operacional"><p>Recebimentos operacionais: <strong>{formatCents(overview.current.operatingReceivedCents)}</strong></p><p>Pagamentos operacionais: <strong>{formatCents(overview.current.operatingPaidCents)}</strong></p><p className="muted">Financiamentos, patrimônio, investimentos e transferências técnicas não inflam este indicador.</p></StatCard>
+        <StatCard icon={<ArrowDownCircle className="size-5" />} label="A receber no período" value={formatCents(currentReceivables.totalCents)} footerLabel="Títulos abertos" footerValue={String(currentReceivables.items.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(currentReceivables.totalCents, previousReceivables.totalCents) : undefined} gradient="teal" modalTitle="A receber no período"><TitleDetailList titles={currentReceivables.items} /></StatCard>
+        <StatCard icon={<ArrowUpCircle className="size-5" />} label="A pagar no período" value={formatCents(currentPayables.totalCents)} footerLabel="Títulos abertos" footerValue={String(currentPayables.items.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(currentPayables.totalCents, previousPayables.totalCents) : undefined} gradient="orange" modalTitle="A pagar no período"><TitleDetailList titles={currentPayables.items} /></StatCard>
+        <StatCard icon={<AlertTriangle className="size-5" />} label="Recebíveis e obrigações vencidos" value={formatCents(overdueTotalCents)} footerLabel="Títulos vencidos" footerValue={String(overview.overdueTitles.length)} gradient="pink" modalTitle="Títulos vencidos"><TitleDetailList titles={overview.overdueTitles} /></StatCard>
+        <StatCard icon={<Landmark className="size-5" />} label="Saldo projetado em 30 dias" value={formatCents(overview.projectedBalanceCents)} footerLabel={`Posição em ${formatDateOnly(overview.projectionEnd)}`} footerValue={`${overview.projectionTitles.length} compromisso(s)`} gradient={overview.projectedBalanceCents < BigInt(0) ? "pink" : "blue"} modalTitle="Projeção dos próximos 30 dias"><p className="muted">Saldo atual + entradas previstas − saídas previstas.</p><TitleDetailList titles={overview.projectionTitles} /></StatCard>
       </Reveal>
 
-      <Reveal className="dashboard-charts">
-        <div className="card">
-          <h1>Fluxo de caixa</h1>
-          <p className="subtitle">Entradas e saídas realizadas nos 6 meses até o mês selecionado (Seção 13).</p>
-          <CashFlowLineChart data={cashFlowSeries} />
-        </div>
-
-        <div className="card">
-          <h1>Contas</h1>
-          <p className="subtitle">Saldo atual por tipo (hoje)</p>
-          <DonutChart segments={accountDonut} />
-        </div>
-
-        <div className="card">
-          <h1>Títulos em aberto</h1>
-          <p className="subtitle">A receber vs. a pagar (hoje)</p>
-          <DonutChart segments={titlesDonut} />
-        </div>
+      <Reveal className="dashboard-analysis-grid">
+        <section className="card dashboard-flow-card"><h1>Fluxo realizado versus previsto</h1><p className="subtitle">Linhas contínuas são baixas efetivas; linhas tracejadas são saldos abertos na data de vencimento.</p><RealizedForecastChart data={flowSeries} /></section>
+        <section className="card"><h1>Ranking por categoria</h1><p className="subtitle">Movimento de caixa realizado no período; saídas aparecem negativas.</p><CategoryRanking ranking={overview.categoryRanking} /></section>
       </Reveal>
 
-      <div className="card">
-        <div className="page-header" style={{ marginBottom: "0.5rem" }}>
-          <h1>Contas</h1>
-          <Link href="/contas" className="button-link">
-            Gerenciar contas
-          </Link>
-        </div>
-        {accounts.length === 0 ? (
-          <p className="muted">Nenhuma conta cadastrada ainda.</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Tipo</th>
-                <th>Saldo atual</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((account) => (
-                <tr key={account.id}>
-                  <td>{account.name}</td>
-                  <td>{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td>
-                  <td style={{ fontWeight: 600 }}>
-                    {formatCents(account.currentBalanceCents, account.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <section className="card dashboard-alerts">
+        <div className="page-header"><div><h1>Alertas e pendências</h1><p className="subtitle">Sinais determinísticos com origem e ação recomendada.</p></div></div>
+        {alerts.length === 0 ? <div className="dashboard-alert success"><CircleCheck className="size-5" /><div><strong>Nenhuma pendência crítica</strong><p>Caixa projetado não cruza zero e não há conciliações, importações com falha ou títulos vencidos neste escopo.</p></div></div>
+          : <div className="dashboard-alert-list">{alerts.map((alert) => <div key={alert.title} className={`dashboard-alert ${alert.tone}`}><AlertTriangle className="size-5" /><div><strong>{alert.title}</strong><p>{alert.body}</p></div><Link href={alert.href}>{alert.action}</Link></div>)}</div>}
+      </section>
     </main>
   );
 }
