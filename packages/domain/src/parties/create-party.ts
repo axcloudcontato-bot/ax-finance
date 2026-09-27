@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { PartyDocumentAlreadyExistsError, PartyRoleRequiredError } from "../errors";
 
 export const createPartyInput = z.object({
@@ -35,7 +35,7 @@ export async function createParty(userId: string, companyId: string, input: unkn
   if (!data.isClient && !data.isSupplier) {
     throw new PartyRoleRequiredError();
   }
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
 
   const documentNormalized = normalizeDocument(data.document);
 

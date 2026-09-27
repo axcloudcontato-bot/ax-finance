@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { BalanceAdjustmentAlreadyReversedError, BalanceAdjustmentNotFoundError } from "../errors";
@@ -17,7 +17,7 @@ export async function reverseBalanceAdjustment(
   input: unknown
 ) {
   const data = reverseBalanceAdjustmentInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const adjustment = await tx.balanceAdjustment.findFirst({

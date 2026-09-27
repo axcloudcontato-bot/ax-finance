@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { FinancialAccountNotFoundError, TransferSameAccountError } from "../errors";
 
@@ -29,7 +29,7 @@ export async function createTransfer(userId: string, companyId: string, input: u
     throw new TransferSameAccountError();
   }
 
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const [fromAccount, toAccount] = await Promise.all([

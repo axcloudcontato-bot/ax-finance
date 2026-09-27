@@ -3,9 +3,10 @@
 // Núcleo financeiro: categorias, títulos, baixas, transferências, clientes/fornecedores,
 // parcelamento, recorrências, conciliação bancária, trilha de auditoria, fechamento de
 // período e ajuste manual de saldo (Seções 5-13, 17-19 do DIRECAO.md).
-// Ainda não existem: anexos, billing/assinatura, outbox/worker, convites e permissões por
-// papel (OPERATOR/ACCOUNTANT/VIEWER estão modelados no enum mas não são aplicados), MFA e
-// recuperação de senha — ver "Estado atual e limitações conhecidas" no README.
+// Ainda não existem: anexos, billing/assinatura e outbox/worker. Recuperação de senha,
+// verificação de e-mail, limitação de tentativas e MFA já fazem parte do núcleo de identidade.
+// Convites/revogação e permissões por papel já são aplicados no domínio; ver limitações e
+// próximos passos em "Estado atual e limitações conhecidas" no README.
 
 generator client {
   provider = "prisma-client-js"
@@ -21,6 +22,11 @@ enum UserStatus {
   DISABLED
 }
 
+enum AccountTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum MembershipRole {
   OWNER
   FINANCE_ADMIN
@@ -31,6 +37,12 @@ enum MembershipRole {
 
 enum MembershipStatus {
   ACTIVE
+  REVOKED
+}
+
+enum CompanyInvitationStatus {
+  PENDING
+  ACCEPTED
   REVOKED
 }
 
@@ -51,28 +63,87 @@ enum AccountStatus {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                    String     @id @default(uuid())
+  email                 String     @unique
+  emailVerifiedAt       DateTime?  @map("email_verified_at")
+  passwordHash          String     @map("password_hash")
+  name                  String
+  status                UserStatus @default(ACTIVE)
+  mfaSecretEncrypted    String?    @map("mfa_secret_encrypted")
+  mfaEnabledAt          DateTime?  @map("mfa_enabled_at")
+  mfaRecoveryCodeHashes Json?      @map("mfa_recovery_code_hashes")
+  mfaLastUsedCounter    BigInt?    @map("mfa_last_used_counter")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
 
-  sessions    Session[]
-  memberships Membership[]
+  sessions           Session[]
+  memberships        Membership[]
+  invitationsCreated CompanyInvitation[] @relation("InvitationCreator")
+  accountTokens      AccountToken[]
+  mfaSetup           MfaSetup?
+  mfaChallenges      MfaChallenge[]
 
   @@map("users")
 }
 
+model MfaSetup {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secretEncrypted String   @map("secret_encrypted")
+  expiresAt       DateTime @map("expires_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("mfa_setups")
+}
+
+model MfaChallenge {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash       String    @unique @map("token_hash")
+  rememberSession Boolean   @default(false) @map("remember_session")
+  failedAttempts  Int       @default(0) @map("failed_attempts")
+  expiresAt       DateTime  @map("expires_at")
+  consumedAt      DateTime? @map("consumed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, consumedAt])
+  @@map("mfa_challenges")
+}
+
+model AccountToken {
+  id        String           @id @default(uuid())
+  userId    String           @map("user_id")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AccountTokenType
+  tokenHash String           @unique @map("token_hash")
+  expiresAt DateTime         @map("expires_at")
+  usedAt    DateTime?        @map("used_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([userId, type, usedAt])
+  @@map("account_tokens")
+}
+
+model LoginRateLimit {
+  keyHash         String    @id @map("key_hash")
+  failedAttempts  Int       @default(0) @map("failed_attempts")
+  windowStartedAt DateTime  @default(now()) @map("window_started_at")
+  blockedUntil    DateTime? @map("blocked_until")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("login_rate_limits")
+}
+
 model Session {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash  String    @unique @map("token_hash")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  expiresAt  DateTime  @map("expires_at")
-  revokedAt  DateTime? @map("revoked_at")
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique @map("token_hash")
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
 
   @@index([userId])
   @@map("sessions")
@@ -101,19 +172,20 @@ model Company {
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
 
-  memberships       Membership[]
-  financialAccounts FinancialAccount[]
-  categories        Category[]
-  parties           Party[]
-  titles            Title[]
-  settlements       Settlement[]
-  transfers         Transfer[]
-  recurrenceRules   RecurrenceRule[]
-  importBatches       ImportBatch[]
-  bankStatementLines  BankStatementLine[]
-  auditEvents         AuditEvent[]
-  periodClosures      PeriodClosure[]
-  balanceAdjustments  BalanceAdjustment[]
+  memberships        Membership[]
+  financialAccounts  FinancialAccount[]
+  categories         Category[]
+  parties            Party[]
+  titles             Title[]
+  settlements        Settlement[]
+  transfers          Transfer[]
+  recurrenceRules    RecurrenceRule[]
+  importBatches      ImportBatch[]
+  bankStatementLines BankStatementLine[]
+  auditEvents        AuditEvent[]
+  periodClosures     PeriodClosure[]
+  balanceAdjustments BalanceAdjustment[]
+  invitations        CompanyInvitation[]
 
   @@index([tenantId])
   @@map("companies")
@@ -135,6 +207,28 @@ model Membership {
   @@map("memberships")
 }
 
+model CompanyInvitation {
+  id              String                  @id @default(uuid())
+  companyId       String                  @map("company_id")
+  company         Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyName     String                  @map("company_name")
+  email           String
+  role            MembershipRole
+  tokenHash       String                  @unique @map("token_hash")
+  status          CompanyInvitationStatus @default(PENDING)
+  invitedByUserId String                  @map("invited_by_user_id")
+  invitedBy       User                    @relation("InvitationCreator", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+  expiresAt       DateTime                @map("expires_at")
+  acceptedAt      DateTime?               @map("accepted_at")
+  revokedAt       DateTime?               @map("revoked_at")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@unique([companyId, email])
+  @@index([companyId, status])
+  @@map("company_invitations")
+}
+
 model FinancialAccount {
   id                       String        @id @default(uuid())
   companyId                String        @map("company_id")
@@ -149,12 +243,12 @@ model FinancialAccount {
   createdAt                DateTime      @default(now()) @map("created_at")
   updatedAt                DateTime      @updatedAt @map("updated_at")
 
-  settlements     Settlement[]
-  transfersFrom   Transfer[]   @relation("TransferFromAccount")
-  transfersTo     Transfer[]   @relation("TransferToAccount")
-  importBatches       ImportBatch[]
-  bankStatementLines  BankStatementLine[]
-  balanceAdjustments  BalanceAdjustment[]
+  settlements        Settlement[]
+  transfersFrom      Transfer[]          @relation("TransferFromAccount")
+  transfersTo        Transfer[]          @relation("TransferToAccount")
+  importBatches      ImportBatch[]
+  bankStatementLines BankStatementLine[]
+  balanceAdjustments BalanceAdjustment[]
 
   @@index([companyId])
   @@map("financial_accounts")
@@ -166,18 +260,18 @@ model FinancialAccount {
 // informado pelo usuário; o cálculo em si (saldo alvo − saldo atual) fica no
 // domínio, não na UI. Reversível como settlement/transfer (nunca apaga).
 model BalanceAdjustment {
-  id                 String    @id @default(uuid())
-  companyId          String    @map("company_id")
-  company            Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  financialAccountId String    @map("financial_account_id")
+  id                 String           @id @default(uuid())
+  companyId          String           @map("company_id")
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId String           @map("financial_account_id")
   financialAccount   FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
-  amountCents        BigInt    @map("amount_cents")
+  amountCents        BigInt           @map("amount_cents")
   reason             String
-  effectiveDate      DateTime  @map("effective_date") @db.Date
-  createdByUserId    String    @map("created_by_user_id")
-  reversedAt         DateTime? @map("reversed_at")
-  reversalReason     String?   @map("reversal_reason")
-  createdAt          DateTime  @default(now()) @map("created_at")
+  effectiveDate      DateTime         @map("effective_date") @db.Date
+  createdByUserId    String           @map("created_by_user_id")
+  reversedAt         DateTime?        @map("reversed_at")
+  reversalReason     String?          @map("reversal_reason")
+  createdAt          DateTime         @default(now()) @map("created_at")
 
   @@index([companyId])
   @@index([financialAccountId])
@@ -273,23 +367,23 @@ enum RecurrenceStatus {
 }
 
 model RecurrenceRule {
-  id           String           @id @default(uuid())
-  companyId    String           @map("company_id")
-  company      Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  type         TitleType
-  description  String
-  categoryId   String           @map("category_id")
-  category     Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  partyId      String?          @map("party_id")
-  party        Party?           @relation(fields: [partyId], references: [id], onDelete: Restrict)
-  amountCents  BigInt           @map("amount_cents")
-  dayOfMonth   Int              @map("day_of_month")
-  startDate    DateTime         @map("start_date") @db.Date
-  endDate      DateTime?        @map("end_date") @db.Date
-  status       RecurrenceStatus @default(ACTIVE)
-  notes        String?
-  createdAt    DateTime         @default(now()) @map("created_at")
-  updatedAt    DateTime         @updatedAt @map("updated_at")
+  id          String           @id @default(uuid())
+  companyId   String           @map("company_id")
+  company     Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  type        TitleType
+  description String
+  categoryId  String           @map("category_id")
+  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  partyId     String?          @map("party_id")
+  party       Party?           @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  amountCents BigInt           @map("amount_cents")
+  dayOfMonth  Int              @map("day_of_month")
+  startDate   DateTime         @map("start_date") @db.Date
+  endDate     DateTime?        @map("end_date") @db.Date
+  status      RecurrenceStatus @default(ACTIVE)
+  notes       String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
   titles Title[]
 
@@ -298,30 +392,30 @@ model RecurrenceRule {
 }
 
 model Title {
-  id                  String      @id @default(uuid())
-  companyId           String      @map("company_id")
-  company             Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  type                TitleType
-  description         String
-  categoryId          String      @map("category_id")
-  category            Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  partyId             String?     @map("party_id")
-  party               Party?      @relation(fields: [partyId], references: [id], onDelete: Restrict)
-  originalAmountCents BigInt      @map("original_amount_cents")
-  currency            String      @default("BRL")
-  competenceDate      DateTime    @map("competence_date") @db.Date
-  dueDate             DateTime    @map("due_date") @db.Date
-  status              TitleStatus @default(OPEN)
-  cancelReason        String?     @map("cancel_reason")
-  notes               String?
-  installmentGroupId  String?     @map("installment_group_id")
-  installmentNumber   Int?        @map("installment_number")
-  installmentCount    Int?        @map("installment_count")
-  recurrenceRuleId         String?        @map("recurrence_rule_id")
+  id                       String          @id @default(uuid())
+  companyId                String          @map("company_id")
+  company                  Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  type                     TitleType
+  description              String
+  categoryId               String          @map("category_id")
+  category                 Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  partyId                  String?         @map("party_id")
+  party                    Party?          @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  originalAmountCents      BigInt          @map("original_amount_cents")
+  currency                 String          @default("BRL")
+  competenceDate           DateTime        @map("competence_date") @db.Date
+  dueDate                  DateTime        @map("due_date") @db.Date
+  status                   TitleStatus     @default(OPEN)
+  cancelReason             String?         @map("cancel_reason")
+  notes                    String?
+  installmentGroupId       String?         @map("installment_group_id")
+  installmentNumber        Int?            @map("installment_number")
+  installmentCount         Int?            @map("installment_count")
+  recurrenceRuleId         String?         @map("recurrence_rule_id")
   recurrenceRule           RecurrenceRule? @relation(fields: [recurrenceRuleId], references: [id], onDelete: Restrict)
-  recurrenceOccurrenceDate DateTime?      @map("recurrence_occurrence_date") @db.Date
-  createdAt           DateTime    @default(now()) @map("created_at")
-  updatedAt           DateTime    @updatedAt @map("updated_at")
+  recurrenceOccurrenceDate DateTime?       @map("recurrence_occurrence_date") @db.Date
+  createdAt                DateTime        @default(now()) @map("created_at")
+  updatedAt                DateTime        @updatedAt @map("updated_at")
 
   settlements Settlement[]
 
@@ -336,23 +430,23 @@ model Title {
 }
 
 model Settlement {
-  id                   String    @id @default(uuid())
-  companyId            String    @map("company_id")
-  company              Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  titleId              String    @map("title_id")
-  title                Title     @relation(fields: [titleId], references: [id], onDelete: Restrict)
-  financialAccountId   String    @map("financial_account_id")
+  id                   String           @id @default(uuid())
+  companyId            String           @map("company_id")
+  company              Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  titleId              String           @map("title_id")
+  title                Title            @relation(fields: [titleId], references: [id], onDelete: Restrict)
+  financialAccountId   String           @map("financial_account_id")
   financialAccount     FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
-  principalAmountCents BigInt    @map("principal_amount_cents")
-  discountCents        BigInt    @default(0) @map("discount_cents")
-  interestPenaltyCents BigInt    @default(0) @map("interest_penalty_cents")
-  feesCents            BigInt    @default(0) @map("fees_cents")
-  effectiveDate        DateTime  @map("effective_date") @db.Date
-  paymentMethod        String?   @map("payment_method")
+  principalAmountCents BigInt           @map("principal_amount_cents")
+  discountCents        BigInt           @default(0) @map("discount_cents")
+  interestPenaltyCents BigInt           @default(0) @map("interest_penalty_cents")
+  feesCents            BigInt           @default(0) @map("fees_cents")
+  effectiveDate        DateTime         @map("effective_date") @db.Date
+  paymentMethod        String?          @map("payment_method")
   notes                String?
-  reversedAt           DateTime? @map("reversed_at")
-  reversalReason       String?   @map("reversal_reason")
-  createdAt            DateTime  @default(now()) @map("created_at")
+  reversedAt           DateTime?        @map("reversed_at")
+  reversalReason       String?          @map("reversal_reason")
+  createdAt            DateTime         @default(now()) @map("created_at")
 
   reconciledByLine BankStatementLine?
 
@@ -362,20 +456,20 @@ model Settlement {
 }
 
 model Transfer {
-  id             String    @id @default(uuid())
-  companyId      String    @map("company_id")
-  company        Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  fromAccountId  String    @map("from_account_id")
+  id             String           @id @default(uuid())
+  companyId      String           @map("company_id")
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  fromAccountId  String           @map("from_account_id")
   fromAccount    FinancialAccount @relation("TransferFromAccount", fields: [fromAccountId], references: [id], onDelete: Restrict)
-  toAccountId    String    @map("to_account_id")
+  toAccountId    String           @map("to_account_id")
   toAccount      FinancialAccount @relation("TransferToAccount", fields: [toAccountId], references: [id], onDelete: Restrict)
-  amountCents    BigInt    @map("amount_cents")
-  feeCents       BigInt    @default(0) @map("fee_cents")
-  transferDate   DateTime  @map("transfer_date") @db.Date
+  amountCents    BigInt           @map("amount_cents")
+  feeCents       BigInt           @default(0) @map("fee_cents")
+  transferDate   DateTime         @map("transfer_date") @db.Date
   description    String?
-  reversedAt     DateTime? @map("reversed_at")
-  reversalReason String?   @map("reversal_reason")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  reversedAt     DateTime?        @map("reversed_at")
+  reversalReason String?          @map("reversal_reason")
+  createdAt      DateTime         @default(now()) @map("created_at")
 
   @@index([companyId])
   @@index([fromAccountId])
@@ -390,17 +484,17 @@ enum BankStatementLineStatus {
 }
 
 model ImportBatch {
-  id                 String   @id @default(uuid())
-  companyId          String   @map("company_id")
-  company            Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  financialAccountId String   @map("financial_account_id")
+  id                 String           @id @default(uuid())
+  companyId          String           @map("company_id")
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId String           @map("financial_account_id")
   financialAccount   FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
-  fileName           String   @map("file_name")
-  rowCount           Int      @map("row_count")
-  importedCount      Int      @map("imported_count")
-  duplicateCount     Int      @map("duplicate_count")
-  invalidCount       Int      @map("invalid_count")
-  createdAt          DateTime @default(now()) @map("created_at")
+  fileName           String           @map("file_name")
+  rowCount           Int              @map("row_count")
+  importedCount      Int              @map("imported_count")
+  duplicateCount     Int              @map("duplicate_count")
+  invalidCount       Int              @map("invalid_count")
+  createdAt          DateTime         @default(now()) @map("created_at")
 
   lines BankStatementLine[]
 

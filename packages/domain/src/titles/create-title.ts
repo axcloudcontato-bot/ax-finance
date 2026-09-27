@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryNotFoundError, PartyNotFoundError } from "../errors";
 
 export const createTitleInput = z.object({
@@ -25,7 +25,7 @@ export type CreateTitleInput = z.infer<typeof createTitleInput>;
  */
 export async function createTitle(userId: string, companyId: string, input: unknown) {
   const data = createTitleInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const category = await tx.category.findFirst({

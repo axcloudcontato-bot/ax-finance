@@ -261,6 +261,8 @@
 .textButton {
   color: #2765ec;
   font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .textButton:hover,

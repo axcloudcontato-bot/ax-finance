@@ -133,6 +133,48 @@ button.secondary {
   font-size: 0.9rem;
 }
 
+.success-box {
+  color: #14603d;
+  background: #e9f8f0;
+  border: 1px solid #a7dbc0;
+  padding: 0.75rem 0.85rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.success-box p {
+  margin: 0.4rem 0;
+}
+
+.inline-action-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-action-form select {
+  min-width: 160px;
+}
+
+.inline-action-form button,
+.danger-button {
+  margin-top: 0;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.danger-button {
+  background: #a4302f;
+}
+
+.invitation-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
 .muted {
   color: var(--muted);
   font-size: 0.9rem;
@@ -560,4 +602,78 @@ form.inline {
   height: 0.6rem;
   border-radius: 999px;
   flex-shrink: 0;
+}
+
+.mfa-setup {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  margin: 1.25rem 0;
+}
+
+.mfa-qr {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.mfa-secret {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #eef3fb;
+  letter-spacing: 0.08em;
+}
+
+.recovery-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.recovery-codes code {
+  padding: 0.55rem;
+  border-radius: 6px;
+  background: #fff;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+.security-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #14603d;
+  font-weight: 600;
+}
+
+.security-status-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: #22a06b;
+}
+
+.security-danger-zone {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.security-danger-zone summary {
+  color: var(--danger);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.security-danger-zone .danger-button {
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .mfa-setup { grid-template-columns: 1fr; }
+  .recovery-codes { grid-template-columns: 1fr; }
 }

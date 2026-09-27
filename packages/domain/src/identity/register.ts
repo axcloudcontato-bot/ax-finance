@@ -11,7 +11,10 @@ export const registerUserInput = z.object({
 
 export type RegisterUserInput = z.infer<typeof registerUserInput>;
 
-export async function registerUser(input: RegisterUserInput) {
+export async function registerUser(
+  input: RegisterUserInput,
+  options: { requireEmailVerification?: boolean } = {}
+) {
   const data = registerUserInput.parse(input);
 
   const existing = await prisma.user.findUnique({ where: { email: data.email } });
@@ -26,6 +29,7 @@ export async function registerUser(input: RegisterUserInput) {
       email: data.email,
       name: data.name,
       passwordHash,
+      emailVerifiedAt: options.requireEmailVerification ? null : new Date(),
     },
   });
 }

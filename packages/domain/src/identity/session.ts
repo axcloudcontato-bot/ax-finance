@@ -17,11 +17,14 @@ export interface CreatedSession {
  * guarda apenas o hash, então um vazamento de linha da tabela não permite
  * forjar sessões (Seção 17: sessões revogáveis, sem senha nem token em claro).
  */
-export async function createSession(userId: string): Promise<CreatedSession> {
+export async function createSessionWithClient(
+  client: Pick<typeof prisma, "session">,
+  userId: string
+): Promise<CreatedSession> {
   const rawToken = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-  await prisma.session.create({
+  await client.session.create({
     data: {
       userId,
       tokenHash: hashToken(rawToken),
@@ -30,6 +33,10 @@ export async function createSession(userId: string): Promise<CreatedSession> {
   });
 
   return { rawToken, expiresAt };
+}
+
+export async function createSession(userId: string): Promise<CreatedSession> {
+  return createSessionWithClient(prisma, userId);
 }
 
 export async function resolveSession(rawToken: string) {

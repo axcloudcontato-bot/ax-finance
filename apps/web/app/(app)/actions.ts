@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revokeSession } from "@ax-finance/domain";
-import { clearSessionCookie, getSessionToken } from "@/lib/session";
+import { clearMfaChallengeCookie, clearSessionCookie, getSessionToken } from "@/lib/session";
 
 export async function logoutAction() {
   const token = getSessionToken();
@@ -10,5 +10,6 @@ export async function logoutAction() {
     await revokeSession(token);
   }
   clearSessionCookie();
+  clearMfaChallengeCookie();
   redirect("/login");
 }

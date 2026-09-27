@@ -37,9 +37,7 @@ FROM base AS web
 ENV NODE_ENV=production
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
-# Sem apps/web/public ainda (nenhum asset estático no projeto) — se um dia
-# existir, adicione de volta:
-# COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/apps/web/public ./apps/web/public
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
 

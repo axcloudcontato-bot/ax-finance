@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 
 export const closePeriodInput = z.object({
@@ -14,7 +14,7 @@ export const closePeriodInput = z.object({
  */
 export async function closePeriod(userId: string, companyId: string, input: unknown) {
   const data = closePeriodInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "CLOSING");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const closure = await tx.periodClosure.upsert({

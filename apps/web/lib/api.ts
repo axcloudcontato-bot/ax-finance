@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { DomainError, CompanyAccessDeniedError, InvalidCredentialsError, NotAuthenticatedError, EmailAlreadyRegisteredError } from "@ax-finance/domain";
+import { DomainError, CompanyAccessDeniedError, CompanyPermissionDeniedError, EmailNotVerifiedError, InvalidCredentialsError, InvalidMfaCodeError, MfaChallengeInvalidError, NotAuthenticatedError, EmailAlreadyRegisteredError, TooManyLoginAttemptsError } from "@ax-finance/domain";
 
 /**
  * Serializa BigInt (centavos) como string no JSON — JSON.stringify nativo
@@ -27,8 +27,20 @@ export function errorResponse(error: unknown): NextResponse {
   if (error instanceof InvalidCredentialsError) {
     return json({ error: error.code, message: error.message }, 401);
   }
+  if (error instanceof InvalidMfaCodeError || error instanceof MfaChallengeInvalidError) {
+    return json({ error: error.code, message: error.message }, 401);
+  }
+  if (error instanceof TooManyLoginAttemptsError) {
+    return json({ error: error.code, message: error.message }, 429);
+  }
+  if (error instanceof EmailNotVerifiedError) {
+    return json({ error: error.code, message: error.message }, 403);
+  }
   if (error instanceof CompanyAccessDeniedError) {
     return json({ error: error.code, message: error.message }, 404);
+  }
+  if (error instanceof CompanyPermissionDeniedError) {
+    return json({ error: error.code, message: error.message }, 403);
   }
   if (error instanceof EmailAlreadyRegisteredError) {
     return json({ error: error.code, message: error.message }, 409);

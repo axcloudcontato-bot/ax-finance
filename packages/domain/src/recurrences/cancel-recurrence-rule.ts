@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { RecurrenceRuleNotFoundError } from "../errors";
 
 export const cancelRecurrenceRuleInput = z.object({
@@ -16,7 +16,7 @@ export const cancelRecurrenceRuleInput = z.object({
  */
 export async function cancelRecurrenceRule(userId: string, companyId: string, ruleId: string, input: unknown) {
   const data = cancelRecurrenceRuleInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const rule = await tx.recurrenceRule.findFirst({ where: { id: ruleId, companyId } });

@@ -1,15 +1,18 @@
 import type { NextRequest } from "next/server";
-import { getCashFlowReport } from "@ax-finance/domain";
+import { assertCompanyPermission, getCashFlowReport } from "@ax-finance/domain";
 import { requireUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { errorResponse } from "@/lib/api";
 import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { toCsv } from "@/lib/csv";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireUser();
     const company = await requirePrimaryCompany(user.id);
+    await assertCompanyPermission(user.id, company.id, "EXPORT");
 
     const { searchParams } = new URL(request.url);
     const from = searchParams.get("de") || `${todayDateOnlyString().slice(0, 8)}01`;

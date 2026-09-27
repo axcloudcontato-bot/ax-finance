@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { PeriodClosureNotFoundError } from "../errors";
 
@@ -12,7 +12,7 @@ export const reopenPeriodInput = z.object({
 /** Seção 18 regra 8: "reabertura exige autorização e motivo" — o motivo fica no evento de auditoria. */
 export async function reopenPeriod(userId: string, companyId: string, input: unknown) {
   const data = reopenPeriodInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "CLOSING");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const existing = await tx.periodClosure.findUnique({

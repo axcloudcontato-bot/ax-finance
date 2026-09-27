@@ -20,9 +20,60 @@ export class InvalidCredentialsError extends DomainError {
   }
 }
 
+export class EmailNotVerifiedError extends DomainError {
+  constructor() {
+    super("Confirme seu e-mail antes de entrar.", "EMAIL_NOT_VERIFIED");
+  }
+}
+
+export class TooManyLoginAttemptsError extends DomainError {
+  constructor() {
+    super(
+      "Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente.",
+      "TOO_MANY_LOGIN_ATTEMPTS"
+    );
+  }
+}
+
+export class InvalidAccountTokenError extends DomainError {
+  constructor() {
+    super("Este link é inválido, expirou ou já foi utilizado.", "INVALID_ACCOUNT_TOKEN");
+  }
+}
+
 export class NotAuthenticatedError extends DomainError {
   constructor() {
     super("Sessão inválida ou expirada.", "NOT_AUTHENTICATED");
+  }
+}
+
+export class MfaConfigurationError extends DomainError {
+  constructor() {
+    super("A chave de criptografia da autenticação em duas etapas não está configurada.", "MFA_CONFIGURATION_ERROR");
+  }
+}
+
+export class MfaAlreadyEnabledError extends DomainError {
+  constructor() {
+    super("A autenticação em duas etapas já está ativa.", "MFA_ALREADY_ENABLED");
+  }
+}
+
+export class MfaNotEnabledError extends DomainError {
+  constructor() {
+    super("A autenticação em duas etapas não está ativa.", "MFA_NOT_ENABLED");
+  }
+}
+
+export class InvalidMfaCodeError extends DomainError {
+  constructor() {
+    super("Código inválido ou já utilizado.", "INVALID_MFA_CODE");
+  }
+}
+
+export class MfaChallengeInvalidError extends DomainError {
+  constructor() {
+    super("O desafio de autenticação expirou ou é inválido. Entre novamente.", "MFA_CHALLENGE_INVALID");
   }
 }
 
@@ -34,6 +85,48 @@ export class NotAuthenticatedError extends DomainError {
 export class CompanyAccessDeniedError extends DomainError {
   constructor() {
     super("Empresa não encontrada ou acesso não autorizado.", "COMPANY_ACCESS_DENIED");
+  }
+}
+
+export class CompanyPermissionDeniedError extends DomainError {
+  constructor() {
+    super("Você não tem permissão para realizar esta ação.", "COMPANY_PERMISSION_DENIED");
+  }
+}
+
+export class CompanyInvitationInvalidError extends DomainError {
+  constructor() {
+    super("Este convite é inválido, expirou ou já foi utilizado.", "COMPANY_INVITATION_INVALID");
+  }
+}
+
+export class CompanyInvitationEmailMismatchError extends DomainError {
+  constructor() {
+    super(
+      "Este convite foi enviado para outro endereço de e-mail.",
+      "COMPANY_INVITATION_EMAIL_MISMATCH"
+    );
+  }
+}
+
+export class CompanyMemberNotFoundError extends DomainError {
+  constructor() {
+    super("Usuário da empresa não encontrado.", "COMPANY_MEMBER_NOT_FOUND");
+  }
+}
+
+export class CompanyMemberAlreadyActiveError extends DomainError {
+  constructor() {
+    super("Este e-mail já possui acesso ativo à empresa.", "COMPANY_MEMBER_ALREADY_ACTIVE");
+  }
+}
+
+export class CompanyOwnerProtectedError extends DomainError {
+  constructor() {
+    super(
+      "O proprietário não pode ser removido nem ter o papel alterado por este fluxo.",
+      "COMPANY_OWNER_PROTECTED"
+    );
   }
 }
 

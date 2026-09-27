@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { FinancialAccountNotFoundError, ImportFileInvalidError } from "../errors";
 
 export const importBankStatementInput = z.object({
@@ -63,7 +63,7 @@ function normalizeDescription(raw: string): string {
  */
 export async function importBankStatement(userId: string, companyId: string, input: unknown) {
   const data = importBankStatementInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   const parsed = Papa.parse<Record<string, string>>(data.csvContent, {
     header: true,

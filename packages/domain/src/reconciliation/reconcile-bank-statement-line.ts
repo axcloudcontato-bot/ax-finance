@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import {
   BankStatementLineAlreadyProcessedError,
   BankStatementLineNotFoundError,
@@ -21,7 +21,7 @@ export const reconcileBankStatementLineInput = z.object({
  */
 export async function reconcileBankStatementLine(userId: string, companyId: string, lineId: string, input: unknown) {
   const data = reconcileBankStatementLineInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const line = await tx.bankStatementLine.findFirst({ where: { id: lineId, companyId } });

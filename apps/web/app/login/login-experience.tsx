@@ -19,6 +19,11 @@ type LoginExperienceProps = {
   action: (formData: FormData) => Promise<void>;
   errorMessage?: string;
   registrationCompleted: boolean;
+  returnTo?: string;
+  verificationRequired: boolean;
+  previewLink?: string;
+  emailVerified: boolean;
+  passwordReset: boolean;
 };
 
 function SubmitButton() {
@@ -45,17 +50,15 @@ export function LoginExperience({
   action,
   errorMessage,
   registrationCompleted,
+  returnTo,
+  verificationRequired,
+  previewLink,
+  emailVerified,
+  passwordReset,
 }: LoginExperienceProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [recoverySent, setRecoverySent] = useState(false);
-  const recoveryDialog = useRef<HTMLDialogElement>(null);
   const legalDialog = useRef<HTMLDialogElement>(null);
   const [legalTitle, setLegalTitle] = useState("");
-
-  function openRecovery() {
-    setRecoverySent(false);
-    recoveryDialog.current?.showModal();
-  }
 
   function openLegal(title: string) {
     setLegalTitle(title);
@@ -84,7 +87,7 @@ export function LoginExperience({
 
           <div className={styles.welcomeAction}>
             <p>Ainda não tem uma conta?</p>
-            <Link className={styles.outlineButton} href="/registro">
+            <Link className={styles.outlineButton} href={returnTo ? `/registro?retorno=${encodeURIComponent(returnTo)}` : "/registro"}>
               Criar minha conta
             </Link>
           </div>
@@ -99,7 +102,31 @@ export function LoginExperience({
 
             {registrationCompleted && (
               <p className={`${styles.status} ${styles.success}`} role="status">
-                Cadastro concluído. Faça login para continuar.
+                Cadastro concluído. Confirme o e-mail enviado para ativar sua conta. <Link href="/verificar-email">Reenviar confirmação</Link>
+              </p>
+            )}
+
+            {verificationRequired && !registrationCompleted && (
+              <p className={`${styles.status} ${styles.error}`} role="status">
+                Confirme seu e-mail antes de entrar. <Link href="/verificar-email">Reenviar confirmação</Link>
+              </p>
+            )}
+
+            {previewLink && (
+              <p className={`${styles.status} ${styles.success}`} role="status">
+                Ambiente local: <Link href={previewLink}>abrir link de verificação</Link>.
+              </p>
+            )}
+
+            {emailVerified && (
+              <p className={`${styles.status} ${styles.success}`} role="status">
+                E-mail confirmado. Você já pode entrar.
+              </p>
+            )}
+
+            {passwordReset && (
+              <p className={`${styles.status} ${styles.success}`} role="status">
+                Senha redefinida. Entre novamente com a nova senha.
               </p>
             )}
 
@@ -110,6 +137,7 @@ export function LoginExperience({
             )}
 
             <form action={action} className={styles.form}>
+              {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
               <div className={styles.field}>
                 <label htmlFor="email">E-mail</label>
                 <div className={styles.inputWrap}>
@@ -157,9 +185,9 @@ export function LoginExperience({
                   <input type="checkbox" name="remember" />
                   <span>Lembrar de mim</span>
                 </label>
-                <button className={styles.textButton} type="button" onClick={openRecovery}>
+                <Link className={styles.textButton} href="/recuperar-senha">
                   Esqueci minha senha
-                </button>
+                </Link>
               </div>
 
               <SubmitButton />
@@ -184,50 +212,6 @@ export function LoginExperience({
           </button>
         </nav>
       </footer>
-
-      <dialog className={styles.dialog} ref={recoveryDialog} aria-labelledby="recovery-title">
-        <button
-          className={styles.dialogClose}
-          type="button"
-          aria-label="Fechar"
-          onClick={() => recoveryDialog.current?.close()}
-        >
-          <X size={21} aria-hidden="true" />
-        </button>
-        <h2 id="recovery-title">Recuperar acesso</h2>
-        {recoverySent ? (
-          <p role="status">
-            A recuperação por e-mail ainda está em preparação. Entre em contato com o suporte
-            para recuperar seu acesso.
-          </p>
-        ) : (
-          <>
-            <p>Informe seu e-mail para iniciar a recuperação da conta.</p>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                setRecoverySent(true);
-              }}
-            >
-              <label htmlFor="recovery-email">E-mail</label>
-              <div className={styles.inputWrap}>
-                <EnvelopeSimple size={23} aria-hidden="true" />
-                <input
-                  id="recovery-email"
-                  name="recovery-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="voce@exemplo.com"
-                  required
-                />
-              </div>
-              <button className={styles.dialogAction} type="submit">
-                Continuar
-              </button>
-            </form>
-          </>
-        )}
-      </dialog>
 
       <dialog className={styles.dialog} ref={legalDialog} aria-labelledby="legal-title">
         <button

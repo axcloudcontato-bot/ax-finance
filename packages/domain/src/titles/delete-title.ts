@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { TitleNotFoundError } from "../errors";
@@ -22,7 +22,7 @@ export const deleteTitleInput = z.object({
  */
 export async function deleteTitle(userId: string, companyId: string, titleId: string, input: unknown) {
   const data = deleteTitleInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const title = await tx.title.findFirst({ where: { id: titleId, companyId } });

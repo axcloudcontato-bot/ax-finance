@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NotAuthenticatedError, resolveSession } from "@ax-finance/domain";
 
 export const SESSION_COOKIE_NAME = "ax_session";
+export const MFA_CHALLENGE_COOKIE_NAME = "ax_mfa_challenge";
 
 /**
  * Só pode ser chamada em Server Components (leitura) — para gravar o cookie,
@@ -33,6 +34,24 @@ export function setSessionCookie(rawToken: string, expiresAt?: Date) {
 
 export function clearSessionCookie() {
   cookies().delete(SESSION_COOKIE_NAME);
+}
+
+export function setMfaChallengeCookie(rawToken: string, expiresAt: Date) {
+  cookies().set(MFA_CHALLENGE_COOKIE_NAME, rawToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false",
+    sameSite: "lax",
+    expires: expiresAt,
+    path: "/",
+  });
+}
+
+export function getMfaChallengeToken(): string | undefined {
+  return cookies().get(MFA_CHALLENGE_COOKIE_NAME)?.value;
+}
+
+export function clearMfaChallengeCookie() {
+  cookies().delete(MFA_CHALLENGE_COOKIE_NAME);
 }
 
 export function getSessionToken(): string | undefined {

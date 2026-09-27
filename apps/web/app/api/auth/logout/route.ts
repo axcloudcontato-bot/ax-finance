@@ -1,6 +1,6 @@
 import { revokeSession } from "@ax-finance/domain";
 import { json, errorResponse } from "@/lib/api";
-import { clearSessionCookie, getSessionToken } from "@/lib/session";
+import { clearMfaChallengeCookie, clearSessionCookie, getSessionToken } from "@/lib/session";
 
 export async function POST() {
   try {
@@ -9,6 +9,7 @@ export async function POST() {
       await revokeSession(token);
     }
     clearSessionCookie();
+    clearMfaChallengeCookie();
     return json({ ok: true });
   } catch (error) {
     return errorResponse(error);

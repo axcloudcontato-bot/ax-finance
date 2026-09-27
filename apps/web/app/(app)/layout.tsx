@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { listCompaniesForUser, listDueSoonTitles } from "@ax-finance/domain";
+import { getCompanyAccess, listCompaniesForUser, listDueSoonTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { AppShell } from "@/components/app-shell";
@@ -22,12 +22,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const company = await requirePrimaryCompany(user.id);
-  const dueSoonTitles = await listDueSoonTitles(user.id, company.id);
+  const [dueSoonTitles, access] = await Promise.all([
+    listDueSoonTitles(user.id, company.id),
+    getCompanyAccess(user.id, company.id),
+  ]);
 
   return (
     <AppShell
       userName={user.name}
       userEmail={user.email}
+      membershipRole={access.role}
+      canManageMembers={access.permissions.includes("MEMBERS_MANAGE")}
       logoutAction={logoutAction}
       dueSoonTitles={dueSoonTitles.map((title) => ({
         id: title.id,

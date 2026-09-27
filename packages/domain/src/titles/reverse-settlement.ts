@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { SettlementAlreadyReversedError, TitleNotFoundError } from "../errors";
@@ -30,7 +30,7 @@ export async function reverseSettlement(
   input: unknown
 ) {
   const data = reverseSettlementInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const settlement = await tx.settlement.findFirst({

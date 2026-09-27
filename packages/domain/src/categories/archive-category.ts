@@ -1,5 +1,5 @@
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryNotFoundError } from "../errors";
 
 /**
@@ -8,7 +8,7 @@ import { CategoryNotFoundError } from "../errors";
  * de novos lançamentos (listActiveCategories).
  */
 export async function archiveCategory(userId: string, companyId: string, categoryId: string) {
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const category = await tx.category.findFirst({ where: { id: categoryId, companyId } });

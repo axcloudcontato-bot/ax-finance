@@ -10,4 +10,9 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   INSTALLMENT_PLAN_DELETED: "Parcelamento excluído",
   BALANCE_ADJUSTMENT_CREATED: "Ajuste de saldo",
   BALANCE_ADJUSTMENT_REVERSED: "Ajuste de saldo estornado",
+  COMPANY_INVITATION_CREATED: "Convite criado",
+  COMPANY_INVITATION_ACCEPTED: "Convite aceito",
+  COMPANY_INVITATION_REVOKED: "Convite revogado",
+  COMPANY_MEMBER_ROLE_UPDATED: "Papel de usuário atualizado",
+  COMPANY_MEMBER_REVOKED: "Acesso de usuário revogado",
 };

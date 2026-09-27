@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryNotFoundError, PartyNotFoundError, RecurrenceEndDateBeforeStartError } from "../errors";
 
 export const createRecurrenceRuleInput = z.object({
@@ -27,7 +27,7 @@ export async function createRecurrenceRule(userId: string, companyId: string, in
   if (data.endDate && data.endDate < data.startDate) {
     throw new RecurrenceEndDateBeforeStartError();
   }
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const category = await tx.category.findFirst({

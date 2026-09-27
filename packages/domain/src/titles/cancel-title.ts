@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { TitleHasActiveSettlementsError, TitleNotFoundError } from "../errors";
 
@@ -16,7 +16,7 @@ export async function cancelTitle(
   input: unknown
 ) {
   const data = cancelTitleInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const title = await tx.title.findFirst({ where: { id: titleId, companyId } });

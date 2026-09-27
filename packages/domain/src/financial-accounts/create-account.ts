@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 
 export const createFinancialAccountInput = z.object({
   name: z.string().trim().min(1).max(200),
@@ -25,7 +25,7 @@ export async function createFinancialAccount(
   input: unknown
 ) {
   const data = createFinancialAccountInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, (tx) =>
     tx.financialAccount.create({

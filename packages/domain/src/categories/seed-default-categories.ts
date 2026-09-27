@@ -1,6 +1,6 @@
 import type { TenantScopedClient } from "@ax-finance/db";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import type { CATEGORY_NATURES } from "./create-category";
 
 type CategoryNature = (typeof CATEGORY_NATURES)[number];
@@ -109,7 +109,7 @@ export async function createDefaultCategoriesInTx(tx: TenantScopedClient, compan
 
 /** Chamado uma vez logo após `createCompany` — para código chamando fora de uma transação já aberta. */
 export async function seedDefaultCategories(userId: string, companyId: string) {
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
 
   return withCompanyContext(userId, companyId, (tx) => createDefaultCategoriesInTx(tx, companyId));
 }

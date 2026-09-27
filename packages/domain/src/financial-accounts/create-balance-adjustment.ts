@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { BalanceAdjustmentNotNeededError, FinancialAccountNotFoundError } from "../errors";
@@ -23,7 +23,7 @@ export const createBalanceAdjustmentInput = z.object({
  */
 export async function createBalanceAdjustment(userId: string, companyId: string, input: unknown) {
   const data = createBalanceAdjustmentInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const account = await tx.financialAccount.findFirst({

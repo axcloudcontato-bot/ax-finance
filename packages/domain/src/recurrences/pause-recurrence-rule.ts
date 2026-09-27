@@ -1,10 +1,10 @@
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { RecurrenceRuleNotFoundError } from "../errors";
 
 /** Seção 11: pausar impede geração futura, mas não apaga obrigações existentes. */
 export async function pauseRecurrenceRule(userId: string, companyId: string, ruleId: string) {
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const rule = await tx.recurrenceRule.findFirst({ where: { id: ruleId, companyId } });

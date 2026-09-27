@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
-import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryDepthExceededError, CategoryNotFoundError } from "../errors";
 
 export const CATEGORY_NATURES = [
@@ -31,7 +31,7 @@ export type CreateCategoryInput = z.infer<typeof createCategoryInput>;
  */
 export async function createCategory(userId: string, companyId: string, input: unknown) {
   const data = createCategoryInput.parse(input);
-  await assertActiveMembership(userId, companyId);
+  await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     if (data.parentId) {

@@ -4,7 +4,7 @@ import { registerAction } from "./actions";
 export default function RegistroPage({
   searchParams,
 }: {
-  searchParams: { erro?: string };
+  searchParams: { erro?: string; retorno?: string };
 }) {
   return (
     <main className="narrow">
@@ -15,6 +15,7 @@ export default function RegistroPage({
         {searchParams.erro && <p className="error">{searchParams.erro}</p>}
 
         <form action={registerAction}>
+          {searchParams.retorno ? <input type="hidden" name="returnTo" value={searchParams.retorno} /> : null}
           <label htmlFor="name">Nome</label>
           <input id="name" name="name" type="text" required maxLength={200} />
 

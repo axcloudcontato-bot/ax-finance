@@ -41,11 +41,15 @@ Um levantamento (set/2026) comparando a especificação com o código encontrou 
 Nenhum é um bug ativo — são lacunas conscientes de um MVP em evolução, listadas aqui pra não se
 perderem:
 
-- **Permissões por papel não aplicadas**: `OPERATOR`/`ACCOUNTANT`/`VIEWER` estão no enum de
-  `MembershipRole`, mas hoje qualquer membership ATIVA concede acesso funcional amplo — nenhuma
-  ação checa o papel específico. Fica pro bloco de "login/acesso completo" (deliberadamente
-  deixado por último).
-- **Sem convites, recuperação de senha, verificação de e-mail ou MFA** — mesmo bloco acima.
+- **Gestão de acesso P0 implementada**: proprietário pode convidar, alterar papel e revogar
+  usuários; operações de escrita, exportação, estorno e fechamento aplicam a matriz de
+  permissões no domínio. Ainda não existem transferência de propriedade, delegação da gestão
+  de usuários ao administrador financeiro nem restrições por conta/centro de custo (P1).
+- **Identidade reforçada**: MFA TOTP compatível com aplicativos autenticadores, códigos de
+  recuperação de uso único, proteção contra repetição de código e segredo cifrado no banco.
+  Recuperação de senha e verificação de e-mail usam tokens de uso único, expiração e SMTP
+  configurável; o envio é síncrono enquanto não existir outbox/worker. Convites de empresa
+  continuam compartilhados manualmente por link.
 - **Sem idempotência geral**: a maioria das operações financeiras não tem uma chave de
   idempotência própria (proteção contra reenvio duplicado além do que o navegador já evita).
 - **Sem anexos, billing/assinatura, outbox ou worker** — nenhum job assíncrono real existe ainda;
@@ -69,7 +73,9 @@ perderem:
   transferências, ajustes de saldo, auditoria etc.) verificam membership de forma independente
   (política reforçada) — ao adicionar uma tabela nova, replicar esse padrão, não o mais simples.
 - **Autenticação**: e-mail+senha própria (scrypt), sessão em cookie httpOnly + tabela `sessions`
-  revogável, com "lembrar de mim" controlando se o cookie persiste além da aba. Sem MFA/
-  verificação de e-mail ainda (stubs a implementar).
+  revogável, com "lembrar de mim" controlando se o cookie persiste além da aba. Novos cadastros
+  exigem confirmação de e-mail; redefinir senha revoga sessões existentes; tentativas de login
+  são limitadas por e-mail e IP. MFA TOTP é opcional por usuário, usa desafio curto no login e
+  códigos de recuperação de uso único.
 - **Onboarding é atômico**: empresa + conta + categorias padrão numa única transação
   (`completeOnboarding`) — evita empresa órfã sem conta/categorias se um passo do meio falhar.

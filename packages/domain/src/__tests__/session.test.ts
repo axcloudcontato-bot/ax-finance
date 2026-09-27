@@ -23,7 +23,9 @@ describe("sessão (Seção 17: sessões revogáveis)", () => {
     const email = uniqueEmail("sessao");
     await registerUser({ email, name: "Usuária Sessão", password: "senha-forte-abc" });
 
-    const { session } = await login({ email, password: "senha-forte-abc" });
+    const result = await login({ email, password: "senha-forte-abc" });
+    if (result.mfaRequired) throw new Error("MFA não deveria estar ativa neste teste");
+    const { session } = result;
 
     const resolvedBefore = await resolveSession(session.rawToken);
     expect(resolvedBefore?.user.email).toBe(email);

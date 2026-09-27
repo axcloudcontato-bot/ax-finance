@@ -10,7 +10,9 @@ import {
   Lock,
   LogOut,
   Settings,
+  Users,
 } from "lucide-react";
+import type { MembershipRole } from "@ax-finance/db";
 import { NavItem, type NavItemData } from "@/components/nav-item";
 import { initialsOf } from "@/lib/user-display";
 
@@ -80,12 +82,24 @@ const NAV_GROUPS: NavGroup[] = [
 export function AppSidebar({
   userName,
   userEmail,
+  membershipRole,
+  canManageMembers,
   logoutAction,
 }: {
   userName: string;
   userEmail: string;
+  membershipRole: MembershipRole;
+  canManageMembers: boolean;
   logoutAction: () => void | Promise<void>;
 }) {
+  const roleLabel: Record<MembershipRole, string> = {
+    OWNER: "Proprietário",
+    FINANCE_ADMIN: "Administrador financeiro",
+    OPERATOR: "Operador",
+    ACCOUNTANT: "Contador",
+    VIEWER: "Consulta",
+  };
+
   return (
     <div className="h-full w-[260px] shrink-0 overflow-hidden border-r border-border bg-card/50">
       <div className="flex h-full w-[260px] flex-col p-3">
@@ -105,9 +119,10 @@ export function AppSidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">
-          <NavItem
-            item={{ id: "config", title: "Configurações", icon: Settings, badge: "Em breve" }}
-          />
+          <NavItem item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
+          {canManageMembers ? (
+            <NavItem item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
+          ) : null}
 
           <div className="mt-2 flex items-center gap-3 overflow-hidden rounded-xl px-1 py-1">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs font-semibold text-background">
@@ -118,6 +133,9 @@ export function AppSidebar({
                 {userName}
               </span>
               <span className="block truncate text-[11px] text-muted-foreground">{userEmail}</span>
+              <span className="block truncate text-[10px] text-muted-foreground/70">
+                {roleLabel[membershipRole]}
+              </span>
             </span>
           </div>
 

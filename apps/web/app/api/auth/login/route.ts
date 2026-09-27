@@ -1,14 +1,22 @@
 import type { NextRequest } from "next/server";
 import { login } from "@ax-finance/domain";
 import { json, errorResponse } from "@/lib/api";
-import { setSessionCookie } from "@/lib/session";
+import { setMfaChallengeCookie, setSessionCookie } from "@/lib/session";
+import { clientIpFromHeaders } from "@/lib/request";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { user, session } = await login(body);
-    setSessionCookie(session.rawToken, session.expiresAt);
-    return json({ id: user.id, email: user.email, name: user.name });
+    const result = await login(body, {
+      ipAddress: clientIpFromHeaders(request.headers),
+      rememberSession: body?.remember === true,
+    });
+    if (result.mfaRequired) {
+      setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);
+      return json({ mfaRequired: true }, 202);
+    }
+    setSessionCookie(result.session.rawToken, result.session.expiresAt);
+    return json({ id: result.user.id, email: result.user.email, name: result.user.name, mfaRequired: false });
   } catch (error) {
     return errorResponse(error);
   }
