@@ -14,6 +14,7 @@ import {
   reconcileLineAction,
   undoReconciliationAction,
 } from "./actions";
+import { resolvePeriodRange } from "@/lib/month";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Pendente",
@@ -31,6 +32,9 @@ export default async function ConciliacaoPage({
     importado?: string;
     duplicado?: string;
     invalido?: string;
+    mes?: string;
+    de?: string;
+    ate?: string;
   };
 }) {
   const user = await getCurrentUser();
@@ -54,15 +58,19 @@ export default async function ConciliacaoPage({
   }
 
   const statusFilter = (searchParams.status as "PENDING" | "RECONCILED" | "IGNORED" | undefined) ?? undefined;
+  const period = resolvePeriodRange(searchParams);
 
   const [lines, unreconciledSettlements] = await Promise.all([
-    listBankStatementLines(user.id, company.id, { financialAccountId: activeAccountId, status: statusFilter }),
+    listBankStatementLines(user.id, company.id, { financialAccountId: activeAccountId, status: statusFilter, ...period }),
     listUnreconciledSettlements(user.id, company.id, activeAccountId),
   ]);
 
-  const accountHref = (accountId: string) => `/conciliacao?conta=${accountId}`;
+  const periodQuery = period.mode === "custom"
+    ? `de=${period.from}&ate=${period.to}`
+    : `mes=${period.month}`;
+  const accountHref = (accountId: string) => `/conciliacao?conta=${accountId}&${periodQuery}`;
   const statusHref = (status?: string) =>
-    status ? `/conciliacao?conta=${activeAccountId}&status=${status}` : `/conciliacao?conta=${activeAccountId}`;
+    `/conciliacao?conta=${activeAccountId}${status ? `&status=${status}` : ""}&${periodQuery}`;
 
   return (
     <main className="wide">

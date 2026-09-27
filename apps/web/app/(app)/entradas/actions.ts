@@ -29,6 +29,7 @@ async function createEntradaCore(userId: string, companyId: string, formData: Fo
   const competenceDate = String(formData.get("competenceDate") ?? "");
   const dueDate = String(formData.get("dueDate") ?? "");
   const notes = String(formData.get("notes") ?? "");
+  const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   const title = await createTitle(userId, companyId, {
     type: "RECEIVABLE",
@@ -39,6 +40,7 @@ async function createEntradaCore(userId: string, companyId: string, formData: Fo
     competenceDate,
     dueDate,
     notes: notes || undefined,
+    idempotencyKey,
   });
 
   return title.id;
@@ -101,6 +103,7 @@ export async function createEntradaInstallmentPlanAction(formData: FormData) {
   const firstDueDate = String(formData.get("firstDueDate") ?? "");
   const intervalMonths = Number(formData.get("intervalMonths") ?? "1");
   const notes = String(formData.get("notes") ?? "");
+  const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   try {
     await createInstallmentPlan(user.id, company.id, {
@@ -113,6 +116,7 @@ export async function createEntradaInstallmentPlanAction(formData: FormData) {
       firstDueDate,
       intervalMonths,
       notes: notes || undefined,
+      idempotencyKey,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível criar o parcelamento.";
@@ -136,6 +140,7 @@ export async function registerEntradaSettlementAction(titleId: string, formData:
   const feesAmount = String(formData.get("feesAmount") ?? "0");
   const effectiveDate = String(formData.get("effectiveDate") ?? "");
   const paymentMethod = String(formData.get("paymentMethod") ?? "");
+  const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   try {
     await registerSettlement(user.id, company.id, titleId, {
@@ -146,6 +151,7 @@ export async function registerEntradaSettlementAction(titleId: string, formData:
       feesCents: parseAmountToCents(feesAmount),
       effectiveDate,
       paymentMethod: paymentMethod || undefined,
+      idempotencyKey,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível registrar a baixa.";

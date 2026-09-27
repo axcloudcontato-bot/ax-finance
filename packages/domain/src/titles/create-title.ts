@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
-import { CategoryNotFoundError, PartyNotFoundError } from "../errors";
+import { CategoryNotFoundError, IdempotencyResultUnavailableError, PartyNotFoundError } from "../errors";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const createTitleInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]),
@@ -14,6 +15,7 @@ export const createTitleInput = z.object({
   competenceDate: z.coerce.date(),
   dueDate: z.coerce.date(),
   notes: z.string().trim().max(2000).optional(),
+  idempotencyKey: idempotencyKeySchema,
 });
 
 export type CreateTitleInput = z.infer<typeof createTitleInput>;
@@ -28,6 +30,20 @@ export async function createTitle(userId: string, companyId: string, input: unkn
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    const { idempotencyKey, ...request } = data;
+    const idempotency = await beginIdempotentOperation(tx, {
+      companyId,
+      operation: "CREATE_TITLE",
+      key: idempotencyKey,
+      request,
+      resourceType: "Title",
+    });
+    if (idempotency.kind === "replay") {
+      const existing = await tx.title.findFirst({ where: { id: idempotency.resourceId, companyId } });
+      if (!existing) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
+
     const category = await tx.category.findFirst({
       where: { id: data.categoryId, companyId, status: "ACTIVE" },
     });
@@ -44,7 +60,7 @@ export async function createTitle(userId: string, companyId: string, input: unkn
       }
     }
 
-    return tx.title.create({
+    const title = await tx.title.create({
       data: {
         companyId,
         type: data.type,
@@ -58,5 +74,7 @@ export async function createTitle(userId: string, companyId: string, input: unkn
         notes: data.notes,
       },
     });
+    await completeIdempotentOperation(tx, idempotency, title.id);
+    return title;
   });
 }

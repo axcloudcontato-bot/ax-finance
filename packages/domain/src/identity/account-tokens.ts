@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
-import { prisma, type AccountTokenType } from "@ax-finance/db";
+import { prisma, type AccountTokenType, type User } from "@ax-finance/db";
 import { InvalidAccountTokenError } from "../errors";
+import { enqueueOutboxEmail } from "../outbox/events";
 import { hashPassword } from "./password";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -11,37 +12,68 @@ function hashToken(rawToken: string): string {
   return createHash("sha256").update(rawToken).digest("hex");
 }
 
-async function createAccountToken(userId: string, type: AccountTokenType, ttlMs: number) {
+export interface AccountEmailDelivery {
+  baseUrl: string;
+  returnTo?: string;
+}
+
+export async function createAccountTokenWithClient(
+  tx: import("@ax-finance/db").Prisma.TransactionClient,
+  user: Pick<User, "id" | "email" | "name">,
+  type: AccountTokenType,
+  ttlMs: number,
+  delivery?: AccountEmailDelivery
+) {
   const rawToken = randomBytes(32).toString("hex");
   const now = new Date();
   const expiresAt = new Date(now.getTime() + ttlMs);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.accountToken.updateMany({
-      where: { userId, type, usedAt: null },
-      data: { usedAt: now },
-    });
-    await tx.accountToken.create({
-      data: { userId, type, tokenHash: hashToken(rawToken), expiresAt },
-    });
+  await tx.accountToken.updateMany({
+    where: { userId: user.id, type, usedAt: null },
+    data: { usedAt: now },
   });
+  const accountToken = await tx.accountToken.create({
+    data: { userId: user.id, type, tokenHash: hashToken(rawToken), expiresAt },
+  });
+  if (delivery) {
+    await enqueueOutboxEmail(tx, {
+      type,
+      dedupKey: `account-token:${accountToken.id}`,
+      payload: {
+        to: user.email,
+        name: user.name,
+        rawToken,
+        baseUrl: delivery.baseUrl.replace(/\/$/, ""),
+        returnTo: type === "EMAIL_VERIFICATION" ? delivery.returnTo : undefined,
+      },
+    });
+  }
 
-  return { rawToken, expiresAt };
+  return { rawToken, expiresAt, queued: Boolean(delivery) };
 }
 
-export async function issueEmailVerificationToken(userId: string) {
+async function createAccountToken(
+  user: Pick<User, "id" | "email" | "name">,
+  type: AccountTokenType,
+  ttlMs: number,
+  delivery?: AccountEmailDelivery
+) {
+  return prisma.$transaction((tx) => createAccountTokenWithClient(tx, user, type, ttlMs, delivery));
+}
+
+export async function issueEmailVerificationToken(userId: string, delivery?: AccountEmailDelivery) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || user.status !== "ACTIVE" || user.emailVerifiedAt) return null;
-  const token = await createAccountToken(user.id, "EMAIL_VERIFICATION", EMAIL_VERIFICATION_TTL_MS);
+  const token = await createAccountToken(user, "EMAIL_VERIFICATION", EMAIL_VERIFICATION_TTL_MS, delivery);
   return { user, ...token };
 }
 
-export async function requestEmailVerification(email: string) {
+export async function requestEmailVerification(email: string, delivery?: AccountEmailDelivery) {
   const parsed = z.string().email().toLowerCase().safeParse(email);
   if (!parsed.success) return null;
   const user = await prisma.user.findUnique({ where: { email: parsed.data } });
   if (!user || user.status !== "ACTIVE" || user.emailVerifiedAt) return null;
-  const token = await createAccountToken(user.id, "EMAIL_VERIFICATION", EMAIL_VERIFICATION_TTL_MS);
+  const token = await createAccountToken(user, "EMAIL_VERIFICATION", EMAIL_VERIFICATION_TTL_MS, delivery);
   return { user, ...token };
 }
 
@@ -63,12 +95,12 @@ export async function verifyEmail(rawToken: string) {
   });
 }
 
-export async function requestPasswordReset(email: string) {
+export async function requestPasswordReset(email: string, delivery?: AccountEmailDelivery) {
   const parsed = z.string().email().toLowerCase().safeParse(email);
   if (!parsed.success) return null;
   const user = await prisma.user.findUnique({ where: { email: parsed.data } });
   if (!user || user.status !== "ACTIVE") return null;
-  const token = await createAccountToken(user.id, "PASSWORD_RESET", PASSWORD_RESET_TTL_MS);
+  const token = await createAccountToken(user, "PASSWORD_RESET", PASSWORD_RESET_TTL_MS, delivery);
   return { user, ...token };
 }
 

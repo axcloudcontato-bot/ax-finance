@@ -285,6 +285,101 @@ form.inline {
   color: white;
 }
 
+.global-period-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.custom-period-label span {
+  min-width: 13rem;
+}
+
+.period-filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.period-filter-popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 900;
+  width: min(430px, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 12px 28px rgba(20, 30, 60, 0.18);
+}
+
+.period-filter-row,
+.period-filter-dates {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.period-filter-row input,
+.period-filter-dates input {
+  margin-top: 0.25rem;
+}
+
+.period-filter-row input {
+  flex: 1;
+}
+
+.period-filter-row button,
+.period-filter-apply {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.period-filter-dates > div {
+  flex: 1;
+}
+
+.period-filter-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.period-filter-divider::before,
+.period-filter-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.period-filter-apply {
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+.period-filter-error {
+  margin: 0.5rem 0 0;
+  color: var(--danger, #dc2626);
+  font-size: 0.8rem;
+}
+
 /* Lista (larga, à esquerda) + formulário de cadastro rápido (estreito, à
    direita) — evita tanto o formulário esticado feio até a borda quanto a
    lista espremida numa coluna estreita. Empilha em telas estreitas. */
@@ -410,6 +505,21 @@ form.inline {
   letter-spacing: 0.03em;
   color: var(--muted);
   margin: 0.5rem 0.25rem;
+}
+
+.topbar-mark-read {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  padding: 0.25rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.topbar-mark-read:hover {
+  text-decoration: underline;
 }
 
 .topbar-dropdown input {

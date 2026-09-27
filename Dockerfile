@@ -13,6 +13,7 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
+COPY apps/worker/package.json apps/worker/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/domain/package.json packages/domain/package.json
 # --ignore-scripts: o postinstall de packages/db chama `prisma generate`, que
@@ -40,6 +41,13 @@ COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]
+
+# ---- worker da outbox (e-mails e futuros jobs assíncronos) ----
+FROM deps AS worker
+COPY . .
+RUN pnpm --filter @ax-finance/db exec prisma generate
+ENV NODE_ENV=production
+CMD ["pnpm", "--filter", "worker", "start"]
 
 # ---- imagem só para aplicar migrations (job de curta duração) ----
 FROM deps AS migrate

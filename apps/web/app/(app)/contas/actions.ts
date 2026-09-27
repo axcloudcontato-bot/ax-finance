@@ -50,6 +50,7 @@ export async function createBalanceAdjustmentAction(financialAccountId: string, 
   const targetBalance = String(formData.get("targetBalance") ?? "0");
   const reason = String(formData.get("reason") ?? "");
   const effectiveDate = String(formData.get("effectiveDate") ?? "");
+  const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   let adjustmentId: string;
   try {
@@ -58,6 +59,7 @@ export async function createBalanceAdjustmentAction(financialAccountId: string, 
       targetBalanceCents: parseAmountToCents(targetBalance),
       reason,
       effectiveDate,
+      idempotencyKey,
     });
     adjustmentId = adjustment.id;
   } catch (error) {

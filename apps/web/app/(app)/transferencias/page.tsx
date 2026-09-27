@@ -6,11 +6,12 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { reverseTransferAction } from "./actions";
+import { resolvePeriodRange } from "@/lib/month";
 
 export default async function TransferenciasPage({
   searchParams,
 }: {
-  searchParams: { erro?: string };
+  searchParams: { erro?: string; mes?: string; de?: string; ate?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -18,7 +19,8 @@ export default async function TransferenciasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const transfers = await listTransfers(user.id, company.id);
+  const period = resolvePeriodRange(searchParams);
+  const transfers = await listTransfers(user.id, company.id, period);
 
   return (
     <main className="wide">

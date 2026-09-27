@@ -9,6 +9,8 @@ fechamento de período e ajuste manual de saldo — não só a fundação.
 ## Stack
 
 - `apps/web`: Next.js 14 (App Router) — UI + Route Handlers.
+- `apps/worker`: consumidor da outbox e dos jobs agendados — e-mails transacionais,
+  recorrências, notificações, retentativas e dead letter.
 - `packages/domain`: regras de negócio (identidade, empresas, contas, títulos, relatórios etc.).
   Sem Prisma direto na UI.
 - `packages/db`: schema Prisma + migrations (inclui as políticas de Row Level Security).
@@ -24,6 +26,9 @@ fechamento de período e ajuste manual de saldo — não só a fundação.
 4. `pnpm db:migrate` — aplica migrations pendentes em `ax_finance_dev`.
 5. `pnpm db:seed` — cria uma empresa de demonstração (`demo@ax.finance` / `demo12345`).
 6. `pnpm dev` — sobe o Next.js em http://localhost:3000.
+7. Em outro terminal, `pnpm worker:dev` — processa a outbox, materializa recorrências e gera
+   notificações/resumos. Sem SMTP no ambiente local, o envio é simulado; os links continuam
+   visíveis na tela quando `EMAIL_PREVIEW=true`.
 
 ## Deploy via Docker
 
@@ -48,13 +53,19 @@ perderem:
 - **Identidade reforçada**: MFA TOTP compatível com aplicativos autenticadores, códigos de
   recuperação de uso único, proteção contra repetição de código e segredo cifrado no banco.
   Recuperação de senha e verificação de e-mail usam tokens de uso único, expiração e SMTP
-  configurável; o envio é síncrono enquanto não existir outbox/worker. Convites de empresa
-  continuam compartilhados manualmente por link.
-- **Sem idempotência geral**: a maioria das operações financeiras não tem uma chave de
-  idempotência própria (proteção contra reenvio duplicado além do que o navegador já evita).
-- **Sem anexos, billing/assinatura, outbox ou worker** — nenhum job assíncrono real existe ainda;
-  a geração de títulos recorrentes roda sob demanda (a cada acesso às páginas de Entradas/Saídas/
-  Dashboard), não por rotina agendada.
+  configurável. Os e-mails passam por outbox transacional com payload cifrado, retentativas e
+  worker separado. Convites de empresa continuam compartilhados manualmente por link.
+- **Idempotência financeira crítica implementada**: criação de títulos, baixas, transferências,
+  ajustes de saldo e parcelamentos aceitam uma chave UUID por empresa/operação. Repetir a mesma
+  chave e conteúdo devolve o recurso original; reutilizá-la com conteúdo diferente é recusado.
+  Importações continuam usando a deduplicação determinística por linha; cadastros auxiliares e
+  comandos já naturalmente protegidos por estado ainda não gravam chave própria.
+- **Rotina operacional assíncrona implementada**: o worker reivindica jobs persistentes com
+  lock e retentativa, gera títulos recorrentes diariamente e produz notificações deduplicadas
+  para vencimentos e resumo semanal. A campainha mantém estado de leitura; e-mails financeiros
+  são enviados aos papéis responsáveis. Ainda não há tela para configurar antecedência,
+  horário ou canal por usuário.
+- **Sem anexos ou billing/assinatura**.
 - **Importação de extrato é só CSV síncrono** — sem OFX, mapeamento de colunas ou processamento
   em background (ver "Fora do escopo" nos commits de conciliação).
 - **Sem chaves estrangeiras compostas por `companyId`**: o isolamento entre empresas depende da

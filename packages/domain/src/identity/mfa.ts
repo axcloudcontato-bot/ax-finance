@@ -28,7 +28,7 @@ const MFA_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
 function encryptionKey(): Buffer {
-  const configured = process.env.MFA_ENCRYPTION_KEY ?? process.env.SESSION_SECRET;
+  const configured = process.env.MFA_ENCRYPTION_KEY?.trim() || process.env.SESSION_SECRET?.trim();
   if (!configured) {
     if (process.env.NODE_ENV === "production") throw new MfaConfigurationError();
     return createHash("sha256").update("ax-finance-local-mfa-key").digest();

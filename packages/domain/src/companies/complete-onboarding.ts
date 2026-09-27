@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { withUserContext } from "@ax-finance/db";
 import { createDefaultCategoriesInTx } from "../categories/seed-default-categories";
+import { scheduleCompanyJobsInTx } from "../scheduled-jobs/jobs";
 
 export const completeOnboardingInput = z.object({
   companyName: z.string().trim().min(1).max(200),
@@ -39,6 +40,8 @@ export async function completeOnboarding(userId: string, input: unknown) {
     await tx.membership.create({
       data: { userId, companyId, role: "OWNER" },
     });
+
+    await scheduleCompanyJobsInTx(tx, companyId, userId);
 
     // A partir daqui as tabelas de dados (financial_accounts/categories) têm
     // política de RLS reforçada, que também confere

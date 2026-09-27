@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { listActiveCategories, listParties } from "@ax-finance/domain";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
@@ -34,6 +35,7 @@ export function TitleForm({
         </p>
       ) : (
         <form action={action}>
+          <input type="hidden" name="idempotencyKey" value={randomUUID()} />
           <div className="form-grid">
             <div className="span-2">
               <label htmlFor="description">Descrição</label>

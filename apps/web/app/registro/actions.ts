@@ -2,9 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { issueEmailVerificationToken, registerUser } from "@ax-finance/domain";
+import { registerUser } from "@ax-finance/domain";
 import { ZodError } from "zod";
-import { sendVerificationEmail } from "@/lib/email";
+import { publicBaseUrl, verificationPreviewPath } from "@/lib/email";
 
 export async function registerAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -15,7 +15,16 @@ export async function registerAction(formData: FormData) {
 
   let user;
   try {
-    user = await registerUser({ email, name, password }, { requireEmailVerification: true });
+    user = await registerUser(
+      { email, name, password },
+      {
+        requireEmailVerification: true,
+        verificationDelivery: {
+          baseUrl: publicBaseUrl(headers().get("origin") ?? undefined),
+          returnTo: returnTo || undefined,
+        },
+      }
+    );
   } catch (error) {
     const message =
       error instanceof ZodError
@@ -26,22 +35,9 @@ export async function registerAction(formData: FormData) {
     redirect(`/registro?erro=${encodeURIComponent(message)}${returnTo ? `&retorno=${encodeURIComponent(returnTo)}` : ""}`);
   }
 
-  let previewPath: string | undefined;
-  try {
-    const verification = await issueEmailVerificationToken(user.id);
-    if (verification) {
-      const delivery = await sendVerificationEmail({
-        to: user.email,
-        name: user.name,
-        rawToken: verification.rawToken,
-        fallbackOrigin: headers().get("origin") ?? undefined,
-        returnTo,
-      });
-      previewPath = delivery.previewPath;
-    }
-  } catch (error) {
-    console.error("Falha ao enviar verificação de e-mail", error);
-  }
+  const previewPath = user.verification
+    ? verificationPreviewPath(user.verification.rawToken, returnTo || undefined)
+    : undefined;
 
   redirect(`/login?cadastrado=1&verificacao=pendente${returnTo ? `&retorno=${encodeURIComponent(returnTo)}` : ""}${previewPath ? `&preview=${encodeURIComponent(previewPath)}` : ""}`);
 }

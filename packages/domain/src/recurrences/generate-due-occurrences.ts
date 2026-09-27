@@ -19,9 +19,8 @@ function addDaysUTC(dateStr: string, days: number): string {
  * empresa, os títulos de todas as ocorrências entre o início da regra e o
  * horizonte (hoje + 90 dias) que ainda não existem — a checagem por
  * (recurrenceRuleId, recurrenceOccurrenceDate) garante que rodar de novo
- * nunca duplica um título já gerado. Chamada tanto de forma preguiçosa (ao
- * carregar entradas/saídas/dashboard) quanto pelo botão manual "Gerar
- * títulos pendentes".
+ * nunca duplica um título já gerado. O worker executa esta rotina diariamente;
+ * o botão manual "Gerar títulos pendentes" continua como contingência.
  */
 export async function generateDueOccurrences(userId: string, companyId: string) {
   await assertActiveMembership(userId, companyId);
@@ -38,15 +37,10 @@ export async function generateDueOccurrences(userId: string, companyId: string) 
       const endDate = rule.endDate ? toDateOnlyString(rule.endDate) : null;
       const occurrenceDates = computeOccurrenceDates(startDate, rule.dayOfMonth, endDate, horizon);
 
-      for (const occurrenceDate of occurrenceDates) {
-        const occurrenceAsDate = new Date(occurrenceDate);
-        const existing = await tx.title.findFirst({
-          where: { recurrenceRuleId: rule.id, recurrenceOccurrenceDate: occurrenceAsDate },
-        });
-        if (existing) continue;
-
-        await tx.title.create({
-          data: {
+      const created = await tx.title.createMany({
+        data: occurrenceDates.map((occurrenceDate) => {
+          const occurrenceAsDate = new Date(occurrenceDate);
+          return {
             companyId,
             type: rule.type,
             description: rule.description,
@@ -58,10 +52,11 @@ export async function generateDueOccurrences(userId: string, companyId: string) 
             notes: rule.notes,
             recurrenceRuleId: rule.id,
             recurrenceOccurrenceDate: occurrenceAsDate,
-          },
-        });
-        createdCount++;
-      }
+          };
+        }),
+        skipDuplicates: true,
+      });
+      createdCount += created.count;
     }
 
     return { createdCount };

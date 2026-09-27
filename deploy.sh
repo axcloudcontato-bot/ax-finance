@@ -23,7 +23,7 @@ fi
 echo "==> Atualizando o código (git pull)..."
 git pull --ff-only
 
-echo "==> Subindo containers (build + migrate + web)..."
+echo "==> Subindo containers (build + migrate + web + worker)..."
 docker compose up -d --build
 
 echo "==> Status dos containers:"

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AppTopbar, type DueSoonTitle } from "@/components/app-topbar";
+import { AppTopbar, type AppNotification } from "@/components/app-topbar";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
 import { PageActionsSlot } from "@/components/page-actions-slot";
 import type { MembershipRole } from "@ax-finance/db";
@@ -13,7 +13,7 @@ export function AppShell({
   membershipRole,
   canManageMembers,
   logoutAction,
-  dueSoonTitles,
+  notifications,
   children,
 }: {
   userName: string;
@@ -21,12 +21,12 @@ export function AppShell({
   membershipRole: MembershipRole;
   canManageMembers: boolean;
   logoutAction: () => void | Promise<void>;
-  dueSoonTitles: DueSoonTitle[];
+  notifications: AppNotification[];
   children: ReactNode;
 }) {
   return (
     <div className="flex h-svh w-full min-w-0 flex-col bg-background">
-      <AppTopbar userName={userName} dueSoonTitles={dueSoonTitles} />
+      <AppTopbar userName={userName} notifications={notifications} />
 
       <div className="flex min-h-0 flex-1">
         <AppSidebar

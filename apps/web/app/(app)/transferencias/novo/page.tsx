@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { listFinancialAccounts } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -32,6 +33,7 @@ export default async function NovaTransferenciaPage({
           </p>
         ) : (
           <form action={createTransferAction}>
+            <input type="hidden" name="idempotencyKey" value={randomUUID()} />
             <div className="form-grid">
               <div>
                 <label htmlFor="fromAccountId">Conta de origem</label>

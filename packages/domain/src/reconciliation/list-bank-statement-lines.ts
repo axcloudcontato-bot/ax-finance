@@ -4,6 +4,8 @@ import { assertActiveMembership } from "../companies/assert-membership";
 export interface ListBankStatementLinesFilter {
   financialAccountId?: string;
   status?: "PENDING" | "RECONCILED" | "IGNORED";
+  from?: string;
+  to?: string;
 }
 
 export async function listBankStatementLines(
@@ -19,6 +21,12 @@ export async function listBankStatementLines(
         companyId,
         ...(filter.financialAccountId ? { financialAccountId: filter.financialAccountId } : {}),
         ...(filter.status ? { status: filter.status } : {}),
+        ...((filter.from || filter.to) ? {
+          lineDate: {
+            ...(filter.from ? { gte: new Date(`${filter.from}T00:00:00Z`) } : {}),
+            ...(filter.to ? { lte: new Date(`${filter.to}T00:00:00Z`) } : {}),
+          },
+        } : {}),
       },
       include: {
         reconciledSettlement: { include: { title: true } },

@@ -3,25 +3,21 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requestPasswordReset } from "@ax-finance/domain";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { passwordResetPreviewPath, publicBaseUrl } from "@/lib/email";
 
 export async function requestPasswordResetAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   let previewPath: string | undefined;
 
   try {
-    const request = await requestPasswordReset(email);
+    const request = await requestPasswordReset(email, {
+      baseUrl: publicBaseUrl(headers().get("origin") ?? undefined),
+    });
     if (request) {
-      const delivery = await sendPasswordResetEmail({
-        to: request.user.email,
-        name: request.user.name,
-        rawToken: request.rawToken,
-        fallbackOrigin: headers().get("origin") ?? undefined,
-      });
-      previewPath = delivery.previewPath;
+      previewPath = passwordResetPreviewPath(request.rawToken);
     }
   } catch (error) {
-    console.error("Falha ao solicitar redefinição de senha", error);
+    console.error("Falha ao agendar redefinição de senha", error);
   }
 
   // Resposta idêntica para e-mail existente ou inexistente: evita enumeração.

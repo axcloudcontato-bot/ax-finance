@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Search, Wallet } from "lucide-react";
 import { initialsOf } from "@/lib/user-display";
-import { formatDateOnly } from "@/lib/dates";
 
-export interface DueSoonTitle {
+export interface AppNotification {
   id: string;
-  type: "RECEIVABLE" | "PAYABLE";
-  description: string;
-  dueDate: string | Date;
+  title: string;
+  body: string;
+  href: string;
+  readAt: string | Date | null;
+  createdAt: string | Date;
 }
 
 interface SearchResults {
@@ -21,12 +22,13 @@ interface SearchResults {
 
 const EMPTY_RESULTS: SearchResults = { titles: [], parties: [], categories: [] };
 
-export function AppTopbar({ userName, dueSoonTitles }: { userName: string; dueSoonTitles: DueSoonTitle[] }) {
+export function AppTopbar({ userName, notifications: initialNotifications }: { userName: string; notifications: AppNotification[] }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults>(EMPTY_RESULTS);
   const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState(initialNotifications);
   const searchRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +40,10 @@ export function AppTopbar({ userName, dueSoonTitles }: { userName: string; dueSo
     document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, []);
+
+  useEffect(() => {
+    setNotifications(initialNotifications);
+  }, [initialNotifications]);
 
   useEffect(() => {
     if (!searchOpen || query.trim().length < 2) {
@@ -58,6 +64,27 @@ export function AppTopbar({ userName, dueSoonTitles }: { userName: string; dueSo
   }, [query, searchOpen]);
 
   const hasResults = results.titles.length > 0 || results.parties.length > 0 || results.categories.length > 0;
+  const unreadCount = notifications.filter((notification) => !notification.readAt).length;
+
+  async function markRead(id: string) {
+    setNotifications((current) => current.map((notification) => (
+      notification.id === id ? { ...notification, readAt: new Date() } : notification
+    )));
+    await fetch("/api/notifications", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  }
+
+  async function markAllRead() {
+    setNotifications((current) => current.map((notification) => ({ ...notification, readAt: notification.readAt ?? new Date() })));
+    await fetch("/api/notifications", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ all: true }),
+    });
+  }
 
   return (
     <header
@@ -158,26 +185,35 @@ export function AppTopbar({ userName, dueSoonTitles }: { userName: string; dueSo
             onClick={() => setNotifOpen((open) => !open)}
           >
             <Bell className="size-5 opacity-90" />
-            {dueSoonTitles.length > 0 ? <span className="topbar-badge" /> : null}
+            {unreadCount > 0 ? <span className="topbar-badge" /> : null}
           </button>
 
           {notifOpen ? (
             <div className="topbar-dropdown">
-              <h2 style={{ marginTop: "0.25rem" }}>Vencidos e vencendo hoje</h2>
-              {dueSoonTitles.length === 0 ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
+                <h2 style={{ marginTop: "0.25rem" }}>Notificações</h2>
+                {unreadCount > 0 ? (
+                  <button type="button" className="topbar-mark-read" onClick={() => void markAllRead()}>
+                    Marcar como lidas
+                  </button>
+                ) : null}
+              </div>
+              {notifications.length === 0 ? (
                 <p className="muted" style={{ margin: "0.75rem 0.25rem" }}>Nada por aqui — em dia.</p>
               ) : (
-                dueSoonTitles.map((title) => (
+                notifications.map((notification) => (
                   <Link
-                    key={title.id}
-                    href={title.type === "PAYABLE" ? `/saidas/${title.id}` : `/entradas/${title.id}`}
+                    key={notification.id}
+                    href={notification.href}
                     className="topbar-dropdown-item"
-                    onClick={() => setNotifOpen(false)}
+                    onClick={() => {
+                      setNotifOpen(false);
+                      if (!notification.readAt) void markRead(notification.id);
+                    }}
+                    style={{ opacity: notification.readAt ? 0.7 : 1 }}
                   >
-                    <span className="title">{title.description}</span>
-                    <span className="subtitle">
-                      {title.type === "PAYABLE" ? "Saída" : "Entrada"} · vence {formatDateOnly(title.dueDate)}
-                    </span>
+                    <span className="title">{notification.title}</span>
+                    <span className="subtitle">{notification.body}</span>
                   </Link>
                 ))
               )}

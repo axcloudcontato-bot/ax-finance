@@ -6,9 +6,11 @@ import {
   CategoryNotFoundError,
   InstallmentAmountTooSmallError,
   InstallmentCountInvalidError,
+  IdempotencyResultUnavailableError,
   PartyNotFoundError,
 } from "../errors";
 import { addMonthsClamped } from "./installment-dates";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const createInstallmentPlanInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]),
@@ -20,6 +22,7 @@ export const createInstallmentPlanInput = z.object({
   firstDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   intervalMonths: z.number().int().min(1).default(1),
   notes: z.string().trim().max(2000).optional(),
+  idempotencyKey: idempotencyKeySchema,
 });
 
 export type CreateInstallmentPlanInput = z.infer<typeof createInstallmentPlanInput>;
@@ -44,9 +47,25 @@ export async function createInstallmentPlan(userId: string, companyId: string, i
 
   const baseCents = Math.floor(data.totalAmountCents / data.installmentCount);
   const remainderCents = data.totalAmountCents - baseCents * data.installmentCount;
-  const installmentGroupId = randomUUID();
-
   return withCompanyContext(userId, companyId, async (tx) => {
+    const { idempotencyKey, ...request } = data;
+    const idempotency = await beginIdempotentOperation(tx, {
+      companyId,
+      operation: "CREATE_INSTALLMENT_PLAN",
+      key: idempotencyKey,
+      request,
+      resourceType: "InstallmentGroup",
+    });
+    if (idempotency.kind === "replay") {
+      const existing = await tx.title.findMany({
+        where: { companyId, installmentGroupId: idempotency.resourceId },
+        orderBy: { installmentNumber: "asc" },
+      });
+      if (existing.length === 0) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
+    const installmentGroupId = randomUUID();
+
     const category = await tx.category.findFirst({
       where: { id: data.categoryId, companyId, status: "ACTIVE" },
     });
@@ -87,6 +106,7 @@ export async function createInstallmentPlan(userId: string, companyId: string, i
       titles.push(title);
     }
 
+    await completeIdempotentOperation(tx, idempotency, installmentGroupId);
     return titles;
   });
 }

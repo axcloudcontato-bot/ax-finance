@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowUpCircle } from "lucide-react";
-import { generateDueOccurrences, listActiveCategories, listParties, listTitles } from "@ax-finance/domain";
+import { listActiveCategories, listParties, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
@@ -9,7 +9,7 @@ import { TitleListTable } from "@/components/titles/title-list-table";
 import { TitleForm } from "@/components/titles/title-form";
 import { Modal } from "@/components/ui/modal";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
-import { currentYearMonth, monthRange } from "@/lib/month";
+import { resolvePeriodRange } from "@/lib/month";
 import { createSaidaAction, createSaidaAndContinueAction } from "./actions";
 
 type Filter = "vencidas" | "hoje" | "proximas" | "quitadas" | "todas";
@@ -25,7 +25,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 export default async function SaidasPage({
   searchParams,
 }: {
-  searchParams: { filtro?: string; mes?: string; erro?: string; continuar?: string; criado?: string };
+  searchParams: { filtro?: string; mes?: string; de?: string; ate?: string; erro?: string; continuar?: string; criado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -33,7 +33,6 @@ export default async function SaidasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  await generateDueOccurrences(user.id, company.id);
   const [allTitles, categories, suppliers] = await Promise.all([
     listTitles(user.id, company.id, { type: "PAYABLE" }),
     listActiveCategories(user.id, company.id),
@@ -41,8 +40,8 @@ export default async function SaidasPage({
   ]);
 
   const filter = (searchParams.filtro as Filter) ?? "todas";
-  const month = searchParams.mes ?? currentYearMonth();
-  const { from: monthFrom, to: monthTo } = monthRange(month);
+  const period = resolvePeriodRange(searchParams);
+  const { from: monthFrom, to: monthTo } = period;
   const today = todayDateOnlyString();
 
   const titles = allTitles.filter((title) => {
@@ -62,7 +61,12 @@ export default async function SaidasPage({
   const filterHref = (key: Filter) => {
     const params = new URLSearchParams();
     if (key !== "todas") params.set("filtro", key);
-    if (month !== currentYearMonth()) params.set("mes", month);
+    if (period.mode === "custom") {
+      params.set("de", period.from);
+      params.set("ate", period.to);
+    } else {
+      params.set("mes", period.month);
+    }
     const query = params.toString();
     return query ? `/saidas?${query}` : "/saidas";
   };

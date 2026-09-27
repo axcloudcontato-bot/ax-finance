@@ -3,8 +3,8 @@
 // Núcleo financeiro: categorias, títulos, baixas, transferências, clientes/fornecedores,
 // parcelamento, recorrências, conciliação bancária, trilha de auditoria, fechamento de
 // período e ajuste manual de saldo (Seções 5-13, 17-19 do DIRECAO.md).
-// Ainda não existem: anexos, billing/assinatura e outbox/worker. Recuperação de senha,
-// verificação de e-mail, limitação de tentativas e MFA já fazem parte do núcleo de identidade.
+// Ainda não existem: anexos e billing/assinatura. Recuperação de senha,
+// verificação de e-mail, limitação de tentativas, MFA e outbox/worker já fazem parte do núcleo.
 // Convites/revogação e permissões por papel já são aplicados no domínio; ver limitações e
 // próximos passos em "Estado atual e limitações conhecidas" no README.
 
@@ -25,6 +25,32 @@ enum UserStatus {
 enum AccountTokenType {
   EMAIL_VERIFICATION
   PASSWORD_RESET
+}
+
+enum OutboxEventType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  DUE_DATE_SUMMARY
+  WEEKLY_SUMMARY
+}
+
+enum OutboxEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  DEAD_LETTER
+}
+
+enum ScheduledJobType {
+  GENERATE_RECURRENCES
+  DUE_NOTIFICATIONS
+  WEEKLY_SUMMARY
+}
+
+enum NotificationType {
+  TITLE_DUE_TODAY
+  TITLE_OVERDUE
+  WEEKLY_SUMMARY
 }
 
 enum MembershipRole {
@@ -82,6 +108,8 @@ model User {
   accountTokens      AccountToken[]
   mfaSetup           MfaSetup?
   mfaChallenges      MfaChallenge[]
+  notifications      Notification[]
+  scheduledJobs      ScheduledJob[] @relation("ScheduledJobRunner")
 
   @@map("users")
 }
@@ -136,6 +164,65 @@ model LoginRateLimit {
   @@map("login_rate_limits")
 }
 
+model OutboxEvent {
+  id               String            @id @default(uuid())
+  type             OutboxEventType
+  status           OutboxEventStatus @default(PENDING)
+  dedupKey         String            @unique @map("dedup_key")
+  payloadEncrypted String            @map("payload_encrypted")
+  attempts         Int               @default(0)
+  availableAt      DateTime          @default(now()) @map("available_at")
+  lockedAt         DateTime?         @map("locked_at")
+  lockedBy         String?           @map("locked_by")
+  processedAt      DateTime?         @map("processed_at")
+  lastError        String?           @map("last_error")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([status, availableAt, createdAt])
+  @@map("outbox_events")
+}
+
+model ScheduledJob {
+  id              String           @id @default(uuid())
+  jobKey          String           @unique @map("job_key")
+  type            ScheduledJobType
+  companyId       String           @map("company_id")
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  runAsUserId     String           @map("run_as_user_id")
+  runAsUser       User             @relation("ScheduledJobRunner", fields: [runAsUserId], references: [id], onDelete: Cascade)
+  nextRunAt       DateTime         @map("next_run_at")
+  lockedAt        DateTime?        @map("locked_at")
+  lockedBy        String?          @map("locked_by")
+  lastCompletedAt DateTime?        @map("last_completed_at")
+  lastError       String?          @map("last_error")
+  attempts        Int              @default(0)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([nextRunAt])
+  @@index([companyId])
+  @@map("scheduled_jobs")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  companyId String           @map("company_id")
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId    String           @map("user_id")
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  dedupKey  String           @unique @map("dedup_key")
+  title     String
+  body      String
+  href      String
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([userId, companyId, readAt, createdAt])
+  @@map("notifications")
+}
+
 model Session {
   id        String    @id @default(uuid())
   userId    String    @map("user_id")
@@ -186,9 +273,28 @@ model Company {
   periodClosures     PeriodClosure[]
   balanceAdjustments BalanceAdjustment[]
   invitations        CompanyInvitation[]
+  idempotencyRecords IdempotencyRecord[]
+  notifications      Notification[]
+  scheduledJobs      ScheduledJob[]
 
   @@index([tenantId])
   @@map("companies")
+}
+
+model IdempotencyRecord {
+  id           String   @id @default(uuid())
+  companyId    String   @map("company_id")
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  operation    String
+  key          String
+  requestHash  String   @map("request_hash")
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([companyId, operation, key])
+  @@index([companyId, createdAt])
+  @@map("idempotency_records")
 }
 
 model Membership {

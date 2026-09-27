@@ -19,6 +19,7 @@ export async function createTransferAction(formData: FormData) {
   const fee = String(formData.get("fee") ?? "0");
   const transferDate = String(formData.get("transferDate") ?? "");
   const description = String(formData.get("description") ?? "");
+  const idempotencyKey = String(formData.get("idempotencyKey") ?? "") || undefined;
 
   try {
     await createTransfer(user.id, company.id, {
@@ -28,6 +29,7 @@ export async function createTransferAction(formData: FormData) {
       feeCents: parseAmountToCents(fee),
       transferDate,
       description: description || undefined,
+      idempotencyKey,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível criar a transferência.";

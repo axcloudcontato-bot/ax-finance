@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { isDateOnly, isYearMonth } from "@/lib/month";
 
 export interface NavItemData {
   id: string;
@@ -21,6 +22,7 @@ function hasActiveDescendant(item: NavItemData, pathname: string | null): boolea
 
 export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const hasChildren = !!item.children?.length;
   // Já abre expandido se a página atual for uma das filhas — senão, entrar
   // direto em /cadastros/categorias esconderia o item ativo dentro de
@@ -28,6 +30,21 @@ export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number
   const [isOpen, setIsOpen] = useState(() => hasActiveDescendant(item, pathname));
   const isActive = !!item.href && pathname === item.href;
   const disabled = !item.href && !hasChildren;
+  const hrefWithPeriod = item.href ? (() => {
+    const [targetPath, targetQuery = ""] = item.href!.split("?");
+    const params = new URLSearchParams(targetQuery);
+    const from = searchParams.get("de");
+    const to = searchParams.get("ate");
+    const month = searchParams.get("mes");
+    if (isDateOnly(from) && isDateOnly(to) && from <= to) {
+      params.set("de", from);
+      params.set("ate", to);
+    } else if (isYearMonth(month)) {
+      params.set("mes", month);
+    }
+    const query = params.toString();
+    return query ? `${targetPath}?${query}` : targetPath;
+  })() : undefined;
 
   const row = (
     <div
@@ -69,7 +86,7 @@ export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number
 
   return (
     <div className="flex w-full flex-col">
-      {!hasChildren && item.href && !disabled ? <Link href={item.href}>{row}</Link> : row}
+      {!hasChildren && hrefWithPeriod && !disabled ? <Link href={hrefWithPeriod}>{row}</Link> : row}
 
       {hasChildren ? (
         <div

@@ -5,10 +5,12 @@ import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import {
   FinancialAccountNotFoundError,
+  IdempotencyResultUnavailableError,
   SettlementExceedsBalanceError,
   TitleNotFoundError,
   TitleNotOpenError,
 } from "../errors";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const registerSettlementInput = z.object({
   financialAccountId: z.string().uuid(),
@@ -19,6 +21,7 @@ export const registerSettlementInput = z.object({
   effectiveDate: z.coerce.date(),
   paymentMethod: z.string().trim().max(100).optional(),
   notes: z.string().trim().max(2000).optional(),
+  idempotencyKey: idempotencyKeySchema,
 });
 
 export type RegisterSettlementInput = z.infer<typeof registerSettlementInput>;
@@ -55,6 +58,22 @@ export async function registerSettlement(
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    const { idempotencyKey, ...request } = data;
+    const idempotency = await beginIdempotentOperation(tx, {
+      companyId,
+      operation: `REGISTER_SETTLEMENT:${titleId}`,
+      key: idempotencyKey,
+      request,
+      resourceType: "Settlement",
+    });
+    if (idempotency.kind === "replay") {
+      const existing = await tx.settlement.findFirst({
+        where: { id: idempotency.resourceId, companyId, titleId },
+      });
+      if (!existing) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
+
     const locked = await tx.$queryRaw<
       { id: string; original_amount_cents: bigint; status: string; type: string }[]
     >`SELECT id, original_amount_cents, status, type FROM "titles" WHERE id = ${titleId} AND company_id = ${companyId} FOR UPDATE`;
@@ -125,6 +144,7 @@ export async function registerSettlement(
       },
     });
 
+    await completeIdempotentOperation(tx, idempotency, settlement.id);
     return settlement;
   });
 }

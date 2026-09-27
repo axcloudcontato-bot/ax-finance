@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCompanyAccess, listCompaniesForUser, listDueSoonTitles } from "@ax-finance/domain";
+import { getCompanyAccess, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { AppShell } from "@/components/app-shell";
@@ -22,8 +22,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const company = await requirePrimaryCompany(user.id);
-  const [dueSoonTitles, access] = await Promise.all([
-    listDueSoonTitles(user.id, company.id),
+  const [notifications, access] = await Promise.all([
+    listNotifications(user.id, company.id),
     getCompanyAccess(user.id, company.id),
   ]);
 
@@ -34,11 +34,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       membershipRole={access.role}
       canManageMembers={access.permissions.includes("MEMBERS_MANAGE")}
       logoutAction={logoutAction}
-      dueSoonTitles={dueSoonTitles.map((title) => ({
-        id: title.id,
-        type: title.type,
-        description: title.description,
-        dueDate: title.dueDate,
+      notifications={notifications.map((notification) => ({
+        id: notification.id,
+        title: notification.title,
+        body: notification.body,
+        href: notification.href,
+        readAt: notification.readAt,
+        createdAt: notification.createdAt,
       }))}
     >
       {children}

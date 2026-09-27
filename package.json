@@ -7,6 +7,8 @@
   },
   "scripts": {
     "dev": "pnpm --filter web dev",
+    "worker:dev": "pnpm --filter worker dev",
+    "worker:once": "pnpm --filter worker start -- --once",
     "build": "pnpm --filter web build",
     "db:generate": "pnpm --filter @ax-finance/db exec prisma generate",
     "db:migrate": "pnpm --filter @ax-finance/db exec prisma migrate dev",
@@ -16,7 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "typecheck": "pnpm -r exec tsc --noEmit"
+    "typecheck": "pnpm --filter @ax-finance/db exec tsc --noEmit && pnpm --filter @ax-finance/domain exec tsc --noEmit && pnpm --filter worker exec tsc --noEmit && pnpm --filter web exec tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

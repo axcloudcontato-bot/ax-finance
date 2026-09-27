@@ -77,6 +77,27 @@ export class MfaChallengeInvalidError extends DomainError {
   }
 }
 
+export class OutboxConfigurationError extends DomainError {
+  constructor() {
+    super("A chave de criptografia da fila de eventos não está configurada.", "OUTBOX_CONFIGURATION_ERROR");
+  }
+}
+
+export class IdempotencyConflictError extends DomainError {
+  constructor() {
+    super(
+      "Esta chave de idempotência já foi usada com dados diferentes.",
+      "IDEMPOTENCY_CONFLICT"
+    );
+  }
+}
+
+export class IdempotencyResultUnavailableError extends DomainError {
+  constructor() {
+    super("O resultado idempotente não está mais disponível.", "IDEMPOTENCY_RESULT_UNAVAILABLE");
+  }
+}
+
 /**
  * Lançado sempre que o usuário autenticado não tem associação ATIVA com a
  * empresa solicitada. Nunca deve revelar se a empresa existe ou não

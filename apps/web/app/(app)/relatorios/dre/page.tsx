@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
-import { currentYearMonth, monthRange } from "@/lib/month";
+import { resolvePeriodRange } from "@/lib/month";
 
 export default async function DrePage({
   searchParams,
@@ -17,10 +17,7 @@ export default async function DrePage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const month = searchParams.mes ?? currentYearMonth();
-  const defaultRange = monthRange(month);
-  const from = searchParams.de || defaultRange.from;
-  const to = searchParams.ate || defaultRange.to;
+  const { from, to } = resolvePeriodRange(searchParams);
 
   const report = await getManagerialIncomeStatement(user.id, company.id, { from, to });
   const exportHref = `/api/reports/dre?de=${from}&ate=${to}`;

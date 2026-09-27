@@ -2,7 +2,8 @@ import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
-import { FinancialAccountNotFoundError, TransferSameAccountError } from "../errors";
+import { FinancialAccountNotFoundError, IdempotencyResultUnavailableError, TransferSameAccountError } from "../errors";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const createTransferInput = z.object({
   fromAccountId: z.string().uuid(),
@@ -11,6 +12,7 @@ export const createTransferInput = z.object({
   feeCents: z.number().int().min(0).default(0),
   transferDate: z.coerce.date(),
   description: z.string().trim().max(500).optional(),
+  idempotencyKey: idempotencyKeySchema,
 });
 
 export type CreateTransferInput = z.infer<typeof createTransferInput>;
@@ -32,6 +34,20 @@ export async function createTransfer(userId: string, companyId: string, input: u
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    const { idempotencyKey, ...request } = data;
+    const idempotency = await beginIdempotentOperation(tx, {
+      companyId,
+      operation: "CREATE_TRANSFER",
+      key: idempotencyKey,
+      request,
+      resourceType: "Transfer",
+    });
+    if (idempotency.kind === "replay") {
+      const existing = await tx.transfer.findFirst({ where: { id: idempotency.resourceId, companyId } });
+      if (!existing) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
+
     const [fromAccount, toAccount] = await Promise.all([
       tx.financialAccount.findFirst({ where: { id: data.fromAccountId, companyId, status: "ACTIVE" } }),
       tx.financialAccount.findFirst({ where: { id: data.toAccountId, companyId, status: "ACTIVE" } }),
@@ -66,6 +82,7 @@ export async function createTransfer(userId: string, companyId: string, input: u
       },
     });
 
+    await completeIdempotentOperation(tx, idempotency, transfer.id);
     return transfer;
   });
 }

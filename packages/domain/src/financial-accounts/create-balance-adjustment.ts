@@ -3,14 +3,16 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { recordAuditEvent } from "../audit/record-audit-event";
-import { BalanceAdjustmentNotNeededError, FinancialAccountNotFoundError } from "../errors";
+import { BalanceAdjustmentNotNeededError, FinancialAccountNotFoundError, IdempotencyResultUnavailableError } from "../errors";
 import { computeAccountBalanceDeltas } from "./account-balances";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const createBalanceAdjustmentInput = z.object({
   financialAccountId: z.string().uuid(),
   targetBalanceCents: z.number().int(),
   reason: z.string().trim().min(1).max(500),
   effectiveDate: z.coerce.date(),
+  idempotencyKey: idempotencyKeySchema,
 });
 
 /**
@@ -26,6 +28,22 @@ export async function createBalanceAdjustment(userId: string, companyId: string,
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    const { idempotencyKey, ...request } = data;
+    const idempotency = await beginIdempotentOperation(tx, {
+      companyId,
+      operation: "CREATE_BALANCE_ADJUSTMENT",
+      key: idempotencyKey,
+      request,
+      resourceType: "BalanceAdjustment",
+    });
+    if (idempotency.kind === "replay") {
+      const existing = await tx.balanceAdjustment.findFirst({
+        where: { id: idempotency.resourceId, companyId },
+      });
+      if (!existing) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
+
     const account = await tx.financialAccount.findFirst({
       where: { id: data.financialAccountId, companyId },
     });
@@ -68,6 +86,7 @@ export async function createBalanceAdjustment(userId: string, companyId: string,
       },
     });
 
+    await completeIdempotentOperation(tx, idempotency, adjustment.id);
     return adjustment;
   });
 }

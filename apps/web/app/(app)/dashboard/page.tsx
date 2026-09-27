@@ -4,7 +4,6 @@ import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Wallet } from "lucide-re
 import {
   CompanyAccessDeniedError,
   assertActiveMembership,
-  generateDueOccurrences,
   getMonthlyCashFlowSeries,
   listActiveCategories,
   listCompaniesForUser,
@@ -15,7 +14,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
-import { currentYearMonth, monthRange } from "@/lib/month";
+import { resolvePeriodRange } from "@/lib/month";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -58,7 +57,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { empresa?: string; mes?: string };
+  searchParams: { empresa?: string; mes?: string; de?: string; ate?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -71,19 +70,22 @@ export default async function DashboardPage({
   }
 
   const activeCompanyId = searchParams.empresa ?? companies[0]!.id;
-  const month = searchParams.mes ?? currentYearMonth();
-  const { from: monthFrom, to: monthTo } = monthRange(month);
+  const period = resolvePeriodRange(searchParams);
+  const month = period.to.slice(0, 7);
+  const { from: monthFrom, to: monthTo } = period;
 
   let accounts: Awaited<ReturnType<typeof listFinancialAccountsWithBalance>>;
   try {
     await assertActiveMembership(user.id, activeCompanyId);
-    await generateDueOccurrences(user.id, activeCompanyId);
     accounts = await listFinancialAccountsWithBalance(user.id, activeCompanyId);
   } catch (error) {
     if (error instanceof CompanyAccessDeniedError) {
       // Empresa na URL não existe ou não é sua: cai de volta para a primeira
       // que você realmente tem acesso, sem confirmar se o id era válido.
-      redirect(`/dashboard?empresa=${companies[0]!.id}&mes=${month}`);
+      const periodParams = period.mode === "custom"
+        ? `de=${period.from}&ate=${period.to}`
+        : `mes=${period.month}`;
+      redirect(`/dashboard?empresa=${companies[0]!.id}&${periodParams}`);
     }
     throw error;
   }
@@ -101,7 +103,7 @@ export default async function DashboardPage({
     listParties(user.id, activeCompanyId, { role: "SUPPLIER", status: "ACTIVE" }),
   ]);
 
-  // Cards do topo: só títulos com vencimento dentro do mês selecionado.
+  // Cards do topo: títulos com vencimento dentro do período global selecionado.
   const toReceiveMonth = summarizeOpenTitles(filterByDueMonth(receivables, monthFrom, monthTo));
   const toPayMonth = summarizeOpenTitles(filterByDueMonth(payables, monthFrom, monthTo));
   const overdueTotalCents = toReceiveMonth.overdueCents + toPayMonth.overdueCents;
@@ -217,34 +219,34 @@ export default async function DashboardPage({
         </StatCard>
         <StatCard
           icon={<ArrowDownCircle className="size-5" />}
-          label="A receber no mês"
+          label="A receber no período"
           value={formatCents(toReceiveMonth.totalCents)}
           footerLabel="Vencidos"
           footerValue={String(toReceiveMonth.overdueCount)}
           gradient="teal"
-          modalTitle="A receber no mês"
+          modalTitle="A receber no período"
         >
           <TitleDetailList titles={toReceiveMonth.open} />
         </StatCard>
         <StatCard
           icon={<ArrowUpCircle className="size-5" />}
-          label="A pagar no mês"
+          label="A pagar no período"
           value={formatCents(toPayMonth.totalCents)}
           footerLabel="Vencidos"
           footerValue={String(toPayMonth.overdueCount)}
           gradient="orange"
-          modalTitle="A pagar no mês"
+          modalTitle="A pagar no período"
         >
           <TitleDetailList titles={toPayMonth.open} />
         </StatCard>
         <StatCard
           icon={<AlertTriangle className="size-5" />}
-          label="Vencido no mês"
+          label="Vencido no período"
           value={formatCents(overdueTotalCents)}
           footerLabel="Título(s)"
           footerValue={String(overdueTotalCount)}
           gradient="pink"
-          modalTitle="Vencidos no mês"
+          modalTitle="Vencidos no período"
         >
           <TitleDetailList titles={overdueTitlesMonth} />
         </StatCard>

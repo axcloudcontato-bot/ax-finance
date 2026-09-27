@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Landmark, Scale } from "lucide-react";
@@ -9,6 +10,7 @@ import { formatDateOnly } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
 import { Modal } from "@/components/ui/modal";
 import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction } from "./actions";
+import { resolvePeriodRange } from "@/lib/month";
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   BANK: "Conta bancária",
@@ -26,6 +28,9 @@ export default async function ContasPage({
     contaAjuste?: string;
     ajustado?: string;
     erroEstorno?: string;
+    mes?: string;
+    de?: string;
+    ate?: string;
   };
 }) {
   const user = await getCurrentUser();
@@ -34,9 +39,10 @@ export default async function ContasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
+  const period = resolvePeriodRange(searchParams);
   const [accounts, adjustments] = await Promise.all([
     listFinancialAccountsWithBalance(user.id, company.id),
-    listBalanceAdjustments(user.id, company.id),
+    listBalanceAdjustments(user.id, company.id, period),
   ]);
   const today = new Date().toISOString().slice(0, 10);
 
@@ -124,6 +130,7 @@ export default async function ContasPage({
                           <p className="error">{searchParams.erroAjuste}</p>
                         ) : null}
                         <form action={createBalanceAdjustmentAction.bind(null, account.id)}>
+                          <input type="hidden" name="idempotencyKey" value={randomUUID()} />
                           <label htmlFor={`targetBalance-${account.id}`}>Saldo real (R$)</label>
                           <input
                             id={`targetBalance-${account.id}`}

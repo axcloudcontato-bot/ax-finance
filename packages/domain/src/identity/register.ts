@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@ax-finance/db";
 import { EmailAlreadyRegisteredError } from "../errors";
+import { createAccountTokenWithClient, type AccountEmailDelivery } from "./account-tokens";
 import { hashPassword } from "./password";
 
 export const registerUserInput = z.object({
@@ -13,7 +14,7 @@ export type RegisterUserInput = z.infer<typeof registerUserInput>;
 
 export async function registerUser(
   input: RegisterUserInput,
-  options: { requireEmailVerification?: boolean } = {}
+  options: { requireEmailVerification?: boolean; verificationDelivery?: AccountEmailDelivery } = {}
 ) {
   const data = registerUserInput.parse(input);
 
@@ -24,12 +25,22 @@ export async function registerUser(
 
   const passwordHash = await hashPassword(data.password);
 
-  return prisma.user.create({
-    data: {
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({ data: {
       email: data.email,
       name: data.name,
       passwordHash,
-      emailVerifiedAt: options.requireEmailVerification ? null : new Date(),
-    },
+      emailVerifiedAt: options.requireEmailVerification || options.verificationDelivery ? null : new Date(),
+    } });
+    const verification = options.verificationDelivery
+      ? await createAccountTokenWithClient(
+          tx,
+          user,
+          "EMAIL_VERIFICATION",
+          24 * 60 * 60 * 1000,
+          options.verificationDelivery
+        )
+      : undefined;
+    return { ...user, verification };
   });
 }

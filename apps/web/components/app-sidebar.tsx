@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -142,6 +144,7 @@ export function AppSidebar({
           <form action={logoutAction}>
             <button
               type="submit"
+              onClick={() => sessionStorage.removeItem("ax-finance:period-filter:v1")}
               className="flex w-full items-center gap-2.5 rounded-[6px] px-2.5 py-[7px] text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-black/5 hover:text-foreground"
             >
               <LogOut className="size-4 shrink-0" strokeWidth={1.5} />

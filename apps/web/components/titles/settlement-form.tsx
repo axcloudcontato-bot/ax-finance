@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { listFinancialAccounts } from "@ax-finance/domain";
 
 type AccountOption = Awaited<ReturnType<typeof listFinancialAccounts>>[number];
@@ -23,6 +24,7 @@ export function SettlementForm({
         <p className="muted">Cadastre uma conta antes de registrar uma baixa.</p>
       ) : (
         <form action={action}>
+          <input type="hidden" name="idempotencyKey" value={randomUUID()} />
           <label htmlFor="financialAccountId">Conta</label>
           <select id="financialAccountId" name="financialAccountId" required defaultValue="">
             <option value="" disabled>

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { withUserContext } from "@ax-finance/db";
+import { scheduleCompanyJobsInTx } from "../scheduled-jobs/jobs";
 
 export const createCompanyInput = z.object({
   name: z.string().trim().min(1).max(200),
@@ -46,6 +47,8 @@ export async function createCompany(userId: string, input: unknown) {
         role: "OWNER",
       },
     });
+
+    await scheduleCompanyJobsInTx(tx, companyId, userId);
 
     return tx.company.findUniqueOrThrow({ where: { id: companyId } });
   });
