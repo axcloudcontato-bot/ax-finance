@@ -3,7 +3,7 @@
 // Núcleo financeiro: categorias, títulos, baixas, transferências, clientes/fornecedores,
 // parcelamento, recorrências, conciliação bancária, trilha de auditoria, fechamento de
 // período e ajuste manual de saldo (Seções 5-13, 17-19 do DIRECAO.md).
-// Ainda não existem: anexos e billing/assinatura. Recuperação de senha,
+// Ainda não existe billing/assinatura. Anexos privados, recuperação de senha,
 // verificação de e-mail, limitação de tentativas, MFA e outbox/worker já fazem parte do núcleo.
 // Convites/revogação e permissões por papel já são aplicados no domínio; ver limitações e
 // próximos passos em "Estado atual e limitações conhecidas" no README.
@@ -49,6 +49,7 @@ enum ScheduledJobType {
 
 enum NotificationType {
   TITLE_DUE_TODAY
+  TITLE_DUE_SOON
   TITLE_OVERDUE
   WEEKLY_SUMMARY
 }
@@ -109,6 +110,8 @@ model User {
   mfaSetup           MfaSetup?
   mfaChallenges      MfaChallenge[]
   notifications      Notification[]
+  notificationPreferences NotificationPreference[]
+  attachmentsUploaded Attachment[] @relation("AttachmentUploader")
   scheduledJobs      ScheduledJob[] @relation("ScheduledJobRunner")
 
   @@map("users")
@@ -223,6 +226,26 @@ model Notification {
   @@map("notifications")
 }
 
+model NotificationPreference {
+  id             String   @id @default(uuid())
+  companyId      String   @map("company_id")
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId         String   @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inAppDue       Boolean  @default(true) @map("in_app_due")
+  emailDue       Boolean  @default(true) @map("email_due")
+  inAppWeekly    Boolean  @default(true) @map("in_app_weekly")
+  emailWeekly    Boolean  @default(true) @map("email_weekly")
+  dueDaysAhead   Int      @default(0) @map("due_days_ahead")
+  deliveryHour   Int      @default(8) @map("delivery_hour")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+  @@map("notification_preferences")
+}
+
 model Session {
   id        String    @id @default(uuid())
   userId    String    @map("user_id")
@@ -275,6 +298,8 @@ model Company {
   invitations        CompanyInvitation[]
   idempotencyRecords IdempotencyRecord[]
   notifications      Notification[]
+  notificationPreferences NotificationPreference[]
+  attachments        Attachment[]
   scheduledJobs      ScheduledJob[]
 
   @@index([tenantId])
@@ -524,6 +549,7 @@ model Title {
   updatedAt                DateTime        @updatedAt @map("updated_at")
 
   settlements Settlement[]
+  attachments Attachment[]
 
   @@unique([recurrenceRuleId, recurrenceOccurrenceDate])
   @@index([companyId])
@@ -533,6 +559,25 @@ model Title {
   @@index([companyId, installmentGroupId])
   @@index([companyId, recurrenceRuleId])
   @@map("titles")
+}
+
+model Attachment {
+  id               String   @id @default(uuid())
+  companyId        String   @map("company_id")
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  titleId          String   @map("title_id")
+  title            Title    @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  uploadedByUserId String   @map("uploaded_by_user_id")
+  uploadedBy       User     @relation("AttachmentUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  originalName     String   @map("original_name")
+  mimeType         String   @map("mime_type")
+  sizeBytes        Int      @map("size_bytes")
+  sha256           String
+  storageKey       String   @unique @map("storage_key")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, titleId, createdAt])
+  @@map("attachments")
 }
 
 model Settlement {

@@ -25,7 +25,10 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
   await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const title = await tx.title.findFirst({ where: { id: titleId, companyId } });
+    const title = await tx.title.findFirst({
+      where: { id: titleId, companyId },
+      include: { attachments: { select: { storageKey: true } } },
+    });
     if (!title) {
       throw new TitleNotFoundError();
     }
@@ -61,5 +64,6 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
         settlementsDeleted: settlements.length,
       },
     });
+    return { attachmentStorageKeys: title.attachments.map((attachment) => attachment.storageKey) };
   });
 }

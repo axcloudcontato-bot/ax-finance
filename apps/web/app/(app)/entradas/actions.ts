@@ -13,6 +13,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
+import { deleteAttachmentObject } from "@/lib/attachment-storage";
 
 /**
  * Só a chamada ao domínio (que pode lançar DomainError) fica dentro do
@@ -211,7 +212,8 @@ export async function deleteEntradaAction(titleId: string, formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim();
 
   try {
-    await deleteTitle(user.id, company.id, titleId, { reason });
+    const result = await deleteTitle(user.id, company.id, titleId, { reason });
+    await Promise.allSettled(result.attachmentStorageKeys.map((key) => deleteAttachmentObject(key)));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível excluir.";
     redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
@@ -240,7 +242,8 @@ export async function deleteEntradaInstallmentPlanAction(
   const reason = String(formData.get("reason") ?? "").trim();
 
   try {
-    await deleteInstallmentPlan(user.id, company.id, installmentGroupId, { reason });
+    const result = await deleteInstallmentPlan(user.id, company.id, installmentGroupId, { reason });
+    await Promise.allSettled(result.attachmentStorageKeys.map((key) => deleteAttachmentObject(key)));
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível excluir o parcelamento.";
     redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);

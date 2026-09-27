@@ -9,6 +9,7 @@ import {
   listAuditEvents,
   listFinancialAccounts,
   listInstallments,
+  listTitleAttachments,
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -17,6 +18,7 @@ import { formatDateOnly } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
 import { ActionModal } from "@/components/ui/action-modal";
+import { TitleAttachments } from "@/components/titles/title-attachments";
 import {
   cancelEntradaAction,
   deleteEntradaAction,
@@ -30,7 +32,7 @@ export default async function EntradaDetailPage({
   searchParams,
 }: {
   params: { titleId: string };
-  searchParams: { erro?: string; erroBaixa?: string };
+  searchParams: { erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -56,6 +58,7 @@ export default async function EntradaDetailPage({
     resourceType: "Title",
     resourceId: title.id,
   });
+  const attachments = await listTitleAttachments(user.id, company.id, title.id);
   const hasActiveSettlement = title.settlements.some((settlement) => !settlement.reversedAt);
   const registerSettlementAction = registerEntradaSettlementAction.bind(null, title.id);
   const cancelAction = cancelEntradaAction.bind(null, title.id);
@@ -213,6 +216,15 @@ export default async function EntradaDetailPage({
           </table>
         </div>
       ) : null}
+
+      <TitleAttachments
+        titleId={title.id}
+        basePath="entradas"
+        attachments={attachments}
+        error={searchParams.erroAnexo}
+        added={Boolean(searchParams.anexoAdicionado)}
+        removed={Boolean(searchParams.anexoRemovido)}
+      />
 
       <div className="card">
         <h1>Baixas</h1>

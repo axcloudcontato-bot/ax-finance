@@ -24,7 +24,10 @@ export async function deleteInstallmentPlan(
   await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const titles = await tx.title.findMany({ where: { companyId, installmentGroupId } });
+    const titles = await tx.title.findMany({
+      where: { companyId, installmentGroupId },
+      include: { attachments: { select: { storageKey: true } } },
+    });
     if (titles.length === 0) {
       throw new InstallmentGroupNotFoundError();
     }
@@ -63,6 +66,9 @@ export async function deleteInstallmentPlan(
       },
     });
 
-    return { deletedCount: titles.length };
+    return {
+      deletedCount: titles.length,
+      attachmentStorageKeys: titles.flatMap((title) => title.attachments.map((attachment) => attachment.storageKey)),
+    };
   });
 }

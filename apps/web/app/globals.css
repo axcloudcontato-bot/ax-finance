@@ -522,6 +522,87 @@ form.inline {
   text-decoration: underline;
 }
 
+.notification-settings-form .notification-channel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.notification-settings-form .notification-channel input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.15rem 0 0;
+}
+
+.notification-settings-form .notification-channel span,
+.notification-settings-form .notification-channel small {
+  display: block;
+}
+
+.attachment-upload-form {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.attachment-upload-form input {
+  flex: 1;
+  min-width: 240px;
+  margin: 0;
+}
+
+.attachment-upload-form button,
+.attachment-item button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.attachment-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.attachment-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.attachment-info strong,
+.attachment-info small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-info small {
+  margin-top: 0.15rem;
+  color: var(--muted);
+}
+
+.notification-settings-form .notification-channel small {
+  margin-top: 0.2rem;
+  color: var(--muted);
+}
+
 .topbar-dropdown input {
   width: 100%;
   margin-top: 0;

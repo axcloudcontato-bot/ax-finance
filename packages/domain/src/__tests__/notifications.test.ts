@@ -9,6 +9,8 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  getNotificationPreference,
+  updateNotificationPreference,
 } from "../notifications";
 import { createTitle } from "../titles/create-title";
 import { claimScheduledJobs, completeScheduledJob } from "../scheduled-jobs/jobs";
@@ -75,6 +77,39 @@ describe("notificações financeiras persistentes", () => {
     expect(first).toEqual({ notificationsCreated: 1, emailsQueued: 1 });
     expect(second).toEqual({ notificationsCreated: 0, emailsQueued: 0 });
     expect(await markAllNotificationsRead(user.id, company.id)).toMatchObject({ count: 1 });
+  });
+
+  it("respeita canais, antecedência e horário configurados pelo usuário", async () => {
+    const { user, company, category } = await setup();
+    await createTitle(user.id, company.id, {
+      type: "PAYABLE",
+      description: "Imposto futuro",
+      categoryId: category.id,
+      originalAmountCents: 10_000,
+      competenceDate: "2026-09-26",
+      dueDate: "2026-09-29",
+      idempotencyKey: randomUUID(),
+    });
+    expect(await getNotificationPreference(user.id, company.id)).toMatchObject({
+      dueDaysAhead: 0,
+      deliveryHour: 8,
+    });
+    await updateNotificationPreference(user.id, company.id, {
+      inAppDue: true,
+      emailDue: false,
+      inAppWeekly: false,
+      emailWeekly: false,
+      dueDaysAhead: 3,
+      deliveryHour: 10,
+    });
+
+    // 09h em São Paulo: ainda não deve entregar.
+    expect(await generateDueNotifications(user.id, company.id, "https://financeiro.example.com", new Date("2026-09-26T12:00:00Z")))
+      .toEqual({ notificationsCreated: 0, emailsQueued: 0 });
+    // 11h em São Paulo: alerta antecipado na campainha, mas sem e-mail.
+    expect(await generateDueNotifications(user.id, company.id, "https://financeiro.example.com", new Date("2026-09-26T14:00:00Z")))
+      .toEqual({ notificationsCreated: 1, emailsQueued: 0 });
+    expect((await listNotifications(user.id, company.id))[0]).toMatchObject({ type: "TITLE_DUE_SOON" });
   });
 });
 

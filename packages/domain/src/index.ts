@@ -4,6 +4,7 @@ export * from "./outbox/index";
 export * from "./idempotency/index";
 export * from "./scheduled-jobs/index";
 export * from "./notifications/index";
+export * from "./attachments/index";
 export * from "./companies/index";
 export * from "./financial-accounts/index";
 export * from "./categories/index";

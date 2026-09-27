@@ -15,4 +15,6 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   COMPANY_INVITATION_REVOKED: "Convite revogado",
   COMPANY_MEMBER_ROLE_UPDATED: "Papel de usuário atualizado",
   COMPANY_MEMBER_REVOKED: "Acesso de usuário revogado",
+  ATTACHMENT_ADDED: "Anexo adicionado",
+  ATTACHMENT_DELETED: "Anexo removido",
 };

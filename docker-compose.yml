@@ -55,6 +55,7 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      ATTACHMENTS_DIR: /data/attachments
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -64,6 +65,8 @@ services:
       # 0.0.0.0 deixaria a porta 3000 exposta sem TLS pra quem estiver na
       # mesma rede.
       - "127.0.0.1:3000:3000"
+    volumes:
+      - attachments_data:/data/attachments
 
   worker:
     build:
@@ -90,3 +93,4 @@ services:
 
 volumes:
   postgres_data:
+  attachments_data:

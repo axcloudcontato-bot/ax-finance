@@ -343,3 +343,9 @@ export class BalanceAdjustmentAlreadyReversedError extends DomainError {
     super("Este ajuste já foi estornado.", "BALANCE_ADJUSTMENT_ALREADY_REVERSED");
   }
 }
+
+export class AttachmentNotFoundError extends DomainError {
+  constructor() {
+    super("Anexo não encontrado.", "ATTACHMENT_NOT_FOUND");
+  }
+}

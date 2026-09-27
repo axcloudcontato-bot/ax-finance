@@ -63,9 +63,14 @@ perderem:
 - **Rotina operacional assíncrona implementada**: o worker reivindica jobs persistentes com
   lock e retentativa, gera títulos recorrentes diariamente e produz notificações deduplicadas
   para vencimentos e resumo semanal. A campainha mantém estado de leitura; e-mails financeiros
-  são enviados aos papéis responsáveis. Ainda não há tela para configurar antecedência,
-  horário ou canal por usuário.
-- **Sem anexos ou billing/assinatura**.
+  respeitam as preferências individuais. Cada usuário pode configurar, por empresa, antecedência,
+  horário e canais (campainha e e-mail) para vencimentos e resumo semanal.
+- **Anexos privados implementados**: títulos aceitam PDF/JPG/PNG/WebP de até 10 MB,
+  validados pela assinatura binária e hash SHA-256. Metadados respeitam RLS e downloads
+  exigem sessão/membership; no Docker, os arquivos ficam no volume persistente
+  `attachments_data`, que deve entrar na rotina de backup junto do PostgreSQL. Ainda não há
+  varredura antivírus nem armazenamento S3 compatível.
+- **Sem billing/assinatura**.
 - **Importação de extrato é só CSV síncrono** — sem OFX, mapeamento de colunas ou processamento
   em background (ver "Fora do escopo" nos commits de conciliação).
 - **Sem chaves estrangeiras compostas por `companyId`**: o isolamento entre empresas depende da

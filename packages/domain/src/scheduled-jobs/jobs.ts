@@ -67,10 +67,10 @@ export async function claimScheduledJobs(workerId: string, requestedLimit = 10) 
 
 function nextRunFor(job: Pick<ScheduledJob, "type">, now = new Date()) {
   const next = new Date(now);
-  if (job.type === "WEEKLY_SUMMARY") {
-    next.setUTCDate(next.getUTCDate() + 7);
-  } else {
+  if (job.type === "GENERATE_RECURRENCES") {
     next.setUTCDate(next.getUTCDate() + 1);
+  } else {
+    next.setUTCHours(next.getUTCHours() + 1);
   }
   return next;
 }

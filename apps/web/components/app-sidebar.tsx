@@ -4,6 +4,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   BarChart3,
+  Bell,
   BookUser,
   History,
   Landmark,
@@ -121,6 +122,7 @@ export function AppSidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">
+          <NavItem item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
           <NavItem item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
           {canManageMembers ? (
             <NavItem item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
