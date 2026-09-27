@@ -323,6 +323,8 @@ model Company {
   parties                 Party[]
   titles                  Title[]
   settlements             Settlement[]
+  settlementRefunds       SettlementRefund[]
+  titleAllocations        TitleAllocation[]
   transfers               Transfer[]
   recurrenceRules         RecurrenceRule[]
   importBatches           ImportBatch[]
@@ -434,6 +436,7 @@ model FinancialAccount {
   updatedAt                DateTime      @updatedAt @map("updated_at")
 
   settlements        Settlement[]
+  settlementRefunds  SettlementRefund[]
   transfersFrom      Transfer[]                   @relation("TransferFromAccount")
   transfersTo        Transfer[]                   @relation("TransferToAccount")
   importBatches      ImportBatch[]
@@ -462,6 +465,7 @@ model CostCenter {
   updatedAt DateTime         @updatedAt @map("updated_at")
 
   titles           Title[]
+  titleAllocations TitleAllocation[]
   recurrenceRules  RecurrenceRule[]
   membershipAccess MembershipCostCenter[]
 
@@ -554,6 +558,7 @@ model Category {
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
   titles          Title[]
+  titleAllocations TitleAllocation[]
   recurrenceRules RecurrenceRule[]
 
   @@unique([id, companyId])
@@ -672,6 +677,7 @@ model Title {
   deleteReason             String?         @map("delete_reason")
 
   settlements Settlement[]
+  allocations TitleAllocation[]
   attachments Attachment[]
 
   @@unique([id, companyId])
@@ -734,11 +740,60 @@ model Settlement {
   createdAt            DateTime         @default(now()) @map("created_at")
 
   reconciledByLine BankStatementLine?
+  refunds         SettlementRefund[]
 
   @@unique([id, companyId])
   @@index([companyId])
   @@index([titleId])
   @@map("settlements")
+}
+
+/// Devolução/reembolso de uma baixa. Preserva a baixa original e registra o
+/// movimento de caixa oposto, podendo ser estornado sem apagar histórico.
+model SettlementRefund {
+  id                 String           @id @default(uuid())
+  companyId          String           @map("company_id")
+  company            Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  settlementId       String           @map("settlement_id")
+  settlement         Settlement       @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  financialAccountId String           @map("financial_account_id")
+  financialAccount   FinancialAccount @relation(fields: [financialAccountId], references: [id], onDelete: Restrict)
+  amountCents        BigInt           @map("amount_cents")
+  effectiveDate      DateTime         @map("effective_date") @db.Date
+  reason             String
+  createdByUserId    String           @map("created_by_user_id")
+  reversedAt         DateTime?        @map("reversed_at")
+  reversalReason     String?          @map("reversal_reason")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  @@unique([id, companyId])
+  @@index([companyId])
+  @@index([settlementId])
+  @@index([financialAccountId])
+  @@map("settlement_refunds")
+}
+
+/// Rateio gerencial explícito. Quando existem linhas, a soma deve ser igual
+/// ao valor original do título; categoria/centro no título seguem como padrão.
+model TitleAllocation {
+  id           String      @id @default(uuid())
+  companyId    String      @map("company_id")
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  titleId      String      @map("title_id")
+  title        Title       @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  categoryId   String      @map("category_id")
+  category     Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  costCenterId String?     @map("cost_center_id")
+  costCenter   CostCenter? @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  amountCents  BigInt      @map("amount_cents")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@unique([id, companyId])
+  @@index([companyId, titleId])
+  @@index([categoryId])
+  @@index([costCenterId])
+  @@map("title_allocations")
 }
 
 model Transfer {

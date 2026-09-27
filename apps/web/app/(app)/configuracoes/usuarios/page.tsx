@@ -26,7 +26,7 @@ export default async function CompanyUsersPage({ searchParams }: { searchParams:
     [members, invitations, accounts, costCenters] = await Promise.all([
       listCompanyMembers(user.id, company.id),
       listCompanyInvitations(user.id, company.id),
-      listFinancialAccounts(user.id, company.id),
+      listFinancialAccounts(user.id, company.id, true),
       listCostCenters(user.id, company.id),
     ]);
   } catch {

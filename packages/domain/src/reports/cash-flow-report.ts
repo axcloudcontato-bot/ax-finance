@@ -32,8 +32,8 @@ export async function getCashFlowReport(userId: string, companyId: string, input
   const { from, to } = cashFlowReportInput.parse(input);
   await assertActiveMembership(userId, companyId);
 
-  const settlements = await withCompanyContext(userId, companyId, (tx) =>
-    tx.settlement.findMany({
+  const { settlements, refunds } = await withCompanyContext(userId, companyId, async (tx) => ({
+    settlements: await tx.settlement.findMany({
       where: {
         companyId,
         reversedAt: null,
@@ -43,8 +43,13 @@ export async function getCashFlowReport(userId: string, companyId: string, input
         title: { select: { type: true, description: true, category: true } },
       },
       orderBy: { effectiveDate: "asc" },
-    })
-  );
+    }),
+    refunds: await tx.settlementRefund.findMany({
+      where: { companyId, reversedAt: null, effectiveDate: { gte: from, lte: to } },
+      include: { settlement: { include: { title: { select: { type: true, description: true, category: true } } } } },
+      orderBy: { effectiveDate: "asc" },
+    }),
+  }));
 
   const entries: CashFlowEntry[] = settlements.map((settlement) => ({
     settlementId: settlement.id,
@@ -55,6 +60,16 @@ export async function getCashFlowReport(userId: string, companyId: string, input
     categoryNature: settlement.title.category.nature,
     cashDeltaCents: settlementCashDelta(settlement.title.type, settlement),
   }));
+  entries.push(...refunds.map((refund) => ({
+    settlementId: refund.settlementId,
+    effectiveDate: refund.effectiveDate,
+    titleType: refund.settlement.title.type,
+    titleDescription: `${refund.settlement.title.description} — devolução/reembolso`,
+    categoryName: refund.settlement.title.category.name,
+    categoryNature: refund.settlement.title.category.nature,
+    cashDeltaCents: refund.settlement.title.type === "RECEIVABLE" ? -refund.amountCents : refund.amountCents,
+  })));
+  entries.sort((left, right) => left.effectiveDate.getTime() - right.effectiveDate.getTime());
 
   const byNature = new Map<CategoryNature, bigint>();
   for (const entry of entries) {

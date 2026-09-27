@@ -43,12 +43,13 @@ export async function getMonthlyCashFlowSeries(
   const from = new Date(Date.UTC(endYear!, endMonthIndex! - 1 - (months - 1), 1));
   const to = new Date(Date.UTC(endYear!, endMonthIndex!, 1));
 
-  const settlements = await withCompanyContext(userId, companyId, (tx) =>
-    tx.settlement.findMany({
+  const { settlements, refunds } = await withCompanyContext(userId, companyId, async (tx) => ({
+    settlements: await tx.settlement.findMany({
       where: { companyId, reversedAt: null, effectiveDate: { gte: from, lt: to } },
       include: { title: { select: { type: true } } },
-    })
-  );
+    }),
+    refunds: await tx.settlementRefund.findMany({ where: { companyId, reversedAt: null, effectiveDate: { gte: from, lt: to } }, include: { settlement: { include: { title: { select: { type: true } } } } } }),
+  }));
 
   const buckets = new Map<string, { entradasCents: bigint; saidasCents: bigint }>();
   for (let i = 0; i < months; i++) {
@@ -67,6 +68,12 @@ export async function getMonthlyCashFlowSeries(
     } else {
       bucket.saidasCents += -delta;
     }
+  }
+  for (const refund of refunds) {
+    const bucket = buckets.get(monthKey(refund.effectiveDate));
+    if (!bucket) continue;
+    if (refund.settlement.title.type === "RECEIVABLE") bucket.entradasCents -= refund.amountCents;
+    else bucket.saidasCents -= refund.amountCents;
   }
 
   return Array.from(buckets.entries()).map(([key, bucket]) => {

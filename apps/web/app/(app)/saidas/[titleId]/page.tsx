@@ -8,6 +8,9 @@ import {
   getTitle,
   listAuditEvents,
   listFinancialAccounts,
+  listActiveCategories,
+  listCostCenters,
+  listParties,
   listInstallments,
   listTitleAttachments,
 } from "@ax-finance/domain";
@@ -19,12 +22,22 @@ import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
 import { ActionModal } from "@/components/ui/action-modal";
 import { TitleAttachments } from "@/components/titles/title-attachments";
+import { TitleEditForm } from "@/components/titles/title-edit-form";
+import { AllocationForm } from "@/components/titles/allocation-form";
+import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
+import { toDateOnlyString } from "@/lib/dates";
 import {
   cancelSaidaAction,
   deleteSaidaAction,
   deleteSaidaInstallmentPlanAction,
   registerSaidaSettlementAction,
   reverseSaidaSettlementAction,
+  clearSaidaAllocationsAction,
+  duplicateSaidaAction,
+  registerSaidaRefundAction,
+  replaceSaidaAllocationsAction,
+  reverseSaidaRefundAction,
+  updateSaidaAction,
 } from "../actions";
 
 export default async function SaidaDetailPage({
@@ -32,7 +45,7 @@ export default async function SaidaDetailPage({
   searchParams,
 }: {
   params: { titleId: string };
-  searchParams: { erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string };
+  searchParams: { erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; duplicado?: string; rateado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -50,7 +63,12 @@ export default async function SaidaDetailPage({
     throw error;
   }
 
-  const accounts = await listFinancialAccounts(user.id, company.id);
+  const [allAccounts, allCategories, suppliers, costCenters] = await Promise.all([
+    listFinancialAccounts(user.id, company.id), listActiveCategories(user.id, company.id),
+    listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" }), listCostCenters(user.id, company.id),
+  ]);
+  const accounts = allAccounts.filter((account) => account.status === "ACTIVE");
+  const categories = sortCategoriesTree(filterCategoriesByTitleType(allCategories, "PAYABLE"));
   const installments = title.installmentGroupId
     ? await listInstallments(user.id, company.id, title.installmentGroupId)
     : [];
@@ -75,6 +93,13 @@ export default async function SaidaDetailPage({
           <h1>{title.description}</h1>
           <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
             <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
+            <ActionModal triggerLabel="Editar" title="Editar saída" initiallyOpen={Boolean(searchParams.erroEdicao)}>
+              <TitleEditForm action={updateSaidaAction.bind(null, title.id)} title={title} categories={categories} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" error={searchParams.erroEdicao}/>
+            </ActionModal>
+            <ActionModal triggerLabel="Duplicar" title="Duplicar saída">
+              <p className="subtitle">A cópia nasce em aberto, sem pagamentos nem anexos. Ajuste as datas se necessário.</p>
+              <form action={duplicateSaidaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><button type="submit">Criar cópia</button></form>
+            </ActionModal>
             {showSettlementForm ? (
               <ActionModal
                 triggerLabel="Registrar pagamento"
@@ -109,6 +134,8 @@ export default async function SaidaDetailPage({
         ) : null}
 
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+        {searchParams.atualizado ? <p className="success-box">Título atualizado.</p> : null}
+        {searchParams.duplicado ? <p className="success-box">Cópia criada.</p> : null}
 
         <table>
           <tbody>
@@ -230,7 +257,14 @@ export default async function SaidaDetailPage({
       />
 
       <div className="card">
+        <div className="page-header" style={{marginBottom:"0.5rem"}}><div><h1>Rateio</h1><p className="subtitle">Divida o valor entre categorias e centros de custo. A soma precisa fechar o valor original.</p></div></div>
+        {searchParams.rateado ? <p className="success-box">Rateio atualizado.</p> : null}
+        <AllocationForm action={replaceSaidaAllocationsAction.bind(null,title.id)} clearAction={clearSaidaAllocationsAction.bind(null,title.id)} categories={categories} costCenters={costCenters} error={searchParams.erroRateio} initial={title.allocations.map((item)=>({categoryId:item.categoryId,costCenterId:item.costCenterId,amount:(Number(item.amountCents)/100).toFixed(2).replace(".",",")}))}/>
+      </div>
+
+      <div className="card">
         <h1>Pagamentos registrados</h1>
+        {searchParams.erroDevolucao ? <p className="error">{searchParams.erroDevolucao}</p> : null}
         {title.settlements.length === 0 ? (
           <p className="muted">Nenhum pagamento registrado ainda.</p>
         ) : (
@@ -261,12 +295,16 @@ export default async function SaidaDetailPage({
                       {settlement.reversedAt ? (
                         "Estornada"
                       ) : (
+                        <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
+                        <ActionModal triggerLabel="Registrar reembolso" title="Registrar reembolso">
+                          <form action={registerSaidaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={toDateOnlyString(new Date())} required/><label>Motivo</label><input name="reason" required maxLength={500}/><button type="submit">Registrar reembolso</button></form>
+                        </ActionModal>
                         <form action={reverseAction} className="inline">
                           <input type="hidden" name="reason" value="Estornado pelo usuário" />
                           <button type="submit" className="secondary">
                             Estornar
                           </button>
-                        </form>
+                        </form></div>
                       )}
                     </td>
                   </tr>
@@ -275,6 +313,7 @@ export default async function SaidaDetailPage({
             </tbody>
           </table>
         )}
+        {title.settlements.some((item)=>item.refunds.length>0) ? <><h2 style={{marginTop:"1.5rem"}}>Reembolsos</h2><table><thead><tr><th>Data</th><th>Pagamento</th><th>Conta</th><th>Valor</th><th>Motivo</th><th></th></tr></thead><tbody>{title.settlements.flatMap((settlement)=>settlement.refunds.map((refund)=><tr key={refund.id} style={refund.reversedAt?{opacity:0.5}:undefined}><td>{formatDateOnly(refund.effectiveDate)}</td><td>{formatDateOnly(settlement.effectiveDate)}</td><td>{refund.financialAccount.name}</td><td>{formatCents(refund.amountCents)}</td><td>{refund.reason}</td><td>{refund.reversedAt?"Estornado":<form action={reverseSaidaRefundAction.bind(null,title.id,refund.id)} className="inline"><button type="submit" className="secondary">Estornar</button></form>}</td></tr>))}</tbody></table></> : null}
       </div>
       <div className="card">
         <h1>Histórico</h1>

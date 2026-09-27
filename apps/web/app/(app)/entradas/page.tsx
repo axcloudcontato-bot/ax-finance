@@ -25,7 +25,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 export default async function EntradasPage({
   searchParams,
 }: {
-  searchParams: { filtro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string };
+  searchParams: { filtro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string; loteConcluido?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -105,6 +105,7 @@ export default async function EntradasPage({
       </div>
 
       <div className="card">
+        {searchParams.loteConcluido ? <p className="success-box">Operação concluída em {searchParams.loteConcluido} entrada(s).</p> : null}
         <TitleListTable titles={titles} basePath="/entradas" />
       </div>
     </main>

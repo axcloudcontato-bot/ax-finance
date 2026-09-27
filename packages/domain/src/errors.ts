@@ -232,6 +232,48 @@ export class SettlementNotFoundError extends DomainError {
   }
 }
 
+export class SettlementRefundExceedsCashError extends DomainError {
+  constructor() {
+    super("A devolução excede o valor de caixa movimentado por esta baixa.", "SETTLEMENT_REFUND_EXCEEDS_CASH");
+  }
+}
+
+export class SettlementRefundNotFoundError extends DomainError {
+  constructor() {
+    super("Devolução não encontrada.", "SETTLEMENT_REFUND_NOT_FOUND");
+  }
+}
+
+export class SettlementHasActiveRefundsError extends DomainError {
+  constructor() {
+    super("Estorne as devoluções desta baixa antes de estornar a baixa original.", "SETTLEMENT_HAS_ACTIVE_REFUNDS");
+  }
+}
+
+export class TitleAllocationTotalInvalidError extends DomainError {
+  constructor() {
+    super("A soma do rateio deve ser exatamente igual ao valor original do título.", "TITLE_ALLOCATION_TOTAL_INVALID");
+  }
+}
+
+export class TitleAmountBelowSettledError extends DomainError {
+  constructor() {
+    super("O valor do título não pode ser menor que o principal já liquidado.", "TITLE_AMOUNT_BELOW_SETTLED");
+  }
+}
+
+export class FinancialAccountHasBalanceError extends DomainError {
+  constructor() {
+    super("Zere o saldo da conta antes de arquivá-la.", "FINANCIAL_ACCOUNT_HAS_BALANCE");
+  }
+}
+
+export class TitleBatchInvalidError extends DomainError {
+  constructor(message = "Um ou mais títulos não podem receber esta operação em lote.") {
+    super(message, "TITLE_BATCH_INVALID");
+  }
+}
+
 /** Seção 8: as duas pontas de uma transferência precisam ser contas diferentes. */
 export class TransferSameAccountError extends DomainError {
   constructor() {

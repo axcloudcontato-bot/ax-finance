@@ -15,8 +15,9 @@ export async function getTitle(userId: string, companyId: string, titleId: strin
         recurrenceRule: { select: { id: true, description: true } },
         settlements: {
           orderBy: { createdAt: "asc" },
-          include: { financialAccount: true },
+          include: { financialAccount: true, refunds: { include: { financialAccount: true }, orderBy: { createdAt: "asc" } } },
         },
+        allocations: { include: { category: true, costCenter: true }, orderBy: { createdAt: "asc" } },
       },
     })
   );

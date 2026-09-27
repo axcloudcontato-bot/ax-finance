@@ -3,7 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
-import { SettlementAlreadyReversedError, TitleNotFoundError } from "../errors";
+import { SettlementAlreadyReversedError, SettlementHasActiveRefundsError, TitleNotFoundError } from "../errors";
 
 export const reverseSettlementInput = z.object({
   reason: z.string().trim().min(1).max(500),
@@ -41,6 +41,9 @@ export async function reverseSettlement(
     }
     if (settlement.reversedAt) {
       throw new SettlementAlreadyReversedError();
+    }
+    if (await tx.settlementRefund.findFirst({ where: { settlementId, companyId, reversedAt: null } })) {
+      throw new SettlementHasActiveRefundsError();
     }
 
     await assertPeriodOpen(tx, companyId, settlement.effectiveDate);

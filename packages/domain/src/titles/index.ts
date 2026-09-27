@@ -11,3 +11,8 @@ export * from "./list-installments";
 export * from "./delete-title";
 export * from "./delete-installment-plan";
 export * from "./list-due-soon-titles";
+export * from "./update-title";
+export * from "./duplicate-title";
+export * from "./settlement-refunds";
+export * from "./title-allocations";
+export * from "./title-batch";

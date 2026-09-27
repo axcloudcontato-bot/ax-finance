@@ -9,6 +9,12 @@ import {
   deleteTitle,
   registerSettlement,
   reverseSettlement,
+  clearTitleAllocations,
+  duplicateTitle,
+  registerSettlementRefund,
+  replaceTitleAllocations,
+  reverseSettlementRefund,
+  updateTitle,
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -251,4 +257,54 @@ export async function deleteEntradaInstallmentPlanAction(
   }
 
   redirect("/entradas");
+}
+
+export async function updateEntradaAction(titleId: string, formData: FormData) {
+  const user = await getCurrentUser(); if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try { await updateTitle(user.id, company.id, titleId, {
+    description: String(formData.get("description") ?? ""), categoryId: String(formData.get("categoryId") ?? ""),
+    partyId: String(formData.get("partyId") ?? "") || undefined, costCenterId: String(formData.get("costCenterId") ?? "") || undefined,
+    originalAmountCents: parseAmountToCents(String(formData.get("amount") ?? "0")), competenceDate: String(formData.get("competenceDate") ?? ""),
+    dueDate: String(formData.get("dueDate") ?? ""), notes: String(formData.get("notes") ?? "") || undefined,
+  }); } catch (error) { redirect(`/entradas/${titleId}?erroEdicao=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível editar o título.")}`); }
+  redirect(`/entradas/${titleId}?atualizado=1`);
+}
+
+export async function duplicateEntradaAction(titleId: string, formData: FormData) {
+  const user = await getCurrentUser(); if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  let duplicateId: string;
+  try { duplicateId = (await duplicateTitle(user.id, company.id, titleId, { competenceDate: String(formData.get("competenceDate") ?? "") || undefined, dueDate: String(formData.get("dueDate") ?? "") || undefined })).id; }
+  catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível duplicar.")}`); }
+  redirect(`/entradas/${duplicateId}?duplicado=1`);
+}
+
+export async function registerEntradaRefundAction(titleId: string, settlementId: string, formData: FormData) {
+  const user = await getCurrentUser(); if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try { await registerSettlementRefund(user.id, company.id, settlementId, { financialAccountId: String(formData.get("financialAccountId") ?? ""), amountCents: parseAmountToCents(String(formData.get("amount") ?? "0")), effectiveDate: String(formData.get("effectiveDate") ?? ""), reason: String(formData.get("reason") ?? "") }); }
+  catch (error) { redirect(`/entradas/${titleId}?erroDevolucao=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível registrar a devolução.")}`); }
+  redirect(`/entradas/${titleId}`);
+}
+
+export async function reverseEntradaRefundAction(titleId: string, refundId: string) {
+  const user = await getCurrentUser(); if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try { await reverseSettlementRefund(user.id, company.id, refundId, { reason: "Estornado pelo usuário" }); }
+  catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível estornar a devolução.")}`); }
+  redirect(`/entradas/${titleId}`);
+}
+
+export async function replaceEntradaAllocationsAction(titleId: string, formData: FormData) {
+  const user = await getCurrentUser(); if (!user) redirect("/login"); const company = await requirePrimaryCompany(user.id);
+  const count = Number(formData.get("rowCount") ?? 0); const allocations = Array.from({length:count},(_,index) => ({ categoryId:String(formData.get(`categoryId-${index}`) ?? ""), costCenterId:String(formData.get(`costCenterId-${index}`) ?? "") || undefined, amountCents:parseAmountToCents(String(formData.get(`amount-${index}`) ?? "0")) }));
+  try { await replaceTitleAllocations(user.id, company.id, titleId, { allocations }); }
+  catch (error) { redirect(`/entradas/${titleId}?erroRateio=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível salvar o rateio.")}`); }
+  redirect(`/entradas/${titleId}?rateado=1`);
+}
+
+export async function clearEntradaAllocationsAction(titleId: string) {
+  const user = await getCurrentUser(); if (!user) redirect("/login"); const company = await requirePrimaryCompany(user.id);
+  await clearTitleAllocations(user.id, company.id, titleId); redirect(`/entradas/${titleId}`);
 }

@@ -7,11 +7,15 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { deactivatePartyAction } from "../actions";
+import { reactivatePartyAction, updatePartyAction } from "../actions";
+import { ActionModal } from "@/components/ui/action-modal";
 
 export default async function PessoaDetailPage({
   params,
+  searchParams,
 }: {
   params: { partyId: string };
+  searchParams: { erro?: string; atualizado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -44,6 +48,8 @@ export default async function PessoaDetailPage({
           </span>
         </div>
         <p className="subtitle">{roles}</p>
+        {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+        {searchParams.atualizado ? <p className="success-box">Cadastro atualizado.</p> : null}
 
         <table>
           <tbody>
@@ -92,6 +98,22 @@ export default async function PessoaDetailPage({
           </tbody>
         </table>
 
+        <div style={{display:"flex",gap:"0.75rem",marginTop:"1rem",flexWrap:"wrap"}}>
+        <ActionModal triggerLabel="Editar" title={`Editar pessoa — ${party.name}`}>
+          <form action={updatePartyAction.bind(null, party.id)}>
+            <label htmlFor="edit-party-name">Nome</label><input id="edit-party-name" name="name" defaultValue={party.name} required maxLength={200}/>
+            <label htmlFor="edit-trade-name">Nome fantasia</label><input id="edit-trade-name" name="tradeName" defaultValue={party.tradeName ?? ""} maxLength={200}/>
+            <label htmlFor="edit-document">Documento</label><input id="edit-document" name="document" defaultValue={party.document ?? ""} maxLength={30}/>
+            <label htmlFor="edit-email">E-mail</label><input id="edit-email" name="email" type="email" defaultValue={party.email ?? ""} maxLength={200}/>
+            <label htmlFor="edit-phone">Telefone</label><input id="edit-phone" name="phone" defaultValue={party.phone ?? ""} maxLength={30}/>
+            <label htmlFor="edit-address">Endereço</label><input id="edit-address" name="address" defaultValue={party.address ?? ""} maxLength={500}/>
+            <label htmlFor="edit-responsible">Responsável</label><input id="edit-responsible" name="responsibleName" defaultValue={party.responsibleName ?? ""} maxLength={200}/>
+            <label htmlFor="edit-notes">Observações</label><textarea id="edit-notes" name="notes" defaultValue={party.notes ?? ""} maxLength={2000}/>
+            <label><input type="checkbox" name="isClient" value="true" defaultChecked={party.isClient}/> Cliente</label>
+            <label><input type="checkbox" name="isSupplier" value="true" defaultChecked={party.isSupplier}/> Fornecedor</label>
+            <button type="submit">Salvar alterações</button>
+          </form>
+        </ActionModal>
         {party.status === "ACTIVE" ? (
           <form action={deactivatePartyAction} style={{ marginTop: "1rem" }}>
             <input type="hidden" name="partyId" value={party.id} />
@@ -99,7 +121,8 @@ export default async function PessoaDetailPage({
               Inativar
             </button>
           </form>
-        ) : null}
+        ) : <form action={reactivatePartyAction.bind(null, party.id)} className="inline"><button type="submit" className="secondary">Reativar</button></form>}
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>

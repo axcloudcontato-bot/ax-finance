@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createBalanceAdjustment, createFinancialAccount, reverseBalanceAdjustment } from "@ax-finance/domain";
+import { archiveFinancialAccount, createBalanceAdjustment, createFinancialAccount, reactivateFinancialAccount, reverseBalanceAdjustment, updateFinancialAccount } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -90,5 +90,34 @@ export async function reverseBalanceAdjustmentAction(adjustmentId: string, formD
     redirect(`/contas?erroEstorno=${encodeURIComponent(message)}`);
   }
 
+  redirect("/contas");
+}
+
+export async function updateAccountAction(accountId: string, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try {
+    await updateFinancialAccount(user.id, company.id, accountId, {
+      name: String(formData.get("name") ?? ""),
+      type: String(formData.get("type") ?? "BANK"),
+      includedInAvailableTotal: formData.get("includedInAvailableTotal") === "true",
+    });
+  } catch (error) {
+    redirect(`/contas?erroConta=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível editar a conta.")}`);
+  }
+  redirect("/contas?contaAtualizada=1");
+}
+
+export async function setAccountArchivedAction(accountId: string, archived: boolean) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try {
+    if (archived) await archiveFinancialAccount(user.id, company.id, accountId);
+    else await reactivateFinancialAccount(user.id, company.id, accountId);
+  } catch (error) {
+    redirect(`/contas?erroConta=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível alterar a conta.")}`);
+  }
   redirect("/contas");
 }

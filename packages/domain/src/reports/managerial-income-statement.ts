@@ -32,15 +32,20 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
         status: { not: "CANCELLED" },
         competenceDate: { gte: new Date(data.from), lte: new Date(data.to) },
       },
-      include: { category: true },
+      include: { category: true, allocations: { include: { category: true } } },
     })
   );
 
   const totalsByGroup = new Map<string, bigint>();
   for (const title of titles) {
-    const label = title.category.managerialGroup?.trim() || NATURE_LABEL[title.category.nature] || title.category.nature;
-    const signedCents = title.type === "RECEIVABLE" ? title.originalAmountCents : -title.originalAmountCents;
-    totalsByGroup.set(label, (totalsByGroup.get(label) ?? BigInt(0)) + signedCents);
+    const lines = title.allocations.length > 0
+      ? title.allocations.map((allocation) => ({ category: allocation.category, amountCents: allocation.amountCents }))
+      : [{ category: title.category, amountCents: title.originalAmountCents }];
+    for (const line of lines) {
+      const label = line.category.managerialGroup?.trim() || NATURE_LABEL[line.category.nature] || line.category.nature;
+      const signedCents = title.type === "RECEIVABLE" ? line.amountCents : -line.amountCents;
+      totalsByGroup.set(label, (totalsByGroup.get(label) ?? BigInt(0)) + signedCents);
+    }
   }
 
   const groups = Array.from(totalsByGroup.entries())

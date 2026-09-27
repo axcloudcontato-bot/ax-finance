@@ -12,9 +12,11 @@ export function TitleListTable({ titles, basePath }: { titles: TitleRow[]; baseP
   }
 
   return (
+    <form action={`${basePath}/lote`} method="get">
     <table>
       <thead>
         <tr>
+          <th><span className="sr-only">Selecionar</span></th>
           <th>Descrição</th>
           <th>Categoria</th>
           <th>Centro de custo</th>
@@ -27,6 +29,7 @@ export function TitleListTable({ titles, basePath }: { titles: TitleRow[]; baseP
       <tbody>
         {titles.map((title) => (
           <tr key={title.id}>
+            <td><input type="checkbox" name="ids" value={title.id} aria-label={`Selecionar ${title.description}`} /></td>
             <td>
               <Link href={`${basePath}/${title.id}`}>{title.description}</Link>
             </td>
@@ -42,5 +45,7 @@ export function TitleListTable({ titles, basePath }: { titles: TitleRow[]; baseP
         ))}
       </tbody>
     </table>
+    <button type="submit" className="secondary" style={{marginTop:"1rem"}}>Operações em lote</button>
+    </form>
   );
 }

@@ -36,6 +36,11 @@ export async function computeAccountBalanceDeltas(
     where: { companyId, reversedAt: null, ...(asOfDate ? { transferDate: { lte: asOfDate } } : {}) },
   });
 
+  const refunds = await tx.settlementRefund.findMany({
+    where: { companyId, reversedAt: null, ...(asOfDate ? { effectiveDate: { lte: asOfDate } } : {}) },
+    include: { settlement: { include: { title: { select: { type: true } } } } },
+  });
+
   const adjustments = await tx.balanceAdjustment.findMany({
     where: { companyId, reversedAt: null, ...(asOfDate ? { effectiveDate: { lte: asOfDate } } : {}) },
   });
@@ -47,6 +52,11 @@ export async function computeAccountBalanceDeltas(
 
   for (const settlement of settlements) {
     add(settlement.financialAccountId, settlementCashDelta(settlement.title.type, settlement));
+  }
+
+  for (const refund of refunds) {
+    const originalDirection = refund.settlement.title.type === "RECEIVABLE" ? BigInt(1) : BigInt(-1);
+    add(refund.financialAccountId, -originalDirection * refund.amountCents);
   }
 
   for (const transfer of transfers) {

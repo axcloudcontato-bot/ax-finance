@@ -28,7 +28,7 @@ export async function importBankStatement(userId: string, companyId: string, inp
 
   const batch = await withCompanyContext(userId, companyId, async (tx) => {
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
       select: { id: true },
     });
     if (!account) throw new FinancialAccountNotFoundError();

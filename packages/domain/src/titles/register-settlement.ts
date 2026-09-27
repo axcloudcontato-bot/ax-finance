@@ -87,7 +87,7 @@ export async function registerSettlement(
     }
 
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
     });
     if (!account) {
       throw new FinancialAccountNotFoundError();

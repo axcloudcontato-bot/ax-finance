@@ -6,12 +6,13 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { sortCategoriesTree } from "@/lib/categories";
 import { NATURE_LABEL } from "@/lib/category-labels";
 import { Modal } from "@/components/ui/modal";
-import { archiveCategoryAction, createCategoryAction } from "./actions";
+import { ActionModal } from "@/components/ui/action-modal";
+import { archiveCategoryAction, createCategoryAction, reactivateCategoryAction, updateCategoryAction } from "./actions";
 
 export default async function CategoriasPage({
   searchParams,
 }: {
-  searchParams: { erro?: string };
+  searchParams: { erro?: string; atualizado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -80,6 +81,7 @@ export default async function CategoriasPage({
       </div>
 
       <div className="card">
+        {searchParams.atualizado ? <p className="success-box">Categoria atualizada.</p> : null}
         {ordered.length === 0 ? (
           <p className="muted">Nenhuma categoria ainda.</p>
         ) : (
@@ -101,6 +103,16 @@ export default async function CategoriasPage({
                   <td>{category.managerialGroup ?? "—"}</td>
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                   <td>
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <ActionModal triggerLabel="Editar" title={`Editar categoria — ${category.name}`}>
+                      <form action={updateCategoryAction.bind(null, category.id)}>
+                        <label htmlFor={`name-${category.id}`}>Nome</label><input id={`name-${category.id}`} name="name" defaultValue={category.name} required maxLength={200} />
+                        <label htmlFor={`nature-${category.id}`}>Natureza</label><select id={`nature-${category.id}`} name="nature" defaultValue={category.nature}>{Object.entries(NATURE_LABEL).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
+                        <label htmlFor={`parent-${category.id}`}>Categoria pai</label><select id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}><option value="">Nenhuma</option>{topLevelActive.filter((item) => item.id !== category.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+                        <label htmlFor={`group-${category.id}`}>Grupo gerencial</label><input id={`group-${category.id}`} name="managerialGroup" defaultValue={category.managerialGroup ?? ""} maxLength={200} />
+                        <button type="submit">Salvar alterações</button>
+                      </form>
+                    </ActionModal>
                     {category.status === "ACTIVE" ? (
                       <form action={archiveCategoryAction} className="inline">
                         <input type="hidden" name="categoryId" value={category.id} />
@@ -108,7 +120,8 @@ export default async function CategoriasPage({
                           Arquivar
                         </button>
                       </form>
-                    ) : null}
+                    ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><button type="submit" className="secondary">Reativar</button></form>}
+                    </div>
                   </td>
                 </tr>
               ))}

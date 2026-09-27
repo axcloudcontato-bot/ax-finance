@@ -9,7 +9,7 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
 import { Modal } from "@/components/ui/modal";
-import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction } from "./actions";
+import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction, setAccountArchivedAction, updateAccountAction } from "./actions";
 import { resolvePeriodRange } from "@/lib/month";
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
@@ -33,6 +33,8 @@ export default async function ContasPage({
     ate?: string;
     periodo?: string;
     comparar?: string;
+    erroConta?: string;
+    contaAtualizada?: string;
   };
 }) {
   const user = await getCurrentUser();
@@ -94,6 +96,8 @@ export default async function ContasPage({
       </div>
 
       <div className="card">
+          {searchParams.erroConta ? <p className="error">{searchParams.erroConta}</p> : null}
+          {searchParams.contaAtualizada ? <p className="success-box">Conta atualizada.</p> : null}
           {accounts.length === 0 ? (
             <p className="muted">Nenhuma conta cadastrada ainda.</p>
           ) : (
@@ -104,6 +108,7 @@ export default async function ContasPage({
                   <th>Tipo</th>
                   <th>Saldo de abertura</th>
                   <th>Saldo atual</th>
+                  <th>Status</th>
                   <th></th>
                 </tr>
               </thead>
@@ -116,8 +121,22 @@ export default async function ContasPage({
                     <td style={{ fontWeight: 600 }}>
                       {formatCents(account.currentBalanceCents, account.currency)}
                     </td>
+                    <td>{account.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                     <td>
-                      <ActionModal
+                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <ActionModal triggerLabel="Editar" title={`Editar conta — ${account.name}`}>
+                        <form action={updateAccountAction.bind(null, account.id)}>
+                          <label htmlFor={`name-${account.id}`}>Nome</label>
+                          <input id={`name-${account.id}`} name="name" defaultValue={account.name} required maxLength={200} />
+                          <label htmlFor={`type-${account.id}`}>Tipo</label>
+                          <select id={`type-${account.id}`} name="type" defaultValue={account.type}>
+                            <option value="BANK">Conta bancária</option><option value="CASH">Dinheiro em caixa</option><option value="WALLET">Carteira de recebimentos</option>
+                          </select>
+                          <label><input type="checkbox" name="includedInAvailableTotal" value="true" defaultChecked={account.includedInAvailableTotal} /> Incluir no saldo disponível</label>
+                          <button type="submit">Salvar alterações</button>
+                        </form>
+                      </ActionModal>
+                      {account.status === "ACTIVE" ? <ActionModal
                         key={searchParams.ajustado ?? "novo"}
                         triggerLabel="Ajustar saldo"
                         title={`Ajustar saldo — ${account.name}`}
@@ -157,7 +176,11 @@ export default async function ContasPage({
 
                           <button type="submit">Ajustar saldo</button>
                         </form>
-                      </ActionModal>
+                      </ActionModal> : null}
+                      <form action={setAccountArchivedAction.bind(null, account.id, account.status === "ACTIVE")} className="inline">
+                        <button type="submit" className="secondary">{account.status === "ACTIVE" ? "Arquivar" : "Reativar"}</button>
+                      </form>
+                      </div>
                     </td>
                   </tr>
                 ))}

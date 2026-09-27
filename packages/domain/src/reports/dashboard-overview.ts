@@ -70,7 +70,14 @@ type SettlementRow = {
   };
 };
 
-function summarizeSettlements(rows: SettlementRow[]) {
+type RefundRow = {
+  id: string;
+  effectiveDate: Date;
+  amountCents: bigint;
+  settlement: { title: SettlementRow["title"] };
+};
+
+function summarizeSettlements(rows: SettlementRow[], refunds: RefundRow[] = []) {
   let receivedCents = BigInt(0);
   let paidCents = BigInt(0);
   let operatingReceivedCents = BigInt(0);
@@ -85,6 +92,17 @@ function summarizeSettlements(rows: SettlementRow[]) {
       const paid = -delta;
       paidCents += paid;
       if (OPERATING_PAYMENT_NATURES.has(settlement.title.category.nature)) operatingPaidCents += paid;
+    }
+  }
+
+  for (const refund of refunds) {
+    const title = refund.settlement.title;
+    if (title.type === "RECEIVABLE") {
+      receivedCents -= refund.amountCents;
+      if (title.category.nature === "OPERATING_REVENUE") operatingReceivedCents -= refund.amountCents;
+    } else {
+      paidCents -= refund.amountCents;
+      if (OPERATING_PAYMENT_NATURES.has(title.category.nature)) operatingPaidCents -= refund.amountCents;
     }
   }
 
@@ -180,7 +198,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
   ];
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const [accounts, balanceDeltas, settlements, titles, pendingLines, failedImports] = await Promise.all([
+    const [accounts, balanceDeltas, settlements, refunds, titles, pendingLines, failedImports] = await Promise.all([
       tx.financialAccount.findMany({
         where: { companyId, status: "ACTIVE", ...(data.financialAccountId ? { id: data.financialAccountId } : {}) },
         orderBy: { createdAt: "asc" },
@@ -205,6 +223,15 @@ export async function getDashboardOverview(userId: string, companyId: string, in
             },
           },
         },
+        orderBy: { effectiveDate: "asc" },
+      }),
+      tx.settlementRefund.findMany({
+        where: {
+          companyId, reversedAt: null, OR: settlementRanges,
+          ...(data.financialAccountId ? { financialAccountId: data.financialAccountId } : {}),
+          settlement: { title: titleFilter(data) },
+        },
+        include: { settlement: { include: { title: { select: { id: true, type: true, description: true, category: { select: { id: true, name: true, nature: true } } } } } } },
         orderBy: { effectiveDate: "asc" },
       }),
       tx.title.findMany({
@@ -246,9 +273,13 @@ export async function getDashboardOverview(userId: string, companyId: string, in
     const comparisonSettlements = data.comparisonFrom && data.comparisonTo
       ? settlements.filter((row) => rangeContains(row.effectiveDate, data.comparisonFrom!, data.comparisonTo!))
       : [];
-    const current = summarizeSettlements(currentSettlements);
+    const currentRefunds = refunds.filter((row) => rangeContains(row.effectiveDate, data.from, data.to) && asDateOnly(row.effectiveDate) <= today);
+    const comparisonRefunds = data.comparisonFrom && data.comparisonTo
+      ? refunds.filter((row) => rangeContains(row.effectiveDate, data.comparisonFrom!, data.comparisonTo!))
+      : [];
+    const current = summarizeSettlements(currentSettlements, currentRefunds);
     const comparison = data.comparisonFrom && data.comparisonTo
-      ? summarizeSettlements(comparisonSettlements)
+      ? summarizeSettlements(comparisonSettlements, comparisonRefunds)
       : null;
 
     const openTitles = titles.map(({ settlements: titleSettlements, ...title }) => {
@@ -304,6 +335,12 @@ export async function getDashboardOverview(userId: string, companyId: string, in
         cents: (currentCategory?.cents ?? BigInt(0)) + delta,
       });
     }
+    for (const refund of currentRefunds) {
+      const title = refund.settlement.title;
+      const delta = title.type === "RECEIVABLE" ? -refund.amountCents : refund.amountCents;
+      const currentCategory = categoryTotals.get(title.category.id);
+      categoryTotals.set(title.category.id, { categoryId: title.category.id, categoryName: title.category.name, cents: (currentCategory?.cents ?? BigInt(0)) + delta });
+    }
     const categoryRanking = [...categoryTotals.values()].sort((left, right) => {
       const leftAbs = left.cents < BigInt(0) ? -left.cents : left.cents;
       const rightAbs = right.cents < BigInt(0) ? -right.cents : right.cents;
@@ -317,6 +354,12 @@ export async function getDashboardOverview(userId: string, companyId: string, in
       const delta = settlementCashDelta(settlement.title.type, settlement);
       if (settlement.title.type === "RECEIVABLE") bucket.realizedReceiptsCents += delta;
       else bucket.realizedPaymentsCents += -delta;
+    }
+    for (const refund of currentRefunds) {
+      const bucket = buckets.get(bucketKey(refund.effectiveDate, strategy));
+      if (!bucket) continue;
+      if (refund.settlement.title.type === "RECEIVABLE") bucket.realizedReceiptsCents -= refund.amountCents;
+      else bucket.realizedPaymentsCents -= refund.amountCents;
     }
     for (const title of periodOpenTitles) {
       const bucket = buckets.get(bucketKey(title.dueDate, strategy));

@@ -52,3 +52,24 @@ export async function archiveCostCenter(userId: string, companyId: string, costC
     return archived;
   });
 }
+
+export async function updateCostCenter(userId: string, companyId: string, costCenterId: string, input: unknown) {
+  const data = createCostCenterInput.parse(input);
+  await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
+  return withCompanyContext(userId, companyId, async (tx) => {
+    const center = await tx.costCenter.findFirst({ where: { id: costCenterId, companyId } });
+    if (!center) throw new CostCenterNotFoundError();
+    const updated = await tx.costCenter.update({ where: { id: center.id }, data });
+    await recordAuditEvent(tx, { companyId, actorUserId: userId, eventType: "COST_CENTER_UPDATED", resourceType: "CostCenter", resourceId: center.id, summary: updated.name });
+    return updated;
+  });
+}
+
+export async function reactivateCostCenter(userId: string, companyId: string, costCenterId: string) {
+  await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
+  return withCompanyContext(userId, companyId, async (tx) => {
+    const center = await tx.costCenter.findFirst({ where: { id: costCenterId, companyId } });
+    if (!center) throw new CostCenterNotFoundError();
+    return tx.costCenter.update({ where: { id: center.id }, data: { status: "ACTIVE" } });
+  });
+}

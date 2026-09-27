@@ -45,7 +45,7 @@ export async function createBankImportPreview(
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
       select: { id: true },
     });
     if (!account) throw new FinancialAccountNotFoundError();
