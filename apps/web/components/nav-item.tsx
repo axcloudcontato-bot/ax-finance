@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { isDateOnly, isYearMonth } from "@/lib/month";
+import { isComparisonMode, isDateOnly, isPeriodPreset, isYearMonth } from "@/lib/month";
 
 export interface NavItemData {
   id: string;
@@ -36,12 +36,17 @@ export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number
     const from = searchParams.get("de");
     const to = searchParams.get("ate");
     const month = searchParams.get("mes");
-    if (isDateOnly(from) && isDateOnly(to) && from <= to) {
+    const preset = searchParams.get("periodo");
+    const comparison = searchParams.get("comparar");
+    if (isPeriodPreset(preset)) {
+      params.set("periodo", preset);
+    } else if (isDateOnly(from) && isDateOnly(to) && from <= to) {
       params.set("de", from);
       params.set("ate", to);
     } else if (isYearMonth(month)) {
       params.set("mes", month);
     }
+    if (isComparisonMode(comparison)) params.set("comparar", comparison);
     const query = params.toString();
     return query ? `${targetPath}?${query}` : targetPath;
   })() : undefined;

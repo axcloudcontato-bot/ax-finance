@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
-import { CategoryNotFoundError, PartyNotFoundError, RecurrenceEndDateBeforeStartError } from "../errors";
+import { CategoryNotFoundError, CompanyAccessScopeInvalidError, CostCenterNotFoundError, PartyNotFoundError, RecurrenceEndDateBeforeStartError } from "../errors";
 
 export const createRecurrenceRuleInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]),
   description: z.string().trim().min(1).max(500),
   categoryId: z.string().uuid(),
   partyId: z.string().uuid().optional(),
+  costCenterId: z.string().uuid().optional(),
   amountCents: z.number().int().positive(),
   dayOfMonth: z.number().int().min(1).max(31),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -46,6 +47,13 @@ export async function createRecurrenceRule(userId: string, companyId: string, in
       }
     }
 
+    const membership = await tx.membership.findUniqueOrThrow({ where: { userId_companyId: { userId, companyId } } });
+    if (membership.accessScope === "RESTRICTED" && !data.costCenterId) throw new CompanyAccessScopeInvalidError();
+    if (data.costCenterId) {
+      const costCenter = await tx.costCenter.findFirst({ where: { id: data.costCenterId, companyId, status: "ACTIVE" } });
+      if (!costCenter) throw new CostCenterNotFoundError();
+    }
+
     return tx.recurrenceRule.create({
       data: {
         companyId,
@@ -53,6 +61,7 @@ export async function createRecurrenceRule(userId: string, companyId: string, in
         description: data.description,
         categoryId: data.categoryId,
         partyId: data.partyId,
+        costCenterId: data.costCenterId,
         amountCents: BigInt(data.amountCents),
         dayOfMonth: data.dayOfMonth,
         startDate: new Date(data.startDate),

@@ -11,7 +11,10 @@ export async function GET(_request: Request, { params }: { params: { attachmentI
     const user = await requireUser();
     const company = await requirePrimaryCompany(user.id);
     const attachment = await getTitleAttachment(user.id, company.id, params.attachmentId);
-    const bytes = await readAttachmentObject(attachment.storageKey);
+    if (process.env.ATTACHMENT_SCAN_REQUIRED === "true" && attachment.scanStatus !== "CLEAN") {
+      return json({ error: "ATTACHMENT_NOT_SCANNED", message: "O anexo ainda não foi liberado pelo antivírus." }, 423);
+    }
+    const bytes = await readAttachmentObject(attachment.storageKey, attachment.storageBackend === "S3" ? "S3" : "LOCAL");
     const safeName = safeOriginalFileName(attachment.originalName);
     const asciiName = safeName.replace(/[^\x20-\x7e]/g, "_").replace(/["\\]/g, "_");
     return new Response(bytes, {

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { listCompanyInvitations, listCompanyMembers } from "@ax-finance/domain";
+import { listCompanyInvitations, listCompanyMembers, listCostCenters, listFinancialAccounts } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { InviteUserForm } from "./invite-user-form";
-import { revokeInvitationAction, revokeMemberAction, updateMemberRoleAction } from "./actions";
+import { revokeInvitationAction, revokeMemberAction, transferOwnershipAction, updateMemberAccessAction, updateMemberRoleAction } from "./actions";
 
 const ROLE_LABEL: Record<string, string> = {
   OWNER: "Proprietário",
@@ -20,10 +20,14 @@ export default async function CompanyUsersPage({ searchParams }: { searchParams:
 
   let members;
   let invitations;
+  let accounts;
+  let costCenters;
   try {
-    [members, invitations] = await Promise.all([
+    [members, invitations, accounts, costCenters] = await Promise.all([
       listCompanyMembers(user.id, company.id),
       listCompanyInvitations(user.id, company.id),
+      listFinancialAccounts(user.id, company.id),
+      listCostCenters(user.id, company.id),
     ]);
   } catch {
     redirect("/dashboard");
@@ -42,7 +46,7 @@ export default async function CompanyUsersPage({ searchParams }: { searchParams:
           <div className="card">
             <h1>Usuários</h1>
             <table>
-              <thead><tr><th>Usuário</th><th>Papel</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Usuário</th><th>Papel</th><th>Escopo</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {members.map((membership) => (
                   <tr key={membership.id}>
@@ -58,6 +62,26 @@ export default async function CompanyUsersPage({ searchParams }: { searchParams:
                           </select>
                           <button type="submit" className="secondary">Salvar</button>
                         </form>
+                      )}
+                    </td>
+                    <td>
+                      {membership.role === "OWNER" ? "Acesso total" : membership.status !== "ACTIVE" ? "—" : (
+                        <details>
+                          <summary>{membership.accessScope === "ALL" ? "Acesso total" : "Restrito"}</summary>
+                          <form action={updateMemberAccessAction.bind(null, membership.id)} className="access-scope-form">
+                            <label><input type="radio" name="accessScope" value="ALL" defaultChecked={membership.accessScope === "ALL"} /> Todas as contas e centros de custo</label>
+                            <label><input type="radio" name="accessScope" value="RESTRICTED" defaultChecked={membership.accessScope === "RESTRICTED"} /> Somente os itens selecionados</label>
+                            <fieldset>
+                              <legend>Contas</legend>
+                              {accounts.map((account) => <label key={account.id}><input type="checkbox" name="financialAccountIds" value={account.id} defaultChecked={membership.accountAccess.some((item) => item.financialAccountId === account.id)} /> {account.name}</label>)}
+                            </fieldset>
+                            <fieldset>
+                              <legend>Centros de custo</legend>
+                              {costCenters.length === 0 ? <span className="muted">Nenhum centro cadastrado.</span> : costCenters.map((center) => <label key={center.id}><input type="checkbox" name="costCenterIds" value={center.id} defaultChecked={membership.costCenterAccess.some((item) => item.costCenterId === center.id)} /> {center.name}</label>)}
+                            </fieldset>
+                            <button type="submit" className="secondary">Salvar escopo</button>
+                          </form>
+                        </details>
                       )}
                     </td>
                     <td>{membership.status === "ACTIVE" ? "Ativo" : "Revogado"}</td>
@@ -88,6 +112,23 @@ export default async function CompanyUsersPage({ searchParams }: { searchParams:
                 })}</tbody>
               </table>
             )}
+          </div>
+
+          <div className="card">
+            <h1>Transferir propriedade</h1>
+            <p className="subtitle">O novo proprietário terá acesso total. Seu papel passará para Administrador financeiro.</p>
+            <form action={transferOwnershipAction}>
+              <label htmlFor="new-owner">Novo proprietário</label>
+              <select id="new-owner" name="membershipId" required defaultValue="">
+                <option value="" disabled>Selecione um usuário ativo</option>
+                {members.filter((membership) => membership.role !== "OWNER" && membership.status === "ACTIVE").map((membership) => (
+                  <option key={membership.id} value={membership.id}>{membership.user.name} — {membership.user.email}</option>
+                ))}
+              </select>
+              <label htmlFor="ownership-confirmation">Digite TRANSFERIR para confirmar</label>
+              <input id="ownership-confirmation" name="confirmation" required pattern="TRANSFERIR" autoComplete="off" />
+              <button type="submit" className="danger-button">Transferir propriedade</button>
+            </form>
           </div>
         </div>
         <InviteUserForm />

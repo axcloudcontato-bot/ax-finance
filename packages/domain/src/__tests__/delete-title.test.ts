@@ -51,8 +51,8 @@ afterAll(async () => {
   await rootClient.$disconnect();
 });
 
-describe("excluir título (a pedido do usuário — inclusive com baixa)", () => {
-  it("exclui um título sem baixa", async () => {
+describe("soft delete de título (inclusive com baixa)", () => {
+  it("oculta um título sem apagar seu histórico", async () => {
     const { user, company, category } = await setupCompany("del-simples");
 
     const title = await createTitle(user.id, company.id, {
@@ -69,11 +69,14 @@ describe("excluir título (a pedido do usuário — inclusive com baixa)", () =>
     await expect(getTitle(user.id, company.id, title.id)).rejects.toBeInstanceOf(TitleNotFoundError);
 
     const events = await listAuditEvents(user.id, company.id, { resourceType: "Title", resourceId: title.id });
-    expect(events.map((e) => e.eventType)).toEqual(["TITLE_DELETED"]);
+    expect(events.map((e) => e.eventType)).toEqual(["TITLE_SOFT_DELETED"]);
     expect(events[0]?.summary).toBe("Lançado por engano");
+    expect(await rootClient.title.findUnique({ where: { id: title.id } })).toMatchObject({
+      deleteReason: "Lançado por engano",
+    });
   });
 
-  it("exclui um título com baixa, apagando a baixa e reabrindo a linha de extrato conciliada", async () => {
+  it("preserva baixa e conciliação de um título removido", async () => {
     const { user, company, account, category } = await setupCompany("del-com-baixa");
 
     const title = await createTitle(user.id, company.id, {
@@ -103,8 +106,9 @@ describe("excluir título (a pedido do usuário — inclusive com baixa)", () =>
     await expect(getTitle(user.id, company.id, title.id)).rejects.toBeInstanceOf(TitleNotFoundError);
 
     const [lineAfter] = await listBankStatementLines(user.id, company.id, { financialAccountId: account.id });
-    expect(lineAfter?.status).toBe("PENDING");
-    expect(lineAfter?.reconciledSettlementId).toBeNull();
+    expect(lineAfter?.status).toBe("RECONCILED");
+    expect(lineAfter?.reconciledSettlementId).toBe(settlement.id);
+    expect(await rootClient.settlement.count({ where: { titleId: title.id } })).toBe(1);
   });
 
   it("bloqueia excluir título/baixa de período fechado", async () => {
@@ -184,7 +188,8 @@ describe("excluir parcelamento em massa", () => {
       resourceType: "InstallmentGroup",
       resourceId: groupId,
     });
-    expect(events.map((e) => e.eventType)).toEqual(["INSTALLMENT_PLAN_DELETED"]);
+    expect(events.map((e) => e.eventType)).toEqual(["INSTALLMENT_PLAN_SOFT_DELETED"]);
+    expect(await rootClient.title.count({ where: { installmentGroupId: groupId, deletedAt: { not: null } } })).toBe(3);
   });
 
   it("grupo inexistente lança InstallmentGroupNotFoundError", async () => {

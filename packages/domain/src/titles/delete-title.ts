@@ -10,15 +10,8 @@ export const deleteTitleInput = z.object({
 });
 
 /**
- * Exclusão de verdade (não é `cancelTitle`, que só marca CANCELLED e nunca
- * apaga a linha) — a pedido explícito do usuário, mesmo que o título já
- * tenha baixas: apaga as baixas junto (e reabre pra "pendente" qualquer
- * linha de extrato que estivesse conciliada com elas, já que a linha do
- * banco em si continua real). Ainda respeita fechamento de período — apagar
- * um título/baixa de um mês fechado seria driblar exatamente a proteção que
- * o fechamento existe pra garantir. O motivo é obrigatório (mesmo padrão de
- * cancelar/estornar) — funciona como confirmação leve pra uma ação
- * irreversível, sem precisar de um dialog de JS no cliente.
+ * Soft delete auditável: o título deixa das telas operacionais, mas sua linha,
+ * baixas, conciliações e anexos permanecem preservados para auditoria.
  */
 export async function deleteTitle(userId: string, companyId: string, titleId: string, input: unknown) {
   const data = deleteTitleInput.parse(input);
@@ -26,8 +19,7 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const title = await tx.title.findFirst({
-      where: { id: titleId, companyId },
-      include: { attachments: { select: { storageKey: true } } },
+      where: { id: titleId, companyId, deletedAt: null },
     });
     if (!title) {
       throw new TitleNotFoundError();
@@ -40,20 +32,15 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
       await assertPeriodOpen(tx, companyId, settlement.effectiveDate);
     }
 
-    if (settlements.length > 0) {
-      await tx.bankStatementLine.updateMany({
-        where: { reconciledSettlementId: { in: settlements.map((s) => s.id) } },
-        data: { reconciledSettlementId: null, status: "PENDING" },
-      });
-      await tx.settlement.deleteMany({ where: { titleId } });
-    }
-
-    await tx.title.delete({ where: { id: titleId } });
+    await tx.title.update({
+      where: { id: titleId },
+      data: { deletedAt: new Date(), deletedByUserId: userId, deleteReason: data.reason },
+    });
 
     await recordAuditEvent(tx, {
       companyId,
       actorUserId: userId,
-      eventType: "TITLE_DELETED",
+      eventType: "TITLE_SOFT_DELETED",
       resourceType: "Title",
       resourceId: titleId,
       summary: data.reason,
@@ -61,9 +48,9 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
         titleType: title.type,
         description: title.description,
         originalAmountCents: title.originalAmountCents.toString(),
-        settlementsDeleted: settlements.length,
+        settlementsPreserved: settlements.length,
       },
     });
-    return { attachmentStorageKeys: title.attachments.map((attachment) => attachment.storageKey) };
+    return { titleId, settlementsPreserved: settlements.length };
   });
 }

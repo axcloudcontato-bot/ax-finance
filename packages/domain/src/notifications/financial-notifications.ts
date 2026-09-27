@@ -50,6 +50,15 @@ function remainingCents(title: {
   );
 }
 
+function scopedTitles<T extends { costCenterId: string | null }>(
+  membership: { role: string; accessScope: string; costCenterAccess: Array<{ costCenterId: string }> },
+  titles: T[]
+) {
+  if (membership.role === "OWNER" || membership.accessScope === "ALL") return titles;
+  const allowed = new Set(membership.costCenterAccess.map((item) => item.costCenterId));
+  return titles.filter((title) => Boolean(title.costCenterId && allowed.has(title.costCenterId)));
+}
+
 export async function generateDueNotifications(
   userId: string,
   companyId: string,
@@ -64,7 +73,7 @@ export async function generateDueNotifications(
     const [memberships, storedPreferences] = await Promise.all([
       tx.membership.findMany({
         where: { companyId, status: "ACTIVE" },
-        include: { user: true },
+        include: { user: true, costCenterAccess: { select: { costCenterId: true } } },
       }),
       tx.notificationPreference.findMany({ where: { companyId } }),
     ]);
@@ -80,6 +89,7 @@ export async function generateDueNotifications(
     const titles = await tx.title.findMany({
       where: {
         companyId,
+        deletedAt: null,
         status: { in: ["OPEN", "PARTIALLY_SETTLED"] },
         dueDate: { lte: addDays(today, maxDaysAhead) },
       },
@@ -95,7 +105,7 @@ export async function generateDueNotifications(
       const preference = preferenceByUser.get(membership.userId) ?? DEFAULT_NOTIFICATION_PREFERENCE;
       if (!preference.inAppDue) return [];
       const cutoff = dateOnly(addDays(today, preference.dueDaysAhead));
-      return pendingTitles.filter((title) => dateOnly(title.dueDate) <= cutoff).map((title) => {
+      return scopedTitles(membership, pendingTitles).filter((title) => dateOnly(title.dueDate) <= cutoff).map((title) => {
       const overdue = dateOnly(title.dueDate) < today;
       const dueToday = dateOnly(title.dueDate) === today;
       const href = title.type === "RECEIVABLE" ? `/entradas/${title.id}` : `/saidas/${title.id}`;
@@ -117,7 +127,7 @@ export async function generateDueNotifications(
       const preference = preferenceByUser.get(membership.userId) ?? DEFAULT_NOTIFICATION_PREFERENCE;
       if (!preference.emailDue || !membership.user.emailVerifiedAt) continue;
       const cutoff = dateOnly(addDays(today, preference.dueDaysAhead));
-      const userTitles = pendingTitles.filter((title) => dateOnly(title.dueDate) <= cutoff);
+      const userTitles = scopedTitles(membership, pendingTitles).filter((title) => dateOnly(title.dueDate) <= cutoff);
       if (userTitles.length === 0) continue;
       const queued = await enqueueDueDateSummaryEmail(
         tx,
@@ -159,12 +169,12 @@ export async function generateWeeklySummary(
     const next7 = addDays(today, 7);
     const [titles, memberships, storedPreferences] = await Promise.all([
       tx.title.findMany({
-        where: { companyId, status: { in: ["OPEN", "PARTIALLY_SETTLED"] } },
+        where: { companyId, deletedAt: null, status: { in: ["OPEN", "PARTIALLY_SETTLED"] } },
         include: { settlements: true },
       }),
       tx.membership.findMany({
         where: { companyId, status: "ACTIVE" },
-        include: { user: true },
+        include: { user: true, costCenterAccess: { select: { costCenterId: true } } },
       }),
       tx.notificationPreference.findMany({ where: { companyId } }),
     ]);
@@ -174,29 +184,26 @@ export async function generateWeeklySummary(
       return localHour >= preference.deliveryHour;
     });
     const openTitles = titles.filter((title) => remainingCents(title) > BigInt(0));
-    const receivableOpenCents = openTitles
-      .filter((title) => title.type === "RECEIVABLE")
-      .reduce((sum, title) => sum + remainingCents(title), BigInt(0));
-    const payableOpenCents = openTitles
-      .filter((title) => title.type === "PAYABLE")
-      .reduce((sum, title) => sum + remainingCents(title), BigInt(0));
-    const overdueCount = openTitles.filter((title) => dateOnly(title.dueDate) < today).length;
-    const dueNext7Count = openTitles.filter((title) => title.dueDate >= todayAsDate && title.dueDate <= next7).length;
     const year = todayAsDate.getUTCFullYear();
     const weekKey = `${year}-${String(Math.ceil((((todayAsDate.getTime() - Date.UTC(year, 0, 1)) / 86400000) + new Date(Date.UTC(year, 0, 1)).getUTCDay() + 1) / 7)).padStart(2, "0")}`;
 
     const created = await tx.notification.createMany({
       data: eligibleMemberships.filter((membership) => (
         preferenceByUser.get(membership.userId) ?? DEFAULT_NOTIFICATION_PREFERENCE
-      ).inAppWeekly).map((membership) => ({
-        companyId,
-        userId: membership.userId,
-        type: "WEEKLY_SUMMARY" as const,
-        dedupKey: `weekly-summary:${companyId}:${membership.userId}:${weekKey}`,
-        title: "Resumo financeiro semanal",
-        body: `${overdueCount} vencido(s) e ${dueNext7Count} título(s) para os próximos 7 dias.`,
-        href: "/relatorios/fluxo-de-caixa",
-      })),
+      ).inAppWeekly).map((membership) => {
+        const visible = scopedTitles(membership, openTitles);
+        const overdueCount = visible.filter((title) => dateOnly(title.dueDate) < today).length;
+        const dueNext7Count = visible.filter((title) => title.dueDate >= todayAsDate && title.dueDate <= next7).length;
+        return {
+          companyId,
+          userId: membership.userId,
+          type: "WEEKLY_SUMMARY" as const,
+          dedupKey: `weekly-summary:${companyId}:${membership.userId}:${weekKey}`,
+          title: "Resumo financeiro semanal",
+          body: `${overdueCount} vencido(s) e ${dueNext7Count} título(s) para os próximos 7 dias.`,
+          href: "/relatorios/fluxo-de-caixa",
+        };
+      }),
       skipDuplicates: true,
     });
 
@@ -204,6 +211,11 @@ export async function generateWeeklySummary(
     for (const membership of eligibleMemberships) {
       const preference = preferenceByUser.get(membership.userId) ?? DEFAULT_NOTIFICATION_PREFERENCE;
       if (!preference.emailWeekly || !membership.user.emailVerifiedAt) continue;
+      const visible = scopedTitles(membership, openTitles);
+      const receivableOpenCents = visible.filter((title) => title.type === "RECEIVABLE").reduce((sum, title) => sum + remainingCents(title), BigInt(0));
+      const payableOpenCents = visible.filter((title) => title.type === "PAYABLE").reduce((sum, title) => sum + remainingCents(title), BigInt(0));
+      const overdueCount = visible.filter((title) => dateOnly(title.dueDate) < today).length;
+      const dueNext7Count = visible.filter((title) => title.dueDate >= todayAsDate && title.dueDate <= next7).length;
       const queued = await enqueueWeeklySummaryEmail(
         tx,
         `weekly-summary:${companyId}:${membership.userId}:${weekKey}`,

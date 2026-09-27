@@ -1,21 +1,20 @@
-import { access, mkdir } from "node:fs/promises";
-import { constants } from "node:fs";
 import { prisma } from "@ax-finance/db";
 import { logOperationalError } from "@ax-finance/domain";
-import { attachmentsRoot } from "@/lib/attachment-storage";
+import { checkAttachmentStorageReady } from "@/lib/attachment-storage";
+import { checkAttachmentScannerReady } from "@/lib/attachment-antivirus";
 import { json } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const checks = { database: false, attachments: false };
+  const checks = { database: false, attachments: false, antivirus: false };
   try {
     await prisma.$queryRaw`SELECT 1`;
     checks.database = true;
-    const root = attachmentsRoot();
-    await mkdir(root, { recursive: true });
-    await access(root, constants.R_OK | constants.W_OK);
+    await checkAttachmentStorageReady();
     checks.attachments = true;
+    await checkAttachmentScannerReady();
+    checks.antivirus = true;
     return json({ status: "ready", checks }, {
       headers: { "Cache-Control": "no-store" },
     });

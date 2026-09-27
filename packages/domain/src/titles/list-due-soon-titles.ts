@@ -11,6 +11,7 @@ export async function listDueSoonTitles(userId: string, companyId: string, limit
     tx.title.findMany({
       where: {
         companyId,
+        deletedAt: null,
         status: { in: ["OPEN", "PARTIALLY_SETTLED"] },
         dueDate: { lte: new Date(`${today}T23:59:59.999Z`) },
       },

@@ -94,6 +94,7 @@ export default async function EntradaDetailPage({
         <p className="subtitle">
           {title.category.parentId ? "↳ " : ""}
           {title.category.name}
+          {title.costCenter ? ` · ${title.costCenter.name}` : ""}
           {title.installmentGroupId ? ` · Parcela ${title.installmentNumber} de ${title.installmentCount}` : ""}
         </p>
 
@@ -160,10 +161,11 @@ export default async function EntradaDetailPage({
         ) : null}
 
         <form action={deleteAction} style={{ marginTop: "1rem" }}>
-          <label htmlFor="deleteReason">Excluir este lançamento — motivo</label>
+          <label htmlFor="deleteReason">Remover das telas — motivo</label>
+          <p className="muted">O histórico, as baixas, conciliações e anexos serão preservados para auditoria.</p>
           <input id="deleteReason" name="reason" type="text" maxLength={500} required />
           <button type="submit" className="secondary">
-            Excluir título
+            Remover título
           </button>
         </form>
       </div>
@@ -177,13 +179,13 @@ export default async function EntradaDetailPage({
                 <input
                   type="text"
                   name="reason"
-                  placeholder="Motivo da exclusão em massa"
+                  placeholder="Motivo da remoção em massa"
                   maxLength={500}
                   required
                   style={{ width: "auto" }}
                 />
                 <button type="submit" className="secondary" style={{ marginTop: 0 }}>
-                  Excluir parcelamento ({installments.length} parcelas)
+                  Remover parcelamento ({installments.length} parcelas)
                 </button>
               </form>
             ) : null}

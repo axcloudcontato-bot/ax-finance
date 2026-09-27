@@ -6,6 +6,8 @@ import {
   createCompanyInvitation,
   revokeCompanyInvitation,
   revokeCompanyMember,
+  transferCompanyOwnership,
+  updateCompanyMemberAccess,
   updateCompanyMemberRole,
 } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -80,4 +82,37 @@ export async function revokeMemberAction(membershipId: string) {
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/configuracoes/usuarios?atualizado=1");
+}
+
+export async function updateMemberAccessAction(membershipId: string, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try {
+    await updateCompanyMemberAccess(user.id, company.id, membershipId, {
+      accessScope: String(formData.get("accessScope") ?? "ALL"),
+      financialAccountIds: formData.getAll("financialAccountIds").map(String),
+      costCenterIds: formData.getAll("costCenterIds").map(String),
+    });
+  } catch (error) {
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao atualizar restrições.")}`);
+  }
+  revalidatePath("/configuracoes/usuarios");
+  redirect("/configuracoes/usuarios?atualizado=1");
+}
+
+export async function transferOwnershipAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try {
+    if (String(formData.get("confirmation") ?? "") !== "TRANSFERIR") {
+      throw new Error("Digite TRANSFERIR para confirmar a mudança de proprietário.");
+    }
+    await transferCompanyOwnership(user.id, company.id, String(formData.get("membershipId") ?? ""));
+  } catch (error) {
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao transferir a propriedade.")}`);
+  }
+  revalidatePath("/configuracoes/usuarios");
+  redirect("/dashboard?propriedadeTransferida=1");
 }

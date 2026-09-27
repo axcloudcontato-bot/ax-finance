@@ -17,6 +17,7 @@ export function TitleListTable({ titles, basePath }: { titles: TitleRow[]; baseP
         <tr>
           <th>Descrição</th>
           <th>Categoria</th>
+          <th>Centro de custo</th>
           <th>Vencimento</th>
           <th>Valor</th>
           <th>Saldo aberto</th>
@@ -30,6 +31,7 @@ export function TitleListTable({ titles, basePath }: { titles: TitleRow[]; baseP
               <Link href={`${basePath}/${title.id}`}>{title.description}</Link>
             </td>
             <td>{title.category.name}</td>
+            <td>{title.costCenter?.name ?? "—"}</td>
             <td>{formatDateOnly(title.dueDate)}</td>
             <td>{formatCents(title.originalAmountCents, title.currency)}</td>
             <td>{formatCents(title.remainingCents, title.currency)}</td>

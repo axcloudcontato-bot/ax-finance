@@ -10,9 +10,7 @@ export const deleteInstallmentPlanInput = z.object({
 });
 
 /**
- * Exclusão em massa de todas as parcelas de um parcelamento (mesma lógica
- * de `deleteTitle`, repetida por parcela) — a pedido explícito do usuário,
- * mesmo parcelas já com baixa.
+ * Soft delete em massa: preserva parcelas, baixas, conciliações e anexos.
  */
 export async function deleteInstallmentPlan(
   userId: string,
@@ -25,8 +23,7 @@ export async function deleteInstallmentPlan(
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const titles = await tx.title.findMany({
-      where: { companyId, installmentGroupId },
-      include: { attachments: { select: { storageKey: true } } },
+      where: { companyId, installmentGroupId, deletedAt: null },
     });
     if (titles.length === 0) {
       throw new InstallmentGroupNotFoundError();
@@ -42,33 +39,28 @@ export async function deleteInstallmentPlan(
       await assertPeriodOpen(tx, companyId, settlement.effectiveDate);
     }
 
-    if (settlements.length > 0) {
-      await tx.bankStatementLine.updateMany({
-        where: { reconciledSettlementId: { in: settlements.map((s) => s.id) } },
-        data: { reconciledSettlementId: null, status: "PENDING" },
-      });
-      await tx.settlement.deleteMany({ where: { titleId: { in: titleIds } } });
-    }
-
-    await tx.title.deleteMany({ where: { id: { in: titleIds } } });
+    await tx.title.updateMany({
+      where: { id: { in: titleIds } },
+      data: { deletedAt: new Date(), deletedByUserId: userId, deleteReason: data.reason },
+    });
 
     await recordAuditEvent(tx, {
       companyId,
       actorUserId: userId,
-      eventType: "INSTALLMENT_PLAN_DELETED",
+      eventType: "INSTALLMENT_PLAN_SOFT_DELETED",
       resourceType: "InstallmentGroup",
       resourceId: installmentGroupId,
       summary: data.reason,
       metadata: {
         titleType: titles[0]!.type,
         installmentCount: titles.length,
-        settlementsDeleted: settlements.length,
+        settlementsPreserved: settlements.length,
       },
     });
 
     return {
       deletedCount: titles.length,
-      attachmentStorageKeys: titles.flatMap((title) => title.attachments.map((attachment) => attachment.storageKey)),
+      settlementsPreserved: settlements.length,
     };
   });
 }

@@ -8,6 +8,7 @@ import { assertActiveMembership } from "../companies/assert-membership";
 import { createFinancialAccount } from "../financial-accounts/create-account";
 import { listFinancialAccounts } from "../financial-accounts/list-accounts";
 import { CompanyAccessDeniedError } from "../errors";
+import { createCategory } from "../categories/create-category";
 import { rootClient, resetDatabase } from "./test-db";
 
 function uniqueEmail(label: string) {
@@ -91,6 +92,26 @@ describe("isolamento entre empresas (FIN-001)", () => {
         })
       )
     ).rejects.toThrow();
+  });
+
+  it("chaves compostas rejeitam referências cruzadas mesmo usando o cliente root", async () => {
+    const userA = await registerUser({ email: uniqueEmail("fk-a"), name: "A", password: "senha-forte-123" });
+    const userB = await registerUser({ email: uniqueEmail("fk-b"), name: "B", password: "senha-forte-456" });
+    const companyA = await createCompany(userA.id, { name: "Empresa FK A" });
+    const companyB = await createCompany(userB.id, { name: "Empresa FK B" });
+    const categoryB = await createCategory(userB.id, companyB.id, { name: "Categoria B", nature: "OPERATING_REVENUE" });
+
+    await expect(rootClient.title.create({
+      data: {
+        companyId: companyA.id,
+        type: "RECEIVABLE",
+        description: "Referência cruzada",
+        categoryId: categoryB.id,
+        originalAmountCents: 100n,
+        competenceDate: new Date("2026-09-01"),
+        dueDate: new Date("2026-09-01"),
+      },
+    })).rejects.toThrow();
   });
 });
 

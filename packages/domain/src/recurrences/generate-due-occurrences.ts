@@ -46,6 +46,7 @@ export async function generateDueOccurrences(userId: string, companyId: string) 
             description: rule.description,
             categoryId: rule.categoryId,
             partyId: rule.partyId,
+            costCenterId: rule.costCenterId,
             originalAmountCents: rule.amountCents,
             competenceDate: occurrenceAsDate,
             dueDate: occurrenceAsDate,

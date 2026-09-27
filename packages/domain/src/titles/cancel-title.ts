@@ -19,7 +19,7 @@ export async function cancelTitle(
   await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const title = await tx.title.findFirst({ where: { id: titleId, companyId } });
+    const title = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!title) {
       throw new TitleNotFoundError();
     }

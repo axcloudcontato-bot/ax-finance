@@ -174,3 +174,39 @@ devem ser avaliadas sem destruir registros que a empresa tenha obrigação de ma
 
 Revisar trimestralmente: acessos aos backups, sucesso da restauração, volumes de
 logs, dead letters, prazos configurados, fornecedores/subprocessadores e incidentes.
+
+## 8. Anexos em múltiplas instâncias
+
+O volume local continua sendo o padrão para uma única instância. Quando houver
+mais de uma instância web, configure armazenamento privado compatível com S3:
+
+```env
+ATTACHMENT_STORAGE_BACKEND=s3
+S3_BUCKET=ax-finance-anexos
+S3_REGION=sa-east-1
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+```
+
+Para MinIO ou outro serviço compatível, informe também `S3_ENDPOINT` e, quando
+necessário, `S3_FORCE_PATH_STYLE=true`. O bucket não deve ser público.
+As credenciais precisam de leitura, gravação, exclusão e `HeadBucket`/consulta
+do bucket, usada pelo health check de prontidão.
+Ao usar S3, o `attachments.tar.gz` do job local deixa de ser a cópia dos
+anexos: habilite versionamento, criptografia, política de retenção e replicação
+ou backup do próprio bucket.
+
+Para bloquear arquivos até a validação antivírus, disponibilize um daemon
+ClamAV (`clamd`) na rede privada e ative:
+
+```env
+ATTACHMENT_SCAN_REQUIRED=true
+CLAMAV_HOST=clamav
+CLAMAV_PORT=3310
+```
+
+Com a verificação obrigatória, indisponibilidade do antivírus interrompe o
+upload com segurança; anexos não validados não podem ser baixados. Faça a
+ativação em duas etapas: configure o scanner e valide/migre os anexos antigos
+antes de mudar `ATTACHMENT_SCAN_REQUIRED` para `true`, pois registros antigos
+começam com estado `NOT_SCANNED`.

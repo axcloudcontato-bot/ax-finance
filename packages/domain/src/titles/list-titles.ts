@@ -20,10 +20,11 @@ export async function listTitles(
 
   const titles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
-      where: { companyId, ...(filter.type ? { type: filter.type } : {}) },
+      where: { companyId, deletedAt: null, ...(filter.type ? { type: filter.type } : {}) },
       include: {
         category: true,
         party: true,
+        costCenter: true,
         settlements: { where: { reversedAt: null } },
       },
       orderBy: { dueDate: "asc" },

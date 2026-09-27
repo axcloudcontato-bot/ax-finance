@@ -8,6 +8,8 @@ import {
   getCompanyInvitationByToken,
   listCompanyMembers,
   revokeCompanyMember,
+  transferCompanyOwnership,
+  updateCompanyMemberAccess,
   updateCompanyMemberRole,
 } from "../companies/members";
 import { assertActiveMembership } from "../companies/assert-membership";
@@ -24,6 +26,10 @@ import {
 import { rootClient, resetDatabase } from "./test-db";
 import { decodeAccessChangedPayload, decodeCompanyInvitationPayload } from "../outbox/events";
 import { listNotifications } from "../notifications/notifications";
+import { createCostCenter, listCostCenters } from "../cost-centers/cost-centers";
+import { createCategory } from "../categories/create-category";
+import { createTitle } from "../titles/create-title";
+import { listTitles } from "../titles/list-titles";
 
 function uniqueEmail(label: string) {
   return `${label}.${randomUUID()}@teste.ax.finance`;
@@ -168,5 +174,53 @@ describe("convites e permissões por papel (FIN-014)", () => {
     await expect(assertActiveMembership(operator.id, company.id)).rejects.toBeInstanceOf(
       CompanyAccessDeniedError
     );
+  });
+
+  it("transfere a propriedade de forma atômica e mantém um único proprietário", async () => {
+    const owner = await registerUser({ email: uniqueEmail("owner-transfer"), name: "Dona", password: "senha-forte-123" });
+    const successor = await registerUser({ email: uniqueEmail("successor"), name: "Sucessora", password: "senha-forte-456" });
+    const company = await createCompany(owner.id, { name: "Empresa sucessão" });
+    const { rawToken } = await createCompanyInvitation(owner.id, company.id, { email: successor.email, role: "FINANCE_ADMIN" });
+    await acceptCompanyInvitation(successor.id, rawToken);
+    const target = (await listCompanyMembers(owner.id, company.id)).find((item) => item.userId === successor.id)!;
+
+    await transferCompanyOwnership(owner.id, company.id, target.id);
+
+    const memberships = await rootClient.membership.findMany({ where: { companyId: company.id, status: "ACTIVE" } });
+    expect(memberships.filter((item) => item.role === "OWNER")).toEqual([
+      expect.objectContaining({ userId: successor.id, accessScope: "ALL" }),
+    ]);
+    expect(memberships.find((item) => item.userId === owner.id)?.role).toBe("FINANCE_ADMIN");
+    await expect(listCompanyMembers(owner.id, company.id)).rejects.toBeInstanceOf(CompanyPermissionDeniedError);
+    await expect(listCompanyMembers(successor.id, company.id)).resolves.toHaveLength(2);
+  });
+
+  it("restringe um usuário às contas e centros de custo atribuídos", async () => {
+    const owner = await registerUser({ email: uniqueEmail("owner-scope"), name: "Dona", password: "senha-forte-123" });
+    const operator = await registerUser({ email: uniqueEmail("operator-scope"), name: "Operador", password: "senha-forte-456" });
+    const company = await createCompany(owner.id, { name: "Empresa escopos" });
+    const [accountA, accountB, centerA, centerB, category] = await Promise.all([
+      createFinancialAccount(owner.id, company.id, { name: "Conta A", type: "BANK", openingBalanceCents: 0, openingDate: "2026-09-01" }),
+      createFinancialAccount(owner.id, company.id, { name: "Conta B", type: "BANK", openingBalanceCents: 0, openingDate: "2026-09-01" }),
+      createCostCenter(owner.id, company.id, { name: "Centro A" }),
+      createCostCenter(owner.id, company.id, { name: "Centro B" }),
+      createCategory(owner.id, company.id, { name: "Serviços", nature: "OPERATING_REVENUE" }),
+    ]);
+    await createTitle(owner.id, company.id, { type: "RECEIVABLE", description: "Visível", categoryId: category.id, costCenterId: centerA.id, originalAmountCents: 1000, competenceDate: "2026-09-01", dueDate: "2026-09-01" });
+    await createTitle(owner.id, company.id, { type: "RECEIVABLE", description: "Oculto", categoryId: category.id, costCenterId: centerB.id, originalAmountCents: 1000, competenceDate: "2026-09-01", dueDate: "2026-09-01" });
+    const { rawToken } = await createCompanyInvitation(owner.id, company.id, { email: operator.email, role: "OPERATOR" });
+    await acceptCompanyInvitation(operator.id, rawToken);
+    const membership = (await listCompanyMembers(owner.id, company.id)).find((item) => item.userId === operator.id)!;
+
+    await updateCompanyMemberAccess(owner.id, company.id, membership.id, {
+      accessScope: "RESTRICTED",
+      financialAccountIds: [accountA.id],
+      costCenterIds: [centerA.id],
+    });
+
+    expect((await listFinancialAccounts(operator.id, company.id)).map((item) => item.id)).toEqual([accountA.id]);
+    expect((await listCostCenters(operator.id, company.id)).map((item) => item.id)).toEqual([centerA.id]);
+    expect((await listTitles(operator.id, company.id)).map((item) => item.description)).toEqual(["Visível"]);
+    expect(accountB.id).not.toBe(accountA.id);
   });
 });

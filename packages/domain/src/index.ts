@@ -11,6 +11,7 @@ export * from "./attachments/index";
 export * from "./companies/index";
 export * from "./financial-accounts/index";
 export * from "./categories/index";
+export * from "./cost-centers/index";
 export * from "./parties/index";
 export * from "./titles/index";
 export * from "./recurrences/index";

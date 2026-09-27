@@ -4,12 +4,13 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
-import { resolvePeriodRange } from "@/lib/month";
+import { resolveComparison, resolvePeriodRange } from "@/lib/month";
+import { formatPercentageChange } from "@/lib/comparison";
 
 export default async function DrePage({
   searchParams,
 }: {
-  searchParams: { de?: string; ate?: string; mes?: string };
+  searchParams: { de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -17,10 +18,22 @@ export default async function DrePage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const { from, to } = resolvePeriodRange(searchParams);
+  const period = resolvePeriodRange(searchParams);
+  const { from, to } = period;
+  const comparison = resolveComparison(searchParams, period);
 
-  const report = await getManagerialIncomeStatement(user.id, company.id, { from, to });
+  const [report, comparisonReport] = await Promise.all([
+    getManagerialIncomeStatement(user.id, company.id, { from, to }),
+    comparison ? getManagerialIncomeStatement(user.id, company.id, comparison) : Promise.resolve(null),
+  ]);
   const exportHref = `/api/reports/dre?de=${from}&ate=${to}`;
+  const currentByGroup = new Map(report.groups.map((group) => [group.label, group.cents]));
+  const comparisonByGroup = new Map(comparisonReport?.groups.map((group) => [group.label, group.cents]) ?? []);
+  const groupRows = [...new Set([...currentByGroup.keys(), ...comparisonByGroup.keys()])].map((label) => ({
+    label,
+    current: currentByGroup.get(label) ?? BigInt(0),
+    previous: comparisonByGroup.get(label) ?? BigInt(0),
+  }));
 
   return (
     <main className="wide">
@@ -29,6 +42,11 @@ export default async function DrePage({
         {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · regime de competência ·
         gerado em {new Date().toLocaleString("pt-BR")}
       </p>
+      {comparison ? (
+        <p className="comparison-banner">
+          Comparando com {comparison.label.toLowerCase()}: {formatDateOnly(comparison.from)} a {formatDateOnly(comparison.to)}.
+        </p>
+      ) : null}
 
       <div className="card">
         <p className="subtitle">
@@ -38,6 +56,7 @@ export default async function DrePage({
         </p>
 
         <form method="get" style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
+          {comparison ? <input type="hidden" name="comparar" value={comparison.mode} /> : null}
           <div>
             <label htmlFor="de">De</label>
             <input id="de" name="de" type="date" defaultValue={from} />
@@ -57,21 +76,23 @@ export default async function DrePage({
 
       <div className="card">
         <h1>Por grupo gerencial</h1>
-        {report.groups.length === 0 ? (
+        {groupRows.length === 0 ? (
           <p className="muted">Nenhum título com competência no período.</p>
         ) : (
           <table>
             <thead>
               <tr>
                 <th>Grupo</th>
-                <th>Valor</th>
+                <th>Período atual</th>
+                {comparisonReport ? <><th>{comparison?.label}</th><th>Variação</th></> : null}
               </tr>
             </thead>
             <tbody>
-              {report.groups.map((group) => (
+              {groupRows.map((group) => (
                 <tr key={group.label}>
                   <td>{group.label}</td>
-                  <td>{formatCents(group.cents)}</td>
+                  <td>{formatCents(group.current)}</td>
+                  {comparisonReport ? <><td>{formatCents(group.previous)}</td><td>{formatPercentageChange(group.current, group.previous)}</td></> : null}
                 </tr>
               ))}
             </tbody>
@@ -79,6 +100,7 @@ export default async function DrePage({
               <tr>
                 <td style={{ fontWeight: 700 }}>Resultado gerencial</td>
                 <td style={{ fontWeight: 700 }}>{formatCents(report.totalCents)}</td>
+                {comparisonReport ? <><td style={{ fontWeight: 700 }}>{formatCents(comparisonReport.totalCents)}</td><td style={{ fontWeight: 700 }}>{formatPercentageChange(report.totalCents, comparisonReport.totalCents)}</td></> : null}
               </tr>
             </tfoot>
           </table>

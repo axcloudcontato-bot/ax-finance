@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { EVENT_TYPE_LABEL, listAuditEvents } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
-import { resolvePeriodRange } from "@/lib/month";
+import { isComparisonMode, periodQuery, resolvePeriodRange } from "@/lib/month";
 
 const RESOURCE_LABEL: Record<string, string> = {
   Title: "Título",
@@ -36,7 +36,7 @@ function resourceHref(
 export default async function AuditoriaPage({
   searchParams,
 }: {
-  searchParams: { tipo?: string; mes?: string; de?: string; ate?: string };
+  searchParams: { tipo?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -51,14 +51,8 @@ export default async function AuditoriaPage({
   const events = await listAuditEvents(user.id, company.id, { resourceType, from, to });
 
   const filterHref = (tipo?: string) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(periodQuery(period, isComparisonMode(searchParams.comparar) ? searchParams.comparar : null));
     if (tipo) params.set("tipo", tipo);
-    if (period.mode === "custom") {
-      params.set("de", period.from);
-      params.set("ate", period.to);
-    } else {
-      params.set("mes", period.month);
-    }
     const query = params.toString();
     return query ? `/auditoria?${query}` : "/auditoria";
   };

@@ -13,7 +13,6 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
-import { deleteAttachmentObject } from "@/lib/attachment-storage";
 
 /**
  * Só a chamada ao domínio (que pode lançar DomainError) fica dentro do
@@ -26,6 +25,7 @@ async function createSaidaCore(userId: string, companyId: string, formData: Form
   const description = String(formData.get("description") ?? "");
   const categoryId = String(formData.get("categoryId") ?? "");
   const partyId = String(formData.get("partyId") ?? "") || undefined;
+  const costCenterId = String(formData.get("costCenterId") ?? "") || undefined;
   const amount = String(formData.get("amount") ?? "0");
   const competenceDate = String(formData.get("competenceDate") ?? "");
   const dueDate = String(formData.get("dueDate") ?? "");
@@ -37,6 +37,7 @@ async function createSaidaCore(userId: string, companyId: string, formData: Form
     description,
     categoryId,
     partyId,
+    costCenterId,
     originalAmountCents: parseAmountToCents(amount),
     competenceDate,
     dueDate,
@@ -99,6 +100,7 @@ export async function createSaidaInstallmentPlanAction(formData: FormData) {
   const description = String(formData.get("description") ?? "");
   const categoryId = String(formData.get("categoryId") ?? "");
   const partyId = String(formData.get("partyId") ?? "") || undefined;
+  const costCenterId = String(formData.get("costCenterId") ?? "") || undefined;
   const totalAmount = String(formData.get("totalAmount") ?? "0");
   const installmentCount = Number(formData.get("installmentCount") ?? "0");
   const firstDueDate = String(formData.get("firstDueDate") ?? "");
@@ -112,6 +114,7 @@ export async function createSaidaInstallmentPlanAction(formData: FormData) {
       description,
       categoryId,
       partyId,
+      costCenterId,
       totalAmountCents: parseAmountToCents(totalAmount),
       installmentCount,
       firstDueDate,
@@ -202,7 +205,7 @@ export async function cancelSaidaAction(titleId: string, formData: FormData) {
   redirect(`/saidas/${titleId}`);
 }
 
-/** Exclusão de verdade (remove a linha, diferente de cancelar) — some da lista, por isso volta pra /saidas. */
+/** Soft delete: remove das telas operacionais e preserva histórico, baixas e anexos. */
 export async function deleteSaidaAction(titleId: string, formData: FormData) {
   const user = await getCurrentUser();
   if (!user) {
@@ -212,8 +215,7 @@ export async function deleteSaidaAction(titleId: string, formData: FormData) {
   const reason = String(formData.get("reason") ?? "").trim();
 
   try {
-    const result = await deleteTitle(user.id, company.id, titleId, { reason });
-    await Promise.allSettled(result.attachmentStorageKeys.map((key) => deleteAttachmentObject(key)));
+    await deleteTitle(user.id, company.id, titleId, { reason });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível excluir.";
     redirect(`/saidas/${titleId}?erro=${encodeURIComponent(message)}`);
@@ -242,8 +244,7 @@ export async function deleteSaidaInstallmentPlanAction(
   const reason = String(formData.get("reason") ?? "").trim();
 
   try {
-    const result = await deleteInstallmentPlan(user.id, company.id, installmentGroupId, { reason });
-    await Promise.allSettled(result.attachmentStorageKeys.map((key) => deleteAttachmentObject(key)));
+    await deleteInstallmentPlan(user.id, company.id, installmentGroupId, { reason });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível excluir o parcelamento.";
     redirect(`/saidas/${titleId}?erro=${encodeURIComponent(message)}`);

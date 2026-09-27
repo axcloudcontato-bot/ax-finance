@@ -58,8 +58,8 @@ const accessChangedPayloadSchema = z.object({
   to: z.string().email(),
   name: z.string().min(1).max(200),
   companyName: z.string().min(1).max(200),
-  kind: z.enum(["ROLE_CHANGED", "ACCESS_REVOKED", "INVITATION_ACCEPTED", "INVITATION_REVOKED"]),
-  role: z.enum(["FINANCE_ADMIN", "OPERATOR", "ACCOUNTANT", "VIEWER"]).optional(),
+  kind: z.enum(["ROLE_CHANGED", "ACCESS_REVOKED", "INVITATION_ACCEPTED", "INVITATION_REVOKED", "OWNERSHIP_TRANSFERRED"]),
+  role: z.enum(["OWNER", "FINANCE_ADMIN", "OPERATOR", "ACCOUNTANT", "VIEWER"]).optional(),
   actorName: z.string().min(1).max(200).optional(),
   targetName: z.string().min(1).max(200).optional(),
 });

@@ -28,6 +28,7 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
     tx.title.findMany({
       where: {
         companyId,
+        deletedAt: null,
         status: { not: "CANCELLED" },
         competenceDate: { gte: new Date(data.from), lte: new Date(data.to) },
       },

@@ -46,7 +46,7 @@ export async function reverseSettlement(
     await assertPeriodOpen(tx, companyId, settlement.effectiveDate);
 
     const locked = await tx.$queryRaw<{ id: string; original_amount_cents: bigint; type: string }[]>`
-      SELECT id, original_amount_cents, type FROM "titles" WHERE id = ${settlement.titleId} AND company_id = ${companyId} FOR UPDATE
+      SELECT id, original_amount_cents, type FROM "titles" WHERE id = ${settlement.titleId} AND company_id = ${companyId} AND deleted_at IS NULL FOR UPDATE
     `;
     const title = locked[0];
     if (!title) {

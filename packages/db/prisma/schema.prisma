@@ -94,6 +94,11 @@ enum MembershipStatus {
   REVOKED
 }
 
+enum MembershipAccessScope {
+  ALL
+  RESTRICTED
+}
+
 enum CompanyInvitationStatus {
   PENDING
   ACCEPTED
@@ -313,6 +318,7 @@ model Company {
 
   memberships             Membership[]
   financialAccounts       FinancialAccount[]
+  costCenters             CostCenter[]
   categories              Category[]
   parties                 Party[]
   titles                  Title[]
@@ -338,17 +344,17 @@ model Company {
 }
 
 model Subscription {
-  id                    String             @id @default(uuid())
-  companyId             String             @unique @map("company_id")
-  company               Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  status                SubscriptionStatus @default(TRIAL)
-  planCode              String             @default("TRIAL") @map("plan_code")
-  trialEndsAt           DateTime?           @map("trial_ends_at")
-  currentPeriodEnd      DateTime?           @map("current_period_end")
-  graceEndsAt           DateTime?           @map("grace_ends_at")
-  cancellationEffectiveAt DateTime?         @map("cancellation_effective_at")
-  createdAt             DateTime            @default(now()) @map("created_at")
-  updatedAt             DateTime            @updatedAt @map("updated_at")
+  id                      String             @id @default(uuid())
+  companyId               String             @unique @map("company_id")
+  company                 Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status                  SubscriptionStatus @default(TRIAL)
+  planCode                String             @default("TRIAL") @map("plan_code")
+  trialEndsAt             DateTime?          @map("trial_ends_at")
+  currentPeriodEnd        DateTime?          @map("current_period_end")
+  graceEndsAt             DateTime?          @map("grace_ends_at")
+  cancellationEffectiveAt DateTime?          @map("cancellation_effective_at")
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("subscriptions")
@@ -371,17 +377,22 @@ model IdempotencyRecord {
 }
 
 model Membership {
-  id        String           @id @default(uuid())
-  userId    String           @map("user_id")
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyId String           @map("company_id")
-  company   Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  role      MembershipRole
-  status    MembershipStatus @default(ACTIVE)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  id          String                @id @default(uuid())
+  userId      String                @map("user_id")
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId   String                @map("company_id")
+  company     Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role        MembershipRole
+  status      MembershipStatus      @default(ACTIVE)
+  accessScope MembershipAccessScope @default(ALL) @map("access_scope")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  accountAccess    MembershipFinancialAccount[]
+  costCenterAccess MembershipCostCenter[]
 
   @@unique([userId, companyId])
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("memberships")
 }
@@ -423,14 +434,68 @@ model FinancialAccount {
   updatedAt                DateTime      @updatedAt @map("updated_at")
 
   settlements        Settlement[]
-  transfersFrom      Transfer[]          @relation("TransferFromAccount")
-  transfersTo        Transfer[]          @relation("TransferToAccount")
+  transfersFrom      Transfer[]                   @relation("TransferFromAccount")
+  transfersTo        Transfer[]                   @relation("TransferToAccount")
   importBatches      ImportBatch[]
   bankStatementLines BankStatementLine[]
   balanceAdjustments BalanceAdjustment[]
+  membershipAccess   MembershipFinancialAccount[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("financial_accounts")
+}
+
+enum CostCenterStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model CostCenter {
+  id        String           @id @default(uuid())
+  companyId String           @map("company_id")
+  company   Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  name      String
+  code      String?
+  status    CostCenterStatus @default(ACTIVE)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  titles           Title[]
+  recurrenceRules  RecurrenceRule[]
+  membershipAccess MembershipCostCenter[]
+
+  @@unique([id, companyId])
+  @@unique([companyId, name])
+  @@unique([companyId, code])
+  @@index([companyId, status])
+  @@map("cost_centers")
+}
+
+model MembershipFinancialAccount {
+  companyId          String           @map("company_id")
+  membershipId       String           @map("membership_id")
+  membership         Membership       @relation(fields: [membershipId, companyId], references: [id, companyId], onDelete: Cascade)
+  financialAccountId String           @map("financial_account_id")
+  financialAccount   FinancialAccount @relation(fields: [financialAccountId, companyId], references: [id, companyId], onDelete: Cascade)
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  @@id([membershipId, financialAccountId])
+  @@index([financialAccountId])
+  @@map("membership_financial_accounts")
+}
+
+model MembershipCostCenter {
+  companyId    String     @map("company_id")
+  membershipId String     @map("membership_id")
+  membership   Membership @relation(fields: [membershipId, companyId], references: [id, companyId], onDelete: Cascade)
+  costCenterId String     @map("cost_center_id")
+  costCenter   CostCenter @relation(fields: [costCenterId, companyId], references: [id, companyId], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@id([membershipId, costCenterId])
+  @@index([costCenterId])
+  @@map("membership_cost_centers")
 }
 
 // Correção manual de saldo (ex.: divergência com o extrato real) — não é uma
@@ -491,6 +556,7 @@ model Category {
   titles          Title[]
   recurrenceRules RecurrenceRule[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@index([parentId])
   @@map("categories")
@@ -523,6 +589,7 @@ model Party {
   titles          Title[]
   recurrenceRules RecurrenceRule[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("parties")
 }
@@ -546,26 +613,29 @@ enum RecurrenceStatus {
 }
 
 model RecurrenceRule {
-  id          String           @id @default(uuid())
-  companyId   String           @map("company_id")
-  company     Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  type        TitleType
-  description String
-  categoryId  String           @map("category_id")
-  category    Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  partyId     String?          @map("party_id")
-  party       Party?           @relation(fields: [partyId], references: [id], onDelete: Restrict)
-  amountCents BigInt           @map("amount_cents")
-  dayOfMonth  Int              @map("day_of_month")
-  startDate   DateTime         @map("start_date") @db.Date
-  endDate     DateTime?        @map("end_date") @db.Date
-  status      RecurrenceStatus @default(ACTIVE)
-  notes       String?
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  id           String           @id @default(uuid())
+  companyId    String           @map("company_id")
+  company      Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  type         TitleType
+  description  String
+  categoryId   String           @map("category_id")
+  category     Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  partyId      String?          @map("party_id")
+  party        Party?           @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  costCenterId String?          @map("cost_center_id")
+  costCenter   CostCenter?      @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
+  amountCents  BigInt           @map("amount_cents")
+  dayOfMonth   Int              @map("day_of_month")
+  startDate    DateTime         @map("start_date") @db.Date
+  endDate      DateTime?        @map("end_date") @db.Date
+  status       RecurrenceStatus @default(ACTIVE)
+  notes        String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
 
   titles Title[]
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@map("recurrence_rules")
 }
@@ -580,6 +650,8 @@ model Title {
   category                 Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   partyId                  String?         @map("party_id")
   party                    Party?          @relation(fields: [partyId], references: [id], onDelete: Restrict)
+  costCenterId             String?         @map("cost_center_id")
+  costCenter               CostCenter?     @relation(fields: [costCenterId], references: [id], onDelete: Restrict)
   originalAmountCents      BigInt          @map("original_amount_cents")
   currency                 String          @default("BRL")
   competenceDate           DateTime        @map("competence_date") @db.Date
@@ -595,10 +667,14 @@ model Title {
   recurrenceOccurrenceDate DateTime?       @map("recurrence_occurrence_date") @db.Date
   createdAt                DateTime        @default(now()) @map("created_at")
   updatedAt                DateTime        @updatedAt @map("updated_at")
+  deletedAt                DateTime?       @map("deleted_at")
+  deletedByUserId          String?         @map("deleted_by_user_id")
+  deleteReason             String?         @map("delete_reason")
 
   settlements Settlement[]
   attachments Attachment[]
 
+  @@unique([id, companyId])
   @@unique([recurrenceRuleId, recurrenceOccurrenceDate])
   @@index([companyId])
   @@index([companyId, dueDate])
@@ -610,22 +686,32 @@ model Title {
 }
 
 model Attachment {
-  id               String   @id @default(uuid())
-  companyId        String   @map("company_id")
-  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  titleId          String   @map("title_id")
-  title            Title    @relation(fields: [titleId], references: [id], onDelete: Cascade)
-  uploadedByUserId String   @map("uploaded_by_user_id")
-  uploadedBy       User     @relation("AttachmentUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
-  originalName     String   @map("original_name")
-  mimeType         String   @map("mime_type")
-  sizeBytes        Int      @map("size_bytes")
+  id               String               @id @default(uuid())
+  companyId        String               @map("company_id")
+  company          Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  titleId          String               @map("title_id")
+  title            Title                @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  uploadedByUserId String               @map("uploaded_by_user_id")
+  uploadedBy       User                 @relation("AttachmentUploader", fields: [uploadedByUserId], references: [id], onDelete: Restrict)
+  originalName     String               @map("original_name")
+  mimeType         String               @map("mime_type")
+  sizeBytes        Int                  @map("size_bytes")
   sha256           String
-  storageKey       String   @unique @map("storage_key")
-  createdAt        DateTime @default(now()) @map("created_at")
+  storageKey       String               @unique @map("storage_key")
+  storageBackend   String               @default("LOCAL") @map("storage_backend")
+  scanStatus       AttachmentScanStatus @default(NOT_SCANNED) @map("scan_status")
+  scannedAt        DateTime?            @map("scanned_at")
+  createdAt        DateTime             @default(now()) @map("created_at")
 
   @@index([companyId, titleId, createdAt])
   @@map("attachments")
+}
+
+enum AttachmentScanStatus {
+  NOT_SCANNED
+  CLEAN
+  INFECTED
+  ERROR
 }
 
 model Settlement {
@@ -649,6 +735,7 @@ model Settlement {
 
   reconciledByLine BankStatementLine?
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@index([titleId])
   @@map("settlements")
@@ -729,6 +816,7 @@ model ImportBatch {
   lines BankStatementLine[]
   job   ImportJob?
 
+  @@unique([id, companyId])
   @@index([companyId])
   @@index([companyId, status, createdAt])
   @@map("import_batches")

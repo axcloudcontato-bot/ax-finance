@@ -6,7 +6,7 @@ export async function listInstallments(userId: string, companyId: string, instal
 
   const titles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
-      where: { companyId, installmentGroupId },
+      where: { companyId, installmentGroupId, deletedAt: null },
       include: { settlements: { where: { reversedAt: null } } },
       orderBy: { installmentNumber: "asc" },
     })

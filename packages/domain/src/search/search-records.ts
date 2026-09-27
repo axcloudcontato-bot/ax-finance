@@ -18,7 +18,7 @@ export async function searchRecords(userId: string, companyId: string, query: st
   return withCompanyContext(userId, companyId, async (tx) => {
     const [titles, parties, categories] = await Promise.all([
       tx.title.findMany({
-        where: { companyId, description: { contains: q, mode: "insensitive" } },
+        where: { companyId, deletedAt: null, description: { contains: q, mode: "insensitive" } },
         orderBy: { createdAt: "desc" },
         take: 8,
       }),

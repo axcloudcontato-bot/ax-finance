@@ -54,7 +54,7 @@ export function TitleAttachments({
                 <Paperclip className="size-4" />
                 <span className="attachment-info">
                   <strong>{attachment.originalName}</strong>
-                  <small>{formatBytes(attachment.sizeBytes)} · {attachment.uploadedBy.name} · {attachment.createdAt.toLocaleString("pt-BR")}</small>
+                  <small>{formatBytes(attachment.sizeBytes)} · {attachment.uploadedBy.name} · {attachment.createdAt.toLocaleString("pt-BR")} · {attachment.scanStatus === "CLEAN" ? "Verificado pelo antivírus" : "Não verificado"} · {attachment.storageBackend}</small>
                 </span>
                 <a href={`/api/attachments/${attachment.id}`} className="button-link" download>
                   <Download className="size-4" /> Baixar

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { listActiveCategories, listParties } from "@ax-finance/domain";
+import { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
@@ -17,8 +17,11 @@ export default async function SaidaParceladaPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const categories = await listActiveCategories(user.id, company.id);
-  const suppliers = await listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" });
+  const [categories, suppliers, costCenters] = await Promise.all([
+    listActiveCategories(user.id, company.id),
+    listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" }),
+    listCostCenters(user.id, company.id),
+  ]);
 
   return (
     <main>
@@ -27,6 +30,7 @@ export default async function SaidaParceladaPage({
         action={createSaidaInstallmentPlanAction}
         categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
         parties={suppliers}
+        costCenters={costCenters}
         partyLabel="Fornecedor"
         error={searchParams.erro}
       />

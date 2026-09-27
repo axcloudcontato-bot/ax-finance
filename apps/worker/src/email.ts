@@ -12,6 +12,7 @@ import {
 } from "@ax-finance/domain";
 
 const ROLE_LABEL: Record<string, string> = {
+  OWNER: "Proprietário",
   FINANCE_ADMIN: "Administrador financeiro",
   OPERATOR: "Operador",
   ACCOUNTANT: "Contador",
@@ -129,6 +130,9 @@ export async function sendOutboxEmail(event: OutboxEvent) {
       ACCESS_REVOKED: `Seu acesso a ${payload.companyName} foi revogado.`,
       INVITATION_ACCEPTED: `${payload.targetName || "O usuário convidado"} aceitou o convite para acessar ${payload.companyName}.`,
       INVITATION_REVOKED: `O convite para acessar ${payload.companyName} foi revogado.`,
+      OWNERSHIP_TRANSFERRED: payload.role === "OWNER"
+        ? `A propriedade de ${payload.companyName} foi transferida para você.`
+        : `A propriedade de ${payload.companyName} foi transferida para ${payload.targetName || "outro usuário"}. Seu papel agora é ${role}.`,
     } as const;
     const message = messages[payload.kind];
     subject = payload.kind === "INVITATION_ACCEPTED" ? `Convite aceito — ${payload.companyName}` : `Alteração de acesso — ${payload.companyName}`;

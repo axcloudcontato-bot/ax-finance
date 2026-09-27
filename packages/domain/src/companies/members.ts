@@ -6,6 +6,8 @@ import {
   CompanyInvitationInvalidError,
   CompanyMemberAlreadyActiveError,
   CompanyMemberNotFoundError,
+  CompanyAccessScopeInvalidError,
+  CompanyOwnershipTransferInvalidError,
   CompanyOwnerProtectedError,
 } from "../errors";
 import { recordAuditEvent } from "../audit/record-audit-event";
@@ -27,6 +29,11 @@ export const createCompanyInvitationInput = z.object({
 });
 
 export const updateCompanyMemberRoleInput = z.object({ role: invitationRole });
+export const updateCompanyMemberAccessInput = z.object({
+  accessScope: z.enum(["ALL", "RESTRICTED"]),
+  financialAccountIds: z.array(z.string().uuid()).max(100).default([]),
+  costCenterIds: z.array(z.string().uuid()).max(100).default([]),
+});
 
 function hashToken(rawToken: string): string {
   return createHash("sha256").update(rawToken).digest("hex");
@@ -37,10 +44,123 @@ export async function listCompanyMembers(userId: string, companyId: string) {
   return withCompanyContext(userId, companyId, (tx) =>
     tx.membership.findMany({
       where: { companyId },
-      include: { user: { select: { name: true, email: true } } },
+      include: {
+        user: { select: { name: true, email: true } },
+        accountAccess: { select: { financialAccountId: true } },
+        costCenterAccess: { select: { costCenterId: true } },
+      },
       orderBy: { createdAt: "asc" },
     })
   );
+}
+
+export async function updateCompanyMemberAccess(
+  userId: string,
+  companyId: string,
+  membershipId: string,
+  input: unknown
+) {
+  const data = updateCompanyMemberAccessInput.parse(input);
+  await assertCompanyPermission(userId, companyId, "MEMBERS_MANAGE");
+  return withCompanyContext(userId, companyId, async (tx) => {
+    const membership = await tx.membership.findFirst({
+      where: { id: membershipId, companyId, status: "ACTIVE" },
+      include: { user: true },
+    });
+    if (!membership) throw new CompanyMemberNotFoundError();
+    if (membership.role === "OWNER" && data.accessScope !== "ALL") throw new CompanyOwnerProtectedError();
+
+    const accountIds = [...new Set(data.financialAccountIds)];
+    const costCenterIds = [...new Set(data.costCenterIds)];
+    const [accountCount, costCenterCount] = await Promise.all([
+      tx.financialAccount.count({ where: { companyId, id: { in: accountIds } } }),
+      tx.costCenter.count({ where: { companyId, id: { in: costCenterIds } } }),
+    ]);
+    if (accountCount !== accountIds.length || costCenterCount !== costCenterIds.length) {
+      throw new CompanyAccessScopeInvalidError();
+    }
+
+    await Promise.all([
+      tx.membershipFinancialAccount.deleteMany({ where: { membershipId } }),
+      tx.membershipCostCenter.deleteMany({ where: { membershipId } }),
+    ]);
+    await tx.membership.update({ where: { id: membershipId }, data: { accessScope: data.accessScope } });
+    if (data.accessScope === "RESTRICTED") {
+      await Promise.all([
+        accountIds.length ? tx.membershipFinancialAccount.createMany({
+          data: accountIds.map((financialAccountId) => ({ companyId, membershipId, financialAccountId })),
+        }) : Promise.resolve(),
+        costCenterIds.length ? tx.membershipCostCenter.createMany({
+          data: costCenterIds.map((costCenterId) => ({ companyId, membershipId, costCenterId })),
+        }) : Promise.resolve(),
+      ]);
+    }
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "COMPANY_MEMBER_ACCESS_UPDATED",
+      resourceType: "Membership",
+      resourceId: membershipId,
+      summary: "Escopo de acesso atualizado",
+      metadata: {
+        targetUserId: membership.userId,
+        accessScope: data.accessScope,
+        financialAccountIds: data.accessScope === "RESTRICTED" ? accountIds.join(",") : "",
+        costCenterIds: data.accessScope === "RESTRICTED" ? costCenterIds.join(",") : "",
+      },
+    });
+    return tx.membership.findUniqueOrThrow({ where: { id: membershipId } });
+  });
+}
+
+export async function transferCompanyOwnership(userId: string, companyId: string, targetMembershipId: string) {
+  await assertCompanyPermission(userId, companyId, "MEMBERS_MANAGE");
+  return withCompanyContext(userId, companyId, async (tx) => {
+    const [currentOwner, target, company] = await Promise.all([
+      tx.membership.findFirst({ where: { companyId, userId, role: "OWNER", status: "ACTIVE" }, include: { user: true } }),
+      tx.membership.findFirst({ where: { id: targetMembershipId, companyId, status: "ACTIVE" }, include: { user: true } }),
+      tx.company.findUniqueOrThrow({ where: { id: companyId } }),
+    ]);
+    if (!currentOwner || !target || target.id === currentOwner.id || target.role === "OWNER") {
+      throw new CompanyOwnershipTransferInvalidError();
+    }
+
+    await tx.membership.update({
+      where: { id: currentOwner.id },
+      data: { role: "FINANCE_ADMIN", accessScope: "ALL" },
+    });
+    const newOwner = await tx.membership.update({
+      where: { id: target.id },
+      data: { role: "OWNER", accessScope: "ALL" },
+    });
+    await Promise.all([
+      tx.membershipFinancialAccount.deleteMany({ where: { membershipId: target.id } }),
+      tx.membershipCostCenter.deleteMany({ where: { membershipId: target.id } }),
+    ]);
+
+    await recordAuditEvent(tx, {
+      companyId,
+      actorUserId: userId,
+      eventType: "COMPANY_OWNERSHIP_TRANSFERRED",
+      resourceType: "Company",
+      resourceId: companyId,
+      summary: `Propriedade transferida para ${target.user.email}`,
+      metadata: { previousOwnerUserId: currentOwner.userId, newOwnerUserId: target.userId },
+    });
+    await tx.notification.createMany({
+      data: [
+        { companyId, userId: target.userId, type: "ACCESS_ROLE_CHANGED", dedupKey: `ownership:${companyId}:${target.userId}:${newOwner.updatedAt.toISOString()}`, title: "Você agora é o proprietário", body: `A propriedade de ${company.name} foi transferida para você.`, href: "/configuracoes/usuarios" },
+        { companyId, userId: currentOwner.userId, type: "ACCESS_ROLE_CHANGED", dedupKey: `ownership:${companyId}:${currentOwner.userId}:${newOwner.updatedAt.toISOString()}`, title: "Propriedade transferida", body: `${target.user.name} agora é o proprietário de ${company.name}.`, href: "/dashboard" },
+      ],
+      skipDuplicates: true,
+    });
+    await Promise.all([
+      enqueueAccessChangedEmail(tx, `ownership-new:${companyId}:${newOwner.updatedAt.toISOString()}`, { to: target.user.email, name: target.user.name, companyName: company.name, kind: "OWNERSHIP_TRANSFERRED", role: "OWNER", actorName: currentOwner.user.name }),
+      enqueueAccessChangedEmail(tx, `ownership-old:${companyId}:${newOwner.updatedAt.toISOString()}`, { to: currentOwner.user.email, name: currentOwner.user.name, companyName: company.name, kind: "OWNERSHIP_TRANSFERRED", role: "FINANCE_ADMIN", actorName: currentOwner.user.name, targetName: target.user.name }),
+    ]);
+    return newOwner;
+  });
 }
 
 export async function listCompanyInvitations(userId: string, companyId: string) {

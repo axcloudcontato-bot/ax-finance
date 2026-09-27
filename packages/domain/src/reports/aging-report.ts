@@ -53,6 +53,7 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
     tx.title.findMany({
       where: {
         companyId,
+        deletedAt: null,
         status: { in: ["OPEN", "PARTIALLY_SETTLED"] },
         ...(data.type ? { type: data.type } : {}),
       },

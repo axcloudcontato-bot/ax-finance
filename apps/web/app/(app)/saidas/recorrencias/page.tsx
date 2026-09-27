@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Repeat } from "lucide-react";
-import { listActiveCategories, listParties, listRecurrenceRules } from "@ax-finance/domain";
+import { listActiveCategories, listCostCenters, listParties, listRecurrenceRules } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
@@ -33,9 +33,12 @@ export default async function SaidasRecorrenciasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const rules = await listRecurrenceRules(user.id, company.id, { type: "PAYABLE" });
-  const categories = await listActiveCategories(user.id, company.id);
-  const suppliers = await listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" });
+  const [rules, categories, suppliers, costCenters] = await Promise.all([
+    listRecurrenceRules(user.id, company.id, { type: "PAYABLE" }),
+    listActiveCategories(user.id, company.id),
+    listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" }),
+    listCostCenters(user.id, company.id),
+  ]);
 
   return (
     <main className="wide">
@@ -51,6 +54,7 @@ export default async function SaidasRecorrenciasPage({
             action={createSaidaRecurrenceAction}
             categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
             parties={suppliers}
+            costCenters={costCenters}
             partyLabel="Fornecedor"
             error={searchParams.erro}
           />

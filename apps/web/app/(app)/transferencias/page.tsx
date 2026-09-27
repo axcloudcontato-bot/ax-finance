@@ -11,7 +11,7 @@ import { resolvePeriodRange } from "@/lib/month";
 export default async function TransferenciasPage({
   searchParams,
 }: {
-  searchParams: { erro?: string; mes?: string; de?: string; ate?: string };
+  searchParams: { erro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {

@@ -18,7 +18,7 @@ export async function getParty(userId: string, companyId: string, partyId: strin
 
   const rawTitles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
-      where: { companyId, partyId },
+      where: { companyId, partyId, deletedAt: null },
       include: { settlements: { where: { reversedAt: null } } },
       orderBy: { dueDate: "asc" },
     })

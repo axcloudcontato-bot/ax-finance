@@ -22,6 +22,7 @@ export async function createEntradaRecurrenceAction(formData: FormData) {
   const description = String(formData.get("description") ?? "");
   const categoryId = String(formData.get("categoryId") ?? "");
   const partyId = String(formData.get("partyId") ?? "") || undefined;
+  const costCenterId = String(formData.get("costCenterId") ?? "") || undefined;
   const amount = String(formData.get("amount") ?? "0");
   const dayOfMonth = Number(formData.get("dayOfMonth") ?? "0");
   const startDate = String(formData.get("startDate") ?? "");
@@ -35,6 +36,7 @@ export async function createEntradaRecurrenceAction(formData: FormData) {
       description,
       categoryId,
       partyId,
+      costCenterId,
       amountCents: parseAmountToCents(amount),
       dayOfMonth,
       startDate,

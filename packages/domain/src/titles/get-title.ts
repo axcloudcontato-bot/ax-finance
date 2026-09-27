@@ -7,10 +7,11 @@ export async function getTitle(userId: string, companyId: string, titleId: strin
 
   const title = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findFirst({
-      where: { id: titleId, companyId },
+      where: { id: titleId, companyId, deletedAt: null },
       include: {
         category: true,
         party: true,
+        costCenter: true,
         recurrenceRule: { select: { id: true, description: true } },
         settlements: {
           orderBy: { createdAt: "asc" },

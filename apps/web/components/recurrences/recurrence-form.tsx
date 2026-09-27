@@ -1,18 +1,21 @@
-import type { listActiveCategories, listParties } from "@ax-finance/domain";
+import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
+type CostCenterOption = Awaited<ReturnType<typeof listCostCenters>>[number];
 
 export function RecurrenceForm({
   action,
   categories,
   parties,
+  costCenters,
   partyLabel,
   error,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   categories: CategoryOption[];
   parties?: PartyOption[];
+  costCenters?: CostCenterOption[];
   partyLabel?: string;
   error?: string;
 }) {
@@ -63,6 +66,14 @@ export function RecurrenceForm({
               </select>
             </>
           ) : null}
+
+          {costCenters && costCenters.length > 0 ? <>
+            <label htmlFor="costCenterId">Centro de custo (opcional)</label>
+            <select id="costCenterId" name="costCenterId" defaultValue="">
+              <option value="">Nenhum</option>
+              {costCenters.map((center) => <option key={center.id} value={center.id}>{center.name}</option>)}
+            </select>
+          </> : null}
 
           <label htmlFor="amount">Valor mensal (R$)</label>
           <input id="amount" name="amount" type="text" inputMode="decimal" placeholder="0,00" required />

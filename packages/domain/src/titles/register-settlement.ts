@@ -76,7 +76,7 @@ export async function registerSettlement(
 
     const locked = await tx.$queryRaw<
       { id: string; original_amount_cents: bigint; status: string; type: string }[]
-    >`SELECT id, original_amount_cents, status, type FROM "titles" WHERE id = ${titleId} AND company_id = ${companyId} FOR UPDATE`;
+    >`SELECT id, original_amount_cents, status, type FROM "titles" WHERE id = ${titleId} AND company_id = ${companyId} AND deleted_at IS NULL FOR UPDATE`;
 
     const title = locked[0];
     if (!title) {

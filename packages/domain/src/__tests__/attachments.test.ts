@@ -73,12 +73,14 @@ describe("anexos privados de títulos", () => {
       .rejects.toBeInstanceOf(AttachmentNotFoundError);
   });
 
-  it("excluir o título remove metadados e devolve as chaves para limpeza física", async () => {
+  it("o soft delete do título preserva metadados e o objeto para auditoria", async () => {
     const { user, company, title } = await setup("cascade");
     const input = metadata(company.id, title.id);
     await createTitleAttachment(user.id, company.id, title.id, input);
-    const result = await deleteTitle(user.id, company.id, title.id, { reason: "Teste de limpeza" });
-    expect(result.attachmentStorageKeys).toEqual([input.storageKey]);
-    expect(await rootClient.attachment.count()).toBe(0);
+    await deleteTitle(user.id, company.id, title.id, { reason: "Teste de retenção" });
+    expect(await rootClient.attachment.count()).toBe(1);
+    expect(await rootClient.title.findUnique({ where: { id: title.id } })).toMatchObject({
+      deleteReason: "Teste de retenção",
+    });
   });
 });

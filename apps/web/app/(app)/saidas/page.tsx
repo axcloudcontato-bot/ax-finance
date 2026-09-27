@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowUpCircle } from "lucide-react";
-import { listActiveCategories, listParties, listTitles } from "@ax-finance/domain";
+import { listActiveCategories, listCostCenters, listParties, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
@@ -9,7 +9,7 @@ import { TitleListTable } from "@/components/titles/title-list-table";
 import { TitleForm } from "@/components/titles/title-form";
 import { Modal } from "@/components/ui/modal";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
-import { resolvePeriodRange } from "@/lib/month";
+import { isComparisonMode, periodQuery, resolvePeriodRange } from "@/lib/month";
 import { createSaidaAction, createSaidaAndContinueAction } from "./actions";
 
 type Filter = "vencidas" | "hoje" | "proximas" | "quitadas" | "todas";
@@ -25,7 +25,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 export default async function SaidasPage({
   searchParams,
 }: {
-  searchParams: { filtro?: string; mes?: string; de?: string; ate?: string; erro?: string; continuar?: string; criado?: string };
+  searchParams: { filtro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -33,10 +33,11 @@ export default async function SaidasPage({
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const [allTitles, categories, suppliers] = await Promise.all([
+  const [allTitles, categories, suppliers, costCenters] = await Promise.all([
     listTitles(user.id, company.id, { type: "PAYABLE" }),
     listActiveCategories(user.id, company.id),
     listParties(user.id, company.id, { role: "SUPPLIER", status: "ACTIVE" }),
+    listCostCenters(user.id, company.id),
   ]);
 
   const filter = (searchParams.filtro as Filter) ?? "todas";
@@ -59,14 +60,8 @@ export default async function SaidasPage({
   });
 
   const filterHref = (key: Filter) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(periodQuery(period, isComparisonMode(searchParams.comparar) ? searchParams.comparar : null));
     if (key !== "todas") params.set("filtro", key);
-    if (period.mode === "custom") {
-      params.set("de", period.from);
-      params.set("ate", period.to);
-    } else {
-      params.set("mes", period.month);
-    }
     const query = params.toString();
     return query ? `/saidas?${query}` : "/saidas";
   };
@@ -93,6 +88,7 @@ export default async function SaidasPage({
               actionAndContinue={createSaidaAndContinueAction}
               categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
               parties={suppliers}
+              costCenters={costCenters}
               partyLabel="Fornecedor"
               error={searchParams.erro}
             />

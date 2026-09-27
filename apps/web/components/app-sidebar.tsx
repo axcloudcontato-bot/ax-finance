@@ -74,6 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
         icon: BookUser,
         children: [
           { id: "cad-categorias", title: "Categorias", icon: BookUser, href: "/cadastros/categorias" },
+          { id: "cad-centros-custo", title: "Centros de custo", icon: BookUser, href: "/cadastros/centros-de-custo" },
           { id: "cad-pessoas", title: "Clientes e fornecedores", icon: BookUser, href: "/cadastros/pessoas" },
         ],
       },

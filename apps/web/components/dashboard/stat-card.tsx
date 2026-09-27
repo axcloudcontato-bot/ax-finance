@@ -8,6 +8,8 @@ export function StatCard({
   value,
   footerLabel,
   footerValue,
+  comparisonLabel,
+  comparisonValue,
   gradient,
   modalTitle,
   children,
@@ -17,6 +19,8 @@ export function StatCard({
   value: string;
   footerLabel: string;
   footerValue: string;
+  comparisonLabel?: string;
+  comparisonValue?: string;
   gradient: "blue" | "teal" | "orange" | "pink";
   modalTitle: string;
   children: ReactNode;
@@ -47,6 +51,12 @@ export function StatCard({
           <span>{footerLabel}</span>
           <span>{footerValue}</span>
         </div>
+        {comparisonLabel && comparisonValue ? (
+          <div className="stat-comparison">
+            <span>{comparisonLabel}</span>
+            <strong>{comparisonValue}</strong>
+          </div>
+        ) : null}
       </button>
 
       {open ? (

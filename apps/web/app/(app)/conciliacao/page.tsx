@@ -15,7 +15,7 @@ import {
   reconcileLineAction,
   undoReconciliationAction,
 } from "./actions";
-import { resolvePeriodRange } from "@/lib/month";
+import { isComparisonMode, periodQuery as buildPeriodQuery, resolvePeriodRange } from "@/lib/month";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Pendente",
@@ -45,6 +45,8 @@ export default async function ConciliacaoPage({
     mes?: string;
     de?: string;
     ate?: string;
+    periodo?: string;
+    comparar?: string;
   };
 }) {
   const user = await getCurrentUser();
@@ -76,9 +78,7 @@ export default async function ConciliacaoPage({
     listImportBatches(user.id, company.id, activeAccountId),
   ]);
 
-  const periodQuery = period.mode === "custom"
-    ? `de=${period.from}&ate=${period.to}`
-    : `mes=${period.month}`;
+  const periodQuery = buildPeriodQuery(period, isComparisonMode(searchParams.comparar) ? searchParams.comparar : null);
   const accountHref = (accountId: string) => `/conciliacao?conta=${accountId}&${periodQuery}`;
   const statusHref = (status?: string) =>
     `/conciliacao?conta=${activeAccountId}${status ? `&status=${status}` : ""}&${periodQuery}`;

@@ -6,6 +6,7 @@ import {
   assertActiveMembership,
   getMonthlyCashFlowSeries,
   listActiveCategories,
+  listCostCenters,
   listCompaniesForUser,
   listFinancialAccountsWithBalance,
   listParties,
@@ -14,7 +15,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
-import { resolvePeriodRange } from "@/lib/month";
+import { periodQuery, resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -48,6 +49,14 @@ function filterByDueMonth(titles: TitleList, from: string, to: string): TitleLis
   });
 }
 
+function comparisonValue(current: bigint, previous: bigint) {
+  if (previous === BigInt(0)) return current === BigInt(0) ? "Sem variação" : "Sem base comparável";
+  const difference = current - previous;
+  const percent = Number((difference * BigInt(10_000)) / (previous < BigInt(0) ? -previous : previous)) / 100;
+  const sign = difference > BigInt(0) ? "+" : "";
+  return `${formatCents(previous)} · ${sign}${percent.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+}
+
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   BANK: "Conta bancária",
   CASH: "Dinheiro em caixa",
@@ -57,7 +66,7 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { empresa?: string; mes?: string; de?: string; ate?: string };
+  searchParams: { empresa?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string };
 }) {
   const user = await getCurrentUser();
   if (!user) {
@@ -71,6 +80,7 @@ export default async function DashboardPage({
 
   const activeCompanyId = searchParams.empresa ?? companies[0]!.id;
   const period = resolvePeriodRange(searchParams);
+  const comparison = resolveComparison(searchParams, period);
   const month = period.to.slice(0, 7);
   const { from: monthFrom, to: monthTo } = period;
 
@@ -82,9 +92,7 @@ export default async function DashboardPage({
     if (error instanceof CompanyAccessDeniedError) {
       // Empresa na URL não existe ou não é sua: cai de volta para a primeira
       // que você realmente tem acesso, sem confirmar se o id era válido.
-      const periodParams = period.mode === "custom"
-        ? `de=${period.from}&ate=${period.to}`
-        : `mes=${period.month}`;
+      const periodParams = periodQuery(period, comparison?.mode);
       redirect(`/dashboard?empresa=${companies[0]!.id}&${periodParams}`);
     }
     throw error;
@@ -94,23 +102,32 @@ export default async function DashboardPage({
     .filter((account) => account.includedInAvailableTotal)
     .reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
 
-  const [receivables, payables, cashFlowSeries, categories, clients, suppliers] = await Promise.all([
+  const [receivables, payables, cashFlowSeries, categories, clients, suppliers, costCenters] = await Promise.all([
     listTitles(user.id, activeCompanyId, { type: "RECEIVABLE" }),
     listTitles(user.id, activeCompanyId, { type: "PAYABLE" }),
     getMonthlyCashFlowSeries(user.id, activeCompanyId, { months: 6, endMonth: month }),
     listActiveCategories(user.id, activeCompanyId),
     listParties(user.id, activeCompanyId, { role: "CLIENT", status: "ACTIVE" }),
     listParties(user.id, activeCompanyId, { role: "SUPPLIER", status: "ACTIVE" }),
+    listCostCenters(user.id, activeCompanyId),
   ]);
 
   // Cards do topo: títulos com vencimento dentro do período global selecionado.
   const toReceiveMonth = summarizeOpenTitles(filterByDueMonth(receivables, monthFrom, monthTo));
   const toPayMonth = summarizeOpenTitles(filterByDueMonth(payables, monthFrom, monthTo));
+  const previousToReceive = comparison
+    ? summarizeOpenTitles(filterByDueMonth(receivables, comparison.from, comparison.to))
+    : null;
+  const previousToPay = comparison
+    ? summarizeOpenTitles(filterByDueMonth(payables, comparison.from, comparison.to))
+    : null;
   const overdueTotalCents = toReceiveMonth.overdueCents + toPayMonth.overdueCents;
   const overdueTotalCount = toReceiveMonth.overdueCount + toPayMonth.overdueCount;
   const overdueTitlesMonth = [...toReceiveMonth.overdue, ...toPayMonth.overdue].sort((a, b) =>
     toDateOnlyString(a.dueDate) < toDateOnlyString(b.dueDate) ? -1 : 1
   );
+  const previousOverdueCents = (previousToReceive?.overdueCents ?? BigInt(0))
+    + (previousToPay?.overdueCents ?? BigInt(0));
 
   // Donuts: posição de hoje, independente do mês selecionado no topo.
   const toReceiveToday = summarizeOpenTitles(receivables);
@@ -153,6 +170,7 @@ export default async function DashboardPage({
             actionAndContinue={createEntradaAndContinueAction}
             categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
             parties={clients}
+            costCenters={costCenters}
             partyLabel="Cliente"
           />
         </Modal>
@@ -176,6 +194,7 @@ export default async function DashboardPage({
             actionAndContinue={createSaidaAndContinueAction}
             categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}
             parties={suppliers}
+            costCenters={costCenters}
             partyLabel="Fornecedor"
           />
         </Modal>
@@ -223,6 +242,8 @@ export default async function DashboardPage({
           value={formatCents(toReceiveMonth.totalCents)}
           footerLabel="Vencidos"
           footerValue={String(toReceiveMonth.overdueCount)}
+          comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined}
+          comparisonValue={previousToReceive ? comparisonValue(toReceiveMonth.totalCents, previousToReceive.totalCents) : undefined}
           gradient="teal"
           modalTitle="A receber no período"
         >
@@ -234,6 +255,8 @@ export default async function DashboardPage({
           value={formatCents(toPayMonth.totalCents)}
           footerLabel="Vencidos"
           footerValue={String(toPayMonth.overdueCount)}
+          comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined}
+          comparisonValue={previousToPay ? comparisonValue(toPayMonth.totalCents, previousToPay.totalCents) : undefined}
           gradient="orange"
           modalTitle="A pagar no período"
         >
@@ -245,6 +268,8 @@ export default async function DashboardPage({
           value={formatCents(overdueTotalCents)}
           footerLabel="Título(s)"
           footerValue={String(overdueTotalCount)}
+          comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined}
+          comparisonValue={comparison ? comparisonValue(overdueTotalCents, previousOverdueCents) : undefined}
           gradient="pink"
           modalTitle="Vencidos no período"
         >

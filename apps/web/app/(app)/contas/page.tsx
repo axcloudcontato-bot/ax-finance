@@ -31,6 +31,8 @@ export default async function ContasPage({
     mes?: string;
     de?: string;
     ate?: string;
+    periodo?: string;
+    comparar?: string;
   };
 }) {
   const user = await getCurrentUser();

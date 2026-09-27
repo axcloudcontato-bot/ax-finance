@@ -18,6 +18,9 @@ export const attachmentMetadataInput = z.object({
   sizeBytes: z.number().int().positive().max(10 * 1024 * 1024),
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
   storageKey: z.string().regex(/^[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}$/),
+  storageBackend: z.enum(["LOCAL", "S3"]).default("LOCAL"),
+  scanStatus: z.enum(["NOT_SCANNED", "CLEAN"]).default("NOT_SCANNED"),
+  scannedAt: z.coerce.date().optional(),
 });
 
 export const ATTACHMENT_ALLOWED_MIME_TYPES = [...ALLOWED_MIME_TYPES];
@@ -35,7 +38,7 @@ export async function createTitleAttachment(
     throw new Error("Chave de armazenamento incompatível com o título.");
   }
   return withCompanyContext(userId, companyId, async (tx) => {
-    const title = await tx.title.findFirst({ where: { id: titleId, companyId } });
+    const title = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!title) throw new TitleNotFoundError();
     const attachment = await tx.attachment.create({
       data: { ...data, companyId, titleId, uploadedByUserId: userId },
@@ -56,7 +59,7 @@ export async function createTitleAttachment(
 export async function listTitleAttachments(userId: string, companyId: string, titleId: string) {
   await assertCompanyPermission(userId, companyId, "FINANCE_READ");
   return withCompanyContext(userId, companyId, async (tx) => {
-    const title = await tx.title.findFirst({ where: { id: titleId, companyId }, select: { id: true } });
+    const title = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null }, select: { id: true } });
     if (!title) throw new TitleNotFoundError();
     return tx.attachment.findMany({
       where: { companyId, titleId },
@@ -69,7 +72,7 @@ export async function listTitleAttachments(userId: string, companyId: string, ti
 export async function getTitleAttachment(userId: string, companyId: string, attachmentId: string) {
   await assertCompanyPermission(userId, companyId, "FINANCE_READ");
   const attachment = await withCompanyContext(userId, companyId, (tx) => tx.attachment.findFirst({
-    where: { id: attachmentId, companyId },
+    where: { id: attachmentId, companyId, title: { deletedAt: null } },
   }));
   if (!attachment) throw new AttachmentNotFoundError();
   return attachment;

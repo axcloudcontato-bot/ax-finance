@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
-import { CategoryNotFoundError, IdempotencyResultUnavailableError, PartyNotFoundError } from "../errors";
+import { CategoryNotFoundError, CompanyAccessScopeInvalidError, CostCenterNotFoundError, IdempotencyResultUnavailableError, PartyNotFoundError } from "../errors";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const createTitleInput = z.object({
@@ -9,6 +9,7 @@ export const createTitleInput = z.object({
   description: z.string().trim().min(1).max(500),
   categoryId: z.string().uuid(),
   partyId: z.string().uuid().optional(),
+  costCenterId: z.string().uuid().optional(),
   // Centavos inteiros — nunca float (Seção 18, regra 1).
   originalAmountCents: z.number().int().positive(),
   currency: z.string().length(3).default("BRL"),
@@ -39,7 +40,7 @@ export async function createTitle(userId: string, companyId: string, input: unkn
       resourceType: "Title",
     });
     if (idempotency.kind === "replay") {
-      const existing = await tx.title.findFirst({ where: { id: idempotency.resourceId, companyId } });
+      const existing = await tx.title.findFirst({ where: { id: idempotency.resourceId, companyId, deletedAt: null } });
       if (!existing) throw new IdempotencyResultUnavailableError();
       return existing;
     }
@@ -60,6 +61,13 @@ export async function createTitle(userId: string, companyId: string, input: unkn
       }
     }
 
+    const membership = await tx.membership.findUniqueOrThrow({ where: { userId_companyId: { userId, companyId } } });
+    if (membership.accessScope === "RESTRICTED" && !data.costCenterId) throw new CompanyAccessScopeInvalidError();
+    if (data.costCenterId) {
+      const costCenter = await tx.costCenter.findFirst({ where: { id: data.costCenterId, companyId, status: "ACTIVE" } });
+      if (!costCenter) throw new CostCenterNotFoundError();
+    }
+
     const title = await tx.title.create({
       data: {
         companyId,
@@ -67,6 +75,7 @@ export async function createTitle(userId: string, companyId: string, input: unkn
         description: data.description,
         categoryId: data.categoryId,
         partyId: data.partyId,
+        costCenterId: data.costCenterId,
         originalAmountCents: BigInt(data.originalAmountCents),
         currency: data.currency,
         competenceDate: data.competenceDate,

@@ -6,7 +6,7 @@ export async function listOccurrenceTitles(userId: string, companyId: string, re
 
   const titles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
-      where: { companyId, recurrenceRuleId },
+      where: { companyId, recurrenceRuleId, deletedAt: null },
       include: { settlements: { where: { reversedAt: null } } },
       orderBy: { recurrenceOccurrenceDate: "asc" },
     })

@@ -1,6 +1,8 @@
-import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
+import { access, mkdir, open, readFile, rename, rm } from "node:fs/promises";
+import { constants } from "node:fs";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+import { DeleteObjectCommand, GetObjectCommand, HeadBucketCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { ATTACHMENT_MAX_BYTES } from "@ax-finance/domain";
 
 export function attachmentsRoot() {
@@ -17,6 +19,43 @@ function storagePath(storageKey: string) {
   return target;
 }
 
+function validatedStorageKey(storageKey: string) {
+  if (!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\/[a-f0-9-]{36}$/.test(storageKey)) {
+    throw new Error("Chave de armazenamento inválida.");
+  }
+  return storageKey;
+}
+
+export function attachmentStorageBackend(): "LOCAL" | "S3" {
+  return process.env.ATTACHMENT_STORAGE_BACKEND?.trim().toLowerCase() === "s3" ? "S3" : "LOCAL";
+}
+
+function s3Config() {
+  const bucket = process.env.S3_BUCKET?.trim();
+  const region = process.env.S3_REGION?.trim();
+  if (!bucket || !region) throw new Error("S3_BUCKET e S3_REGION são obrigatórios para anexos no S3.");
+  const endpoint = process.env.S3_ENDPOINT?.trim() || undefined;
+  return {
+    bucket,
+    client: new S3Client({
+      region,
+      endpoint,
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+    }),
+  };
+}
+
+export async function checkAttachmentStorageReady() {
+  if (attachmentStorageBackend() === "S3") {
+    const { bucket, client } = s3Config();
+    await client.send(new HeadBucketCommand({ Bucket: bucket }));
+    return;
+  }
+  const root = attachmentsRoot();
+  await mkdir(root, { recursive: true });
+  await access(root, constants.R_OK | constants.W_OK);
+}
+
 export function detectAttachmentMime(buffer: Buffer): string | null {
   if (buffer.length > ATTACHMENT_MAX_BYTES || buffer.length === 0) return null;
   if (buffer.subarray(0, 5).toString("ascii") === "%PDF-") return "application/pdf";
@@ -27,6 +66,12 @@ export function detectAttachmentMime(buffer: Buffer): string | null {
 }
 
 export async function writeAttachmentObject(storageKey: string, buffer: Buffer) {
+  validatedStorageKey(storageKey);
+  if (attachmentStorageBackend() === "S3") {
+    const { bucket, client } = s3Config();
+    await client.send(new PutObjectCommand({ Bucket: bucket, Key: storageKey, Body: buffer }));
+    return;
+  }
   const target = storagePath(storageKey);
   await mkdir(path.dirname(target), { recursive: true });
   const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
@@ -45,11 +90,24 @@ export async function writeAttachmentObject(storageKey: string, buffer: Buffer) 
   }
 }
 
-export async function readAttachmentObject(storageKey: string) {
+export async function readAttachmentObject(storageKey: string, backend: "LOCAL" | "S3" = attachmentStorageBackend()) {
+  validatedStorageKey(storageKey);
+  if (backend === "S3") {
+    const { bucket, client } = s3Config();
+    const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: storageKey }));
+    if (!result.Body) throw new Error("Objeto do anexo não encontrado.");
+    return Buffer.from(await result.Body.transformToByteArray());
+  }
   return readFile(storagePath(storageKey));
 }
 
-export async function deleteAttachmentObject(storageKey: string) {
+export async function deleteAttachmentObject(storageKey: string, backend: "LOCAL" | "S3" = attachmentStorageBackend()) {
+  validatedStorageKey(storageKey);
+  if (backend === "S3") {
+    const { bucket, client } = s3Config();
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: storageKey }));
+    return;
+  }
   await rm(storagePath(storageKey), { force: true });
 }
 

@@ -12,10 +12,12 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import {
   deleteAttachmentObject,
+  attachmentStorageBackend,
   detectAttachmentMime,
   safeOriginalFileName,
   writeAttachmentObject,
 } from "@/lib/attachment-storage";
+import { scanAttachment } from "@/lib/attachment-antivirus";
 
 type TitleBasePath = "entradas" | "saidas";
 
@@ -41,6 +43,7 @@ export async function uploadTitleAttachmentAction(
     const buffer = Buffer.from(await file.arrayBuffer());
     const mimeType = detectAttachmentMime(buffer);
     if (!mimeType) throw new Error("Formato não permitido. Envie PDF, JPG, PNG ou WebP.");
+    const scan = await scanAttachment(buffer);
 
     const attachmentId = randomUUID();
     storageKey = `${company.id}/${titleId}/${attachmentId}`;
@@ -52,6 +55,9 @@ export async function uploadTitleAttachmentAction(
       sizeBytes: buffer.length,
       sha256: createHash("sha256").update(buffer).digest("hex"),
       storageKey,
+      storageBackend: attachmentStorageBackend(),
+      scanStatus: scan.status,
+      scannedAt: scan.scannedAt,
     });
   } catch (error) {
     if (storageKey) await deleteAttachmentObject(storageKey).catch(() => undefined);
@@ -75,7 +81,7 @@ export async function deleteTitleAttachmentAction(
 
   try {
     const attachment = await deleteTitleAttachment(user.id, company.id, attachmentId);
-    await deleteAttachmentObject(attachment.storageKey);
+    await deleteAttachmentObject(attachment.storageKey, attachment.storageBackend === "S3" ? "S3" : "LOCAL");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível remover o anexo.";
     redirect(`${returnPath}?erroAnexo=${encodeURIComponent(message)}`);

@@ -151,6 +151,24 @@ export class CompanyOwnerProtectedError extends DomainError {
   }
 }
 
+export class CompanyOwnershipTransferInvalidError extends DomainError {
+  constructor() {
+    super("O novo proprietário precisa ser um usuário ativo diferente do proprietário atual.", "COMPANY_OWNERSHIP_TRANSFER_INVALID");
+  }
+}
+
+export class CompanyAccessScopeInvalidError extends DomainError {
+  constructor() {
+    super("Uma restrição de acesso selecionada não pertence a esta empresa.", "COMPANY_ACCESS_SCOPE_INVALID");
+  }
+}
+
+export class CostCenterNotFoundError extends DomainError {
+  constructor() {
+    super("Centro de custo não encontrado.", "COST_CENTER_NOT_FOUND");
+  }
+}
+
 /** Seção 9: modelo P0 é de dois níveis — categoria e subcategoria, nada além disso. */
 export class CategoryDepthExceededError extends DomainError {
   constructor() {

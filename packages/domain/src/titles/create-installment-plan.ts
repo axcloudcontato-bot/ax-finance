@@ -4,6 +4,8 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import {
   CategoryNotFoundError,
+  CompanyAccessScopeInvalidError,
+  CostCenterNotFoundError,
   InstallmentAmountTooSmallError,
   InstallmentCountInvalidError,
   IdempotencyResultUnavailableError,
@@ -17,6 +19,7 @@ export const createInstallmentPlanInput = z.object({
   description: z.string().trim().min(1).max(500),
   categoryId: z.string().uuid(),
   partyId: z.string().uuid().optional(),
+  costCenterId: z.string().uuid().optional(),
   totalAmountCents: z.number().int().positive(),
   installmentCount: z.number().int(),
   firstDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -58,7 +61,7 @@ export async function createInstallmentPlan(userId: string, companyId: string, i
     });
     if (idempotency.kind === "replay") {
       const existing = await tx.title.findMany({
-        where: { companyId, installmentGroupId: idempotency.resourceId },
+        where: { companyId, installmentGroupId: idempotency.resourceId, deletedAt: null },
         orderBy: { installmentNumber: "asc" },
       });
       if (existing.length === 0) throw new IdempotencyResultUnavailableError();
@@ -82,6 +85,13 @@ export async function createInstallmentPlan(userId: string, companyId: string, i
       }
     }
 
+    const membership = await tx.membership.findUniqueOrThrow({ where: { userId_companyId: { userId, companyId } } });
+    if (membership.accessScope === "RESTRICTED" && !data.costCenterId) throw new CompanyAccessScopeInvalidError();
+    if (data.costCenterId) {
+      const costCenter = await tx.costCenter.findFirst({ where: { id: data.costCenterId, companyId, status: "ACTIVE" } });
+      if (!costCenter) throw new CostCenterNotFoundError();
+    }
+
     const titles = [];
     for (let index = 0; index < data.installmentCount; index++) {
       const amountCents = baseCents + (index < remainderCents ? 1 : 0);
@@ -94,6 +104,7 @@ export async function createInstallmentPlan(userId: string, companyId: string, i
           description: data.description,
           categoryId: data.categoryId,
           partyId: data.partyId,
+          costCenterId: data.costCenterId,
           originalAmountCents: BigInt(amountCents),
           competenceDate: dueDate,
           dueDate,
