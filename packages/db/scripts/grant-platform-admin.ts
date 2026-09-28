@@ -1,7 +1,9 @@
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import { PrismaClient, type PlatformAdminRole } from "@prisma/client";
 
-process.loadEnvFile(fileURLToPath(new URL("../../../.env", import.meta.url)));
+const envPath = fileURLToPath(new URL("../../../.env", import.meta.url));
+if (existsSync(envPath)) process.loadEnvFile(envPath);
 
 const email = process.argv[2]?.trim().toLowerCase();
 const requestedRole = process.argv[3]?.trim().toUpperCase() ?? "SUPER_ADMIN";

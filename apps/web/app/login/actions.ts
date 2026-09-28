@@ -5,13 +5,14 @@ import { headers } from "next/headers";
 import { EmailNotVerifiedError, login, TooManyLoginAttemptsError } from "@ax-finance/domain";
 import { setMfaChallengeCookie, setSessionCookie } from "@/lib/session";
 import { clientIpFromHeaders } from "@/lib/request";
+import { safeAuthReturnTo } from "@/lib/auth-return";
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const remember = formData.get("remember") === "on";
   const requestedReturnTo = String(formData.get("returnTo") ?? "");
-  const returnTo = requestedReturnTo.startsWith("/convites/") ? requestedReturnTo : "/";
+  const returnTo = safeAuthReturnTo(requestedReturnTo);
   let needsMfa = false;
 
   try {

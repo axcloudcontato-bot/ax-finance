@@ -3,10 +3,11 @@ import { getAdminOperations, getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { reprocessDeadLetterAction, reprocessImportJobAction, reprocessScheduledJobAction } from "./actions";
+import { loginPathFor } from "@/lib/auth-return";
 
 const dateTime=(value:Date|null)=>value?value.toLocaleString("pt-BR"):"—";
 export default async function AdminOperationsPage({searchParams}:{searchParams:{erro?:string;reprocessado?:string}}){
-  const user=await getCurrentUser();if(!user)redirect("/login");const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
+  const user=await getCurrentUser();if(!user)redirect(loginPathFor("/admin/operacoes"));const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
   const data=await getAdminOperations(user.id);const canReprocess=access.role==="SUPER_ADMIN"||access.role==="OPERATIONS";
   return <main className="wide"><div className="page-header"><div><h1>Diagnóstico e jobs</h1><p className="subtitle">Reprocessamento controlado, somente para falhas ou locks expirados.</p></div></div><AdminNav/>
     {searchParams.erro?<p className="error">{searchParams.erro}</p>:null}{searchParams.reprocessado?<p className="success-box">Item recolocado na fila. A intervenção foi auditada.</p>:null}

@@ -4,13 +4,14 @@ import { getCurrentUser } from "@/lib/session";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { ActionModal } from "@/components/ui/action-modal";
 import { createIncidentAction, createSupportCaseAction, updateIncidentAction, updateSupportCaseAction } from "./actions";
+import { loginPathFor } from "@/lib/auth-return";
 
 const CASE_STATUS:Record<string,string>={OPEN:"Aberto",IN_PROGRESS:"Em atendimento",WAITING_CUSTOMER:"Aguardando cliente",RESOLVED:"Resolvido",CLOSED:"Fechado"};
 const PRIORITY:Record<string,string>={LOW:"Baixa",NORMAL:"Normal",HIGH:"Alta",URGENT:"Urgente"};
 const INCIDENT_STATUS:Record<string,string>={INVESTIGATING:"Investigando",IDENTIFIED:"Identificado",MONITORING:"Monitorando",RESOLVED:"Resolvido"};
 
 export default async function AdminSupportPage({searchParams}:{searchParams:{erro?:string;criado?:string;atualizado?:string}}){
-  const user=await getCurrentUser();if(!user)redirect("/login");const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
+  const user=await getCurrentUser();if(!user)redirect(loginPathFor("/admin/suporte"));const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
   const data=await listAdminSupport(user.id);const canWrite=access.role!=="ANALYST";
   const companyOptions=<><option value="">Plataforma inteira / sem empresa</option>{data.companies.map((company)=><option key={company.id} value={company.id}>{company.name}</option>)}</>;
   const adminOptions=<><option value="">Não atribuído</option>{data.admins.map((admin)=><option key={admin.userId} value={admin.userId}>{admin.user.name} · {admin.role}</option>)}</>;

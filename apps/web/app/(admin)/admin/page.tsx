@@ -2,12 +2,13 @@ import { redirect } from "next/navigation";
 import { getAdminBusinessMetrics, getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { loginPathFor } from "@/lib/auth-return";
 
 const percent = (value:number) => new Intl.NumberFormat("pt-BR",{style:"percent",maximumFractionDigits:1}).format(value);
 const monthLabel=(value:string)=>new Date(`${value}-01T00:00:00Z`).toLocaleDateString("pt-BR",{month:"short",year:"2-digit",timeZone:"UTC"});
 
 export default async function AdminDashboardPage(){
-  const user=await getCurrentUser();if(!user)redirect("/login");
+  const user=await getCurrentUser();if(!user)redirect(loginPathFor("/admin"));
   const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
   const metrics=await getAdminBusinessMetrics(user.id);
   return <main className="wide"><div className="page-header"><div><h1>Painel administrativo interno</h1><p className="subtitle">Visão consolidada da operação, crescimento e saúde da base. Papel: {access.role}.</p></div></div><AdminNav/>

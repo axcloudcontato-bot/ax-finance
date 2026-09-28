@@ -7,6 +7,7 @@ import {
   getMfaChallengeToken,
   setSessionCookie,
 } from "@/lib/session";
+import { safeAuthReturnTo } from "@/lib/auth-return";
 
 export interface MfaLoginState {
   error?: string;
@@ -19,7 +20,7 @@ export async function completeMfaAction(
   const challengeToken = getMfaChallengeToken();
   if (!challengeToken) return { error: "O acesso expirou. Entre novamente." };
   const requestedReturnTo = String(formData.get("returnTo") ?? "");
-  const returnTo = requestedReturnTo.startsWith("/convites/") ? requestedReturnTo : "/";
+  const returnTo = safeAuthReturnTo(requestedReturnTo);
 
   try {
     const result = await completeMfaChallenge(

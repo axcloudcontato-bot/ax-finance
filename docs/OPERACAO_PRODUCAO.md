@@ -223,6 +223,13 @@ migration, nunca a conexão `ax_app` da aplicação:
 pnpm admin:grant -- administrador@empresa.com SUPER_ADMIN
 ```
 
+Em produção com Docker Compose, execute pelo serviço de migração, que possui a
+conexão administrativa necessária:
+
+```bash
+docker compose run --rm migrate pnpm admin:grant -- administrador@empresa.com SUPER_ADMIN
+```
+
 Papéis disponíveis: `SUPER_ADMIN`, `OPERATIONS`, `SUPPORT` e `ANALYST`.
 `SUPER_ADMIN` pode intervir em assinaturas; `OPERATIONS` pode reprocessar jobs;
 `SUPPORT` administra chamados e incidentes; `ANALYST` possui apenas leitura.

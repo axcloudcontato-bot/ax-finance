@@ -4,12 +4,13 @@ import { getCurrentUser } from "@/lib/session";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { ActionModal } from "@/components/ui/action-modal";
 import { updateSubscriptionAction } from "./actions";
+import { loginPathFor } from "@/lib/auth-return";
 
 const STATUS_LABEL:Record<string,string>={TRIAL:"Trial",ACTIVE:"Ativa",PAYMENT_PENDING:"Pagamento pendente",GRACE_PERIOD:"Carência",SUSPENDED:"Suspensa",CANCELLATION_SCHEDULED:"Cancelamento agendado",CANCELLED:"Cancelada"};
 const dateValue=(value:Date|null|undefined)=>value?value.toISOString().slice(0,10):"";
 
 export default async function AdminCompaniesPage({searchParams}:{searchParams:{busca?:string;assinatura?:string;erro?:string;atualizada?:string}}){
-  const user=await getCurrentUser();if(!user)redirect("/login");const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
+  const user=await getCurrentUser();if(!user)redirect(loginPathFor("/admin/empresas"));const access=await getPlatformAdminAccess(user.id);if(!access)redirect("/dashboard");
   const subscriptionStatus=searchParams.assinatura&&searchParams.assinatura!=="ALL"?searchParams.assinatura:undefined;
   const companies=await listAdminCompanies(user.id,{search:searchParams.busca||undefined,subscriptionStatus});
   return <main className="wide"><div className="page-header"><div><h1>Empresas e assinaturas</h1><p className="subtitle">Até 200 resultados, ordenados pelas empresas mais recentes.</p></div></div><AdminNav/>
