@@ -139,8 +139,9 @@ curl -H "Authorization: Bearer $OPERATIONS_TOKEN" \
 
 Nunca publique `METRICS_TOKEN`, `OPERATIONS_TOKEN` ou o webhook em tickets e logs.
 Para investigar um ID, correlacione-o com os eventos JSON do worker. Eventos em
-dead letter não são reprocessados automaticamente: corrija a causa antes de
-alterar o estado no banco, e registre a intervenção.
+dead letter não são reprocessados automaticamente. Depois de corrigir a causa,
+use o painel interno: ele valida o estado, preserva o payload cifrado e registra
+a intervenção na auditoria administrativa.
 
 ## 6. Logs estruturados
 
@@ -210,3 +211,23 @@ upload com segurança; anexos não validados não podem ser baixados. Faça a
 ativação em duas etapas: configure o scanner e valide/migre os anexos antigos
 antes de mudar `ATTACHMENT_SCAN_REQUIRED` para `true`, pois registros antigos
 começam com estado `NOT_SCANNED`.
+
+## 9. Painel administrativo interno
+
+O painel fica em `/admin` e exige uma conta normal ativa mais um papel explícito
+em `platform_admins`. Ser proprietário de uma empresa não concede acesso interno.
+Depois que o usuário criar a própria conta, conceda o papel usando a conexão de
+migration, nunca a conexão `ax_app` da aplicação:
+
+```bash
+pnpm admin:grant -- administrador@empresa.com SUPER_ADMIN
+```
+
+Papéis disponíveis: `SUPER_ADMIN`, `OPERATIONS`, `SUPPORT` e `ANALYST`.
+`SUPER_ADMIN` pode intervir em assinaturas; `OPERATIONS` pode reprocessar jobs;
+`SUPPORT` administra chamados e incidentes; `ANALYST` possui apenas leitura.
+
+Toda alteração de assinatura, reprocessamento, chamado e incidente gera um
+registro em `admin_audit_events`. Reprocessamentos só são aceitos para falhas,
+atrasos ou locks expirados; jobs em execução saudável são rejeitados. Não coloque
+tokens, payloads financeiros ou dados sensíveis nos campos de motivo e resumo.

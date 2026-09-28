@@ -15,6 +15,7 @@
     "db:migrate:deploy": "pnpm --filter @ax-finance/db exec prisma migrate deploy",
     "db:seed": "pnpm --filter @ax-finance/db exec tsx prisma/seed.ts",
     "db:studio": "pnpm --filter @ax-finance/db exec prisma studio",
+    "admin:grant": "pnpm --filter @ax-finance/db exec tsx scripts/grant-platform-admin.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",

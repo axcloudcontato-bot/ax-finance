@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCompanyAccess, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
+import { getCompanyAccess, getPlatformAdminAccess, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { AppShell } from "@/components/app-shell";
@@ -22,9 +22,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const company = await requirePrimaryCompany(user.id);
-  const [notifications, access] = await Promise.all([
+  const [notifications, access, platformAdmin] = await Promise.all([
     listNotifications(user.id, company.id),
     getCompanyAccess(user.id, company.id),
+    getPlatformAdminAccess(user.id),
   ]);
 
   return (
@@ -33,6 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       userEmail={user.email}
       membershipRole={access.role}
       canManageMembers={access.permissions.includes("MEMBERS_MANAGE")}
+      isPlatformAdmin={Boolean(platformAdmin)}
       logoutAction={logoutAction}
       notifications={notifications.map((notification) => ({
         id: notification.id,

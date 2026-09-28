@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { listCompaniesForUser } from "@ax-finance/domain";
+import { getPlatformAdminAccess, listCompaniesForUser } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 
 export default async function RootPage() {
@@ -8,8 +8,16 @@ export default async function RootPage() {
     redirect("/login");
   }
 
-  const companies = await listCompaniesForUser(user.id);
+  const [companies, platformAdmin] = await Promise.all([
+    listCompaniesForUser(user.id),
+    getPlatformAdminAccess(user.id)
+  ]);
+
   if (companies.length === 0) {
+    if (platformAdmin) {
+      redirect("/admin");
+    }
+
     redirect("/onboarding");
   }
 

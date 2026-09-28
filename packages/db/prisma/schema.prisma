@@ -121,6 +121,42 @@ enum AccountStatus {
   ARCHIVED
 }
 
+enum PlatformAdminRole {
+  SUPER_ADMIN
+  OPERATIONS
+  SUPPORT
+  ANALYST
+}
+
+enum SupportCaseStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportCasePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum IncidentSeverity {
+  SEV1
+  SEV2
+  SEV3
+  SEV4
+}
+
 model User {
   id                    String     @id @default(uuid())
   email                 String     @unique
@@ -147,6 +183,11 @@ model User {
   scheduledJobs           ScheduledJob[]           @relation("ScheduledJobRunner")
   importBatchesRequested  ImportBatch[]            @relation("ImportBatchRequester")
   importJobsRun           ImportJob[]              @relation("ImportJobRunner")
+  platformAdmin           PlatformAdmin?
+  adminAuditEvents        AdminAuditEvent[]
+  supportCasesCreated     SupportCase[]             @relation("SupportCaseCreator")
+  supportCasesAssigned    SupportCase[]             @relation("SupportCaseAssignee")
+  incidentsCreated        Incident[]                @relation("IncidentCreator")
 
   @@map("users")
 }
@@ -340,9 +381,83 @@ model Company {
   scheduledJobs           ScheduledJob[]
   importJobs              ImportJob[]
   subscription            Subscription?
+  supportCases            SupportCase[]
+  incidents               Incident[]
 
   @@index([tenantId])
   @@map("companies")
+}
+
+model PlatformAdmin {
+  userId    String            @id @map("user_id")
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      PlatformAdminRole @default(ANALYST)
+  active    Boolean           @default(true)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@index([role, active])
+  @@map("platform_admins")
+}
+
+model AdminAuditEvent {
+  id          String   @id @default(uuid())
+  actorUserId String   @map("actor_user_id")
+  actor       User     @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  targetType  String   @map("target_type")
+  targetId    String?  @map("target_id")
+  summary     String
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([actorUserId, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@map("admin_audit_events")
+}
+
+model SupportCase {
+  id                  String              @id @default(uuid())
+  companyId           String?             @map("company_id")
+  company             Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  subject             String
+  summary             String
+  contactEmail        String?             @map("contact_email")
+  priority            SupportCasePriority @default(NORMAL)
+  status              SupportCaseStatus   @default(OPEN)
+  createdByUserId     String               @map("created_by_user_id")
+  createdBy           User                 @relation("SupportCaseCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  assignedToUserId    String?              @map("assigned_to_user_id")
+  assignedTo          User?                @relation("SupportCaseAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  resolution          String?
+  resolvedAt          DateTime?            @map("resolved_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  @@index([status, priority, createdAt])
+  @@index([companyId, createdAt])
+  @@map("support_cases")
+}
+
+model Incident {
+  id              String           @id @default(uuid())
+  companyId       String?          @map("company_id")
+  company         Company?         @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  title           String
+  severity        IncidentSeverity
+  status          IncidentStatus   @default(INVESTIGATING)
+  publicMessage   String           @map("public_message")
+  internalSummary String?          @map("internal_summary")
+  createdByUserId String           @map("created_by_user_id")
+  createdBy       User             @relation("IncidentCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  startedAt       DateTime         @default(now()) @map("started_at")
+  resolvedAt      DateTime?        @map("resolved_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  @@index([status, severity, startedAt])
+  @@index([companyId, startedAt])
+  @@map("incidents")
 }
 
 model Subscription {

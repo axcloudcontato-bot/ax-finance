@@ -14,6 +14,7 @@ import {
   Lock,
   LogOut,
   Settings,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import type { MembershipRole } from "@ax-finance/db";
@@ -89,12 +90,14 @@ export function AppSidebar({
   userEmail,
   membershipRole,
   canManageMembers,
+  isPlatformAdmin,
   logoutAction,
 }: {
   userName: string;
   userEmail: string;
   membershipRole: MembershipRole;
   canManageMembers: boolean;
+  isPlatformAdmin: boolean;
   logoutAction: () => void | Promise<void>;
 }) {
   const roleLabel: Record<MembershipRole, string> = {
@@ -124,6 +127,7 @@ export function AppSidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">
+          {isPlatformAdmin ? <NavItem item={{ id: "admin-interno", title: "Administração interna", icon: ShieldCheck, href: "/admin" }} /> : null}
           <NavItem item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
           <NavItem item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
           {canManageMembers ? (

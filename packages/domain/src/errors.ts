@@ -427,3 +427,27 @@ export class AttachmentNotFoundError extends DomainError {
     super("Anexo não encontrado.", "ATTACHMENT_NOT_FOUND");
   }
 }
+
+export class PlatformAdminAccessDeniedError extends DomainError {
+  constructor() {
+    super("Acesso restrito à administração interna.", "PLATFORM_ADMIN_ACCESS_DENIED");
+  }
+}
+
+export class AdminJobReprocessInvalidError extends DomainError {
+  constructor(message = "Este job não está em um estado seguro para reprocessamento.") {
+    super(message, "ADMIN_JOB_REPROCESS_INVALID");
+  }
+}
+
+export class SupportCaseNotFoundError extends DomainError {
+  constructor() {
+    super("Chamado de suporte não encontrado.", "SUPPORT_CASE_NOT_FOUND");
+  }
+}
+
+export class IncidentNotFoundError extends DomainError {
+  constructor() {
+    super("Incidente não encontrado.", "INCIDENT_NOT_FOUND");
+  }
+}

@@ -12,6 +12,7 @@ export function AppShell({
   userEmail,
   membershipRole,
   canManageMembers,
+  isPlatformAdmin,
   logoutAction,
   notifications,
   children,
@@ -20,6 +21,7 @@ export function AppShell({
   userEmail: string;
   membershipRole: MembershipRole;
   canManageMembers: boolean;
+  isPlatformAdmin: boolean;
   logoutAction: () => void | Promise<void>;
   notifications: AppNotification[];
   children: ReactNode;
@@ -34,6 +36,7 @@ export function AppShell({
           userEmail={userEmail}
           membershipRole={membershipRole}
           canManageMembers={canManageMembers}
+          isPlatformAdmin={isPlatformAdmin}
           logoutAction={logoutAction}
         />
 
