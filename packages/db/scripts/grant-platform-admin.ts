@@ -5,8 +5,9 @@ import { PrismaClient, type PlatformAdminRole } from "@prisma/client";
 const envPath = fileURLToPath(new URL("../../../.env", import.meta.url));
 if (existsSync(envPath)) process.loadEnvFile(envPath);
 
-const email = process.argv[2]?.trim().toLowerCase();
-const requestedRole = process.argv[3]?.trim().toUpperCase() ?? "SUPER_ADMIN";
+const [emailArgument, roleArgument] = process.argv.slice(2).filter((argument) => argument !== "--");
+const email = emailArgument?.trim().toLowerCase();
+const requestedRole = roleArgument?.trim().toUpperCase() ?? "SUPER_ADMIN";
 const roles = new Set<PlatformAdminRole>(["SUPER_ADMIN", "OPERATIONS", "SUPPORT", "ANALYST"]);
 if (!email || !roles.has(requestedRole as PlatformAdminRole)) {
   throw new Error("Uso: pnpm admin:grant -- email@empresa.com SUPER_ADMIN|OPERATIONS|SUPPORT|ANALYST");

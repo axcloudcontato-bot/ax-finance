@@ -220,14 +220,14 @@ Depois que o usuário criar a própria conta, conceda o papel usando a conexão 
 migration, nunca a conexão `ax_app` da aplicação:
 
 ```bash
-pnpm admin:grant -- administrador@empresa.com SUPER_ADMIN
+pnpm admin:grant administrador@empresa.com SUPER_ADMIN
 ```
 
 Em produção com Docker Compose, execute pelo serviço de migração, que possui a
 conexão administrativa necessária:
 
 ```bash
-docker compose run --rm migrate pnpm admin:grant -- administrador@empresa.com SUPER_ADMIN
+docker compose run --rm migrate pnpm admin:grant administrador@empresa.com SUPER_ADMIN
 ```
 
 Papéis disponíveis: `SUPER_ADMIN`, `OPERATIONS`, `SUPPORT` e `ANALYST`.
