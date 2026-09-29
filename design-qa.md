@@ -95,3 +95,47 @@ final result: passed
 - `pnpm typecheck`: passou.
 - `pnpm test`: 37 arquivos e 169 testes aprovados.
 - `git diff --check`: passou.
+
+---
+
+# Design QA — Central de filtros do dashboard
+
+final result: passed
+
+## Evidência
+
+- Estado anterior: `C:\Users\SERGIO~1\AppData\Local\Temp\codex-clipboard-8bf1fb67-e6a9-434a-a1a2-cd3c7d45d6e0.png`.
+- Implementação: `http://127.0.0.1:3100/dashboard`, inspecionada no Codex In-app Browser.
+- Viewports avaliados: 1918 × 916, 1280 × 720, 900 × 760 e 560 × 760 CSS px.
+- Estados avaliados: sidebar aberto e recolhido, seletor de período aberto, modal de nova receita e filtros sem seleção.
+
+## Auditoria do estado anterior
+
+1. A faixa superior separava período e ações dos filtros que alteram os mesmos indicadores.
+2. O espaço vazio entre os controles e o card reduzia a relação visual entre seleção e resultado.
+3. Os botões de receita e despesa tinham peso de cards independentes, competindo com os indicadores financeiros.
+4. A leitura funcional estava dividida em duas regiões: primeiro período/ações e depois segmentação analítica.
+
+## Resultado implementado
+
+- Período, segmentação e ações financeiras agora formam um único painel de comando.
+- Em telas largas, título, período e ações ocupam a mesma linha.
+- Em larguras intermediárias, o período desce como um grupo completo dentro do mesmo painel, sem colisões.
+- Em 560 px, ações, período e filtros refluem para uma coluna sem overflow horizontal (`scrollWidth` igual a 560 px).
+- Botões rápidos ficaram mais compactos e mantêm distinção semântica por cor.
+- O dashboard inicia mais próximo do topo, removendo a faixa vazia anterior.
+
+## Interações e acessibilidade verificadas
+
+- Seletor de período abre com atalhos, mês, intervalo personalizado e comparação.
+- Modal de nova receita abre e mantém título, campos e controle de fechamento acessíveis.
+- Ordem de leitura apresenta contexto, período, ações e segmentação antes dos indicadores.
+- Rótulos de período, filtros e grupo de ações permanecem expostos à árvore de acessibilidade.
+- A auditoria visual não substitui testes completos com leitor de tela.
+
+## Verificação técnica
+
+- `pnpm build`: passou.
+- `pnpm typecheck`: passou.
+- `pnpm test`: 37 arquivos e 169 testes aprovados.
+- `git diff --check`: passou.

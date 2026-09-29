@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppTopbar, type AppNotification } from "@/components/app-topbar";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
@@ -26,6 +27,9 @@ export function AppShell({
   notifications: AppNotification[];
   children: ReactNode;
 }) {
+  const pathname = usePathname();
+  const dashboardOwnsToolbar = pathname === "/dashboard";
+
   return (
     <div className="flex h-svh w-full min-w-0 flex-col bg-background">
       <AppTopbar userName={userName} notifications={notifications} />
@@ -41,10 +45,12 @@ export function AppShell({
         />
 
         <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-          <div className="px-6 pt-4 flex items-center justify-between gap-4">
-            <GlobalMonthSelector />
-            <PageActionsSlot />
-          </div>
+          {!dashboardOwnsToolbar ? (
+            <div className="flex items-center justify-between gap-4 px-6 pt-4">
+              <GlobalMonthSelector />
+              <PageActionsSlot />
+            </div>
+          ) : null}
           {children}
         </div>
       </div>

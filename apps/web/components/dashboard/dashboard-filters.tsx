@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Filter, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { GlobalMonthSelector } from "@/components/global-month-selector";
 
 const FILTER_KEYS = ["conta", "categoria", "pessoa", "centroCusto"] as const;
 const SESSION_PREFIX = "ax-finance:dashboard-filters:v1:";
@@ -28,6 +29,7 @@ export function DashboardFilters({
   parties,
   costCenters,
   values,
+  actions,
 }: {
   companyId: string;
   accounts: Option[];
@@ -35,6 +37,7 @@ export function DashboardFilters({
   parties: Option[];
   costCenters: Option[];
   values: DashboardFilterValues;
+  actions?: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -91,10 +94,27 @@ export function DashboardFilters({
   const activeCount = FILTER_KEYS.filter((key) => values[key]).length;
 
   return (
-    <section className="dashboard-filter-card" aria-label="Filtros analíticos do dashboard">
-      <div className="dashboard-filter-heading">
-        <span><Filter className="size-4" /> Filtros analíticos</span>
-        {activeCount > 0 ? <strong>{activeCount} ativo(s)</strong> : <span className="muted">Todos os dados autorizados</span>}
+    <section className="dashboard-filter-card dashboard-command-center" aria-label="Filtros analíticos do dashboard">
+      <div className="dashboard-command-header">
+        <div className="dashboard-command-copy">
+          <span className="dashboard-command-icon"><Filter className="size-[18px]" /></span>
+          <span>
+            <strong>Filtros analíticos</strong>
+            <small>Refine a visão sem perder o contexto do período.</small>
+          </span>
+        </div>
+
+        <div className="dashboard-command-period">
+          <span className="dashboard-command-label">Período analisado</span>
+          <GlobalMonthSelector />
+        </div>
+
+        {actions ? <div className="dashboard-command-actions" aria-label="Ações financeiras rápidas">{actions}</div> : null}
+      </div>
+
+      <div className="dashboard-filter-subheading">
+        <span>Segmentação dos dados</span>
+        {activeCount > 0 ? <strong>{activeCount} ativo(s)</strong> : <span className="dashboard-filter-scope">Todos os dados autorizados</span>}
       </div>
       <div className="dashboard-filter-grid">
         <label>

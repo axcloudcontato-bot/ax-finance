@@ -23,7 +23,6 @@ import { RealizedForecastChart } from "@/components/dashboard/realized-forecast-
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { Modal } from "@/components/ui/modal";
 import { TitleForm } from "@/components/titles/title-form";
-import { PortalToPageActions } from "@/components/portal-to-page-actions";
 import { createEntradaAction, createEntradaAndContinueAction } from "../entradas/actions";
 import { createSaidaAction, createSaidaAndContinueAction } from "../saidas/actions";
 
@@ -159,19 +158,20 @@ export default async function DashboardPage(
   const suppliers = parties.filter((party) => party.isSupplier);
 
   return (
-    <main className="wide">
-      <PortalToPageActions><div className="quick-actions">
-        <Modal triggerLabel={<><span className="quick-action-icon"><ArrowDownCircle className="size-5" strokeWidth={1.5} /></span>Nova receita</>} triggerClassName="quick-action-card revenue" title="Nova entrada" icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
-          <TitleForm action={createEntradaAction} actionAndContinue={createEntradaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))} parties={clients} costCenters={costCenters} partyLabel="Cliente" />
-        </Modal>
-        <Modal triggerLabel={<><span className="quick-action-icon"><ArrowUpCircle className="size-5" strokeWidth={1.5} /></span>Nova despesa</>} triggerClassName="quick-action-card expense" title="Nova saída" icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
-          <TitleForm action={createSaidaAction} actionAndContinue={createSaidaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" />
-        </Modal>
-      </div></PortalToPageActions>
-
+    <main className="wide dashboard-page">
       <DashboardFilters companyId={activeCompanyId} accounts={activeAccounts.map(({ id, name }) => ({ id, name }))}
         categories={sortCategoriesTree(categories).map(({ id, name, parentId }) => ({ id, name: parentId ? `↳ ${name}` : name }))}
-        parties={parties.map(({ id, name }) => ({ id, name }))} costCenters={costCenters.map(({ id, name }) => ({ id, name }))} values={selected} />
+        parties={parties.map(({ id, name }) => ({ id, name }))} costCenters={costCenters.map(({ id, name }) => ({ id, name }))} values={selected}
+        actions={(
+          <div className="quick-actions">
+            <Modal triggerLabel={<><span className="quick-action-icon"><ArrowDownCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova receita</>} triggerClassName="quick-action-card revenue" title="Nova entrada" icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
+              <TitleForm action={createEntradaAction} actionAndContinue={createEntradaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))} parties={clients} costCenters={costCenters} partyLabel="Cliente" />
+            </Modal>
+            <Modal triggerLabel={<><span className="quick-action-icon"><ArrowUpCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova despesa</>} triggerClassName="quick-action-card expense" title="Nova saída" icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
+              <TitleForm action={createSaidaAction} actionAndContinue={createSaidaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" />
+            </Modal>
+          </div>
+        )} />
 
       <Reveal className="stat-grid dashboard-stat-grid">
         <StatCard icon={<Wallet className="size-5" />} label="Saldo disponível (hoje)" value={formatCents(overview.availableBalanceCents)} footerLabel={selected.conta ? "Conta selecionada" : "Contas incluídas"} footerValue={String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
