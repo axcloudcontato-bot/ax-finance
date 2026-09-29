@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Landmark, Scale } from "lucide-react";
+import { Landmark, Scale } from "@/components/ui/animated-icons";
 import { listBalanceAdjustments, listFinancialAccountsWithBalance } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";

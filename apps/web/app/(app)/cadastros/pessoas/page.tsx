@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { UserPlus } from "lucide-react";
+import { UserPlus } from "@/components/ui/animated-icons";
 import { listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";

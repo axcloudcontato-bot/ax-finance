@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Filter, X } from "lucide-react";
+import { Filter, X } from "@/components/ui/animated-icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
 

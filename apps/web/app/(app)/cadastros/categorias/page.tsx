@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Tag } from "lucide-react";
+import { Tag } from "@/components/ui/animated-icons";
 import { listCategories } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";

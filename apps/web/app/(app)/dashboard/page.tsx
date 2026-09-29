@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, CircleCheck, Landmark, TrendingUp, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, CircleCheck, Landmark, TrendingUp, Wallet } from "@/components/ui/animated-icons";
 import {
   CompanyAccessDeniedError,
   assertActiveMembership,

@@ -12,7 +12,7 @@ import {
   LockSimple,
   Wallet,
   X,
-} from "@phosphor-icons/react";
+} from "@/components/ui/animated-icons";
 import styles from "./login.module.css";
 
 type LoginExperienceProps = {

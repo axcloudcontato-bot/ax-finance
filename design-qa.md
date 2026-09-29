@@ -98,6 +98,69 @@ final result: passed
 
 ---
 
+# Design QA — Gráfico de fluxo realizado versus previsto
+
+final result: passed
+
+## Evidência
+
+- Fonte visual: `C:\Users\SERGIO~1\AppData\Local\Temp\codex-clipboard-fccf1380-9e04-43e2-9267-8e182a2b02fe.png`.
+- Fonte: 1090 × 422 px, densidade 1×, mostrando o estado anterior do card.
+- Implementação: `http://127.0.0.1:3100/dashboard`, captura inline da aba 1 do Codex In-app Browser (a superfície não expõe um caminho de arquivo para a captura).
+- Viewport desktop: 1918 × 916 CSS px, densidade 1×; região do card avaliada em aproximadamente 1052 × 447 px.
+- Viewport compacto: 560 × 760 CSS px, sidebar recolhido.
+- Estado: setembro de 2026, todas as contas/categorias/pessoas/centros de custo, séries com valores e tooltip ativo.
+
+## Comparação de visão completa
+
+- A composição do card, o título e o texto explicativo foram preservados.
+- As séries agora usam interpolação monotônica no eixo temporal, com pontas e junções arredondadas, mantendo picos contidos entre os pontos reais.
+- Recebimentos e pagamentos ganharam famílias cromáticas próprias; realizado usa tom mais escuro e traço mais espesso, previsto usa tom mais claro e tracejado.
+- A legenda deixou de ser uma sequência de quatro rótulos equivalentes e passou a dois grupos semânticos, cada um com amostra real do tipo de traço.
+- O tooltip exibe data, cor, nome completo e valor com alinhamento tabular.
+
+## Comparação focada
+
+O recorte do gráfico foi inspecionado em desktop e mobile porque curva, legenda e tooltip exigem leitura em detalhe. No desktop os dois grupos permanecem centralizados e equilibrados; em 560 px passam para duas linhas, sem truncamento ou sobreposição.
+
+## Superfícies de fidelidade
+
+- Tipografia: Manrope do produto preservada; legenda usa pesos 750/550, títulos de grupo mais fortes e rótulos secundários em cinza de alto contraste.
+- Espaçamento: separador superior, padding de 12 px e gaps regulares distinguem gráfico e legenda sem aumentar excessivamente o card.
+- Cores: verdes identificam recebimentos e rosas identificam pagamentos; variação de luminosidade e tipo de traço diferencia realizado de previsto sem depender apenas da cor.
+- Imagens/ativos: não há ativos raster ou ilustrações neste componente; o gráfico continua vetorial pelo Recharts.
+- Conteúdo: título e explicação originais foram mantidos; os rótulos foram simplificados apenas dentro dos grupos da legenda.
+
+## Histórico da comparação
+
+1. Estado anterior: curvas visualmente duras em séries esparsas e legenda com quatro marcadores circulares, sem representar sólido versus tracejado.
+2. Primeiro passe: aplicado `monotoneX`, hierarquia de espessura, paleta diferenciada, legenda agrupada e tooltip editorial.
+3. Pós-fix desktop: curvas suaves, tooltip legível e grupos equilibrados; nenhuma diferença P0/P1/P2 restante.
+4. Pós-fix mobile: legenda refluída para duas linhas e eixo reduzido automaticamente; nenhuma sobreposição ou rolagem horizontal causada pelo componente.
+
+## Findings
+
+- P0: nenhuma.
+- P1: nenhuma.
+- P2: nenhuma.
+- P3: o eixo X pode exibir menos datas em telas estreitas, comportamento esperado para manter a legibilidade.
+
+## Interações e acessibilidade verificadas
+
+- Tooltip responde ao hover e mantém os quatro valores no mesmo contexto temporal.
+- Legenda possui nome acessível “Legenda do fluxo financeiro”.
+- Cor não é o único diferenciador: realizado é sólido e previsto é tracejado.
+- Console do navegador sem erros ou avisos.
+
+## Verificação técnica
+
+- `pnpm build`: passou.
+- `pnpm typecheck`: passou.
+- `pnpm test`: 37 arquivos e 169 testes aprovados.
+- `git diff --check`: passou.
+
+---
+
 # Design QA — Central de filtros do dashboard
 
 final result: passed

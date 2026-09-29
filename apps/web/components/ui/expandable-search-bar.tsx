@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, X } from "lucide-react";
+import { Search, X } from "@/components/ui/animated-icons";
 import { cn } from "@/lib/utils";
 
 export interface ExpandableSearchBarProps {

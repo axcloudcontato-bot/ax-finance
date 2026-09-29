@@ -18,7 +18,7 @@ export function ActionModal({
 }: {
   triggerLabel: string;
   title: string;
-  /** Mesma família de ícones do sidebar (lucide-react), ex.: <Landmark className="size-5" strokeWidth={1.5} />. */
+  /** Mesma família animada de ícones do sidebar, ex.: <Landmark className="size-5" />. */
   icon?: ReactNode;
   initiallyOpen?: boolean;
   children: ReactNode;

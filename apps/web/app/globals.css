@@ -18,6 +18,43 @@
   --color-ring: #4680ff;
 }
 
+/* Os ícones interativos usam os componentes AnimateIcons/Lucide publicados
+   no catálogo 21st.dev. A raiz é uma div, então esta base preserva o mesmo
+   encaixe dos SVGs antigos e amplia o gesto para o controle inteiro. */
+.animated-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  vertical-align: middle;
+}
+
+.animated-icon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-origin: center;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:is(a, button, [role="button"], .group):is(:hover, :focus-visible) .animated-icon > svg {
+  transform: translateY(-1px) scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-icon,
+  .animated-icon * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  :is(a, button, [role="button"], .group):is(:hover, :focus-visible) .animated-icon > svg {
+    transform: none !important;
+  }
+}
+
 .admin-shell {
   --admin-navy: #17233f;
   --admin-ink: #172033;
@@ -1776,6 +1813,113 @@ main.settings-page {
   min-width: 0;
 }
 
+.dashboard-flow-chart {
+  margin-top: 0.85rem;
+}
+
+.dashboard-flow-plot {
+  width: 100%;
+  height: 250px;
+}
+
+.dashboard-flow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem 1.75rem;
+  min-height: 42px;
+  margin: 0.5rem 0 0;
+  padding: 0.75rem 1rem 0;
+  border-top: 1px solid #edf0f5;
+}
+
+.dashboard-flow-legend-group,
+.dashboard-flow-legend-items,
+.dashboard-flow-legend-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.dashboard-flow-legend-group {
+  gap: 0.85rem;
+}
+
+.dashboard-flow-legend-title {
+  color: #303848;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.015em;
+}
+
+.dashboard-flow-legend-items {
+  gap: 0.8rem;
+}
+
+.dashboard-flow-legend-item {
+  gap: 0.4rem;
+  color: #6b7485;
+  font-size: 0.72rem;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
+.dashboard-flow-legend-line {
+  display: inline-block;
+  width: 1.5rem;
+  height: 0;
+  border-top: 3px solid;
+  border-radius: 999px;
+}
+
+.dashboard-flow-legend-line.is-dashed {
+  border-top-width: 2px;
+  border-top-style: dashed;
+}
+
+.dashboard-flow-tooltip {
+  min-width: 245px;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #dfe4ec;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 12px 28px rgba(32, 43, 67, 0.13);
+}
+
+.dashboard-flow-tooltip > strong {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #242b38;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.dashboard-flow-tooltip > div {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.dashboard-flow-tooltip > div > span {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  gap: 0.48rem;
+  align-items: center;
+  color: #697386;
+  font-size: 0.7rem;
+}
+
+.dashboard-flow-tooltip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.dashboard-flow-tooltip b {
+  color: #303848;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .category-ranking {
   display: flex;
   flex-direction: column;
@@ -1957,6 +2101,19 @@ main.settings-page {
 @media (max-width: 560px) {
   main.dashboard-page {
     padding-top: 1rem;
+  }
+  .dashboard-flow-plot {
+    height: 230px;
+  }
+  .dashboard-flow-legend {
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 0.7rem;
+    padding-inline: 0;
+  }
+  .dashboard-flow-legend-group {
+    width: 100%;
+    justify-content: space-between;
   }
   .dashboard-command-header {
     grid-template-columns: 1fr;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { ArrowRight, CircleNotch, Key, ShieldCheck, Wallet } from "@phosphor-icons/react";
+import { ArrowRight, CircleNotch, Key, ShieldCheck, Wallet } from "@/components/ui/animated-icons";
 import type { MfaLoginState } from "./actions";
 import styles from "../login/login.module.css";
 

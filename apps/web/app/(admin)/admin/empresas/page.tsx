@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Building2, Search, SlidersHorizontal } from "lucide-react";
+import { Building2, Search, SlidersHorizontal } from "@/components/ui/animated-icons";
 import { getPlatformAdminAccess, listAdminCompanies } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";

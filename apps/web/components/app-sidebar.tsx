@@ -18,7 +18,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
-} from "lucide-react";
+} from "@/components/ui/animated-icons";
 import { useEffect, useState } from "react";
 import type { MembershipRole } from "@ax-finance/db";
 import { NavItem, type NavItemData } from "@/components/nav-item";

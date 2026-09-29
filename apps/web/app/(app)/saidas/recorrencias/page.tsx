@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Repeat } from "lucide-react";
+import { Repeat } from "@/components/ui/animated-icons";
 import { listActiveCategories, listCostCenters, listParties, listRecurrenceRules } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";

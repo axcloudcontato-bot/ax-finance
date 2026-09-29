@@ -1,6 +1,6 @@
 import QRCode from "qrcode";
 import { redirect } from "next/navigation";
-import { KeyRound, ShieldCheck, Smartphone, TriangleAlert } from "lucide-react";
+import { KeyRound, ShieldCheck, Smartphone, TriangleAlert } from "@/components/ui/animated-icons";
 import { getMfaStatus, getPendingMfaSetup } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { beginMfaSetupAction, confirmMfaSetupAction, disableMfaAction } from "./actions";

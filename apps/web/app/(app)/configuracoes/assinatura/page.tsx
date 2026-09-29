@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CalendarDays, CheckCircle2, CreditCard, Mail } from "lucide-react";
+import { CalendarDays, CheckCircle2, CreditCard, Mail } from "@/components/ui/animated-icons";
 import { getCompanySubscription } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";

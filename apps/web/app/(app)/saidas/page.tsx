@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpCircle } from "lucide-react";
+import { ArrowUpCircle } from "@/components/ui/animated-icons";
 import { listActiveCategories, listCostCenters, listParties, listTitles } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";

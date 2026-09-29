@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight } from "@/components/ui/animated-icons";
 import { useEffect, useState } from "react";
 import { isComparisonMode, isDateOnly, isPeriodPreset, isYearMonth } from "@/lib/month";
 

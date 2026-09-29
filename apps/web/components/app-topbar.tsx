@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Wallet } from "lucide-react";
+import { Bell, Wallet } from "@/components/ui/animated-icons";
 import { initialsOf } from "@/lib/user-display";
 import { ExpandableSearchBar } from "@/components/ui/expandable-search-bar";
 

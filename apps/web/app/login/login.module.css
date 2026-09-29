@@ -185,7 +185,7 @@
   box-shadow: 0 0 0 4px rgba(52, 120, 255, 0.09);
 }
 
-.inputWrap > svg {
+.inputWrap > :global(.animated-icon) {
   flex: 0 0 auto;
   color: #50668e;
 }

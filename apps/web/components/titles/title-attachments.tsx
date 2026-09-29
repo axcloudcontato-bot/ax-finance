@@ -1,4 +1,4 @@
-import { Download, Paperclip, Trash2 } from "lucide-react";
+import { Download, Paperclip, Trash2 } from "@/components/ui/animated-icons";
 import type { listTitleAttachments } from "@ax-finance/domain";
 import { deleteTitleAttachmentAction, uploadTitleAttachmentAction } from "@/app/(app)/attachments/actions";
 

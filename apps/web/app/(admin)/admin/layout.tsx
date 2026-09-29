@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, LogOut, ShieldCheck, WalletCards } from "lucide-react";
+import { ArrowUpRight, LogOut, ShieldCheck, WalletCards } from "@/components/ui/animated-icons";
 import { getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Landmark } from "lucide-react";
+import { Landmark } from "@/components/ui/animated-icons";
 import {
   CompanyAccessDeniedError,
   EVENT_TYPE_LABEL,

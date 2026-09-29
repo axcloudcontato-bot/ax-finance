@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AlertTriangle, CircleHelp, Clock3, Flame, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CircleHelp, Clock3, Flame, ShieldAlert } from "@/components/ui/animated-icons";
 import { getPlatformAdminAccess, listAdminSupport } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";

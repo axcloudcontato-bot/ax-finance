@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Building2, ChevronRight, LayoutDashboard, LifeBuoy } from "lucide-react";
+import { Activity, Building2, ChevronRight, LayoutDashboard, LifeBuoy } from "@/components/ui/animated-icons";
 
 const items = [
   { href: "/admin", label: "Visão geral", description: "Indicadores da operação", icon: LayoutDashboard },

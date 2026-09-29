@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Activity, CheckCircle2, Clock3, Database, FileWarning, History, MailWarning, RotateCcw } from "lucide-react";
+import { Activity, CheckCircle2, Clock3, Database, FileWarning, History, MailWarning, RotateCcw } from "@/components/ui/animated-icons";
 import { getAdminOperations, getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";

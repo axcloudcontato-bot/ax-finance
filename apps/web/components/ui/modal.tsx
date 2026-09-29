@@ -25,7 +25,7 @@ export function Modal({
   /** Substitui o "button-link" padrão do gatilho — ex.: os cards de lançamento rápido do dashboard. */
   triggerClassName?: string;
   title: string;
-  /** Mesma família de ícones do sidebar (lucide-react), ex.: <ArrowDownCircle className="size-5" strokeWidth={1.5} />. */
+  /** Mesma família animada de ícones do sidebar, ex.: <ArrowDownCircle className="size-5" />. */
   icon?: ReactNode;
   maxWidth?: string;
   children: ReactNode;

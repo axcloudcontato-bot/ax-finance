@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { BellRing, CalendarClock, Mail, ShieldCheck } from "lucide-react";
+import { BellRing, CalendarClock, Mail, ShieldCheck } from "@/components/ui/animated-icons";
 import { getNotificationPreference } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";

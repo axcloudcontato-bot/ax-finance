@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange } from "@/components/ui/animated-icons";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MonthSelector } from "@/components/month-selector";
 import {

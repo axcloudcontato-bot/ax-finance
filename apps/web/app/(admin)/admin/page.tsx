@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AlertTriangle, Building2, CircleDollarSign, CircleHelp, Clock3, CreditCard, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, Building2, CircleDollarSign, CircleHelp, Clock3, CreditCard, TrendingDown, TrendingUp } from "@/components/ui/animated-icons";
 import { getAdminBusinessMetrics, getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";
