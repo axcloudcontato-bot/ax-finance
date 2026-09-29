@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { isComparisonMode, isDateOnly, isPeriodPreset, isYearMonth } from "@/lib/month";
 
 export interface NavItemData {
@@ -20,16 +20,41 @@ function hasActiveDescendant(item: NavItemData, pathname: string | null): boolea
   return !!item.children?.some((child) => child.href === pathname || hasActiveDescendant(child, pathname));
 }
 
-export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number }) {
+export function NavItem({
+  item,
+  level = 0,
+  collapsed = false,
+  onRequestExpand,
+}: {
+  item: NavItemData;
+  level?: number;
+  collapsed?: boolean;
+  onRequestExpand?: () => void;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hasChildren = !!item.children?.length;
   // Já abre expandido se a página atual for uma das filhas — senão, entrar
   // direto em /cadastros/categorias esconderia o item ativo dentro de
   // "Cadastros" recolhido.
-  const [isOpen, setIsOpen] = useState(() => hasActiveDescendant(item, pathname));
+  const activeDescendant = hasActiveDescendant(item, pathname);
+  const [isOpen, setIsOpen] = useState(() => activeDescendant);
   const isActive = !!item.href && pathname === item.href;
+  const isHighlighted = isActive || activeDescendant;
   const disabled = !item.href && !hasChildren;
+
+  useEffect(() => {
+    if (activeDescendant) setIsOpen(true);
+  }, [activeDescendant]);
+
+  function toggleChildren() {
+    if (collapsed) {
+      onRequestExpand?.();
+      setIsOpen(true);
+      return;
+    }
+    setIsOpen((value) => !value);
+  }
   const hrefWithPeriod = item.href ? (() => {
     const [targetPath, targetQuery = ""] = item.href!.split("?");
     const params = new URLSearchParams(targetQuery);
@@ -53,27 +78,40 @@ export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number
 
   const row = (
     <div
-      className={`group flex items-center justify-between rounded-[6px] px-2.5 py-[7px] transition-all duration-200 select-none ${
-        isActive
+      className={`group relative flex items-center rounded-[6px] py-[7px] transition-all duration-200 select-none ${
+        collapsed ? "justify-center px-0" : "justify-between px-2.5"
+      } ${
+        isHighlighted
           ? "bg-black/5 font-medium text-foreground"
           : disabled
             ? "text-muted-foreground"
             : "text-muted-foreground hover:bg-black/5 hover:text-foreground/90"
       } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-      style={{ paddingLeft: `${level * 12 + 10}px` }}
-      onClick={hasChildren ? () => setIsOpen((value) => !value) : undefined}
+      style={collapsed ? undefined : { paddingLeft: `${level * 12 + 10}px` }}
+      onClick={hasChildren ? toggleChildren : undefined}
+      onKeyDown={hasChildren ? (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleChildren();
+        }
+      } : undefined}
+      role={hasChildren ? "button" : undefined}
+      tabIndex={hasChildren ? 0 : undefined}
+      aria-expanded={hasChildren ? (!collapsed && isOpen) : undefined}
+      aria-label={collapsed ? item.title : undefined}
+      title={collapsed ? item.title : undefined}
     >
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className={`flex min-w-0 items-center ${collapsed ? "justify-center" : "gap-2.5"}`}>
         <item.icon
           className={`size-4 shrink-0 transition-colors ${
-            isActive ? "text-foreground" : "text-muted-foreground/70 group-hover:text-foreground/70"
+            isHighlighted ? "text-foreground" : "text-muted-foreground/70 group-hover:text-foreground/70"
           }`}
           strokeWidth={1.5}
         />
-        <span className="truncate text-[13px] tracking-wide">{item.title}</span>
+        <span className={collapsed ? "sr-only" : "truncate text-[13px] tracking-wide"}>{item.title}</span>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      {!collapsed ? <div className="flex shrink-0 items-center gap-2">
         {item.badge ? (
           <span className="flex h-5 items-center justify-center whitespace-nowrap rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
             {item.badge}
@@ -85,15 +123,21 @@ export function NavItem({ item, level = 0 }: { item: NavItemData; level?: number
             strokeWidth={2}
           />
         ) : null}
-      </div>
+      </div> : null}
+
+      {collapsed && activeDescendant ? (
+        <span className="absolute right-0 h-4 w-0.5 rounded-full bg-primary" aria-hidden="true" />
+      ) : null}
     </div>
   );
 
   return (
     <div className="flex w-full flex-col">
-      {!hasChildren && hrefWithPeriod && !disabled ? <Link href={hrefWithPeriod}>{row}</Link> : row}
+      {!hasChildren && hrefWithPeriod && !disabled ? (
+        <Link href={hrefWithPeriod} className="block w-full" aria-label={collapsed ? item.title : undefined}>{row}</Link>
+      ) : row}
 
-      {hasChildren ? (
+      {hasChildren && !collapsed ? (
         <div
           className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
             isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"

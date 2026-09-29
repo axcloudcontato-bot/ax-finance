@@ -374,6 +374,34 @@ button.secondary {
   border: 1px solid var(--border);
 }
 
+/* Controles do menu lateral precisam neutralizar o estilo global de botão,
+   que é voltado aos CTAs dos formulários. */
+.app-sidebar-toggle {
+  margin-top: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.app-sidebar-toggle:hover {
+  border-color: var(--border);
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
+.app-sidebar-logout {
+  margin-top: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.app-sidebar-logout:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text);
+}
+
 .error {
   color: var(--danger);
   background: #fbeceb;
@@ -815,11 +843,93 @@ form.inline {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-top: 0;
   background: transparent;
   border: none;
   padding: 0;
   color: inherit;
   cursor: pointer;
+}
+
+.topbar-icon-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.expandable-search {
+  position: relative;
+  z-index: 20;
+  flex: 0 0 2.5rem;
+}
+
+.expandable-search-form {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  height: 2.5rem;
+  max-width: min(320px, calc(100vw - 9rem));
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  box-shadow: none;
+}
+
+.expandable-search-form.is-open {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 6px 18px rgba(21, 54, 118, 0.18);
+}
+
+.expandable-search-form input {
+  min-width: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 0 0.25rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.82rem;
+  box-shadow: none;
+}
+
+.expandable-search-form input::placeholder {
+  color: #7b8495;
+}
+
+.expandable-search-form input::-webkit-search-cancel-button {
+  display: none;
+  appearance: none;
+}
+
+.expandable-search-leading,
+.expandable-search-close {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+}
+
+.expandable-search-leading:hover,
+.expandable-search-close:hover {
+  background: rgba(70, 128, 255, 0.1);
+}
+
+.expandable-search-form:not(.is-open) .expandable-search-leading:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .topbar-badge {

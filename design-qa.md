@@ -50,3 +50,48 @@ final result: passed
 ## Resultado
 
 Não restaram diferenças visuais P0, P1 ou P2. A implementação está aprovada para entrega.
+
+---
+
+# Design QA — Sidebar recolhível e pesquisa expansível
+
+final result: passed
+
+## Evidência
+
+- Fonte visual: `C:\Users\SERGIO~1\AppData\Local\Temp\codex-clipboard-4fc6583b-86b4-438b-b182-36e9d3d6d08a.png`.
+- Implementação: `http://127.0.0.1:3100/dashboard`, capturada no Codex In-app Browser; a captura permanece disponível na aba de prévia entregue.
+- Viewports: 1280 × 720 e 720 × 360 CSS px.
+- Estado: sidebar recolhido; pesquisa aberta vazia e preenchida; dropdown sem resultados; preferência do sidebar após reload.
+
+## Comparação visual
+
+| Aspecto | Referência | Implementação | Resultado |
+| --- | --- | --- | --- |
+| Alinhamento vertical no topbar | Lupa, sino e avatar no mesmo eixo | Controles com caixas de 40 px e avatar de 36 px, todos centralizados em uma linha de 40 px | Aprovado |
+| Pesquisa | Ícone de lupa compacto | Campo branco em cápsula, expansão para a esquerda, foco automático, placeholder e fechamento | Aprovado |
+| Sidebar recolhido | Ícones devem alinhar com o avatar do perfil | Trilho de 72 px; navegação, avatar e saída compartilham o mesmo eixo central | Aprovado |
+| Responsividade | Barra desktop compacta | Campo limitado a 320 px e a `calc(100vw - 9rem)` em telas menores | Aprovado |
+
+## Interações verificadas
+
+- Abrir a pesquisa pelo mouse e receber foco no campo.
+- Digitar uma consulta e exibir o estado de carregamento/resultado.
+- Fechar e limpar a pesquisa pelo botão ou pela tecla Escape.
+- Recolher e expandir o sidebar.
+- Persistir o sidebar recolhido após recarregar a página.
+- Manter nomes acessíveis e foco de teclado nos controles.
+
+## Pendências por severidade
+
+- P0: nenhuma.
+- P1: nenhuma.
+- P2: nenhuma.
+- P3: nenhuma relevante para este recorte.
+
+## Verificação técnica
+
+- `pnpm build`: passou.
+- `pnpm typecheck`: passou.
+- `pnpm test`: 37 arquivos e 169 testes aprovados.
+- `git diff --check`: passou.

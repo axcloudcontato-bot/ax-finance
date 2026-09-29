@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Search, Wallet } from "lucide-react";
+import { Bell, Wallet } from "lucide-react";
 import { initialsOf } from "@/lib/user-display";
+import { ExpandableSearchBar } from "@/components/ui/expandable-search-bar";
 
 export interface AppNotification {
   id: string;
@@ -95,30 +96,23 @@ export function AppTopbar({ userName, notifications: initialNotifications }: { u
         <div className="grid size-8 shrink-0 place-items-center rounded-[6px] bg-white/20">
           <Wallet className="size-4" />
         </div>
-        <span className="text-base font-semibold">AX Finance</span>
+        <span className="hidden text-base font-semibold sm:inline">AX Finance</span>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div ref={searchRef} style={{ position: "relative" }}>
-          <button
-            type="button"
-            className="topbar-icon-button"
-            aria-label="Buscar"
-            onClick={() => setSearchOpen((open) => !open)}
-          >
-            <Search className="size-5 opacity-90" />
-          </button>
+      <div className="flex h-10 items-center gap-1.5 sm:gap-2">
+        <div ref={searchRef} className="relative flex size-10 items-center justify-center">
+          <ExpandableSearchBar
+            open={searchOpen}
+            value={query}
+            onOpenChange={setSearchOpen}
+            onValueChange={setQuery}
+            onSearch={() => undefined}
+            placeholder="Pesquisar títulos, pessoas ou categorias"
+            width={320}
+          />
 
-          {searchOpen ? (
+          {searchOpen && (loading || query.trim().length >= 2) ? (
             <div className="topbar-dropdown">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Buscar título, cliente/fornecedor, categoria..."
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-
               {loading ? <p className="muted" style={{ margin: "0.75rem 0.25rem" }}>Buscando...</p> : null}
 
               {!loading && query.trim().length >= 2 && !hasResults ? (
@@ -177,7 +171,7 @@ export function AppTopbar({ userName, notifications: initialNotifications }: { u
           ) : null}
         </div>
 
-        <div ref={notifRef} style={{ position: "relative" }}>
+        <div ref={notifRef} className="relative flex size-10 items-center justify-center">
           <button
             type="button"
             className="topbar-icon-button"
@@ -221,7 +215,7 @@ export function AppTopbar({ userName, notifications: initialNotifications }: { u
           ) : null}
         </div>
 
-        <span className="grid size-9 place-items-center rounded-full bg-white/20 text-xs font-semibold">
+        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white/20 text-xs font-semibold">
           {initialsOf(userName)}
         </span>
       </div>

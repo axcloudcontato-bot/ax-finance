@@ -13,10 +13,13 @@ import {
   ListChecks,
   Lock,
   LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { MembershipRole } from "@ax-finance/db";
 import { NavItem, type NavItemData } from "@/components/nav-item";
 import { initialsOf } from "@/lib/user-display";
@@ -85,6 +88,8 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+const SIDEBAR_PREFERENCE_KEY = "ax-finance:sidebar-collapsed:v1";
+
 export function AppSidebar({
   userName,
   userEmail,
@@ -100,6 +105,31 @@ export function AppSidebar({
   isPlatformAdmin: boolean;
   logoutAction: () => void | Promise<void>;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === "true");
+    } catch {
+      // O menu continua funcional mesmo quando o navegador bloqueia storage.
+    }
+
+    function syncPreference(event: StorageEvent) {
+      if (event.key === SIDEBAR_PREFERENCE_KEY) setCollapsed(event.newValue === "true");
+    }
+    window.addEventListener("storage", syncPreference);
+    return () => window.removeEventListener("storage", syncPreference);
+  }, []);
+
+  function updateCollapsed(nextValue: boolean) {
+    setCollapsed(nextValue);
+    try {
+      localStorage.setItem(SIDEBAR_PREFERENCE_KEY, String(nextValue));
+    } catch {
+      // Preferência não persistida; o estado da tela atual continua válido.
+    }
+  }
+
   const roleLabel: Record<MembershipRole, string> = {
     OWNER: "Proprietário",
     FINANCE_ADMIN: "Administrador financeiro",
@@ -109,39 +139,71 @@ export function AppSidebar({
   };
 
   return (
-    <div className="h-full w-[260px] shrink-0 overflow-hidden border-r border-border bg-card/50">
-      <div className="flex h-full w-[260px] flex-col p-3">
-        <div className="flex flex-1 flex-col gap-4 overflow-y-auto pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <aside
+      className={`h-full shrink-0 overflow-hidden border-r border-border bg-card/50 transition-[width] duration-300 ease-in-out ${
+        collapsed ? "w-[72px]" : "w-[260px]"
+      }`}
+      aria-label="Navegação principal"
+      data-collapsed={collapsed}
+    >
+      <div className={`flex h-full flex-col transition-[width,padding] duration-300 ease-in-out ${collapsed ? "w-[72px] p-2" : "w-[260px] p-3"}`}>
+        <div className={`mb-2 flex shrink-0 ${collapsed ? "justify-center" : "justify-end"}`}>
+          <button
+            type="button"
+            onClick={() => updateCollapsed(!collapsed)}
+            className="app-sidebar-toggle grid size-9 place-items-center rounded-lg border border-transparent outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/40"
+            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            aria-expanded={!collapsed}
+            aria-controls="app-sidebar-navigation"
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
+          >
+            {collapsed ? <PanelLeftOpen className="size-4" strokeWidth={1.7} /> : <PanelLeftClose className="size-4" strokeWidth={1.7} />}
+          </button>
+        </div>
+
+        <div id="app-sidebar-navigation" role="navigation" className="flex flex-1 flex-col items-stretch gap-4 overflow-y-auto pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {NAV_GROUPS.map((group, index) => (
             <div key={group.heading ?? index} className="flex flex-col gap-0.5">
               {group.heading ? (
-                <span className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground/50 uppercase">
-                  {group.heading}
-                </span>
+                collapsed ? (
+                  <span className="mx-2 mb-1 border-t border-border" aria-hidden="true" />
+                ) : (
+                  <span className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground/50 uppercase">
+                    {group.heading}
+                  </span>
+                )
               ) : null}
               {group.items.map((item) => (
-                <NavItem key={item.id} item={item} />
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  collapsed={collapsed}
+                  onRequestExpand={() => updateCollapsed(false)}
+                />
               ))}
             </div>
           ))}
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">
-          {isPlatformAdmin ? <NavItem item={{ id: "admin-interno", title: "Administração interna", icon: ShieldCheck, href: "/admin" }} /> : null}
-          <NavItem item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
-          <NavItem item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
+          {isPlatformAdmin ? <NavItem collapsed={collapsed} item={{ id: "admin-interno", title: "Administração interna", icon: ShieldCheck, href: "/admin" }} /> : null}
+          <NavItem collapsed={collapsed} item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
+          <NavItem collapsed={collapsed} item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
           {canManageMembers ? (
             <>
-              <NavItem item={{ id: "assinatura", title: "Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" }} />
-              <NavItem item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
+              <NavItem collapsed={collapsed} item={{ id: "assinatura", title: "Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" }} />
+              <NavItem collapsed={collapsed} item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
             </>
           ) : null}
 
-          <div className="mt-2 flex items-center gap-3 overflow-hidden rounded-xl px-1 py-1">
+          <div
+            className={`mt-2 flex items-center overflow-hidden rounded-xl py-1 transition-[gap,padding] duration-300 ${collapsed ? "justify-center px-0" : "gap-3 px-1"}`}
+            title={collapsed ? `${userName} — ${roleLabel[membershipRole]}` : undefined}
+          >
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs font-semibold text-background">
               {initialsOf(userName)}
             </span>
-            <span className="min-w-0 flex-1">
+            <span className={`min-w-0 flex-1 transition-opacity duration-200 ${collapsed ? "sr-only opacity-0" : "opacity-100"}`}>
               <span className="block truncate text-[13px] font-medium text-foreground">
                 {userName}
               </span>
@@ -161,14 +223,16 @@ export function AppSidebar({
                   .filter((key) => key.startsWith("ax-finance:dashboard-filters:v1:"))
                   .forEach((key) => sessionStorage.removeItem(key));
               }}
-              className="flex w-full items-center gap-2.5 rounded-[6px] px-2.5 py-[7px] text-left text-[13px] font-medium text-muted-foreground outline-none transition-colors hover:bg-black/5 hover:text-foreground"
+              className={`app-sidebar-logout flex w-full items-center rounded-[6px] py-[7px] text-left text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"}`}
+              aria-label={collapsed ? "Sair" : undefined}
+              title={collapsed ? "Sair" : undefined}
             >
               <LogOut className="size-4 shrink-0" strokeWidth={1.5} />
-              Sair
+              <span className={collapsed ? "sr-only" : undefined}>Sair</span>
             </button>
           </form>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
