@@ -202,3 +202,63 @@ final result: passed
 - `pnpm typecheck`: passou.
 - `pnpm test`: 37 arquivos e 169 testes aprovados.
 - `git diff --check`: passou.
+
+---
+
+# Design QA — Controle de recolhimento do sidebar
+
+final result: passed
+
+## Evidência
+
+- Fonte visual: `C:\Users\SERGIO~1\AppData\Local\Temp\codex-clipboard-8f488e92-0769-46be-8aed-567785771556.png`.
+- Fonte: 464 × 198 px, densidade 1×, mostrando o espaço vazio criado pela linha exclusiva do controle.
+- Implementação: `http://127.0.0.1:3100/dashboard`, captura inline no Codex In-app Browser (a superfície não expõe caminho local para a captura).
+- Viewport e captura da implementação: 1438 × 894 CSS px, densidade 1×.
+- Estados avaliados: sidebar aberto e recolhido, dashboard rolado ao topo e persistência da preferência existente.
+
+## Comparação de visão completa
+
+- A faixa vazia acima do Dashboard foi removida; o item ativo agora começa no primeiro alinhamento vertical útil do sidebar.
+- No estado aberto, o controle ocupa o mesmo eixo horizontal do Dashboard e fica separado do alvo de navegação.
+- No estado recolhido, o controle vira uma alça compacta na borda direita, sem deslocar nem cobrir o ícone do Dashboard.
+- A largura do conteúdo principal acompanha os dois estados sem salto, corte ou sobreposição com o painel de filtros.
+
+## Comparação focada
+
+O topo do sidebar foi inspecionado em ambos os estados porque esta é a região afetada. O alinhamento do Dashboard, o alvo do botão e a divisória lateral permaneceram legíveis; não foi necessário um segundo recorte do restante da página.
+
+## Superfícies de fidelidade
+
+- Tipografia: família, tamanho e peso dos itens de navegação foram preservados.
+- Espaçamento: removidos a margem inferior e o bloco exclusivo do controle; o primeiro item agora respeita apenas o padding normal do sidebar.
+- Cores: superfícies, bordas, estado ativo e cores de ícones permanecem nos tokens existentes.
+- Imagens/ativos: não há ativos raster neste recorte; os ícones animados existentes foram reutilizados.
+- Conteúdo: nomes, ordem e destinos de navegação não foram alterados.
+
+## Histórico da comparação
+
+1. Estado anterior: botão isolado em uma linha própria, gerando espaço vazio antes do Dashboard.
+2. Primeiro passe: Dashboard promovido a primeira linha útil e controle reposicionado no mesmo eixo.
+3. Pós-fix aberto: Dashboard no topo, controle independente e sem sobreposição.
+4. Pós-fix recolhido: ícones centralizados e alça de expansão acessível na borda; nenhuma diferença P0/P1/P2 restante.
+
+## Findings
+
+- P0: nenhuma.
+- P1: nenhuma.
+- P2: nenhuma.
+- P3: nenhuma relevante para este recorte.
+
+## Interações e acessibilidade verificadas
+
+- Recolher e expandir o sidebar pelo novo posicionamento.
+- Nomes acessíveis, `aria-expanded` e vínculo com a navegação preservados.
+- Dashboard continua sendo um link independente do controle.
+- Console do navegador sem erros ou avisos.
+
+## Verificação técnica
+
+- `pnpm --filter web exec tsc --noEmit`: passou.
+- `pnpm test`: 37 arquivos e 169 testes aprovados.
+- `git diff --check`: passou.

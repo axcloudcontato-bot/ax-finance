@@ -35,9 +35,6 @@ interface NavGroup {
 // navega para rotas reais.
 const NAV_GROUPS: NavGroup[] = [
   {
-    items: [{ id: "dashboard", title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" }],
-  },
-  {
     heading: "Financeiro",
     items: [
       { id: "entradas", title: "Entradas", icon: ArrowDownCircle, href: "/entradas" },
@@ -87,6 +84,13 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+const DASHBOARD_ITEM: NavItemData = {
+  id: "dashboard",
+  title: "Dashboard",
+  icon: LayoutDashboard,
+  href: "/dashboard",
+};
 
 const SIDEBAR_PREFERENCE_KEY = "ax-finance:sidebar-collapsed:v1";
 
@@ -140,28 +144,40 @@ export function AppSidebar({
 
   return (
     <aside
-      className={`h-full shrink-0 overflow-hidden border-r border-border bg-card/50 transition-[width] duration-300 ease-in-out ${
+      className={`relative h-full shrink-0 border-r border-border bg-card/50 transition-[width] duration-300 ease-in-out ${
         collapsed ? "w-[72px]" : "w-[260px]"
       }`}
       aria-label="Navegação principal"
       data-collapsed={collapsed}
     >
-      <div className={`flex h-full flex-col transition-[width,padding] duration-300 ease-in-out ${collapsed ? "w-[72px] p-2" : "w-[260px] p-3"}`}>
-        <div className={`mb-2 flex shrink-0 ${collapsed ? "justify-center" : "justify-end"}`}>
-          <button
-            type="button"
-            onClick={() => updateCollapsed(!collapsed)}
-            className="app-sidebar-toggle grid size-9 place-items-center rounded-lg border border-transparent outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/40"
-            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-            aria-expanded={!collapsed}
-            aria-controls="app-sidebar-navigation"
-            title={collapsed ? "Expandir menu" : "Recolher menu"}
-          >
-            {collapsed ? <PanelLeftOpen className="size-4" strokeWidth={1.7} /> : <PanelLeftClose className="size-4" strokeWidth={1.7} />}
-          </button>
-        </div>
+      <button
+        type="button"
+        onClick={() => updateCollapsed(!collapsed)}
+        className={`app-sidebar-toggle absolute z-10 grid shrink-0 place-items-center rounded-lg border border-transparent outline-none transition-[background-color,border-color,color,box-shadow,transform] focus-visible:ring-2 focus-visible:ring-primary/40 ${
+          collapsed
+            ? "top-[11px] -right-3 size-7 bg-card shadow-sm"
+            : "top-3 right-3 size-8"
+        }`}
+        aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+        aria-expanded={!collapsed}
+        aria-controls="app-sidebar-navigation"
+        title={collapsed ? "Expandir menu" : "Recolher menu"}
+      >
+        {collapsed ? <PanelLeftOpen className="size-3.5" strokeWidth={1.7} /> : <PanelLeftClose className="size-4" strokeWidth={1.7} />}
+      </button>
 
-        <div id="app-sidebar-navigation" role="navigation" className="flex flex-1 flex-col items-stretch gap-4 overflow-y-auto pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className={`flex h-full flex-col overflow-hidden transition-[width,padding] duration-300 ease-in-out ${collapsed ? "w-[72px] p-2" : "w-[260px] p-3"}`}>
+        <div id="app-sidebar-navigation" role="navigation" className="flex flex-1 flex-col items-stretch gap-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex shrink-0 items-center">
+            <div className={`min-w-0 flex-1 ${collapsed ? "" : "pr-9"}`}>
+              <NavItem
+                item={DASHBOARD_ITEM}
+                collapsed={collapsed}
+                onRequestExpand={() => updateCollapsed(false)}
+              />
+            </div>
+          </div>
+
           {NAV_GROUPS.map((group, index) => (
             <div key={group.heading ?? index} className="flex flex-col gap-0.5">
               {group.heading ? (
