@@ -3,7 +3,7 @@
 # Dois alvos finais: `web` (Next.js em modo standalone) e `migrate`
 # (roda `prisma migrate deploy` uma vez, antes do `web` subir).
 
-FROM node:20-bookworm-slim AS base
+FROM node:26-bookworm-slim AS base
 # Prisma precisa de libssl em runtime, não só no build.
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
   && rm -rf /var/lib/apt/lists/*
