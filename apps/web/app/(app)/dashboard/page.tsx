@@ -87,12 +87,15 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   WALLET: "Carteira de recebimentos",
 };
 
-export default async function DashboardPage({ searchParams }: {
-  searchParams: {
-    empresa?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string;
-    conta?: string; categoria?: string; pessoa?: string; centroCusto?: string;
-  };
-}) {
+export default async function DashboardPage(
+  props: {
+    searchParams: Promise<{
+      empresa?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string;
+      conta?: string; categoria?: string; pessoa?: string; centroCusto?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const companies = await listCompaniesForUser(user.id);

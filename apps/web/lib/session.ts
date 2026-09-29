@@ -10,15 +10,17 @@ export const MFA_CHALLENGE_COOKIE_NAME = "ax_mfa_challenge";
  * ou Route Handler, únicos lugares onde o Next permite mutar cookies.
  */
 export async function getCurrentUser() {
-  const token = cookies().get(SESSION_COOKIE_NAME)?.value;
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
   const session = await resolveSession(token);
   return session?.user ?? null;
 }
 
-export function setSessionCookie(rawToken: string, expiresAt?: Date) {
-  cookies().set(SESSION_COOKIE_NAME, rawToken, {
+export async function setSessionCookie(rawToken: string, expiresAt?: Date) {
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE_NAME, rawToken, {
     httpOnly: true,
     // Cookie "Secure" só é aceito pelo navegador em HTTPS — em produção sem
     // TLS na frente (ex.: acesso direto por IP, atrás de um proxy que ainda
@@ -32,12 +34,14 @@ export function setSessionCookie(rawToken: string, expiresAt?: Date) {
   });
 }
 
-export function clearSessionCookie() {
-  cookies().delete(SESSION_COOKIE_NAME);
+export async function clearSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE_NAME);
 }
 
-export function setMfaChallengeCookie(rawToken: string, expiresAt: Date) {
-  cookies().set(MFA_CHALLENGE_COOKIE_NAME, rawToken, {
+export async function setMfaChallengeCookie(rawToken: string, expiresAt: Date) {
+  const cookieStore = await cookies();
+  cookieStore.set(MFA_CHALLENGE_COOKIE_NAME, rawToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false",
     sameSite: "lax",
@@ -46,16 +50,19 @@ export function setMfaChallengeCookie(rawToken: string, expiresAt: Date) {
   });
 }
 
-export function getMfaChallengeToken(): string | undefined {
-  return cookies().get(MFA_CHALLENGE_COOKIE_NAME)?.value;
+export async function getMfaChallengeToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(MFA_CHALLENGE_COOKIE_NAME)?.value;
 }
 
-export function clearMfaChallengeCookie() {
-  cookies().delete(MFA_CHALLENGE_COOKIE_NAME);
+export async function clearMfaChallengeCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(MFA_CHALLENGE_COOKIE_NAME);
 }
 
-export function getSessionToken(): string | undefined {
-  return cookies().get(SESSION_COOKIE_NAME)?.value;
+export async function getSessionToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(SESSION_COOKIE_NAME)?.value;
 }
 
 /** Para Route Handlers: lança em vez de devolver null, para os handlers só terem o caminho feliz. */

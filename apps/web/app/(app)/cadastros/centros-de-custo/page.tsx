@@ -6,7 +6,10 @@ import { archiveCostCenterAction, createCostCenterAction } from "./actions";
 import { reactivateCostCenterAction, updateCostCenterAction } from "./actions";
 import { ActionModal } from "@/components/ui/action-modal";
 
-export default async function CostCentersPage({ searchParams }: { searchParams: { erro?: string; criado?: string; arquivado?: string; atualizado?: string } }) {
+export default async function CostCentersPage(
+  props: { searchParams: Promise<{ erro?: string; criado?: string; arquivado?: string; atualizado?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);

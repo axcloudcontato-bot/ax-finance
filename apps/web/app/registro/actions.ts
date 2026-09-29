@@ -15,12 +15,13 @@ export async function registerAction(formData: FormData) {
 
   let user;
   try {
+    const requestHeaders = await headers();
     user = await registerUser(
       { email, name, password },
       {
         requireEmailVerification: true,
         verificationDelivery: {
-          baseUrl: publicBaseUrl(headers().get("origin") ?? undefined),
+          baseUrl: publicBaseUrl(requestHeaders.get("origin") ?? undefined),
           returnTo: returnTo || undefined,
         },
       }

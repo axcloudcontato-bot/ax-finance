@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { verifyEmailAction } from "./actions";
 
-export default function VerifyEmailPage({ params, searchParams }: { params: { token: string }; searchParams: { erro?: string; retorno?: string } }) {
+export default async function VerifyEmailPage(
+  props: { params: Promise<{ token: string }>; searchParams: Promise<{ erro?: string; retorno?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   return (
     <main className="narrow">
       <div className="card">

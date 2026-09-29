@@ -6,11 +6,12 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { BUCKET_LABEL } from "@/lib/aging-labels";
 
-export default async function EmAbertoPage({
-  searchParams,
-}: {
-  searchParams: { tipo?: string; data?: string };
-}) {
+export default async function EmAbertoPage(
+  props: {
+    searchParams: Promise<{ tipo?: string; data?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

@@ -22,11 +22,12 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Cancelada",
 };
 
-export default async function EntradasRecorrenciasPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; gerados?: string };
-}) {
+export default async function EntradasRecorrenciasPage(
+  props: {
+    searchParams: Promise<{ erro?: string; gerados?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

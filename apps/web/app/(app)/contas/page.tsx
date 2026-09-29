@@ -18,25 +18,26 @@ const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   WALLET: "Carteira de recebimentos",
 };
 
-export default async function ContasPage({
-  searchParams,
-}: {
-  searchParams: {
-    erro?: string;
-    criado?: string;
-    erroAjuste?: string;
-    contaAjuste?: string;
-    ajustado?: string;
-    erroEstorno?: string;
-    mes?: string;
-    de?: string;
-    ate?: string;
-    periodo?: string;
-    comparar?: string;
-    erroConta?: string;
-    contaAtualizada?: string;
-  };
-}) {
+export default async function ContasPage(
+  props: {
+    searchParams: Promise<{
+      erro?: string;
+      criado?: string;
+      erroAjuste?: string;
+      contaAjuste?: string;
+      ajustado?: string;
+      erroEstorno?: string;
+      mes?: string;
+      de?: string;
+      ate?: string;
+      periodo?: string;
+      comparar?: string;
+      erroConta?: string;
+      contaAtualizada?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

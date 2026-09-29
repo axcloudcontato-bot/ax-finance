@@ -16,6 +16,8 @@
     "db:seed": "pnpm --filter @ax-finance/db exec tsx prisma/seed.ts",
     "db:studio": "pnpm --filter @ax-finance/db exec prisma studio",
     "admin:grant": "pnpm --filter @ax-finance/db exec tsx scripts/grant-platform-admin.ts",
+    "ops:load-test": "node ops/load-test.mjs",
+    "security:audit": "pnpm audit --prod --audit-level high",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",

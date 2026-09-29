@@ -6,11 +6,12 @@ import { getCurrentUser } from "@/lib/session";
 import { beginMfaSetupAction, confirmMfaSetupAction, disableMfaAction } from "./actions";
 import { ConfirmMfaForm } from "./confirm-mfa-form";
 
-export default async function SecurityPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; configurando?: string; desativado?: string };
-}) {
+export default async function SecurityPage(
+  props: {
+    searchParams: Promise<{ erro?: string; configurando?: string; desativado?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const status = await getMfaStatus(user.id);

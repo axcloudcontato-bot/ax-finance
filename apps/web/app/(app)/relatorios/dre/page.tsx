@@ -7,11 +7,12 @@ import { formatDateOnly } from "@/lib/dates";
 import { resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { formatPercentageChange } from "@/lib/comparison";
 
-export default async function DrePage({
-  searchParams,
-}: {
-  searchParams: { de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string };
-}) {
+export default async function DrePage(
+  props: {
+    searchParams: Promise<{ de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

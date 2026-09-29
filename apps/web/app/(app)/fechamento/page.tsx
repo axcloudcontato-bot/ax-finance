@@ -5,11 +5,12 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { addMonths, currentYearMonth, monthLabel } from "@/lib/month";
 import { closePeriodAction, reopenPeriodAction } from "./actions";
 
-export default async function FechamentoPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; fechado?: string; reaberto?: string };
-}) {
+export default async function FechamentoPage(
+  props: {
+    searchParams: Promise<{ erro?: string; fechado?: string; reaberto?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

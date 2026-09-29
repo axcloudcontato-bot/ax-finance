@@ -5,11 +5,11 @@ import { revokeSession } from "@ax-finance/domain";
 import { clearMfaChallengeCookie, clearSessionCookie, getSessionToken } from "@/lib/session";
 
 export async function logoutAction() {
-  const token = getSessionToken();
+  const token = await getSessionToken();
   if (token) {
     await revokeSession(token);
   }
-  clearSessionCookie();
-  clearMfaChallengeCookie();
+  await clearSessionCookie();
+  await clearMfaChallengeCookie();
   redirect("/login");
 }

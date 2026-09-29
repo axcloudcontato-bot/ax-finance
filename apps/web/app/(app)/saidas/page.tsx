@@ -22,11 +22,12 @@ const FILTER_LABEL: Record<Filter, string> = {
   todas: "Todas",
 };
 
-export default async function SaidasPage({
-  searchParams,
-}: {
-  searchParams: { filtro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string; loteConcluido?: string };
-}) {
+export default async function SaidasPage(
+  props: {
+    searchParams: Promise<{ filtro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string; loteConcluido?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

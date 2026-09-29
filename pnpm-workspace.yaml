@@ -6,3 +6,5 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+overrides:
+  postcss@8.4.31: 8.5.28

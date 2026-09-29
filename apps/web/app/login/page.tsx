@@ -6,11 +6,12 @@ import "@fontsource/manrope/800.css";
 import { LoginExperience } from "./login-experience";
 import { loginAction } from "./actions";
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; cadastrado?: string; retorno?: string; verificacao?: string; preview?: string; emailVerificado?: string; senhaRedefinida?: string };
-}) {
+export default async function LoginPage(
+  props: {
+    searchParams: Promise<{ erro?: string; cadastrado?: string; retorno?: string; verificacao?: string; preview?: string; emailVerificado?: string; senhaRedefinida?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return (
     <LoginExperience
       action={loginAction}

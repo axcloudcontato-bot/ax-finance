@@ -16,17 +16,18 @@ export async function loginAction(formData: FormData) {
   let needsMfa = false;
 
   try {
+    const requestHeaders = await headers();
     const result = await login(
       { email, password },
-      { ipAddress: clientIpFromHeaders(headers()), rememberSession: remember }
+      { ipAddress: clientIpFromHeaders(requestHeaders), rememberSession: remember }
     );
     if (result.mfaRequired) {
-      setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);
+      await setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);
       needsMfa = true;
     } else {
       // Sem "lembrar", o cookie dura só até o navegador ser fechado. A sessão
       // no banco continua revogável e expira normalmente em ambos os casos.
-      setSessionCookie(result.session.rawToken, remember ? result.session.expiresAt : undefined);
+      await setSessionCookie(result.session.rawToken, remember ? result.session.expiresAt : undefined);
     }
   } catch (error) {
     const message = error instanceof TooManyLoginAttemptsError

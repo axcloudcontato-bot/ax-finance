@@ -8,11 +8,12 @@ import { formatDateOnly } from "@/lib/dates";
 import { reverseTransferAction } from "./actions";
 import { resolvePeriodRange } from "@/lib/month";
 
-export default async function TransferenciasPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string };
-}) {
+export default async function TransferenciasPage(
+  props: {
+    searchParams: Promise<{ erro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

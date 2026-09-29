@@ -15,7 +15,10 @@ const PRIORITY_TONE: Record<string, string> = { LOW: "neutral", NORMAL: "info", 
 const INCIDENT_STATUS: Record<string, string> = { INVESTIGATING: "Investigando", IDENTIFIED: "Identificado", MONITORING: "Monitorando", RESOLVED: "Resolvido" };
 const INCIDENT_TONE: Record<string, string> = { INVESTIGATING: "danger", IDENTIFIED: "warning", MONITORING: "info", RESOLVED: "success" };
 
-export default async function AdminSupportPage({ searchParams }: { searchParams: { erro?: string; criado?: string; atualizado?: string } }) {
+export default async function AdminSupportPage(
+  props: { searchParams: Promise<{ erro?: string; criado?: string; atualizado?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect(loginPathFor("/admin/suporte"));
   const access = await getPlatformAdminAccess(user.id);

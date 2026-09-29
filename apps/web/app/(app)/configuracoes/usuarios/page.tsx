@@ -13,7 +13,8 @@ const ROLE_LABEL: Record<string, string> = {
   VIEWER: "Consulta",
 };
 
-export default async function CompanyUsersPage({ searchParams }: { searchParams: { erro?: string; atualizado?: string } }) {
+export default async function CompanyUsersPage(props: { searchParams: Promise<{ erro?: string; atualizado?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);

@@ -7,11 +7,12 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { Modal } from "@/components/ui/modal";
 import { createPartyAction } from "./actions";
 
-export default async function PessoasPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string };
-}) {
+export default async function PessoasPage(
+  props: {
+    searchParams: Promise<{ erro?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

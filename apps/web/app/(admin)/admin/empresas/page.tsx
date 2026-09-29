@@ -29,7 +29,10 @@ const STATUS_TONE: Record<string, string> = {
 
 const dateValue = (value: Date | null | undefined) => value ? value.toISOString().slice(0, 10) : "";
 
-export default async function AdminCompaniesPage({ searchParams }: { searchParams: { busca?: string; assinatura?: string; erro?: string; atualizada?: string } }) {
+export default async function AdminCompaniesPage(
+  props: { searchParams: Promise<{ busca?: string; assinatura?: string; erro?: string; atualizada?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect(loginPathFor("/admin/empresas"));
   const access = await getPlatformAdminAccess(user.id);

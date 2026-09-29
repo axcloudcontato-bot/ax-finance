@@ -198,8 +198,76 @@ services:
       - ${BACKUP_HOST_DIR:-./.backups}:/backups:ro
     logging: *default-logging
 
+  # Coleta as métricas protegidas do web e as encaminha para qualquer destino
+  # compatível com Prometheus Remote Write (Grafana Cloud, Mimir etc.).
+  metrics-agent:
+    image: grafana/alloy:v1.20.0
+    profiles: ["monitoring"]
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      DEPLOY_ENVIRONMENT: ${DEPLOY_ENVIRONMENT:-production}
+      PROMETHEUS_REMOTE_WRITE_URL: ${PROMETHEUS_REMOTE_WRITE_URL:-}
+      PROMETHEUS_REMOTE_WRITE_USERNAME: ${PROMETHEUS_REMOTE_WRITE_USERNAME:-}
+      PROMETHEUS_REMOTE_WRITE_PASSWORD: ${PROMETHEUS_REMOTE_WRITE_PASSWORD:-}
+    depends_on:
+      web:
+        condition: service_healthy
+    volumes:
+      - ./ops/alloy.config:/etc/alloy/config.alloy:ro
+      - alloy_data:/var/lib/alloy/data
+    logging: *default-logging
+
+  # Replica somente backups completos e imutáveis. A política de expiração é
+  # aplicada no bucket remoto, nunca por este processo.
+  backup-copy:
+    image: rclone/rclone:1.75.1
+    profiles: ["external-backup"]
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/ops/backup-copy-entrypoint.sh"]
+    environment:
+      BACKUP_DIR: /backups
+      BACKUP_REMOTE: ${BACKUP_REMOTE:-}
+      BACKUP_COPY_INTERVAL_HOURS: ${BACKUP_COPY_INTERVAL_HOURS:-24}
+      BACKUP_COPY_MAX_AGE_SECONDS: ${BACKUP_COPY_MAX_AGE_SECONDS:-129600}
+    depends_on:
+      backup:
+        condition: service_healthy
+    volumes:
+      - ./ops:/ops:ro
+      - ${BACKUP_HOST_DIR:-./.backups}:/backups
+      - ${RCLONE_CONFIG_HOST_PATH:-./.secrets/rclone.conf}:/config/rclone/rclone.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /backups/.external_copy_success && now=$$(date +%s) && last=$$(sed -n '1p' /backups/.external_copy_success) && test $$((now-last)) -le $${BACKUP_COPY_MAX_AGE_SECONDS:-129600}"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 15m
+    logging: *default-logging
+
+  # Opcional: exige cerca de 4 GiB de RAM durante atualização das assinaturas.
+  # Só ative depois de validar os anexos antigos e definir CLAMAV_HOST=clamav.
+  clamav:
+    image: clamav/clamav-debian:1.5.4_base
+    profiles: ["attachment-security"]
+    restart: unless-stopped
+    environment:
+      CLAMD_STARTUP_TIMEOUT: ${CLAMD_STARTUP_TIMEOUT:-1800}
+      FRESHCLAM_CHECKS: ${FRESHCLAM_CHECKS:-12}
+    volumes:
+      - clamav_database:/var/lib/clamav
+    mem_limit: 4g
+    logging: *default-logging
+
 volumes:
   postgres_data:
   attachments_data:
   imports_data:
   worker_runtime:
+  alloy_data:
+  clamav_database:

@@ -52,12 +52,13 @@ restaura o dump, valida as migrations e extrai os anexos. Ele não acessa nem
 altera o banco de produção:
 
 ```bash
-docker compose --profile operations run --rm restore-verify
+OPERATION_OPERATOR=seu-usuario sh ./ops/run-restore-verification.sh
 ```
 
 Resultado esperado: evento JSON `restore_verify.completed` e código de saída 0.
 Execute após o primeiro deploy e, no mínimo, mensalmente. Registre data, operador,
-backup testado, duração e resultado no controle de mudanças da empresa.
+backup testado, duração e resultado no controle de mudanças da empresa. O wrapper
+grava log, checksum e resultado em `.operations/evidence/restore`.
 
 ### Restauração real em incidente
 
@@ -91,7 +92,7 @@ O Compose também verifica:
 Após cada deploy:
 
 ```bash
-./ops/smoke-check.sh
+sh ./ops/smoke-check.sh
 docker compose ps
 ```
 
@@ -125,6 +126,13 @@ O worker emite alertas estruturados para:
 
 `ALERT_WEBHOOK_URL` é opcional. Sem webhook, os alertas continuam nos logs. O
 destino deve aceitar `POST` JSON. Use um endpoint dedicado e rotacione seu segredo.
+Valide a entrega com `OPERATION_OPERATOR=seu-usuario sh ./ops/test-alert-webhook.sh`;
+o comando retorna erro quando a URL estiver ausente ou o destino rejeitar o POST.
+
+Para encaminhar métricas a um provedor externo compatível com Prometheus Remote
+Write, configure as variáveis `PROMETHEUS_REMOTE_WRITE_*` e execute
+`docker compose --profile monitoring up -d metrics-agent`. O Alloy mantém fila
+local no volume `alloy_data`. As regras continuam em `ops/prometheus-alerts.yml`.
 
 ## 5. Diagnóstico de jobs
 
@@ -197,6 +205,12 @@ Ao usar S3, o `attachments.tar.gz` do job local deixa de ser a cópia dos
 anexos: habilite versionamento, criptografia, política de retenção e replicação
 ou backup do próprio bucket.
 
+A cópia externa dos backups locais pode ser ativada com o perfil
+`external-backup`. Configure `BACKUP_REMOTE` e um arquivo rclone privado em
+`RCLONE_CONFIG_HOST_PATH`, então execute
+`docker compose --profile external-backup up -d backup-copy`. O processo copia
+pastas completas de forma imutável e não remove versões do destino.
+
 Para bloquear arquivos até a validação antivírus, disponibilize um daemon
 ClamAV (`clamd`) na rede privada e ative:
 
@@ -238,3 +252,9 @@ Toda alteração de assinatura, reprocessamento, chamado e incidente gera um
 registro em `admin_audit_events`. Reprocessamentos só são aceitos para falhas,
 atrasos ou locks expirados; jobs em execução saudável são rejeitados. Não coloque
 tokens, payloads financeiros ou dados sensíveis nos campos de motivo e resumo.
+
+## 10. Evidências e revisão de segurança
+
+O estado da validação real, resultados medidos, critérios de aprovação e comandos
+de ativação estão em [`VALIDACAO_OPERACIONAL.md`](./VALIDACAO_OPERACIONAL.md).
+Execute `pnpm security:audit`, `pnpm typecheck` e `pnpm build` antes de publicar.

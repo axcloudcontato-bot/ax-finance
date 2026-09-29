@@ -17,7 +17,7 @@ export async function completeMfaAction(
   _previousState: MfaLoginState,
   formData: FormData
 ): Promise<MfaLoginState> {
-  const challengeToken = getMfaChallengeToken();
+  const challengeToken = await getMfaChallengeToken();
   if (!challengeToken) return { error: "O acesso expirou. Entre novamente." };
   const requestedReturnTo = String(formData.get("returnTo") ?? "");
   const returnTo = safeAuthReturnTo(requestedReturnTo);
@@ -27,13 +27,13 @@ export async function completeMfaAction(
       challengeToken,
       String(formData.get("code") ?? "")
     );
-    setSessionCookie(
+    await setSessionCookie(
       result.session.rawToken,
       result.rememberSession ? result.session.expiresAt : undefined
     );
-    clearMfaChallengeCookie();
+    await clearMfaChallengeCookie();
   } catch (error) {
-    if (error instanceof MfaChallengeInvalidError) clearMfaChallengeCookie();
+    if (error instanceof MfaChallengeInvalidError) await clearMfaChallengeCookie();
     return { error: error instanceof Error ? error.message : "Não foi possível validar o código." };
   }
 

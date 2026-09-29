@@ -12,10 +12,10 @@ export async function POST(request: NextRequest) {
       rememberSession: body?.remember === true,
     });
     if (result.mfaRequired) {
-      setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);
+      await setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);
       return json({ mfaRequired: true }, 202);
     }
-    setSessionCookie(result.session.rawToken, result.session.expiresAt);
+    await setSessionCookie(result.session.rawToken, result.session.expiresAt);
     return json({ id: result.user.id, email: result.user.email, name: result.user.name, mfaRequired: false });
   } catch (error) {
     return errorResponse(error);

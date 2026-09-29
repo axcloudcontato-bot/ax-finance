@@ -31,24 +31,25 @@ const IMPORT_STATUS_LABEL: Record<string, string> = {
   FAILED: "Falhou",
 };
 
-export default async function ConciliacaoPage({
-  searchParams,
-}: {
-  searchParams: {
-    conta?: string;
-    status?: string;
-    erro?: string;
-    importado?: string;
-    duplicado?: string;
-    invalido?: string;
-    enfileirado?: string;
-    mes?: string;
-    de?: string;
-    ate?: string;
-    periodo?: string;
-    comparar?: string;
-  };
-}) {
+export default async function ConciliacaoPage(
+  props: {
+    searchParams: Promise<{
+      conta?: string;
+      status?: string;
+      erro?: string;
+      importado?: string;
+      duplicado?: string;
+      invalido?: string;
+      enfileirado?: string;
+      mes?: string;
+      de?: string;
+      ate?: string;
+      periodo?: string;
+      comparar?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

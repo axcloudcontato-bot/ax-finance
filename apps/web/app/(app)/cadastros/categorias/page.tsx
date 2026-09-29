@@ -9,11 +9,12 @@ import { Modal } from "@/components/ui/modal";
 import { ActionModal } from "@/components/ui/action-modal";
 import { archiveCategoryAction, createCategoryAction, reactivateCategoryAction, updateCategoryAction } from "./actions";
 
-export default async function CategoriasPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; atualizado?: string };
-}) {
+export default async function CategoriasPage(
+  props: {
+    searchParams: Promise<{ erro?: string; atualizado?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

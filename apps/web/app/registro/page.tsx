@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { registerAction } from "./actions";
 
-export default function RegistroPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string; retorno?: string };
-}) {
+export default async function RegistroPage(
+  props: {
+    searchParams: Promise<{ erro?: string; retorno?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   return (
     <main className="narrow">
       <div className="card">

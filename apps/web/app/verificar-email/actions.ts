@@ -9,8 +9,9 @@ export async function resendVerificationAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   let previewPath: string | undefined;
   try {
+    const requestHeaders = await headers();
     const request = await requestEmailVerification(email, {
-      baseUrl: publicBaseUrl(headers().get("origin") ?? undefined),
+      baseUrl: publicBaseUrl(requestHeaders.get("origin") ?? undefined),
     });
     if (request) {
       previewPath = verificationPreviewPath(request.rawToken);

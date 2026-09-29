@@ -8,7 +8,8 @@ import { getMfaChallengeToken } from "@/lib/session";
 import { completeMfaAction } from "./actions";
 import { MfaForm } from "./mfa-form";
 
-export default function MfaPage({ searchParams }: { searchParams: { retorno?: string } }) {
-  if (!getMfaChallengeToken()) redirect("/login");
-  return <MfaForm action={completeMfaAction} returnTo={searchParams.retorno} />;
+export default async function MfaPage({ searchParams }: { searchParams: Promise<{ retorno?: string }> }) {
+  if (!(await getMfaChallengeToken())) redirect("/login");
+  const resolvedSearchParams = await searchParams;
+  return <MfaForm action={completeMfaAction} returnTo={resolvedSearchParams.retorno} />;
 }

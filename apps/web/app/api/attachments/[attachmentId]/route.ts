@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, { params }: { params: { attachmentId: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ attachmentId: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const company = await requirePrimaryCompany(user.id);

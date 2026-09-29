@@ -6,11 +6,12 @@ import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categorie
 import { InstallmentForm } from "@/components/titles/installment-form";
 import { createEntradaInstallmentPlanAction } from "../actions";
 
-export default async function EntradaParceladaPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string };
-}) {
+export default async function EntradaParceladaPage(
+  props: {
+    searchParams: Promise<{ erro?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

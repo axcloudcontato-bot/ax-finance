@@ -3,11 +3,12 @@ import { listCompaniesForUser } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { onboardingAction } from "./actions";
 
-export default async function OnboardingPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string };
-}) {
+export default async function OnboardingPage(
+  props: {
+    searchParams: Promise<{ erro?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

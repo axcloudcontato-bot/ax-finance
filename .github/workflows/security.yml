@@ -1,0 +1,28 @@
+name: Security checks
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: "17 11 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependencies-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm security:audit
+      - run: pnpm typecheck
+      - run: pnpm build

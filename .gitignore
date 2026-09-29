@@ -12,4 +12,6 @@ Thumbs.db
 *.deb
 .data/
 .backups/
+.operations/
+.secrets/
 *.tsbuildinfo

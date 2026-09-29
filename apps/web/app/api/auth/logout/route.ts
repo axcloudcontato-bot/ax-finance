@@ -4,12 +4,12 @@ import { clearMfaChallengeCookie, clearSessionCookie, getSessionToken } from "@/
 
 export async function POST() {
   try {
-    const token = getSessionToken();
+    const token = await getSessionToken();
     if (token) {
       await revokeSession(token);
     }
-    clearSessionCookie();
-    clearMfaChallengeCookie();
+    await clearSessionCookie();
+    await clearMfaChallengeCookie();
     return json({ ok: true });
   } catch (error) {
     return errorResponse(error);

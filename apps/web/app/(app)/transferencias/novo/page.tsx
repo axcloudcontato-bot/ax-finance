@@ -5,11 +5,12 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { createTransferAction } from "../actions";
 
-export default async function NovaTransferenciaPage({
-  searchParams,
-}: {
-  searchParams: { erro?: string };
-}) {
+export default async function NovaTransferenciaPage(
+  props: {
+    searchParams: Promise<{ erro?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

@@ -5,11 +5,12 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { updateNotificationPreferenceAction } from "./actions";
 
-export default async function NotificationSettingsPage({
-  searchParams,
-}: {
-  searchParams: { salvo?: string; erro?: string };
-}) {
+export default async function NotificationSettingsPage(
+  props: {
+    searchParams: Promise<{ salvo?: string; erro?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);

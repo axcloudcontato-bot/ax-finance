@@ -7,21 +7,38 @@ import {
 
 const lastAlertAt = new Map<string, number>();
 
+type AlertDeliveryOptions = {
+  bypassCooldown?: boolean;
+  requireWebhook?: boolean;
+  test?: boolean;
+};
+
+export type AlertDeliveryResult = "delivered" | "logged" | "cooldown";
+
 function positiveNumber(value: string | undefined, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-async function deliverAlert(code: string, summary: string, value: number, now: Date) {
+async function deliverAlert(
+  code: string,
+  summary: string,
+  value: number,
+  now: Date,
+  options: AlertDeliveryOptions = {}
+): Promise<AlertDeliveryResult> {
   const cooldownMs = positiveNumber(process.env.ALERT_COOLDOWN_MINUTES, 30) * 60_000;
   const previous = lastAlertAt.get(code) || 0;
-  if (now.getTime() - previous < cooldownMs) return;
+  if (!options.bypassCooldown && now.getTime() - previous < cooldownMs) return "cooldown";
 
   structuredLog("warn", "operations.alert", { alertCode: code, summary, value });
   const webhook = process.env.ALERT_WEBHOOK_URL?.trim();
   if (!webhook) {
+    if (options.requireWebhook) {
+      throw new Error("ALERT_WEBHOOK_URL não está configurada.");
+    }
     lastAlertAt.set(code, now.getTime());
-    return;
+    return "logged";
   }
   try {
     const response = await fetch(webhook, {
@@ -34,14 +51,28 @@ async function deliverAlert(code: string, summary: string, value: number, now: D
         summary,
         value,
         timestamp: now.toISOString(),
+        test: options.test || undefined,
       }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) throw Object.assign(new Error("AlertWebhookRejected"), { code: `HTTP_${response.status}` });
     lastAlertAt.set(code, now.getTime());
+    return "delivered";
   } catch (error) {
     logOperationalError("operations.alert_delivery_failed", error, { alertCode: code });
+    if (options.requireWebhook) throw error;
+    return "logged";
   }
+}
+
+export async function testAlertWebhook(now = new Date()) {
+  return deliverAlert(
+    "operational_test",
+    "Teste operacional do canal de alertas do AX Finance.",
+    1,
+    now,
+    { bypassCooldown: true, requireWebhook: true, test: true }
+  );
 }
 
 export async function monitorOperations(now = new Date()) {

@@ -24,13 +24,14 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Cancelada",
 };
 
-export default async function EntradaRecorrenciaDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { ruleId: string };
-  searchParams: { gerados?: string };
-}) {
+export default async function EntradaRecorrenciaDetailPage(
+  props: {
+    params: Promise<{ ruleId: string }>;
+    searchParams: Promise<{ gerados?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

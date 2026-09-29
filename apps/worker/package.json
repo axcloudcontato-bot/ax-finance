@@ -11,7 +11,7 @@
   "dependencies": {
     "@ax-finance/db": "workspace:*",
     "@ax-finance/domain": "workspace:*",
-    "nodemailer": "^7.0.13",
+    "nodemailer": "^10.0.11",
     "tsx": "^4.16.2"
   },
   "devDependencies": {

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requestPasswordResetAction } from "./actions";
 
-export default function PasswordRecoveryPage({ searchParams }: { searchParams: { enviado?: string; preview?: string } }) {
+export default async function PasswordRecoveryPage(props: { searchParams: Promise<{ enviado?: string; preview?: string }> }) {
+  const searchParams = await props.searchParams;
   return (
     <main className="narrow">
       <div className="card">

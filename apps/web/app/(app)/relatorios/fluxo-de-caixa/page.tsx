@@ -8,11 +8,12 @@ import { NATURE_LABEL } from "@/lib/category-labels";
 import { resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { formatPercentageChange } from "@/lib/comparison";
 
-export default async function FluxoDeCaixaPage({
-  searchParams,
-}: {
-  searchParams: { de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string };
-}) {
+export default async function FluxoDeCaixaPage(
+  props: {
+    searchParams: Promise<{ de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

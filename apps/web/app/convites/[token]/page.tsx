@@ -10,7 +10,11 @@ const ROLE_LABEL: Record<string, string> = {
   VIEWER: "Consulta",
 };
 
-export default async function InvitationPage({ params, searchParams }: { params: { token: string }; searchParams: { erro?: string } }) {
+export default async function InvitationPage(
+  props: { params: Promise<{ token: string }>; searchParams: Promise<{ erro?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await getCurrentUser();
   const returnTo = `/convites/${params.token}`;
 

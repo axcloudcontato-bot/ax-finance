@@ -40,13 +40,14 @@ import {
   updateEntradaAction,
 } from "../actions";
 
-export default async function EntradaDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { titleId: string };
-  searchParams: { erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; duplicado?: string; rateado?: string };
-}) {
+export default async function EntradaDetailPage(
+  props: {
+    params: Promise<{ titleId: string }>;
+    searchParams: Promise<{ erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; duplicado?: string; rateado?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

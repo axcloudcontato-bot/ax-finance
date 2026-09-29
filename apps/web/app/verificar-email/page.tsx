@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { resendVerificationAction } from "./actions";
 
-export default function ResendVerificationPage({ searchParams }: { searchParams: { enviado?: string; preview?: string } }) {
+export default async function ResendVerificationPage(props: { searchParams: Promise<{ enviado?: string; preview?: string }> }) {
+  const searchParams = await props.searchParams;
   return (
     <main className="narrow">
       <div className="card">

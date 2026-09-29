@@ -10,13 +10,14 @@ import { deactivatePartyAction } from "../actions";
 import { reactivatePartyAction, updatePartyAction } from "../actions";
 import { ActionModal } from "@/components/ui/action-modal";
 
-export default async function PessoaDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { partyId: string };
-  searchParams: { erro?: string; atualizado?: string };
-}) {
+export default async function PessoaDetailPage(
+  props: {
+    params: Promise<{ partyId: string }>;
+    searchParams: Promise<{ erro?: string; atualizado?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");

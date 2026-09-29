@@ -3,10 +3,8 @@ import { createFinancialAccount, listFinancialAccounts } from "@ax-finance/domai
 import { json, errorResponse } from "@/lib/api";
 import { requireUser } from "@/lib/session";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: { companyId: string } }
-) {
+export async function GET(_request: NextRequest, props: { params: Promise<{ companyId: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const accounts = await listFinancialAccounts(user.id, params.companyId);
@@ -16,10 +14,8 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { companyId: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ companyId: string }> }) {
+  const params = await props.params;
   try {
     const user = await requireUser();
     const body = await request.json();

@@ -34,13 +34,14 @@ function ColumnSelect({
   );
 }
 
-export default async function BankImportPreviewPage({
-  params,
-  searchParams,
-}: {
-  params: { batchId: string };
-  searchParams: { erro?: string };
-}) {
+export default async function BankImportPreviewPage(
+  props: {
+    params: Promise<{ batchId: string }>;
+    searchParams: Promise<{ erro?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);

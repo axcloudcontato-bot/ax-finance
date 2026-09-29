@@ -13,7 +13,8 @@ function EmptyOperation({ children }: { children: string }) {
   return <div className="admin-empty-inline"><CheckCircle2 size={19} /><span>{children}</span></div>;
 }
 
-export default async function AdminOperationsPage({ searchParams }: { searchParams: { erro?: string; reprocessado?: string } }) {
+export default async function AdminOperationsPage(props: { searchParams: Promise<{ erro?: string; reprocessado?: string }> }) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect(loginPathFor("/admin/operacoes"));
   const access = await getPlatformAdminAccess(user.id);

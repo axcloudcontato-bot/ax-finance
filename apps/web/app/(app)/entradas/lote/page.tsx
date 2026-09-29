@@ -7,7 +7,8 @@ import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categorie
 import { TitleBatchPreview } from "@/components/titles/title-batch-preview";
 import { executeTitleBatchAction } from "../../lote-actions";
 
-export default async function EntradaBatchPage({searchParams}:{searchParams:{ids?:string|string[];erro?:string}}){
+export default async function EntradaBatchPage(props:{searchParams: Promise<{ids?:string|string[];erro?:string}>}) {
+  const searchParams = await props.searchParams;
   const user=await getCurrentUser();if(!user)redirect("/login");const company=await requirePrimaryCompany(user.id);
   const ids=Array.isArray(searchParams.ids)?searchParams.ids:searchParams.ids?[searchParams.ids]:[];
   const [all,categories,accounts,costCenters]=await Promise.all([listTitles(user.id,company.id,{type:"RECEIVABLE"}),listActiveCategories(user.id,company.id),listFinancialAccounts(user.id,company.id),listCostCenters(user.id,company.id)]);

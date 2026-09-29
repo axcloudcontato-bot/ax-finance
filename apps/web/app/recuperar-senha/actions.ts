@@ -10,8 +10,9 @@ export async function requestPasswordResetAction(formData: FormData) {
   let previewPath: string | undefined;
 
   try {
+    const requestHeaders = await headers();
     const request = await requestPasswordReset(email, {
-      baseUrl: publicBaseUrl(headers().get("origin") ?? undefined),
+      baseUrl: publicBaseUrl(requestHeaders.get("origin") ?? undefined),
     });
     if (request) {
       previewPath = passwordResetPreviewPath(request.rawToken);

@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { resetPasswordAction } from "./actions";
 
-export default function ResetPasswordPage({ params, searchParams }: { params: { token: string }; searchParams: { erro?: string } }) {
+export default async function ResetPasswordPage(
+  props: { params: Promise<{ token: string }>; searchParams: Promise<{ erro?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   return (
     <main className="narrow">
       <div className="card">

@@ -33,11 +33,12 @@ function resourceHref(
   return null;
 }
 
-export default async function AuditoriaPage({
-  searchParams,
-}: {
-  searchParams: { tipo?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string };
-}) {
+export default async function AuditoriaPage(
+  props: {
+    searchParams: Promise<{ tipo?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
