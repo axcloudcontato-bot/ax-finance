@@ -262,3 +262,57 @@ O topo do sidebar foi inspecionado em ambos os estados porque esta é a região 
 - `pnpm --filter web exec tsc --noEmit`: passou.
 - `pnpm test`: 37 arquivos e 169 testes aprovados.
 - `git diff --check`: passou.
+
+---
+
+# Design QA — Site comercial e plano Gestão Pessoal
+
+final result: passed
+
+## Evidência
+
+- Direção visual selecionada: `docs/design-audit-personal-site/selected-option-1.png` (1024 × 1536 px).
+- Estado anterior: `docs/design-audit-personal-site/01-home-before.png`, `02-pricing-before.png` e `03-mobile-before.png`.
+- Primeiro passe implementado: `docs/design-audit-personal-site/04-implementation-pass1.png`.
+- Comparação lado a lado: `docs/design-audit-personal-site/06-side-by-side-comparison.png`.
+- Hero final após os ajustes de fidelidade: `docs/design-audit-personal-site/07-final-hero.png`.
+- Implementação final: `http://127.0.0.1:3100/`, validada no Codex In-app Browser.
+- Viewports avaliados: 1440 × 1024 e 390 × 844 CSS px, densidade 1×.
+- Estado: visitante sem sessão, com CTAs públicos de avaliação e demonstração.
+
+## Comparação visual
+
+- Composição: hero editorial com proposta de valor à esquerda e prévia real do dashboard à direita, seguido por benefícios, comparação de planos, demonstração, FAQ e CTA final.
+- Tipografia: hierarquia forte em marinho, com título em três linhas no desktop e quatro linhas legíveis no mobile.
+- Produto: a prévia usa componentes e gráfico vetorial reais; não há mockup achatado nem gráficos simulados com blocos genéricos.
+- Cores: superfícies brancas e azul muito claro, azul de marca, cards financeiros em turquesa, rosa e azul e uma faixa de demonstração em marinho.
+- Planos: Gestão Pessoal e Essencial têm paridade visual, exclusões explícitas, preços legíveis e o Essencial recebe ênfase sem esconder a opção de R$ 29,90.
+- Espaçamento: seções têm ritmo amplo no desktop e refluem para uma coluna contínua no mobile, sem cortes ou rolagem horizontal.
+
+## Histórico da comparação
+
+1. Estado anterior: página funcional, porém com pouca prova visual do produto, hierarquia comercial genérica e comparação de planos menos escaneável.
+2. Primeiro passe: aplicada a direção selecionada com hero, dashboard demonstrativo, benefícios e cards de preço redesenhados.
+3. P1 identificado: o CTA claro da faixa de demonstração herdava o gradiente azul e perdia contraste. Corrigido para fundo branco e texto azul.
+4. P2 identificado: o título principal quebrava em quatro linhas no desktop. Ajustada a escala responsiva para reproduzir as três linhas da referência.
+5. Pós-fix desktop e mobile: nenhuma diferença P0/P1/P2 restante; variações P3 de conteúdo e comprimento da página são intencionais para preservar demonstração, FAQ e documentos comerciais já existentes.
+
+## Interações e acessibilidade verificadas
+
+- Navegação pública e CTAs apontam para os destinos esperados.
+- Cada plano preserva seu parâmetro de cadastro (`PERSONAL` e `ESSENTIAL`).
+- FAQ abre e revela a resposta por `details/summary` nativo.
+- A prévia do dashboard possui nome acessível e conteúdo identificado como fictício.
+- Os controles continuam visíveis e legíveis em 390 px.
+- Console do navegador sem erros.
+
+## Verificação técnica
+
+- `pnpm typecheck`: passou.
+- `pnpm test`: 39 arquivos e 174 testes aprovados.
+- `pnpm build`: passou, incluindo compilação, validação de tipos e geração de 55 páginas.
+- `pnpm lint`: indisponível porque o repositório não possui arquivo de configuração do ESLint; não é uma regressão desta alteração.
+
+## Resultado
+
+Não restaram diferenças visuais P0, P1 ou P2. O site está aprovado para entrega.

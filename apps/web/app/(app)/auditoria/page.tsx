@@ -4,6 +4,7 @@ import { EVENT_TYPE_LABEL, listAuditEvents } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { isComparisonMode, periodQuery, resolvePeriodRange } from "@/lib/month";
+import { requirePlanFeature } from "@/lib/plan-access";
 
 const RESOURCE_LABEL: Record<string, string> = {
   Title: "Título",
@@ -44,6 +45,7 @@ export default async function AuditoriaPage(
     redirect("/login");
   }
   const company = await requirePrimaryCompany(user.id);
+  await requirePlanFeature(user.id, company.id, "AUDIT_LOG");
 
   const period = resolvePeriodRange(searchParams);
   const { from, to } = period;

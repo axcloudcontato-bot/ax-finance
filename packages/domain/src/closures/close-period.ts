@@ -2,6 +2,7 @@ import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const closePeriodInput = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/),
@@ -15,6 +16,7 @@ export const closePeriodInput = z.object({
 export async function closePeriod(userId: string, companyId: string, input: unknown) {
   const data = closePeriodInput.parse(input);
   await assertCompanyPermission(userId, companyId, "CLOSING");
+  await assertCompanyPlanFeature(userId, companyId, "PERIOD_CLOSING");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const closure = await tx.periodClosure.upsert({

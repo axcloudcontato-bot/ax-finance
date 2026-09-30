@@ -6,6 +6,7 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { formatPercentageChange } from "@/lib/comparison";
+import { requirePlanFeature } from "@/lib/plan-access";
 
 export default async function DrePage(
   props: {
@@ -18,6 +19,7 @@ export default async function DrePage(
     redirect("/login");
   }
   const company = await requirePrimaryCompany(user.id);
+  await requirePlanFeature(user.id, company.id, "MANAGERIAL_DRE");
 
   const period = resolvePeriodRange(searchParams);
   const { from, to } = period;

@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCompanyAccess, getPlatformAdminAccess, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
+import { getCompanyAccess, getCompanyPlanAccess, getPlatformAdminAccess, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { AppShell } from "@/components/app-shell";
 import { logoutAction } from "./actions";
+import { noIndexMetadata } from "@/lib/site";
+
+export const metadata: Metadata = noIndexMetadata;
 
 // Casca compartilhada por toda tela autenticada (Seção 4 do DIRECAO.md: menu
 // principal fixo). P0 limita uma empresa por assinatura (Seção 17) — a
@@ -22,9 +26,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const company = await requirePrimaryCompany(user.id);
-  const [notifications, access, platformAdmin] = await Promise.all([
+  const [notifications, access, planAccess, platformAdmin] = await Promise.all([
     listNotifications(user.id, company.id),
     getCompanyAccess(user.id, company.id),
+    getCompanyPlanAccess(user.id, company.id),
     getPlatformAdminAccess(user.id),
   ]);
 
@@ -35,6 +40,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       membershipRole={access.role}
       canManageMembers={access.permissions.includes("MEMBERS_MANAGE")}
       isPlatformAdmin={Boolean(platformAdmin)}
+      planCode={planAccess.code}
       logoutAction={logoutAction}
       notifications={notifications.map((notification) => ({
         id: notification.id,

@@ -212,6 +212,7 @@
 .eyeButton,
 .textButton,
 .footer button,
+.footer a,
 .dialogClose {
   padding: 0;
   margin: 0;
@@ -272,6 +273,10 @@
 
 .primaryButton,
 .dialogAction {
+  --ax-button-edge: #2f68e8;
+  --ax-button-spark: #dce9ff;
+  position: relative;
+  isolation: isolate;
   width: 100%;
   min-height: 54px;
   display: flex;
@@ -280,20 +285,29 @@
   gap: 11px;
   padding: 12px 14px;
   margin: 0;
+  overflow: hidden;
   color: #fff;
-  border: 0;
-  border-radius: 11px;
-  background: var(--login-blue);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #3e7df8, #2f68e8) padding-box, conic-gradient(from var(--ax-button-angle), var(--ax-button-edge) 0 72%, var(--ax-button-spark) 80%, var(--ax-button-edge) 88%) border-box;
+  box-shadow: 0 10px 24px rgba(47, 104, 232, 0.24);
   font: inherit;
   font-size: 16px;
   font-weight: 800;
-  transition: background 180ms ease, transform 180ms ease;
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease, filter 180ms ease;
 }
 
 .primaryButton:hover:not(:disabled),
 .dialogAction:hover:not(:disabled) {
-  background: var(--login-blue-dark);
-  transform: translateY(-1px);
+  animation: ax-button-orbit 1.6s linear infinite;
+  transform: translateY(-1px) scale(1.015);
+  box-shadow: 0 14px 30px rgba(47, 104, 232, 0.3);
+  filter: saturate(1.05);
+}
+
+.primaryButton:active:not(:disabled),
+.dialogAction:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
 }
 
 .primaryButton:disabled {
@@ -364,9 +378,11 @@
   margin: 0;
 }
 
-.footer button {
+.footer button,
+.footer a {
   color: inherit;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .footer nav span {

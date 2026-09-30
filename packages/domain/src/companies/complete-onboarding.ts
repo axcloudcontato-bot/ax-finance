@@ -7,6 +7,7 @@ import { createTrialSubscriptionInTx } from "../subscriptions/subscriptions";
 
 export const completeOnboardingInput = z.object({
   companyName: z.string().trim().min(1).max(200),
+  planCode: z.enum(["PERSONAL", "ESSENTIAL"]).default("ESSENTIAL"),
   accountName: z.string().trim().min(1).max(200),
   accountType: z.enum(["BANK", "CASH", "WALLET"]),
   openingBalanceCents: z.number().int(),
@@ -51,7 +52,7 @@ export async function completeOnboarding(userId: string, input: unknown) {
     // conexão, dá pra completar o contexto sem abrir uma nova.
     await tx.$executeRaw`SELECT set_config('app.current_company_id', ${companyId}, true)`;
 
-    await createTrialSubscriptionInTx(tx, companyId);
+    await createTrialSubscriptionInTx(tx, companyId, data.planCode);
 
     const account = await tx.financialAccount.create({
       data: {

@@ -11,7 +11,10 @@ export async function registerAction(formData: FormData) {
   const name = String(formData.get("name") ?? "");
   const password = String(formData.get("password") ?? "");
   const requestedReturnTo = String(formData.get("returnTo") ?? "");
-  const returnTo = requestedReturnTo.startsWith("/convites/") ? requestedReturnTo : "";
+  const planCode = String(formData.get("planCode") ?? "ESSENTIAL").toUpperCase() === "PERSONAL" ? "PERSONAL" : "ESSENTIAL";
+  const returnTo = requestedReturnTo.startsWith("/convites/")
+    ? requestedReturnTo
+    : `/onboarding?plano=${planCode}`;
 
   let user;
   try {
@@ -33,7 +36,7 @@ export async function registerAction(formData: FormData) {
         : error instanceof Error
           ? error.message
           : "Não foi possível concluir o cadastro.";
-    redirect(`/registro?erro=${encodeURIComponent(message)}${returnTo ? `&retorno=${encodeURIComponent(returnTo)}` : ""}`);
+    redirect(`/registro?erro=${encodeURIComponent(message)}&plano=${planCode}${returnTo ? `&retorno=${encodeURIComponent(returnTo)}` : ""}`);
   }
 
   const previewPath = user.verification

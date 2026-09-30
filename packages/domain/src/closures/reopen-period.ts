@@ -3,6 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { PeriodClosureNotFoundError } from "../errors";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const reopenPeriodInput = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/),
@@ -13,6 +14,7 @@ export const reopenPeriodInput = z.object({
 export async function reopenPeriod(userId: string, companyId: string, input: unknown) {
   const data = reopenPeriodInput.parse(input);
   await assertCompanyPermission(userId, companyId, "CLOSING");
+  await assertCompanyPlanFeature(userId, companyId, "PERIOD_CLOSING");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const existing = await tx.periodClosure.findUnique({

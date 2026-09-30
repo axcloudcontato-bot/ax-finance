@@ -2,6 +2,7 @@ import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { NATURE_LABEL } from "../categories/nature-label";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const managerialIncomeStatementInput = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -23,6 +24,7 @@ export type ManagerialIncomeStatementInput = z.infer<typeof managerialIncomeStat
 export async function getManagerialIncomeStatement(userId: string, companyId: string, input: unknown) {
   const data = managerialIncomeStatementInput.parse(input);
   await assertActiveMembership(userId, companyId);
+  await assertCompanyPlanFeature(userId, companyId, "MANAGERIAL_DRE");
 
   const titles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({

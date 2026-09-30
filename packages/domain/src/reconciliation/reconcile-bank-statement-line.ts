@@ -7,6 +7,7 @@ import {
   SettlementAlreadyReconciledError,
   SettlementNotFoundError,
 } from "../errors";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const reconcileBankStatementLineInput = z.object({
   settlementId: z.string().uuid(),
@@ -22,6 +23,7 @@ export const reconcileBankStatementLineInput = z.object({
 export async function reconcileBankStatementLine(userId: string, companyId: string, lineId: string, input: unknown) {
   const data = reconcileBankStatementLineInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const line = await tx.bankStatementLine.findFirst({ where: { id: lineId, companyId } });

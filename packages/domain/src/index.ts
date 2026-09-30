@@ -22,3 +22,5 @@ export * from "./audit/index";
 export * from "./closures/index";
 export * from "./search/index";
 export * from "./admin/index";
+export * from "./support/index";
+export * from "./exports/index";

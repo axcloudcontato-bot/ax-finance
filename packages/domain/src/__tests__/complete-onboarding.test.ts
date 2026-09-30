@@ -49,7 +49,7 @@ describe("onboarding completo (empresa + conta + categorias numa transação)", 
     const categories = await listCategories(user.id, company.id);
     expect(categories.length).toBeGreaterThan(10);
     const subscription = await getCompanySubscription(user.id, company.id);
-    expect(subscription).toMatchObject({ status: "TRIAL", planCode: "TRIAL" });
+    expect(subscription).toMatchObject({ status: "TRIAL", planCode: "ESSENTIAL" });
     expect(subscription?.trialEndsAt).toBeInstanceOf(Date);
   });
 

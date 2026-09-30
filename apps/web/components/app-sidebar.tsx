@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Lock,
+  LifeBuoy,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -100,6 +101,7 @@ export function AppSidebar({
   membershipRole,
   canManageMembers,
   isPlatformAdmin,
+  planCode,
   logoutAction,
 }: {
   userName: string;
@@ -107,6 +109,7 @@ export function AppSidebar({
   membershipRole: MembershipRole;
   canManageMembers: boolean;
   isPlatformAdmin: boolean;
+  planCode: "PERSONAL" | "ESSENTIAL";
   logoutAction: () => void | Promise<void>;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -141,6 +144,17 @@ export function AppSidebar({
     ACCOUNTANT: "Contador",
     VIEWER: "Consulta",
   };
+  const unavailableItems = planCode === "PERSONAL"
+    ? new Set(["conciliacao", "rel-dre", "auditoria", "fechamento"])
+    : new Set<string>();
+  const visibleGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items
+      .filter((item) => !unavailableItems.has(item.id))
+      .map((item) => item.children
+        ? { ...item, children: item.children.filter((child) => !unavailableItems.has(child.id)) }
+        : item),
+  })).filter((group) => group.items.length > 0);
 
   return (
     <aside
@@ -178,7 +192,7 @@ export function AppSidebar({
             </div>
           </div>
 
-          {NAV_GROUPS.map((group, index) => (
+          {visibleGroups.map((group, index) => (
             <div key={group.heading ?? index} className="flex flex-col gap-0.5">
               {group.heading ? (
                 collapsed ? (
@@ -205,6 +219,7 @@ export function AppSidebar({
           {isPlatformAdmin ? <NavItem collapsed={collapsed} item={{ id: "admin-interno", title: "Administração interna", icon: ShieldCheck, href: "/admin" }} /> : null}
           <NavItem collapsed={collapsed} item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
           <NavItem collapsed={collapsed} item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
+          <NavItem collapsed={collapsed} item={{ id: "suporte", title: "Suporte", icon: LifeBuoy, href: "/configuracoes/suporte" }} />
           {canManageMembers ? (
             <>
               <NavItem collapsed={collapsed} item={{ id: "assinatura", title: "Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" }} />

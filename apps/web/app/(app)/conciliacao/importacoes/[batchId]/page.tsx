@@ -6,6 +6,7 @@ import {
   readImportSource,
 } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
+import { requirePlanFeature } from "@/lib/plan-access";
 import { formatCents } from "@/lib/currency";
 import { getCurrentUser } from "@/lib/session";
 import { confirmBankImportAction } from "../../actions";
@@ -45,6 +46,7 @@ export default async function BankImportPreviewPage(
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
+  await requirePlanFeature(user.id, company.id, "BANK_RECONCILIATION");
   const batch = await getBankImportBatch(user.id, company.id, params.batchId);
   if (batch.status !== "PREVIEW" || !batch.storageKey) {
     redirect(`/conciliacao?conta=${batch.financialAccountId}`);

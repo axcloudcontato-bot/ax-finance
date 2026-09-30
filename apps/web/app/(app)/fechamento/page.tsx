@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { addMonths, currentYearMonth, monthLabel } from "@/lib/month";
 import { closePeriodAction, reopenPeriodAction } from "./actions";
+import { requirePlanFeature } from "@/lib/plan-access";
 
 export default async function FechamentoPage(
   props: {
@@ -16,6 +17,7 @@ export default async function FechamentoPage(
     redirect("/login");
   }
   const company = await requirePrimaryCompany(user.id);
+  await requirePlanFeature(user.id, company.id, "PERIOD_CLOSING");
 
   const closures = await listPeriodClosures(user.id, company.id);
   const closureByPeriod = new Map(closures.map((closure) => [closure.period, closure]));

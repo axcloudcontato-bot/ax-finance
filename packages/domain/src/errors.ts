@@ -451,3 +451,18 @@ export class IncidentNotFoundError extends DomainError {
     super("Incidente não encontrado.", "INCIDENT_NOT_FOUND");
   }
 }
+
+export class SubscriptionCancellationInvalidError extends DomainError {
+  constructor() {
+    super("A assinatura não está disponível para esta alteração de cancelamento.", "SUBSCRIPTION_CANCELLATION_INVALID");
+  }
+}
+
+export class PlanFeatureUnavailableError extends DomainError {
+  constructor(planName: string) {
+    super(
+      `Este recurso não está disponível no plano ${planName}. Consulte a assinatura para conhecer as opções.`,
+      "PLAN_FEATURE_UNAVAILABLE"
+    );
+  }
+}

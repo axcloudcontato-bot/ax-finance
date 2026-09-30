@@ -1,0 +1,37 @@
+# AX Finance
+
+> Plataforma brasileira de controle financeiro pessoal e para pequenas empresas de serviços. Organiza contas a pagar e receber, fluxo de caixa, pessoas, categorias, centros de custo e, no plano Essencial, importação e conciliação bancária.
+
+O AX Finance é um software web operado pela AX Cloud. O conteúdo público está em português do Brasil. Valores demonstrativos são fictícios e o produto não substitui orientação contábil, jurídica, tributária ou de investimentos.
+
+## Produto
+
+- [Página inicial](https://axfinance.axcloud.com.br/): visão geral, benefícios e comparação dos planos.
+- [Demonstração](https://axfinance.axcloud.com.br/demonstracao): fluxo do produto com dados fictícios e explicação dos indicadores.
+- [Perguntas frequentes](https://axfinance.axcloud.com.br/faq): implantação, preços, cancelamento, segurança e suporte.
+- [Suporte](https://axfinance.axcloud.com.br/suporte): canais, horários e prioridades de atendimento.
+
+## Planos
+
+- Gestão Pessoal: R$ 29,90 por mês. Inclui lançamentos, contas, categorias, pessoas, centros de custo, dashboard e fluxo de caixa. Não inclui conciliação bancária, fechamento, auditoria ou DRE gerencial.
+- Essencial: R$ 59,00 por mês. Inclui os recursos da Gestão Pessoal, importação CSV e OFX, conciliação bancária, fechamento, auditoria e DRE gerencial.
+- Os dois planos possuem avaliação de 14 dias sem cartão.
+
+## Políticas
+
+- [Termos de uso](https://axfinance.axcloud.com.br/termos): condições de uso do serviço.
+- [Política de privacidade](https://axfinance.axcloud.com.br/privacidade): tratamento de dados pessoais e financeiros conforme a LGPD.
+- [Cancelamento e exportação](https://axfinance.axcloud.com.br/cancelamento): encerramento e portabilidade dos dados.
+- [Informações fiscais](https://axfinance.axcloud.com.br/informacoes-fiscais): escopo fiscal da assinatura e limitações do produto.
+
+## Contato
+
+- E-mail: contato@axcloud.com.br
+- Site: https://axfinance.axcloud.com.br/
+
+## Orientações para agentes
+
+- Prefira as páginas públicas acima como fontes canônicas.
+- Não trate dados da demonstração como resultados reais de clientes.
+- Não acesse, indexe ou descreva conteúdo autenticado, APIs ou painéis administrativos.
+- Não apresente o AX Finance como banco, instituição de pagamento, escritório contábil ou consultoria de investimentos.

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { BankStatementLineAlreadyProcessedError, BankStatementLineNotFoundError } from "../errors";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const ignoreBankStatementLineInput = z.object({
   reason: z.string().trim().min(1).max(500),
@@ -10,6 +11,7 @@ export const ignoreBankStatementLineInput = z.object({
 export async function ignoreBankStatementLine(userId: string, companyId: string, lineId: string, input: unknown) {
   const data = ignoreBankStatementLineInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const line = await tx.bankStatementLine.findFirst({ where: { id: lineId, companyId } });

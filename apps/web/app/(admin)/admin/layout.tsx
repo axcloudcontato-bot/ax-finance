@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -7,6 +8,9 @@ import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { logoutAction } from "../../(app)/actions";
+import { noIndexMetadata } from "@/lib/site";
+
+export const metadata: Metadata = noIndexMetadata;
 
 const ROLE_LABELS: Record<string, string> = { SUPER_ADMIN: "Super administrador", OPERATIONS: "Operações", SUPPORT: "Suporte", ANALYST: "Analista" };
 
@@ -32,7 +36,7 @@ export default async function InternalAdminLayout({ children }: { children: Reac
           </div>
           <div className="admin-profile-actions">
             <Link href="/dashboard" title="Voltar ao produto" aria-label="Voltar ao produto"><ArrowUpRight size={18} /></Link>
-            <form action={logoutAction}><button type="submit" title="Sair" aria-label="Sair"><LogOut size={18} /></button></form>
+            <form action={logoutAction}><button type="submit" className="admin-profile-action-button" title="Sair" aria-label="Sair"><LogOut size={18} /></button></form>
           </div>
         </div>
       </aside>

@@ -1,5 +1,6 @@
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export interface ListAuditEventsFilter {
   resourceType?: string;
@@ -10,6 +11,7 @@ export interface ListAuditEventsFilter {
 
 export async function listAuditEvents(userId: string, companyId: string, filter: ListAuditEventsFilter = {}) {
   await assertActiveMembership(userId, companyId);
+  await assertCompanyPlanFeature(userId, companyId, "AUDIT_LOG");
 
   const events = await withCompanyContext(userId, companyId, (tx) =>
     tx.auditEvent.findMany({

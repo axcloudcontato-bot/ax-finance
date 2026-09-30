@@ -5,7 +5,7 @@ import { onboardingAction } from "./actions";
 
 export default async function OnboardingPage(
   props: {
-    searchParams: Promise<{ erro?: string }>;
+    searchParams: Promise<{ erro?: string; plano?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -20,20 +20,35 @@ export default async function OnboardingPage(
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  const selectedPlan = searchParams.plano?.toUpperCase() === "PERSONAL" ? "PERSONAL" : "ESSENTIAL";
 
   return (
     <main className="narrow">
       <div className="card">
-        <h1>Vamos configurar sua empresa</h1>
+        <h1>Vamos configurar sua gestão</h1>
         <p className="subtitle">
-          Crie a empresa e a primeira conta com o saldo de abertura — o instante imediatamente
+          Escolha a versão, crie seu espaço e a primeira conta com o saldo de abertura — o instante imediatamente
           anterior ao primeiro movimento que você for lançar ou importar.
         </p>
 
         {searchParams.erro && <p className="error">{searchParams.erro}</p>}
 
         <form action={onboardingAction}>
-          <label htmlFor="companyName">Nome da empresa</label>
+          <fieldset className="onboarding-plan-options">
+            <legend>Qual versão combina com você?</legend>
+            <label className="onboarding-plan-card">
+              <input type="radio" name="planCode" value="PERSONAL" defaultChecked={selectedPlan === "PERSONAL"} />
+              <span><strong>Gestão Pessoal</strong><small>R$ 29,90/mês</small></span>
+              <em>Organização pessoal sem fechamento, auditoria, DRE ou conciliação bancária.</em>
+            </label>
+            <label className="onboarding-plan-card">
+              <input type="radio" name="planCode" value="ESSENTIAL" defaultChecked={selectedPlan === "ESSENTIAL"} />
+              <span><strong>Essencial</strong><small>R$ 59/mês</small></span>
+              <em>Gestão completa com conciliação, fechamento, auditoria e DRE gerencial.</em>
+            </label>
+          </fieldset>
+
+          <label htmlFor="companyName">Nome do espaço financeiro</label>
           <input id="companyName" name="companyName" type="text" required maxLength={200} />
 
           <label htmlFor="accountName">Nome da conta</label>

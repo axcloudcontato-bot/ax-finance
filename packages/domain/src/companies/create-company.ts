@@ -6,6 +6,7 @@ import { createTrialSubscriptionInTx } from "../subscriptions/subscriptions";
 
 export const createCompanyInput = z.object({
   name: z.string().trim().min(1).max(200),
+  planCode: z.enum(["PERSONAL", "ESSENTIAL"]).default("ESSENTIAL"),
   currency: z.string().length(3).default("BRL"),
   timezone: z.string().min(1).default("America/Sao_Paulo"),
 });
@@ -50,7 +51,7 @@ export async function createCompany(userId: string, input: unknown) {
     });
 
     await tx.$executeRaw`SELECT set_config('app.current_company_id', ${companyId}, true)`;
-    await createTrialSubscriptionInTx(tx, companyId);
+    await createTrialSubscriptionInTx(tx, companyId, data.planCode);
 
     await scheduleCompanyJobsInTx(tx, companyId, userId);
 

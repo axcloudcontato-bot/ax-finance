@@ -12,6 +12,7 @@ export function safeAuthReturnTo(value: string | null | undefined): string {
     const allowed =
       target.pathname === "/admin" ||
       target.pathname.startsWith("/admin/") ||
+      target.pathname === "/onboarding" ||
       target.pathname.startsWith("/convites/");
 
     return allowed ? `${target.pathname}${target.search}${target.hash}` : "/";

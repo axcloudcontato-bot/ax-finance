@@ -3,6 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { FinancialAccountNotFoundError } from "../errors";
 import { parseBankStatementContent } from "./bank-statement-parser";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const importBankStatementInput = z.object({
   financialAccountId: z.string().uuid(),
@@ -20,6 +21,7 @@ export type ImportBankStatementInput = z.infer<typeof importBankStatementInput>;
 export async function importBankStatement(userId: string, companyId: string, input: unknown) {
   const data = importBankStatementInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   const parsed = parseBankStatementContent("CSV", data.csvContent, {
     dateColumn: "data",
     descriptionColumn: "descricao",

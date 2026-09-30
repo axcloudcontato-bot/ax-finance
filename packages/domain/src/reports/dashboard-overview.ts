@@ -4,6 +4,7 @@ import { z } from "zod";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { computeAccountBalanceDeltas } from "../financial-accounts/account-balances";
 import { settlementCashDelta } from "../titles/settlement-cash-delta";
+import { isPlanFeatureEnabled } from "../subscriptions/plan-features";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -198,6 +199,8 @@ export async function getDashboardOverview(userId: string, companyId: string, in
   ];
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    const subscription = await tx.subscription.findUnique({ where: { companyId }, select: { planCode: true } });
+    const reconciliationAvailable = isPlanFeatureEnabled(subscription?.planCode, "BANK_RECONCILIATION");
     const [accounts, balanceDeltas, settlements, refunds, titles, pendingLines, failedImports] = await Promise.all([
       tx.financialAccount.findMany({
         where: { companyId, status: "ACTIVE", ...(data.financialAccountId ? { id: data.financialAccountId } : {}) },
@@ -249,7 +252,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
         },
         orderBy: { dueDate: "asc" },
       }),
-      tx.bankStatementLine.findMany({
+      reconciliationAvailable ? tx.bankStatementLine.findMany({
         where: {
           companyId,
           status: "PENDING",
@@ -257,14 +260,14 @@ export async function getDashboardOverview(userId: string, companyId: string, in
         },
         select: { id: true, lineDate: true, amountCents: true, financialAccountId: true },
         orderBy: { lineDate: "asc" },
-      }),
-      tx.importBatch.count({
+      }) : Promise.resolve([]),
+      reconciliationAvailable ? tx.importBatch.count({
         where: {
           companyId,
           status: "FAILED",
           ...(data.financialAccountId ? { financialAccountId: data.financialAccountId } : {}),
         },
-      }),
+      }) : Promise.resolve(0),
     ]);
 
     const currentSettlements = settlements.filter((row) =>
@@ -401,6 +404,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
       categoryRanking,
       flowSeries: [...buckets.values()],
       reconciliation: {
+        available: reconciliationAvailable,
         pendingCount: pendingLines.length,
         pendingAmountCents: pendingLines.reduce((sum, line) => {
           const amount = line.amountCents < BigInt(0) ? -line.amountCents : line.amountCents;

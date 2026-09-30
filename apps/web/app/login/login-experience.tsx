@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   ArrowRight,
@@ -11,7 +11,6 @@ import {
   EyeSlash,
   LockSimple,
   Wallet,
-  X,
 } from "@/components/ui/animated-icons";
 import styles from "./login.module.css";
 
@@ -57,13 +56,6 @@ export function LoginExperience({
   passwordReset,
 }: LoginExperienceProps) {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const legalDialog = useRef<HTMLDialogElement>(null);
-  const [legalTitle, setLegalTitle] = useState("");
-
-  function openLegal(title: string) {
-    setLegalTitle(title);
-    legalDialog.current?.showModal();
-  }
 
   return (
     <div className={styles.page}>
@@ -203,37 +195,11 @@ export function LoginExperience({
       <footer className={styles.footer}>
         <p>AX Finance · Gestão financeira pessoal</p>
         <nav aria-label="Informações legais">
-          <button type="button" onClick={() => openLegal("Privacidade")}>
-            Privacidade
-          </button>
+          <Link href="/privacidade">Privacidade</Link>
           <span aria-hidden="true">|</span>
-          <button type="button" onClick={() => openLegal("Termos de uso")}>
-            Termos de uso
-          </button>
+          <Link href="/termos">Termos de uso</Link>
         </nav>
       </footer>
-
-      <dialog className={styles.dialog} ref={legalDialog} aria-labelledby="legal-title">
-        <button
-          className={styles.dialogClose}
-          type="button"
-          aria-label="Fechar"
-          onClick={() => legalDialog.current?.close()}
-        >
-          <X size={21} aria-hidden="true" />
-        </button>
-        <h2 id="legal-title">{legalTitle}</h2>
-        <p>
-          O documento oficial será disponibilizado pelo AX Finance antes do lançamento comercial.
-        </p>
-        <button
-          className={styles.dialogAction}
-          type="button"
-          onClick={() => legalDialog.current?.close()}
-        >
-          Fechar
-        </button>
-      </dialog>
     </div>
   );
 }

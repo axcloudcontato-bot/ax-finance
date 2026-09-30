@@ -1,3 +1,14 @@
+const noIndexSources = [
+  "/login",
+  "/registro",
+  "/mfa",
+  "/onboarding",
+  "/recuperar-senha",
+  "/redefinir-senha/:path*",
+  "/verificar-email/:path*",
+  "/convites/:path*",
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
@@ -12,6 +23,10 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ],
       },
+      ...noIndexSources.map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
+      })),
     ];
   },
   // Pacotes do monorepo distribuem apenas os fontes TypeScript (sem etapa de

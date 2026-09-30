@@ -1,5 +1,6 @@
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export interface ListBankStatementLinesFilter {
   financialAccountId?: string;
@@ -14,6 +15,7 @@ export async function listBankStatementLines(
   filter: ListBankStatementLinesFilter = {}
 ) {
   await assertActiveMembership(userId, companyId);
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
 
   return withCompanyContext(userId, companyId, (tx) =>
     tx.bankStatementLine.findMany({

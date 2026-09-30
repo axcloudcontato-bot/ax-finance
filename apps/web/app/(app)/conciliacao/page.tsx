@@ -7,6 +7,7 @@ import {
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { requirePlanFeature } from "@/lib/plan-access";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import {
@@ -55,6 +56,7 @@ export default async function ConciliacaoPage(
     redirect("/login");
   }
   const company = await requirePrimaryCompany(user.id);
+  await requirePlanFeature(user.id, company.id, "BANK_RECONCILIATION");
 
   const accounts = await listFinancialAccounts(user.id, company.id);
   const activeAccountId = searchParams.conta ?? accounts[0]?.id;

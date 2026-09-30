@@ -12,6 +12,7 @@ export async function onboardingAction(formData: FormData) {
   }
 
   const companyName = String(formData.get("companyName") ?? "");
+  const planCode = String(formData.get("planCode") ?? "ESSENTIAL");
   const accountName = String(formData.get("accountName") ?? "");
   const accountType = String(formData.get("accountType") ?? "BANK") as
     | "BANK"
@@ -28,6 +29,7 @@ export async function onboardingAction(formData: FormData) {
     // um passo do meio falhar).
     const { company } = await completeOnboarding(user.id, {
       companyName,
+      planCode,
       accountName,
       accountType,
       openingBalanceCents: parseAmountToCents(openingBalanceRaw),

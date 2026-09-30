@@ -16,6 +16,7 @@ import {
   type CsvColumnMapping,
   type ImportFileFormatValue,
 } from "./bank-statement-parser";
+import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 const LOCK_TIMEOUT_MS = 30 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
@@ -43,6 +44,7 @@ export async function createBankImportPreview(
 ) {
   const data = createPreviewInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   return withCompanyContext(userId, companyId, async (tx) => {
     const account = await tx.financialAccount.findFirst({
       where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
@@ -68,6 +70,7 @@ export async function createBankImportPreview(
 
 export async function getBankImportBatch(userId: string, companyId: string, batchId: string) {
   await assertActiveMembership(userId, companyId);
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   const batch = await withCompanyContext(userId, companyId, (tx) => tx.importBatch.findFirst({
     where: { id: batchId, companyId },
     include: { financialAccount: { select: { name: true } }, job: true },
@@ -84,6 +87,7 @@ export async function confirmBankImport(
 ) {
   const data = confirmInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   return withCompanyContext(userId, companyId, async (tx) => {
     const batch = await tx.importBatch.findFirst({ where: { id: batchId, companyId } });
     if (!batch) throw new ImportBatchNotFoundError();
@@ -111,6 +115,7 @@ export async function confirmBankImport(
 
 export async function setBankImportProcessing(userId: string, companyId: string, batchId: string) {
   await assertActiveMembership(userId, companyId);
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   return withCompanyContext(userId, companyId, (tx) => tx.importBatch.updateMany({
     where: { id: batchId, companyId, status: { in: ["QUEUED", "PROCESSING"] } },
     data: { status: "PROCESSING", startedAt: new Date(), failureCode: null },
@@ -124,6 +129,7 @@ export async function processBankImportBatch(
   content: string
 ) {
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+  await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   const batch = await getBankImportBatch(userId, companyId, batchId);
   if (batch.status === "COMPLETED") return batch;
   if (!["PREVIEW", "PROCESSING", "QUEUED"].includes(batch.status)) throw new ImportBatchInvalidStateError();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { DomainError, CompanyAccessDeniedError, CompanyPermissionDeniedError, EmailNotVerifiedError, InvalidCredentialsError, InvalidMfaCodeError, MfaChallengeInvalidError, NotAuthenticatedError, EmailAlreadyRegisteredError, TooManyLoginAttemptsError } from "@ax-finance/domain";
+import { DomainError, CompanyAccessDeniedError, CompanyPermissionDeniedError, EmailNotVerifiedError, InvalidCredentialsError, InvalidMfaCodeError, MfaChallengeInvalidError, NotAuthenticatedError, EmailAlreadyRegisteredError, TooManyLoginAttemptsError, PlanFeatureUnavailableError } from "@ax-finance/domain";
 import { logOperationalError } from "@ax-finance/domain";
 
 /**
@@ -40,7 +40,7 @@ export function errorResponse(error: unknown): NextResponse {
   if (error instanceof CompanyAccessDeniedError) {
     return json({ error: error.code, message: error.message }, 404);
   }
-  if (error instanceof CompanyPermissionDeniedError) {
+  if (error instanceof CompanyPermissionDeniedError || error instanceof PlanFeatureUnavailableError) {
     return json({ error: error.code, message: error.message }, 403);
   }
   if (error instanceof EmailAlreadyRegisteredError) {
