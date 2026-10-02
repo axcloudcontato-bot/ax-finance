@@ -30,6 +30,7 @@ import { createCostCenter, listCostCenters } from "../cost-centers/cost-centers"
 import { createCategory } from "../categories/create-category";
 import { createTitle } from "../titles/create-title";
 import { listTitles } from "../titles/list-titles";
+import { generateDueOccurrences } from "../recurrences/generate-due-occurrences";
 
 function uniqueEmail(label: string) {
   return `${label}.${randomUUID()}@teste.ax.finance`;
@@ -222,5 +223,27 @@ describe("convites e permissões por papel (FIN-014)", () => {
     expect((await listCostCenters(operator.id, company.id)).map((item) => item.id)).toEqual([centerA.id]);
     expect((await listTitles(operator.id, company.id)).map((item) => item.description)).toEqual(["Visível"]);
     expect(accountB.id).not.toBe(accountA.id);
+  });
+  it("jobs agendados seguem o proprietário atual e nunca ficam presos a quem perdeu o acesso", async () => {
+    const owner = await registerUser({ email: uniqueEmail("job-owner"), name: "Dona", password: "senha-forte-123" });
+    const successor = await registerUser({ email: uniqueEmail("job-successor"), name: "Sucessora", password: "senha-forte-456" });
+    const company = await createCompany(owner.id, { name: "Empresa jobs" });
+    const { rawToken } = await createCompanyInvitation(owner.id, company.id, { email: successor.email, role: "FINANCE_ADMIN" });
+    await acceptCompanyInvitation(successor.id, rawToken);
+    const runners = async () => (await rootClient.scheduledJob.findMany({ where: { companyId: company.id } })).map((job) => job.runAsUserId);
+
+    expect(new Set(await runners())).toEqual(new Set([owner.id]));
+    const successorMembership = (await listCompanyMembers(owner.id, company.id)).find((member) => member.userId === successor.id)!;
+    await transferCompanyOwnership(owner.id, company.id, successorMembership.id);
+    expect(new Set(await runners())).toEqual(new Set([successor.id]));
+
+    // Dados anteriores à correção: jobs ainda apontando para o dono antigo.
+    await rootClient.scheduledJob.updateMany({ where: { companyId: company.id }, data: { runAsUserId: owner.id } });
+    const formerOwnerMembership = (await listCompanyMembers(successor.id, company.id)).find((member) => member.userId === owner.id)!;
+    await revokeCompanyMember(successor.id, company.id, formerOwnerMembership.id);
+
+    const after = await rootClient.scheduledJob.findMany({ where: { companyId: company.id } });
+    expect(new Set(after.map((job) => job.runAsUserId))).toEqual(new Set([successor.id]));
+    await expect(generateDueOccurrences(after[0]!.runAsUserId, company.id)).resolves.not.toThrow();
   });
 });

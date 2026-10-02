@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
-import { withCompanyContext, withUserContext } from "@ax-finance/db";
+import { withCompanyContext, withUserContext, type TenantScopedClient } from "@ax-finance/db";
 import {
   CompanyInvitationEmailMismatchError,
   CompanyInvitationInvalidError,
@@ -37,6 +37,24 @@ export const updateCompanyMemberAccessInput = z.object({
 
 function hashToken(rawToken: string): string {
   return createHash("sha256").update(rawToken).digest("hex");
+}
+
+/**
+ * Os jobs agendados rodam "como" um usuário (runAsUserId) e as rotinas do
+ * domínio exigem que ele ainda tenha membership ativo. Sem reatribuir, quem
+ * perde o acesso deixa recorrências e notificações da empresa falhando para
+ * sempre. Roda na mesma transação da mudança de acesso.
+ */
+async function reassignScheduledJobRunner(
+  tx: TenantScopedClient,
+  companyId: string,
+  fromUserId: string,
+  toUserId: string
+) {
+  await tx.scheduledJob.updateMany({
+    where: { companyId, runAsUserId: fromUserId },
+    data: { runAsUserId: toUserId },
+  });
 }
 
 export async function listCompanyMembers(userId: string, companyId: string) {
@@ -138,6 +156,7 @@ export async function transferCompanyOwnership(userId: string, companyId: string
       tx.membershipFinancialAccount.deleteMany({ where: { membershipId: target.id } }),
       tx.membershipCostCenter.deleteMany({ where: { membershipId: target.id } }),
     ]);
+    await reassignScheduledJobRunner(tx, companyId, currentOwner.userId, target.userId);
 
     await recordAuditEvent(tx, {
       companyId,
@@ -448,6 +467,8 @@ export async function revokeCompanyMember(userId: string, companyId: string, mem
       where: { id: membership.id },
       data: { status: "REVOKED" },
     });
+    // Quem revoga é o proprietário (MEMBERS_MANAGE), então assume os jobs.
+    await reassignScheduledJobRunner(tx, companyId, membership.userId, userId);
     await recordAuditEvent(tx, {
       companyId,
       actorUserId: userId,
