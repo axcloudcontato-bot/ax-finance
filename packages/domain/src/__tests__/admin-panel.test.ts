@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { withUserContext } from "@ax-finance/db";
+import { registerSettlement } from "../titles/register-settlement";
 import { createCompany } from "../companies/create-company";
 import { registerUser } from "../identity/register";
 import { createCategory } from "../categories/create-category";
@@ -51,6 +53,30 @@ describe("painel administrativo interno", () => {
     await rootClient.user.update({ where: { id: user.id }, data: { mfaEnabledAt: new Date() } });
     expect(await getPlatformAdminAccess(user.id)).toMatchObject({ mfaEnabled: true });
     await expect(getAdminBusinessMetrics(user.id)).resolves.toBeTruthy();
+  });
+
+  it("o administrador vê só contagens: títulos, baixas e contas de clientes ficam fora do RLS", async () => {
+    const admin = await setupAdmin("minimo");
+    const owner = await registerUser({ email: `cliente.${randomUUID()}@teste.ax.finance`, name: "Cliente", password: "senha-forte-123" });
+    const company = await createCompany(owner.id, { name: "Empresa do cliente" });
+    const account = await createFinancialAccount(owner.id, company.id, { name: "Conta", type: "BANK", openingBalanceCents: 0, openingDate: "2026-09-01" });
+    const category = await createCategory(owner.id, company.id, { name: "Receita", nature: "OPERATING_REVENUE" });
+    const title = await createTitle(owner.id, company.id, { type: "RECEIVABLE", description: "Segredo comercial", categoryId: category.id, originalAmountCents: 9_999, competenceDate: "2026-09-01", dueDate: "2026-09-10" });
+    await registerSettlement(owner.id, company.id, title.id, { financialAccountId: account.id, principalAmountCents: 9_999, effectiveDate: "2026-09-10" });
+
+    const direct = await withUserContext(admin.user.id, async (tx) => ({
+      titles: await tx.title.count(),
+      settlements: await tx.settlement.count(),
+      accounts: await tx.financialAccount.count(),
+    }));
+    expect(direct).toEqual({ titles: 0, settlements: 0, accounts: 0 });
+
+    const row = (await listAdminCompanies(admin.user.id)).find((item) => item.name === "Empresa do cliente")!;
+    expect(row._count).toMatchObject({ titles: 1, financialAccounts: 1, memberships: 1 });
+    expect(await getAdminBusinessMetrics(admin.user.id)).toMatchObject({ totalCompanies: 2, activatedCompanies: 1 });
+
+    const leaked = await withUserContext(owner.id, (tx) => tx.$queryRaw`SELECT company_id FROM app_admin_company_stats()`);
+    expect(leaked).toEqual([]);
   });
 
   it("mede ativação/conversão e audita intervenção na assinatura", async () => {

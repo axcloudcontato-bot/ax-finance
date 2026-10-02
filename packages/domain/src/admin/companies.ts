@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withUserContext } from "@ax-finance/db";
 import { assertPlatformAdminInTx, recordAdminAudit } from "./access";
+import { loadAdminCompanyStats } from "./company-stats";
 
 const listInput = z.object({
   search: z.string().trim().max(200).optional(),
@@ -21,11 +22,21 @@ export async function listAdminCompanies(userId: string, input: unknown = {}) {
       include: {
         subscription: true,
         memberships: { where: { role: "OWNER", status: "ACTIVE" }, include: { user: { select: { name: true, email: true } } }, take: 1 },
-        _count: { select: { memberships: true, financialAccounts: true, titles: true, importBatches: true, supportCases: true } },
+        _count: { select: { memberships: true, importBatches: true, supportCases: true } },
       },
       orderBy: { createdAt: "desc" }, take: 200,
     });
-    return companies.map((company) => ({ ...company, owner: company.memberships[0]?.user ?? null, memberships: undefined }));
+    const stats = await loadAdminCompanyStats(tx);
+    return companies.map((company) => ({
+      ...company,
+      owner: company.memberships[0]?.user ?? null,
+      memberships: undefined,
+      _count: {
+        ...company._count,
+        financialAccounts: stats.get(company.id)?.accounts ?? 0,
+        titles: stats.get(company.id)?.titles ?? 0,
+      },
+    }));
   });
 }
 

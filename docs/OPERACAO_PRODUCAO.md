@@ -249,6 +249,12 @@ aviso com o atalho para Configurações > Segurança, e as operações internas 
 recusadas pelo domínio. Depois de conceder o papel, ative o MFA da conta antes de usar o
 painel.
 
+O painel enxerga **apenas contagens** por empresa (contas, títulos, ativação), vindas da
+função `app_admin_company_stats()`. Títulos, baixas e contas das empresas não são legíveis
+por nenhum papel interno: o RLS não tem política de leitura para elas
+(`20261002120000_admin_least_privilege`). Suporte a um cliente que precise de dados
+financeiros deve passar por um fluxo próprio, com motivo, escopo e prazo.
+
 Papéis disponíveis: `SUPER_ADMIN`, `OPERATIONS`, `SUPPORT` e `ANALYST`.
 `SUPER_ADMIN` pode intervir em assinaturas; `OPERATIONS` pode reprocessar jobs;
 `SUPPORT` administra chamados e incidentes; `ANALYST` possui apenas leitura.
