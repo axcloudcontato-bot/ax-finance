@@ -38,5 +38,5 @@ export async function loginAction(formData: FormData) {
   }
 
   if (needsMfa) redirect(`/mfa${returnTo !== "/" ? `?retorno=${encodeURIComponent(returnTo)}` : ""}`);
-  redirect(returnTo);
+  redirect(returnTo === "/" ? "/painel" : returnTo);
 }

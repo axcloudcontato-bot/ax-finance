@@ -19,6 +19,7 @@ export function Modal({
   title,
   icon,
   maxWidth,
+  openWhen,
   children,
 }: {
   triggerLabel: ReactNode;
@@ -28,10 +29,12 @@ export function Modal({
   /** Mesma família animada de ícones do sidebar, ex.: <ArrowDownCircle className="size-5" />. */
   icon?: ReactNode;
   maxWidth?: string;
+  /** Abre o modal quando este parâmetro existe na URL, permitindo atalhos globais. */
+  openWhen?: string;
   children: ReactNode;
 }) {
   const searchParams = useSearchParams();
-  const shouldReopen = searchParams.has("erro") || searchParams.has("continuar");
+  const shouldReopen = searchParams.has("erro") || searchParams.has("continuar") || Boolean(openWhen && searchParams.has(openWhen));
   const paramsKey = searchParams.toString();
   const lastParamsKey = useRef(paramsKey);
 

@@ -83,6 +83,7 @@ export default async function SaidasPage(
             title="Nova saída"
             icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />}
             maxWidth="720px"
+            openWhen="novo"
           >
             <TitleForm
               action={createSaidaAction}

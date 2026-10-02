@@ -37,5 +37,5 @@ export async function completeMfaAction(
     return { error: error instanceof Error ? error.message : "Não foi possível validar o código." };
   }
 
-  redirect(returnTo);
+  redirect(returnTo === "/" ? "/painel" : returnTo);
 }

@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppTopbar, type AppNotification } from "@/components/app-topbar";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
 import { PageActionsSlot } from "@/components/page-actions-slot";
+import { BottomMenu } from "@/components/ui/bottom-menu";
 import type { MembershipRole } from "@ax-finance/db";
 
 export function AppShell({
@@ -47,7 +48,7 @@ export function AppShell({
           logoutAction={logoutAction}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto pb-28">
           {!dashboardOwnsToolbar ? (
             <div className="flex items-center justify-between gap-4 px-6 pt-4">
               <GlobalMonthSelector />
@@ -57,6 +58,13 @@ export function AppShell({
           {children}
         </div>
       </div>
+
+      <BottomMenu
+        userName={userName}
+        canManageMembers={canManageMembers}
+        notifications={notifications}
+        logoutAction={logoutAction}
+      />
     </div>
   );
 }

@@ -83,6 +83,7 @@ export default async function EntradasPage(
             title="Nova entrada"
             icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />}
             maxWidth="720px"
+            openWhen="novo"
           >
             <TitleForm
               action={createEntradaAction}
