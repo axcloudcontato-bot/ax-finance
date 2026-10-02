@@ -10,6 +10,7 @@ import {
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
 } from "@ax-finance/domain";
+import { escapeHtml, paragraph, renderEmailLayout } from "./email-layout";
 
 const ROLE_LABEL: Record<string, string> = {
   OWNER: "Proprietário",
@@ -19,21 +20,14 @@ const ROLE_LABEL: Record<string, string> = {
   VIEWER: "Consulta",
 };
 
+const ACTION_FOOTER =
+  "Você recebeu este e-mail porque uma ação foi solicitada com este endereço. Se não foi você, ignore esta mensagem.";
+
 function applicationBaseUrl() {
   const configured = process.env.APP_BASE_URL?.trim();
   if (configured) return configured.replace(/\/$/, "");
   if (process.env.NODE_ENV === "production") throw new Error("APP_BASE_URL não configurada no worker.");
   return "http://localhost:3000";
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>'"]/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    "'": "&#39;",
-    '"': "&quot;",
-  })[character]!);
 }
 
 function transport() {
@@ -62,34 +56,48 @@ function transport() {
   };
 }
 
-export async function sendOutboxEmail(event: OutboxEvent) {
-  let subject: string;
-  let text: string;
-  let html: string;
-  let recipient: string;
+export type RenderedEmail = { recipient: string; subject: string; text: string; html: string };
 
+export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
   if (event.type === "EMAIL_VERIFICATION") {
     const payload = decodeOutboxEmailPayload(event);
-    const safeName = escapeHtml(payload.name);
-    recipient = payload.to;
     const path = `/verificar-email/${payload.rawToken}${payload.returnTo ? `?retorno=${encodeURIComponent(payload.returnTo)}` : ""}`;
     const url = `${payload.baseUrl}${path}`;
-    const safeUrl = escapeHtml(url);
-    subject = "Confirme seu e-mail no AX Finance";
-    text = `Olá, ${payload.name}. Confirme seu e-mail acessando: ${url}\nO link expira em 24 horas.`;
-    html = `<p>Olá, ${safeName}.</p><p>Confirme seu e-mail para ativar o acesso ao AX Finance:</p><p><a href="${safeUrl}">Confirmar e-mail</a></p><p>O link expira em 24 horas.</p>`;
-  } else if (event.type === "PASSWORD_RESET") {
+    return {
+      recipient: payload.to,
+      subject: "Confirme seu e-mail no AX Finance",
+      text: `Olá, ${payload.name}. Confirme seu e-mail acessando: ${url}\nO link expira em 24 horas.`,
+      html: renderEmailLayout({
+        preheader: "Confirme seu e-mail para ativar o acesso ao AX Finance.",
+        heading: "Confirme seu e-mail",
+        bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph("Confirme seu e-mail para ativar o acesso ao AX Finance:", true),
+        cta: { url, label: "Confirmar e-mail" },
+        note: "O link expira em 24 horas.",
+        footerNote: ACTION_FOOTER,
+      }),
+    };
+  }
+
+  if (event.type === "PASSWORD_RESET") {
     const payload = decodeOutboxEmailPayload(event);
-    const safeName = escapeHtml(payload.name);
-    recipient = payload.to;
     const url = `${payload.baseUrl}/redefinir-senha/${payload.rawToken}`;
-    const safeUrl = escapeHtml(url);
-    subject = "Redefinição de senha do AX Finance";
-    text = `Olá, ${payload.name}. Redefina sua senha acessando: ${url}\nO link expira em 1 hora.`;
-    html = `<p>Olá, ${safeName}.</p><p>Recebemos uma solicitação para redefinir sua senha:</p><p><a href="${safeUrl}">Redefinir senha</a></p><p>O link expira em 1 hora. Se não foi você, ignore esta mensagem.</p>`;
-  } else if (event.type === "DUE_DATE_SUMMARY") {
+    return {
+      recipient: payload.to,
+      subject: "Redefinição de senha do AX Finance",
+      text: `Olá, ${payload.name}. Redefina sua senha acessando: ${url}\nO link expira em 1 hora.`,
+      html: renderEmailLayout({
+        preheader: "Redefina sua senha do AX Finance. O link expira em 1 hora.",
+        heading: "Redefinir senha",
+        bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph("Recebemos uma solicitação para redefinir a senha da sua conta:", true),
+        cta: { url, label: "Redefinir senha" },
+        note: "O link expira em 1 hora. Se não foi você quem solicitou, ignore esta mensagem — sua senha continua a mesma.",
+        footerNote: ACTION_FOOTER,
+      }),
+    };
+  }
+
+  if (event.type === "DUE_DATE_SUMMARY") {
     const payload = decodeDueDateSummaryPayload(event);
-    recipient = payload.to;
     const rows = payload.items.map((item) => {
       const label = item.type === "RECEIVABLE" ? "Entrada" : "Saída";
       return `${label}: ${item.description} — ${item.overdue ? "vencido em" : "vence em"} ${item.dueDate}`;
@@ -97,33 +105,73 @@ export async function sendOutboxEmail(event: OutboxEvent) {
     const htmlRows = payload.items.map((item) => {
       const label = item.type === "RECEIVABLE" ? "Entrada" : "Saída";
       const url = `${payload.baseUrl}${item.href}`;
-      return `<li><a href="${escapeHtml(url)}">${escapeHtml(label)}: ${escapeHtml(item.description)}</a> — ${item.overdue ? "vencido em" : "vence em"} ${escapeHtml(item.dueDate)}</li>`;
+      return `<li style="margin:0 0 8px 0;"><a href="${escapeHtml(url)}" style="color:#2765ec;">${escapeHtml(label)}: ${escapeHtml(item.description)}</a> — ${item.overdue ? "vencido em" : "vence em"} ${escapeHtml(item.dueDate)}</li>`;
     }).join("");
-    subject = `Títulos vencidos e do dia — ${payload.companyName}`;
-    text = `Olá, ${payload.name}.\n\n${rows.join("\n")}\n\nAcesse: ${payload.baseUrl}`;
-    html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>Estes títulos precisam de atenção em <strong>${escapeHtml(payload.companyName)}</strong>:</p><ul>${htmlRows}</ul>`;
-  } else if (event.type === "WEEKLY_SUMMARY") {
+    return {
+      recipient: payload.to,
+      subject: `Títulos vencidos e do dia — ${payload.companyName}`,
+      text: `Olá, ${payload.name}.\n\n${rows.join("\n")}\n\nAcesse: ${payload.baseUrl}`,
+      html: renderEmailLayout({
+        preheader: `Títulos que precisam de atenção em ${payload.companyName}.`,
+        heading: "Títulos que precisam de atenção",
+        bodyHtml:
+          paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
+          paragraph(`Estes títulos precisam de atenção em <strong>${escapeHtml(payload.companyName)}</strong>:`) +
+          `<ul style="margin:0;padding:0 0 0 20px;">${htmlRows}</ul>`,
+        cta: { url: payload.baseUrl, label: "Abrir o AX Finance" },
+      }),
+    };
+  }
+
+  if (event.type === "WEEKLY_SUMMARY") {
     const payload = decodeWeeklySummaryPayload(event);
-    recipient = payload.to;
     const money = (cents: string) => new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
     }).format(Number(BigInt(cents)) / 100);
     const url = `${payload.baseUrl}/relatorios/fluxo-de-caixa`;
-    subject = `Resumo financeiro semanal — ${payload.companyName}`;
-    text = `Olá, ${payload.name}.\nEntradas em aberto: ${money(payload.receivableOpenCents)}\nSaídas em aberto: ${money(payload.payableOpenCents)}\nVencidos: ${payload.overdueCount}\nPróximos 7 dias: ${payload.dueNext7Count}\n${url}`;
-    html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>Resumo semanal de <strong>${escapeHtml(payload.companyName)}</strong>:</p><ul><li>Entradas em aberto: ${escapeHtml(money(payload.receivableOpenCents))}</li><li>Saídas em aberto: ${escapeHtml(money(payload.payableOpenCents))}</li><li>Vencidos: ${payload.overdueCount}</li><li>Próximos 7 dias: ${payload.dueNext7Count}</li></ul><p><a href="${escapeHtml(url)}">Abrir relatórios</a></p>`;
-  } else if (event.type === "COMPANY_INVITATION") {
+    return {
+      recipient: payload.to,
+      subject: `Resumo financeiro semanal — ${payload.companyName}`,
+      text: `Olá, ${payload.name}.\nEntradas em aberto: ${money(payload.receivableOpenCents)}\nSaídas em aberto: ${money(payload.payableOpenCents)}\nVencidos: ${payload.overdueCount}\nPróximos 7 dias: ${payload.dueNext7Count}\n${url}`,
+      html: renderEmailLayout({
+        preheader: `Resumo semanal de ${payload.companyName}.`,
+        heading: "Resumo financeiro semanal",
+        bodyHtml:
+          paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
+          paragraph(`Resumo semanal de <strong>${escapeHtml(payload.companyName)}</strong>:`) +
+          `<ul style="margin:0;padding:0 0 0 20px;">` +
+          `<li style="margin:0 0 6px 0;">Entradas em aberto: ${escapeHtml(money(payload.receivableOpenCents))}</li>` +
+          `<li style="margin:0 0 6px 0;">Saídas em aberto: ${escapeHtml(money(payload.payableOpenCents))}</li>` +
+          `<li style="margin:0 0 6px 0;">Vencidos: ${payload.overdueCount}</li>` +
+          `<li style="margin:0;">Próximos 7 dias: ${payload.dueNext7Count}</li></ul>`,
+        cta: { url, label: "Abrir relatórios" },
+      }),
+    };
+  }
+
+  if (event.type === "COMPANY_INVITATION") {
     const payload = decodeCompanyInvitationPayload(event);
-    recipient = payload.to;
     const url = `${applicationBaseUrl()}/convites/${payload.rawToken}`;
     const role = ROLE_LABEL[payload.role] || payload.role;
-    subject = `Convite para acessar ${payload.companyName}`;
-    text = `${payload.invitedByName} convidou você para acessar ${payload.companyName} como ${role}.\nAceite o convite: ${url}\nO convite expira em ${new Date(payload.expiresAt).toLocaleDateString("pt-BR", { timeZone: "UTC" })}.`;
-    html = `<p><strong>${escapeHtml(payload.invitedByName)}</strong> convidou você para acessar <strong>${escapeHtml(payload.companyName)}</strong> como ${escapeHtml(role)}.</p><p><a href="${escapeHtml(url)}">Aceitar convite</a></p><p>O convite expira em ${escapeHtml(new Date(payload.expiresAt).toLocaleDateString("pt-BR", { timeZone: "UTC" }))}.</p>`;
-  } else if (event.type === "ACCESS_CHANGED") {
+    const expires = new Date(payload.expiresAt).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+    return {
+      recipient: payload.to,
+      subject: `Convite para acessar ${payload.companyName}`,
+      text: `${payload.invitedByName} convidou você para acessar ${payload.companyName} como ${role}.\nAceite o convite: ${url}\nO convite expira em ${expires}.`,
+      html: renderEmailLayout({
+        preheader: `${payload.invitedByName} convidou você para acessar ${payload.companyName}.`,
+        heading: "Você recebeu um convite",
+        bodyHtml: paragraph(`<strong>${escapeHtml(payload.invitedByName)}</strong> convidou você para acessar <strong>${escapeHtml(payload.companyName)}</strong> como ${escapeHtml(role)}.`, true),
+        cta: { url, label: "Aceitar convite" },
+        note: `O convite expira em ${escapeHtml(expires)}.`,
+        footerNote: ACTION_FOOTER,
+      }),
+    };
+  }
+
+  if (event.type === "ACCESS_CHANGED") {
     const payload = decodeAccessChangedPayload(event);
-    recipient = payload.to;
     const role = payload.role ? ROLE_LABEL[payload.role] || payload.role : undefined;
     const messages = {
       ROLE_CHANGED: `Seu papel em ${payload.companyName} foi alterado para ${role}.`,
@@ -135,26 +183,62 @@ export async function sendOutboxEmail(event: OutboxEvent) {
         : `A propriedade de ${payload.companyName} foi transferida para ${payload.targetName || "outro usuário"}. Seu papel agora é ${role}.`,
     } as const;
     const message = messages[payload.kind];
-    subject = payload.kind === "INVITATION_ACCEPTED" ? `Convite aceito — ${payload.companyName}` : `Alteração de acesso — ${payload.companyName}`;
-    text = `${message}${payload.actorName ? `\nAlteração realizada por ${payload.actorName}.` : ""}`;
-    html = `<p>${escapeHtml(message)}</p>${payload.actorName ? `<p>Alteração realizada por ${escapeHtml(payload.actorName)}.</p>` : ""}`;
-  } else if (event.type === "IMPORT_FAILED") {
-    const payload = decodeImportFailedPayload(event);
-    recipient = payload.to;
-    const url = `${applicationBaseUrl()}/conciliacao`;
-    subject = `Falha na importação — ${payload.companyName}`;
-    text = `Olá, ${payload.name}. Não foi possível processar uma importação em ${payload.companyName}. Revise o formato do arquivo e tente novamente: ${url}`;
-    html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>Não foi possível processar uma importação em <strong>${escapeHtml(payload.companyName)}</strong>.</p><p>Revise o formato do arquivo e tente novamente.</p><p><a href="${escapeHtml(url)}">Abrir conciliação</a></p>`;
-  } else if (event.type === "BILLING_NOTICE") {
-    const payload = decodeBillingNoticePayload(event);
-    recipient = payload.to;
-    const url = `${applicationBaseUrl()}${payload.href}`;
-    subject = `${payload.title} — ${payload.companyName}`;
-    text = `Olá, ${payload.name}.\n${payload.body}\n${url}`;
-    html = `<p>Olá, ${escapeHtml(payload.name)}.</p><p>${escapeHtml(payload.body)}</p><p><a href="${escapeHtml(url)}">Abrir assinatura</a></p>`;
-  } else {
-    throw new Error(`Tipo de e-mail não suportado: ${event.type}`);
+    const accepted = payload.kind === "INVITATION_ACCEPTED";
+    return {
+      recipient: payload.to,
+      subject: accepted ? `Convite aceito — ${payload.companyName}` : `Alteração de acesso — ${payload.companyName}`,
+      text: `${message}${payload.actorName ? `\nAlteração realizada por ${payload.actorName}.` : ""}`,
+      html: renderEmailLayout({
+        preheader: message,
+        heading: accepted ? "Convite aceito" : "Alteração de acesso",
+        bodyHtml:
+          paragraph(escapeHtml(message), !payload.actorName) +
+          (payload.actorName ? paragraph(`Alteração realizada por ${escapeHtml(payload.actorName)}.`, true) : ""),
+        footerNote: `Você recebeu este e-mail porque tem ou tinha acesso a ${payload.companyName} no AX Finance.`,
+      }),
+    };
   }
+
+  if (event.type === "IMPORT_FAILED") {
+    const payload = decodeImportFailedPayload(event);
+    const url = `${applicationBaseUrl()}/conciliacao`;
+    return {
+      recipient: payload.to,
+      subject: `Falha na importação — ${payload.companyName}`,
+      text: `Olá, ${payload.name}. Não foi possível processar uma importação em ${payload.companyName}. Revise o formato do arquivo e tente novamente: ${url}`,
+      html: renderEmailLayout({
+        preheader: `Não foi possível processar uma importação em ${payload.companyName}.`,
+        heading: "Falha na importação",
+        bodyHtml:
+          paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
+          paragraph(`Não foi possível processar uma importação em <strong>${escapeHtml(payload.companyName)}</strong>.`) +
+          paragraph("Revise o formato do arquivo e tente novamente.", true),
+        cta: { url, label: "Abrir conciliação" },
+      }),
+    };
+  }
+
+  if (event.type === "BILLING_NOTICE") {
+    const payload = decodeBillingNoticePayload(event);
+    const url = `${applicationBaseUrl()}${payload.href}`;
+    return {
+      recipient: payload.to,
+      subject: `${payload.title} — ${payload.companyName}`,
+      text: `Olá, ${payload.name}.\n${payload.body}\n${url}`,
+      html: renderEmailLayout({
+        preheader: payload.body,
+        heading: payload.title,
+        bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph(escapeHtml(payload.body), true),
+        cta: { url, label: "Abrir assinatura" },
+      }),
+    };
+  }
+
+  throw new Error(`Tipo de e-mail não suportado: ${event.type}`);
+}
+
+export async function sendOutboxEmail(event: OutboxEvent) {
+  const { recipient, subject, text, html } = renderOutboxEmail(event);
 
   const smtp = transport();
   if (!smtp) {
