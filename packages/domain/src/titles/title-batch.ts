@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
+import { Prisma, withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { assertCompanyPermission } from "../companies/permissions";
@@ -42,10 +42,27 @@ export async function previewTitleBatch(userId: string, companyId: string, input
   });
 }
 
+/**
+ * Mesma proteção de `registerSettlement` (Seção 30): trava as linhas antes de
+ * calcular o saldo restante, senão dois lotes (ou um lote e uma baixa
+ * individual) leem o mesmo saldo e liquidam o título duas vezes. A ordem por
+ * id evita deadlock entre lotes que compartilham títulos.
+ */
+async function lockBatchTitles(tx: TenantScopedClient, companyId: string, titleIds: string[]) {
+  const uniqueIds = [...new Set(titleIds)];
+  await tx.$queryRaw`
+    SELECT id FROM "titles"
+    WHERE company_id = ${companyId} AND id IN (${Prisma.join(uniqueIds)}) AND deleted_at IS NULL
+    ORDER BY id
+    FOR UPDATE
+  `;
+}
+
 export async function applyTitleBatch(userId: string, companyId: string, input: unknown) {
   const data = titleBatchInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockBatchTitles(tx, companyId, data.titleIds);
     const titles = await loadBatch(tx, companyId, data.titleIds);
     const invalid = titles.some((title) =>
       data.operation === "SETTLE_FULL" ? title.status === "CANCELLED" || title.remainingCents <= BigInt(0)

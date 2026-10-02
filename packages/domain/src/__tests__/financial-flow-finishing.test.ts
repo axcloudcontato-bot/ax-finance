@@ -75,4 +75,41 @@ describe("acabamento dos fluxos financeiros", () => {
     expect((await getTitle(user.id, company.id, first.id)).status).toBe("SETTLED");
     expect((await getTitle(user.id, company.id, second.id)).status).toBe("SETTLED");
   });
+
+  it("dois lotes de baixa simultâneos sobre os mesmos títulos: só um é aplicado", async () => {
+    const { user, company, account, revenue } = await setup("batch-concorrente");
+    const first = await createTitle(user.id, company.id, { type: "RECEIVABLE", description: "A", categoryId: revenue.id, originalAmountCents: 4_000, competenceDate: "2026-09-01", dueDate: "2026-09-10" });
+    const second = await createTitle(user.id, company.id, { type: "RECEIVABLE", description: "B", categoryId: revenue.id, originalAmountCents: 6_000, competenceDate: "2026-09-01", dueDate: "2026-09-11" });
+    const input = { operation: "SETTLE_FULL" as const, titleIds: [first.id, second.id], financialAccountId: account.id, effectiveDate: "2026-09-12" };
+
+    // Chamadas paralelas simples quase nunca se sobrepõem (cada transação termina
+    // em poucos ms), então a corrida é forçada: uma transação externa segura o
+    // lock das linhas enquanto os dois lotes começam, e só depois o libera.
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    let locked!: () => void;
+    const lockAcquired = new Promise<void>((resolve) => { locked = resolve; });
+    const holder = rootClient.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "titles" WHERE id IN (${first.id}, ${second.id}) FOR UPDATE`;
+      locked();
+      await gate;
+    }, { timeout: 30_000 });
+    await lockAcquired;
+
+    const batches = [
+      applyTitleBatch(user.id, company.id, input),
+      applyTitleBatch(user.id, company.id, input),
+    ];
+    const settled = Promise.allSettled(batches);
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    release();
+    await holder;
+    const results = await settled;
+
+    expect(results.filter((item) => item.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((item) => item.status === "rejected")).toHaveLength(1);
+    expect(await rootClient.settlement.count({ where: { titleId: { in: [first.id, second.id] } } })).toBe(2);
+    expect((await listFinancialAccountsWithBalance(user.id, company.id))[0]?.currentBalanceCents).toBe(BigInt(10_000));
+  });
+
 });
