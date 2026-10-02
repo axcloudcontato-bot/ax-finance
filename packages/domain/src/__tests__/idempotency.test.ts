@@ -8,8 +8,9 @@ import { createCategory } from "../categories/create-category";
 import { createTitle } from "../titles/create-title";
 import { createInstallmentPlan } from "../titles/create-installment-plan";
 import { registerSettlement } from "../titles/register-settlement";
+import { applyTitleBatch } from "../titles/title-batch";
 import { createTransfer } from "../transfers/create-transfer";
-import { IdempotencyConflictError } from "../errors";
+import { FinancialAccountNotFoundError, IdempotencyConflictError } from "../errors";
 import { rootClient, resetDatabase } from "./test-db";
 
 async function setup() {
@@ -164,5 +165,54 @@ describe("idempotência financeira", () => {
     const replay = await createInstallmentPlan(context.user.id, context.company.id, input);
     expect(replay.map(({ id }) => id)).toEqual(first.map(({ id }) => id));
     expect(await rootClient.title.count()).toBe(3);
+  });
+  it("lote de baixa: reenvio, concorrência e outra ordem dos títulos devolvem o mesmo resultado", async () => {
+    const context = await setup();
+    const first = await createTitle(context.user.id, context.company.id, titleInput(context.category.id, randomUUID()));
+    const second = await createTitle(context.user.id, context.company.id, { ...titleInput(context.category.id, randomUUID()), originalAmountCents: 4_000 });
+    const key = randomUUID();
+    const input = { operation: "SETTLE_FULL" as const, titleIds: [first.id, second.id], financialAccountId: context.account.id, effectiveDate: "2026-01-12", idempotencyKey: key };
+
+    const applied = await applyTitleBatch(context.user.id, context.company.id, input);
+    expect(applied).toMatchObject({ count: 2, replayed: false });
+
+    const replay = await applyTitleBatch(context.user.id, context.company.id, { ...input, titleIds: [second.id, first.id] });
+    expect(replay).toMatchObject({ count: 2, replayed: true });
+    expect(await rootClient.settlement.count()).toBe(2);
+
+    const concurrentKey = randomUUID();
+    const other = await createTitle(context.user.id, context.company.id, titleInput(context.category.id, randomUUID()));
+    const concurrentInput = { ...input, titleIds: [other.id], idempotencyKey: concurrentKey };
+    const concurrent = await Promise.all([
+      applyTitleBatch(context.user.id, context.company.id, concurrentInput),
+      applyTitleBatch(context.user.id, context.company.id, concurrentInput),
+    ]);
+    expect(concurrent.map((item) => item.replayed).sort()).toEqual([false, true]);
+    expect(await rootClient.settlement.count()).toBe(3);
+  });
+
+  it("lote: mesma chave com dados diferentes é recusada", async () => {
+    const context = await setup();
+    const title = await createTitle(context.user.id, context.company.id, titleInput(context.category.id, randomUUID()));
+    const key = randomUUID();
+    const input = { operation: "SETTLE_FULL" as const, titleIds: [title.id], financialAccountId: context.account.id, effectiveDate: "2026-01-12", idempotencyKey: key };
+    await applyTitleBatch(context.user.id, context.company.id, input);
+    await expect(
+      applyTitleBatch(context.user.id, context.company.id, { ...input, effectiveDate: "2026-01-20" })
+    ).rejects.toBeInstanceOf(IdempotencyConflictError);
+  });
+
+  it("lote que falha desfaz também a chave: dá para corrigir e reenviar com a mesma chave", async () => {
+    const context = await setup();
+    const title = await createTitle(context.user.id, context.company.id, titleInput(context.category.id, randomUUID()));
+    const key = randomUUID();
+    const input = { operation: "SETTLE_FULL" as const, titleIds: [title.id], financialAccountId: context.account.id, effectiveDate: "2026-01-12", idempotencyKey: key };
+
+    await expect(
+      applyTitleBatch(context.user.id, context.company.id, { ...input, financialAccountId: randomUUID() })
+    ).rejects.toBeInstanceOf(FinancialAccountNotFoundError);
+    expect(await rootClient.idempotencyRecord.count()).toBe(1); // só a chave do createTitle
+
+    await expect(applyTitleBatch(context.user.id, context.company.id, input)).resolves.toMatchObject({ count: 1, replayed: false });
   });
 });

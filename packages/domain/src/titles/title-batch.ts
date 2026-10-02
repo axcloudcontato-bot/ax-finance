@@ -1,14 +1,16 @@
 import { z } from "zod";
-import { Prisma, withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
+import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { assertCompanyPermission } from "../companies/permissions";
+import { randomUUID } from "node:crypto";
 import { CategoryNotFoundError, CostCenterNotFoundError, FinancialAccountNotFoundError, TitleBatchInvalidError } from "../errors";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 
 export const titleBatchInput = z.discriminatedUnion("operation", [
-  z.object({ operation: z.literal("SETTLE_FULL"), titleIds: z.array(z.string().uuid()).min(1).max(100), financialAccountId: z.string().uuid(), effectiveDate: z.coerce.date() }),
-  z.object({ operation: z.literal("CANCEL"), titleIds: z.array(z.string().uuid()).min(1).max(100), reason: z.string().trim().min(1).max(500) }),
-  z.object({ operation: z.literal("CLASSIFY"), titleIds: z.array(z.string().uuid()).min(1).max(100), categoryId: z.string().uuid(), costCenterId: z.string().uuid().optional() }),
+  z.object({ operation: z.literal("SETTLE_FULL"), titleIds: z.array(z.string().uuid()).min(1).max(100), financialAccountId: z.string().uuid(), effectiveDate: z.coerce.date(), idempotencyKey: idempotencyKeySchema }),
+  z.object({ operation: z.literal("CANCEL"), titleIds: z.array(z.string().uuid()).min(1).max(100), reason: z.string().trim().min(1).max(500), idempotencyKey: idempotencyKeySchema }),
+  z.object({ operation: z.literal("CLASSIFY"), titleIds: z.array(z.string().uuid()).min(1).max(100), categoryId: z.string().uuid(), costCenterId: z.string().uuid().optional(), idempotencyKey: idempotencyKeySchema }),
 ]);
 
 export type TitleBatchInput = z.infer<typeof titleBatchInput>;
@@ -50,9 +52,12 @@ export async function previewTitleBatch(userId: string, companyId: string, input
  */
 async function lockBatchTitles(tx: TenantScopedClient, companyId: string, titleIds: string[]) {
   const uniqueIds = [...new Set(titleIds)];
+  // Array nativo em vez de Prisma.join: dentro do Next o helper vira uma segunda
+  // cópia que o motor não reconhece como SQL e é enviado como JSON
+  // ("operator does not exist: text = jsonb"). Os testes de domínio não pegam isso.
   await tx.$queryRaw`
     SELECT id FROM "titles"
-    WHERE company_id = ${companyId} AND id IN (${Prisma.join(uniqueIds)}) AND deleted_at IS NULL
+    WHERE company_id = ${companyId} AND id = ANY(${uniqueIds}::text[]) AND deleted_at IS NULL
     ORDER BY id
     FOR UPDATE
   `;
@@ -62,6 +67,23 @@ export async function applyTitleBatch(userId: string, companyId: string, input: 
   const data = titleBatchInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    // A chave e as mudanças vivem na mesma transação: se qualquer título do lote
+    // falhar, a chave também é desfeita e o usuário pode corrigir e reenviar.
+    // O pedido é normalizado (ids únicos e ordenados) para que a mesma seleção
+    // em outra ordem conte como o mesmo pedido.
+    const { idempotencyKey, ...rest } = data;
+    const uniqueIds = [...new Set(data.titleIds)].sort();
+    const idempotency = await beginIdempotentOperation(tx, {
+      companyId,
+      operation: `TITLE_BATCH:${data.operation}`,
+      key: idempotencyKey,
+      request: { ...rest, titleIds: uniqueIds },
+      resourceType: "TitleBatch",
+    });
+    if (idempotency.kind === "replay") {
+      return { count: uniqueIds.length, operation: data.operation, replayed: true as const };
+    }
+
     await lockBatchTitles(tx, companyId, data.titleIds);
     const titles = await loadBatch(tx, companyId, data.titleIds);
     const invalid = titles.some((title) =>
@@ -92,6 +114,7 @@ export async function applyTitleBatch(userId: string, companyId: string, input: 
         await recordAuditEvent(tx, { companyId, actorUserId: userId, eventType: "TITLE_BATCH_CLASSIFIED", resourceType: "Title", resourceId: title.id, summary: "Classificação alterada em lote" });
       }
     }
-    return { count: titles.length, operation: data.operation };
+    await completeIdempotentOperation(tx, idempotency, randomUUID());
+    return { count: titles.length, operation: data.operation, replayed: false as const };
   });
 }
