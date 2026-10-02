@@ -244,6 +244,11 @@ conexão administrativa necessária:
 docker compose run --rm migrate pnpm admin:grant administrador@empresa.com SUPER_ADMIN
 ```
 
+O acesso ao painel exige que a conta tenha **MFA ativo**. Sem MFA, `/admin` mostra um
+aviso com o atalho para Configurações > Segurança, e as operações internas são
+recusadas pelo domínio. Depois de conceder o papel, ative o MFA da conta antes de usar o
+painel.
+
 Papéis disponíveis: `SUPER_ADMIN`, `OPERATIONS`, `SUPPORT` e `ANALYST`.
 `SUPER_ADMIN` pode intervir em assinaturas; `OPERATIONS` pode reprocessar jobs;
 `SUPPORT` administra chamados e incidentes; `ANALYST` possui apenas leitura.

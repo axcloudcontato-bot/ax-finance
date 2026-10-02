@@ -7,6 +7,7 @@ import { getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { logoutAction } from "../../(app)/actions";
 import { noIndexMetadata } from "@/lib/site";
 
@@ -45,7 +46,16 @@ export default async function InternalAdminLayout({ children }: { children: Reac
           <div className="admin-environment"><span className="admin-live-dot" />Ambiente interno</div>
           <div className="admin-topbar-context"><ShieldCheck size={17} />Acesso protegido e auditado</div>
         </header>
-        {children}
+        {access.mfaEnabled ? children : (
+          <main className="admin-content">
+            <AdminPageHeader
+              eyebrow="Segurança"
+              title="Ative a autenticação em duas etapas"
+              description="A administração interna só fica disponível para contas com MFA ativo. Configure um aplicativo autenticador e volte a esta página."
+              actions={<Link href="/configuracoes/seguranca" className="button-link">Configurar MFA</Link>}
+            />
+          </main>
+        )}
       </section>
     </div>
   );

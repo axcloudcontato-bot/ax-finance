@@ -10,13 +10,18 @@ import { listAdminCompanies, updateAdminSubscription } from "../admin/companies"
 import { getAdminBusinessMetrics } from "../admin/metrics";
 import { getAdminOperations, reprocessDeadLetter, reprocessImportJob, reprocessScheduledJob } from "../admin/operations";
 import { createIncident, createSupportCase, listAdminSupport, updateIncident, updateSupportCase } from "../admin/support";
-import { PlatformAdminAccessDeniedError } from "../errors";
+import { PlatformAdminAccessDeniedError, PlatformAdminMfaRequiredError } from "../errors";
 import { rootClient, resetDatabase } from "./test-db";
 
-async function setupAdmin(label: string, role: "SUPER_ADMIN" | "OPERATIONS" | "SUPPORT" | "ANALYST" = "SUPER_ADMIN") {
+async function setupAdmin(
+  label: string,
+  role: "SUPER_ADMIN" | "OPERATIONS" | "SUPPORT" | "ANALYST" = "SUPER_ADMIN",
+  options: { mfa?: boolean } = {}
+) {
   const user = await registerUser({ email: `${label}.${randomUUID()}@teste.ax.finance`, name: `Admin ${label}`, password: "senha-forte-123" });
   const company = await createCompany(user.id, { name: `Empresa ${label}` });
   await rootClient.platformAdmin.create({ data: { userId: user.id, role } });
+  if (options.mfa !== false) await rootClient.user.update({ where: { id: user.id }, data: { mfaEnabledAt: new Date() } });
   return { user, company };
 }
 
@@ -32,6 +37,20 @@ describe("painel administrativo interno", () => {
     expect(await getPlatformAdminAccess(common.id)).toBeNull();
     await expect(getAdminBusinessMetrics(common.id)).rejects.toBeInstanceOf(PlatformAdminAccessDeniedError);
     expect((await listAdminCompanies(admin.user.id)).map((item) => item.name).sort()).toEqual(["Empresa access", "Empresa comum"]);
+  });
+
+  it("exige MFA ativo do administrador em todas as operações internas", async () => {
+    const { user, company } = await setupAdmin("sem-mfa", "SUPER_ADMIN", { mfa: false });
+    expect(await getPlatformAdminAccess(user.id)).toMatchObject({ role: "SUPER_ADMIN", mfaEnabled: false });
+    await expect(getAdminBusinessMetrics(user.id)).rejects.toBeInstanceOf(PlatformAdminMfaRequiredError);
+    await expect(listAdminCompanies(user.id)).rejects.toBeInstanceOf(PlatformAdminMfaRequiredError);
+    await expect(listAdminSupport(user.id)).rejects.toBeInstanceOf(PlatformAdminMfaRequiredError);
+    await expect(updateAdminSubscription(user.id, company.id, { status: "ACTIVE", planCode: "PRO", reason: "Teste" })).rejects.toBeInstanceOf(PlatformAdminMfaRequiredError);
+    expect(await rootClient.adminAuditEvent.count()).toBe(0);
+
+    await rootClient.user.update({ where: { id: user.id }, data: { mfaEnabledAt: new Date() } });
+    expect(await getPlatformAdminAccess(user.id)).toMatchObject({ mfaEnabled: true });
+    await expect(getAdminBusinessMetrics(user.id)).resolves.toBeTruthy();
   });
 
   it("mede ativação/conversão e audita intervenção na assinatura", async () => {

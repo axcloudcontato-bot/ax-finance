@@ -434,6 +434,15 @@ export class PlatformAdminAccessDeniedError extends DomainError {
   }
 }
 
+export class PlatformAdminMfaRequiredError extends DomainError {
+  constructor() {
+    super(
+      "A administração interna exige autenticação em duas etapas. Ative em Configurações > Segurança da conta.",
+      "PLATFORM_ADMIN_MFA_REQUIRED"
+    );
+  }
+}
+
 export class AdminJobReprocessInvalidError extends DomainError {
   constructor(message = "Este job não está em um estado seguro para reprocessamento.") {
     super(message, "ADMIN_JOB_REPROCESS_INVALID");
