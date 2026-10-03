@@ -2570,6 +2570,9 @@ main.settings-page {
 .public-nav a:hover, .public-login-link:hover { color: #3068e7; }
 .public-header-actions { display: flex; align-items: center; justify-self: end; gap: 1rem; }
 .public-header-actions .public-button { margin-top: 0; }
+/* A regra global de botões (feita para formulários) vence a de cima em especificidade e dava
+   margin-top: 1.5rem ao botão do cabeçalho, empurrando-o ~12px abaixo dos links. */
+.public-header .public-header-actions a.public-button.small { margin-top: 0; }
 .public-button { --ax-button-edge: #2f68e8; --ax-button-spark: #dce9ff; position: relative; isolation: isolate; display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.3rem; overflow: hidden; border: 1px solid transparent; border-radius: 999px; background: linear-gradient(135deg, #3e7df8, #2f68e8) padding-box, conic-gradient(from var(--ax-button-angle), var(--ax-button-edge) 0 72%, var(--ax-button-spark) 80%, var(--ax-button-edge) 88%) border-box; color: #fff; font-size: 0.82rem; font-weight: 700; text-decoration: none; box-shadow: 0 9px 22px rgba(47, 104, 232, 0.22); transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 180ms ease, filter 180ms ease; }
 .public-button:hover { box-shadow: 0 13px 28px rgba(47, 104, 232, 0.26); }
 .public-button.small { min-height: 40px; padding: 0.58rem 0.9rem; font-size: 0.75rem; }
@@ -3917,3 +3920,17 @@ main.settings-page {
 @media (prefers-reduced-motion: reduce) {
   .ax-toast { animation: none; }
 }
+
+/* Aviso de bloqueio: mesmo cartão dos avisos, com um ponto de alerta antes do título. */
+.ax-toast.is-alert .ax-toast-body strong { overflow: visible; display: flex; align-items: center; gap: 0.4rem; white-space: normal; }
+
+.ax-toast.is-alert .ax-toast-body strong::before {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #d97706;
+  content: "";
+}
+
+:root[data-ax-theme="dark"] .ax-toast.is-alert .ax-toast-body strong::before { background: #ffc266; }
