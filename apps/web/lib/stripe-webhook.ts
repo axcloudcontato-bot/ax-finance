@@ -61,6 +61,6 @@ export async function processStripeEvent(
   return {
     outcome: "PROCESSED",
     companyId,
-    detail: applied ? `${snapshot.status} → ${state.status}` : "estado mais novo já aplicado",
+    detail: applied ? `${snapshot.status} → ${state.status}` : "não aplicado (estado mais novo ou conta interna)",
   };
 }

@@ -47,6 +47,8 @@ const updateSubscriptionInput = z.object({
   currentPeriodEnd: z.coerce.date().optional(),
   graceEndsAt: z.coerce.date().optional(),
   cancellationEffectiveAt: z.coerce.date().optional(),
+  /** Conta interna (sem cobrança): nunca bloqueia e o provedor não altera. */
+  billingExempt: z.boolean().default(false),
   reason: z.string().trim().min(1).max(500),
 });
 
@@ -60,8 +62,9 @@ export async function updateAdminSubscription(userId: string, companyId: string,
       status: data.status, planCode: data.planCode,
       trialEndsAt: data.trialEndsAt ?? null, currentPeriodEnd: data.currentPeriodEnd ?? null,
       graceEndsAt: data.graceEndsAt ?? null, cancellationEffectiveAt: data.cancellationEffectiveAt ?? null,
+      billingExempt: data.billingExempt,
     } });
-    await recordAdminAudit(tx, { actorUserId: userId, action: "SUBSCRIPTION_UPDATED", targetType: "Company", targetId: companyId, summary: data.reason, metadata: { previousStatus: previous.status, newStatus: updated.status, previousPlan: previous.planCode, newPlan: updated.planCode } });
+    await recordAdminAudit(tx, { actorUserId: userId, action: "SUBSCRIPTION_UPDATED", targetType: "Company", targetId: companyId, summary: data.reason, metadata: { previousStatus: previous.status, newStatus: updated.status, previousPlan: previous.planCode, newPlan: updated.planCode, previousBillingExempt: previous.billingExempt, newBillingExempt: updated.billingExempt } });
     return updated;
   });
 }

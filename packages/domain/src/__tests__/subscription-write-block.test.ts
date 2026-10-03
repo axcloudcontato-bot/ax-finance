@@ -58,6 +58,15 @@ describe("writeBlockReason", () => {
     }
   });
 
+  it("conta interna nunca é bloqueada, em qualquer estado", () => {
+    const past = new Date("2026-09-01T00:00:00Z");
+    for (const status of ["SUSPENDED", "CANCELLED", "TRIAL", "CANCELLATION_SCHEDULED"]) {
+      expect(
+        writeBlockReason({ status, cancellationEffectiveAt: past, trialEndsAt: past, stripeSubscriptionId: null, billingExempt: true }, NOW)
+      ).toBeNull();
+    }
+  });
+
   it("empresa sem registro de assinatura segue liberada", () => {
     expect(writeBlockReason(null, NOW)).toBeNull();
   });
@@ -180,6 +189,18 @@ describe("suspensa para escrita", () => {
     // Assinatura paga libera mesmo com a data do trial no passado.
     await rootClient.subscription.update({ where: { companyId: company.id }, data: { status: "ACTIVE", stripeSubscriptionId: null } });
     await expect(createTitle(user.id, company.id, titleInput(category.id, "ativa"))).resolves.toBeDefined();
+  });
+
+  it("conta interna segue gravando suspensa, cancelada ou com o trial vencido", async () => {
+    const { user, company, category } = await setup("interna");
+    await rootClient.subscription.update({
+      where: { companyId: company.id },
+      data: { billingExempt: true, status: "CANCELLED", trialEndsAt: new Date(Date.now() - 86_400_000) },
+    });
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "interna"))).resolves.toBeDefined();
+
+    await rootClient.subscription.update({ where: { companyId: company.id }, data: { billingExempt: false } });
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "comum"))).rejects.toBeInstanceOf(SubscriptionWriteBlockedError);
   });
 
   it("a rotina de recorrências para em silêncio, sem lançar erro, e o dono ainda pode zerar a conta", async () => {

@@ -23,10 +23,13 @@ export function writeBlockReason(
     cancellationEffectiveAt: Date | null;
     trialEndsAt?: Date | null;
     stripeSubscriptionId?: string | null;
+    billingExempt?: boolean;
   } | null,
   now = new Date()
 ): WriteBlockReason | null {
   if (!subscription) return null;
+  // Conta interna (sem cobrança): nunca é bloqueada.
+  if (subscription.billingExempt) return null;
   if (subscription.status === "SUSPENDED") return "SUSPENDED";
   if (subscription.status === "CANCELLED") return "ENDED";
   if (
@@ -51,7 +54,7 @@ export async function getWriteBlockReason(userId: string, companyId: string, now
   const subscription = await withCompanyContext(userId, companyId, (tx) =>
     tx.subscription.findUnique({
       where: { companyId },
-      select: { status: true, cancellationEffectiveAt: true, trialEndsAt: true, stripeSubscriptionId: true },
+      select: { status: true, cancellationEffectiveAt: true, trialEndsAt: true, stripeSubscriptionId: true, billingExempt: true },
     })
   );
   return writeBlockReason(subscription, now);

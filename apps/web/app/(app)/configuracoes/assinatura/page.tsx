@@ -36,7 +36,7 @@ export default async function SubscriptionPage(props:{ searchParams: Promise<{ e
   const hasPaidSubscription = Boolean(subscription.stripeSubscriptionId) && subscription.status !== "CANCELLED";
   // Mesma regra que bloqueia a escrita; aqui só explica o estado e o caminho para regularizar.
   const blockReason = writeBlockReason(subscription);
-  const statusLabel = blockReason === "TRIAL_ENDED" ? "Avaliação encerrada" : (STATUS_LABEL[subscription.status] ?? subscription.status);
+  const statusLabel = subscription.billingExempt ? "Conta interna" : blockReason === "TRIAL_ENDED" ? "Avaliação encerrada" : (STATUS_LABEL[subscription.status] ?? subscription.status);
   const blockedResource = query.recurso ? ({
     "conciliacao-bancaria": "Conciliação bancária",
     fechamento: "Fechamento de período",
@@ -85,6 +85,7 @@ export default async function SubscriptionPage(props:{ searchParams: Promise<{ e
           <strong className="subscription-plan-price">R$ {(plan.monthlyPriceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}<small>/mês</small></strong>
           <span className="subscription-status"><CheckCircle2 className="size-4" />{statusLabel}</span>
           <p>Assinatura vinculada à empresa <strong>{company.name}</strong>.</p>
+          {subscription.billingExempt ? <p>Conta interna: sem cobrança e sem bloqueio por assinatura.</p> : null}
           {blockReason ? (
             <p>
               Lançamentos bloqueados: você ainda consulta e exporta os dados.{" "}

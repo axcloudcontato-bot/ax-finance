@@ -10,6 +10,7 @@ import {
   finishBillingEvent,
   findBillingCompanyId,
   linkStripeCustomer,
+  listReconcilableSubscriptions,
 } from "../billing/billing";
 import { mapStripeSubscription, planCodeForPrice, type StripeSubscriptionSnapshot } from "../billing/stripe-state";
 import { rootClient, resetDatabase } from "./test-db";
@@ -167,6 +168,16 @@ describe("webhooks de cobrança (Stripe)", () => {
     const paid = mapStripeSubscription(snapshot({ status: "active" }), CATALOG, new Date("2026-10-06T12:00:00Z"));
     await applyStripeSubscriptionState({ ...base, state: paid, observedAt: new Date("2026-10-06T12:00:00Z") });
     expect(await readSubscription(company.id)).toMatchObject({ status: "ACTIVE", graceEndsAt: null });
+  });
+
+  it("conta interna não é alterada pelo provedor (webhook) nem aparece na conciliação", async () => {
+    const { company } = await setupCompany("interna");
+    await rootClient.subscription.update({ where: { companyId: company.id }, data: { billingExempt: true, status: "ACTIVE", stripeSubscriptionId: "sub_int", stripeCustomerId: "cus_int" } });
+
+    const cancelled = mapStripeSubscription(snapshot({ status: "canceled" }), CATALOG, NOW);
+    expect(await applyStripeSubscriptionState({ companyId: company.id, customerId: "cus_int", subscriptionId: "sub_int", state: cancelled, observedAt: NOW })).toBe(false);
+    expect(await readSubscription(company.id)).toMatchObject({ status: "ACTIVE" });
+    expect((await listReconcilableSubscriptions()).map((row) => row.companyId)).not.toContain(company.id);
   });
 
   it("não cria assinatura para empresa inexistente", async () => {

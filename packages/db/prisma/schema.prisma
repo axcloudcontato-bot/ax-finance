@@ -476,6 +476,8 @@ model Subscription {
   stripeSubscriptionId    String?            @unique @map("stripe_subscription_id")
   /// Instante do último estado confirmado no provedor; descarta sinais fora de ordem.
   billingEventAt          DateTime?          @map("billing_event_at")
+  /// Conta interna (sem cobrança): nunca é bloqueada por assinatura e o provedor não a altera.
+  billingExempt           Boolean            @default(false) @map("billing_exempt")
   createdAt               DateTime           @default(now()) @map("created_at")
   updatedAt               DateTime           @updatedAt @map("updated_at")
 

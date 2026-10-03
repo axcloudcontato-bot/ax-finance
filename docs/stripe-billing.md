@@ -150,6 +150,21 @@ dia) e o de "trial encerrado" já existiam nas notificações.
 **Antes de ligar para clientes reais:** a Stripe de **produção** precisa estar configurada. Sem ela, a
 empresa bloqueada pelo fim do trial não tem como assinar sozinha.
 
+## Contas internas (sem cobrança)
+
+Empresas da própria operação (por exemplo, a conta do administrador da plataforma) não pagam e não
+podem ficar bloqueadas por assinatura. No painel interno, em *Empresas → Gerenciar*, um **SUPER_ADMIN**
+marca **"Conta interna (sem cobrança, nunca bloqueada)"** (com motivo e auditoria). Enquanto marcada:
+
+- o bloqueio de escrita **ignora** a empresa em qualquer estado (suspensa, cancelada, trial vencido);
+- o webhook e a conciliação **não alteram** o estado dela e a conciliação nem a lista;
+- a tela de Assinatura mostra "Conta interna".
+
+**Ordem para tirar uma assinatura paga de uma conta interna:** primeiro marque a conta como interna
+(estado `ACTIVE`), e só depois cancele a assinatura na Stripe. Assim o `customer.subscription.deleted`
+que chega em seguida é recebido e ignorado em vez de bloquear a empresa. Desmarcar a opção devolve a
+empresa ao fluxo normal.
+
 ## O que ainda não existe
 
 - **Boleto/Pix** e **nota fiscal** da assinatura.

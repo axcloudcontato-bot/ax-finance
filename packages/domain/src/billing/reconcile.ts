@@ -109,7 +109,7 @@ export async function reconcileStripeSubscriptions(
         const detail = local.stripeSubscriptionId ? differences.join("; ") : "assinatura localizada pelo cliente (webhook não chegou)";
         await finishBillingEvent(eventId, "PROCESSED", {
           companyId: local.companyId,
-          message: applied ? detail : `${detail} (estado mais novo já aplicado)`,
+          message: applied ? detail : `${detail} (não aplicado: estado mais novo ou conta interna)`,
         });
       }
       if (applied) summary.corrected += 1;

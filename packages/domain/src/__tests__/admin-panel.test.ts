@@ -89,6 +89,20 @@ describe("painel administrativo interno", () => {
     expect(await rootClient.adminAuditEvent.findFirst({ where: { action: "SUBSCRIPTION_UPDATED" } })).toMatchObject({ targetId: company.id });
   });
 
+  it("marca e desmarca conta interna (sem cobrança) com auditoria", async () => {
+    const { user, company } = await setupAdmin("interna");
+    expect((await rootClient.subscription.findUniqueOrThrow({ where: { companyId: company.id } })).billingExempt).toBe(false);
+
+    await updateAdminSubscription(user.id, company.id, { status: "ACTIVE", planCode: "ESSENTIAL", billingExempt: true, reason: "Empresa da própria operação" });
+    expect((await rootClient.subscription.findUniqueOrThrow({ where: { companyId: company.id } })).billingExempt).toBe(true);
+    const event = await rootClient.adminAuditEvent.findFirstOrThrow({ where: { action: "SUBSCRIPTION_UPDATED", targetId: company.id }, orderBy: { createdAt: "desc" } });
+    expect(event.metadata).toMatchObject({ previousBillingExempt: false, newBillingExempt: true });
+
+    // Sem o campo, o padrão é desligar: o formulário do painel sempre o envia.
+    await updateAdminSubscription(user.id, company.id, { status: "ACTIVE", planCode: "ESSENTIAL", reason: "Voltou a cobrar" });
+    expect((await rootClient.subscription.findUniqueOrThrow({ where: { companyId: company.id } })).billingExempt).toBe(false);
+  });
+
   it("reprocessa jobs falhos de forma controlada e registra auditoria", async () => {
     const { user, company } = await setupAdmin("jobs", "OPERATIONS");
     const scheduled = await rootClient.scheduledJob.findFirstOrThrow({ where: { companyId: company.id } });

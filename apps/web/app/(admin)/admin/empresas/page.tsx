@@ -86,6 +86,10 @@ export default async function AdminCompaniesPage(
                         <label>Fim do período</label><input name="currentPeriodEnd" type="date" defaultValue={dateValue(company.subscription.currentPeriodEnd)} />
                         <label>Fim da carência</label><input name="graceEndsAt" type="date" defaultValue={dateValue(company.subscription.graceEndsAt)} />
                         <label>Cancelamento efetivo</label><input name="cancellationEffectiveAt" type="date" defaultValue={dateValue(company.subscription.cancellationEffectiveAt)} />
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <input name="billingExempt" type="checkbox" defaultChecked={company.subscription.billingExempt} style={{ width: "auto" }} />
+                          Conta interna (sem cobrança, nunca bloqueada)
+                        </label>
                         <label>Motivo da intervenção</label><input name="reason" required maxLength={500} />
                         <button type="submit">Salvar assinatura</button>
                       </form>
