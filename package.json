@@ -24,7 +24,7 @@
     "typecheck": "pnpm --filter @ax-finance/db exec tsc --noEmit && pnpm --filter @ax-finance/domain exec tsc --noEmit && pnpm --filter worker exec tsc --noEmit && pnpm --filter web exec tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^20.14.0",
+    "@types/node": "^26.6.3",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5",
     "tsx": "^4.16.2",
