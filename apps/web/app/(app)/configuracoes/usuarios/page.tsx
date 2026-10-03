@@ -3,7 +3,7 @@ import { listCompanyInvitations, listCompanyMembers, listCostCenters, listFinanc
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { InviteUserForm } from "./invite-user-form";
-import { revokeInvitationAction, revokeMemberAction, transferOwnershipAction, updateMemberAccessAction, updateMemberRoleAction } from "./actions";
+import { resetCompanyLedgerAction, revokeInvitationAction, revokeMemberAction, transferOwnershipAction, updateMemberAccessAction, updateMemberRoleAction } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -14,7 +14,7 @@ const ROLE_LABEL: Record<string, string> = {
   VIEWER: "Consulta",
 };
 
-export default async function CompanyUsersPage(props: { searchParams: Promise<{ erro?: string; atualizado?: string }> }) {
+export default async function CompanyUsersPage(props: { searchParams: Promise<{ erro?: string; atualizado?: string; zerado?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -42,6 +42,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
       </div>
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
       {searchParams.atualizado ? <p className="success-box">Acesso atualizado com sucesso.</p> : null}
+      {searchParams.zerado ? <p className="success-box">Lançamentos zerados. Contas, categorias e cadastros foram mantidos.</p> : null}
 
       <div className="split">
         <div>
@@ -130,6 +131,20 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
               <label htmlFor="ownership-confirmation">Digite TRANSFERIR para confirmar</label>
               <input id="ownership-confirmation" name="confirmation" required pattern="TRANSFERIR" autoComplete="off" />
               <SubmitButton className="danger-button">Transferir propriedade</SubmitButton>
+            </form>
+          </div>
+
+          <div className="card subscription-danger-panel">
+            <h1>Zerar lançamentos</h1>
+            <p className="subtitle">
+              Remove das telas todos os títulos, baixas, transferências, ajustes de saldo e recorrências, e reabre os períodos fechados.
+              Os saldos voltam ao saldo de abertura de cada conta. Contas, categorias, clientes e fornecedores, centros de custo e usuários continuam.
+              Nada é apagado do banco: a operação fica registrada na auditoria.
+            </p>
+            <form action={resetCompanyLedgerAction}>
+              <label htmlFor="reset-confirmation">Digite o nome da empresa para confirmar: <strong>{company.name}</strong></label>
+              <input id="reset-confirmation" name="confirmation" required autoComplete="off" />
+              <SubmitButton className="danger-button">Zerar lançamentos</SubmitButton>
             </form>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import {
   createCompanyInvitation,
   revokeCompanyInvitation,
+  resetCompanyLedger,
   revokeCompanyMember,
   transferCompanyOwnership,
   updateCompanyMemberAccess,
@@ -115,4 +116,17 @@ export async function transferOwnershipAction(formData: FormData) {
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/dashboard?propriedadeTransferida=1");
+}
+
+export async function resetCompanyLedgerAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  try {
+    await resetCompanyLedger(user.id, company.id, { confirmation: String(formData.get("confirmation") ?? "") });
+  } catch (error) {
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao zerar os lançamentos.")}`);
+  }
+  revalidatePath("/", "layout");
+  redirect("/configuracoes/usuarios?zerado=1");
 }

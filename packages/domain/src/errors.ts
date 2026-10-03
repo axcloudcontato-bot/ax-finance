@@ -157,6 +157,12 @@ export class CompanyOwnershipTransferInvalidError extends DomainError {
   }
 }
 
+export class CompanyResetConfirmationError extends DomainError {
+  constructor() {
+    super("Digite o nome exato da empresa para confirmar o reset.", "COMPANY_RESET_CONFIRMATION_INVALID");
+  }
+}
+
 export class CompanyAccessScopeInvalidError extends DomainError {
   constructor() {
     super("Uma restrição de acesso selecionada não pertence a esta empresa.", "COMPANY_ACCESS_SCOPE_INVALID");

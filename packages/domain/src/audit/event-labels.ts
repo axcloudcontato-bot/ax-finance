@@ -36,4 +36,5 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   FINANCIAL_ACCOUNT_UPDATED: "Conta atualizada",
   FINANCIAL_ACCOUNT_ARCHIVED: "Conta arquivada",
   FINANCIAL_ACCOUNT_REACTIVATED: "Conta reativada",
+  COMPANY_LEDGER_RESET: "Lançamentos zerados (reset da conta)",
 };
