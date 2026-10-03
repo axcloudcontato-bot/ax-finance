@@ -3267,6 +3267,65 @@ main.settings-page {
 .bottom-menu-theme:hover { background: color-mix(in srgb, var(--accent) 8%, var(--card)); color: var(--text); }
 .bottom-menu-theme.is-active { background: color-mix(in srgb, var(--accent) 15%, var(--card)); color: var(--accent); }
 
+/* Variante no topo: ícones integrados ao cabeçalho azul (sem fundo, borda ou
+   sombra), com o painel abrindo para baixo, alinhado à direita. */
+.bottom-menu-shell.is-top {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  z-index: 950;
+  align-items: flex-end;
+  transform: none;
+}
+
+.bottom-menu-shell.is-top .bottom-menu-toolbar {
+  gap: 0.15rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.bottom-menu-shell.is-top .bottom-menu-trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.bottom-menu-shell.is-top .bottom-menu-trigger:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  transform: none;
+}
+
+.bottom-menu-shell.is-top .bottom-menu-trigger.is-active {
+  background: rgba(255, 255, 255, 0.26);
+  color: #fff;
+}
+
+.bottom-menu-shell.is-top .bottom-menu-trigger:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 1px;
+}
+
+.bottom-menu-shell.is-top .bottom-menu-badge {
+  top: 3px;
+  right: 2px;
+  border: 0;
+  box-shadow: 0 0 0 2px rgba(63, 120, 245, 0.9);
+}
+
+.bottom-menu-shell.is-top .bottom-menu-popover-wrap {
+  top: calc(100% + 0.55rem);
+  right: 0;
+  bottom: auto;
+  left: auto;
+  transform: none;
+}
+
 @media (max-width: 520px) {
   .bottom-menu-shell { bottom: max(0.65rem, env(safe-area-inset-bottom)); }
   .bottom-menu-toolbar { gap: 0.05rem; padding: 0.24rem; }

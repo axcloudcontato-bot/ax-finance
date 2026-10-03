@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Wallet } from "@/components/ui/animated-icons";
 
 export interface AppNotification {
@@ -9,11 +10,11 @@ export interface AppNotification {
   createdAt: string | Date;
 }
 
-// Busca, notificações, perfil e tema ficam no BottomMenu; o topo só leva a marca.
-export function AppTopbar() {
+// Marca à esquerda e, à direita, o menu de ações (criar, buscar, notificações, perfil e tema).
+export function AppTopbar({ children }: { children?: ReactNode }) {
   return (
     <header
-      className="flex h-16 w-full shrink-0 items-center px-5 text-white"
+      className="flex h-16 w-full shrink-0 items-center justify-between px-5 text-white"
       style={{ background: "var(--grad-blue)" }}
     >
       <div className="flex items-center gap-2">
@@ -22,6 +23,7 @@ export function AppTopbar() {
         </div>
         <span className="hidden text-base font-semibold sm:inline">AX Finance</span>
       </div>
+      {children}
     </header>
   );
 }

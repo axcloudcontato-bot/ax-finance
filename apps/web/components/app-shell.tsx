@@ -35,7 +35,15 @@ export function AppShell({
 
   return (
     <div className="ax-model-buttons flex h-svh w-full min-w-0 flex-col bg-background">
-      <AppTopbar />
+      <AppTopbar>
+        <BottomMenu
+          placement="top"
+          userName={userName}
+          canManageMembers={canManageMembers}
+          notifications={notifications}
+          logoutAction={logoutAction}
+        />
+      </AppTopbar>
 
       <div className="flex min-h-0 flex-1">
         <AppSidebar
@@ -48,7 +56,7 @@ export function AppShell({
           logoutAction={logoutAction}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto pb-28">
+        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
           {!dashboardOwnsToolbar ? (
             <div className="flex items-center justify-between gap-4 px-6 pt-4">
               <GlobalMonthSelector />
@@ -58,13 +66,6 @@ export function AppShell({
           {children}
         </div>
       </div>
-
-      <BottomMenu
-        userName={userName}
-        canManageMembers={canManageMembers}
-        notifications={notifications}
-        logoutAction={logoutAction}
-      />
     </div>
   );
 }

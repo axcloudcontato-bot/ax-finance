@@ -35,6 +35,8 @@ interface SearchResults {
 }
 
 interface BottomMenuProps {
+  /** "top" encaixa a barra no topo (popover abre para baixo, à direita). */
+  placement?: "bottom" | "top";
   userName: string;
   canManageMembers: boolean;
   notifications: AppNotification[];
@@ -75,7 +77,8 @@ function MenuRow({ href, icon, children, onClick }: { href: string; icon: typeof
   );
 }
 
-export function BottomMenu({ userName, canManageMembers, notifications: initialNotifications, logoutAction }: BottomMenuProps) {
+export function BottomMenu({ placement = "bottom", userName, canManageMembers, notifications: initialNotifications, logoutAction }: BottomMenuProps) {
+  const top = placement === "top";
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -273,7 +276,7 @@ export function BottomMenu({ userName, canManageMembers, notifications: initialN
   })();
 
   return (
-    <div ref={containerRef} className="bottom-menu-shell" aria-label="Ações rápidas">
+    <div ref={containerRef} className={cn("bottom-menu-shell", top && "is-top")} aria-label="Ações rápidas">
       <div ref={measureRef} className="pointer-events-none invisible fixed -left-[9999px] -top-[9999px]">
         <div className="bottom-menu-popover">{content}</div>
       </div>
@@ -282,12 +285,12 @@ export function BottomMenu({ userName, canManageMembers, notifications: initialN
         {view !== "default" ? (
           <motion.div
             key="bottom-menu-popover"
-            initial={reduceMotion ? false : { opacity: 0, scale: 0.94, height: 0, width: 0, y: 8 }}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.94, height: 0, width: 0, y: top ? -8 : 8 }}
             animate={{ opacity: 1, scale: 1, height: bounds.height || "auto", width: bounds.width || "auto", y: 0 }}
-            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94, height: 0, width: 0, y: 8 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.94, height: 0, width: 0, y: top ? -8 : 8 }}
             transition={{ duration: reduceMotion ? 0 : 0.24, ease: [0.45, 0, 0.25, 1] }}
             className="bottom-menu-popover-wrap"
-            style={{ transformOrigin: "bottom center" }}
+            style={{ transformOrigin: top ? "top right" : "bottom center" }}
           >
             <div ref={contentRef} className="bottom-menu-popover">
               <AnimatePresence initial={false} mode="popLayout">
