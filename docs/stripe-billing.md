@@ -1,5 +1,7 @@
 # Cobrança da assinatura com Stripe
 
+> Para ligar em **produção**, siga `docs/stripe-producao.md`. Este documento descreve o funcionamento e os testes no sandbox.
+
 A assinatura do AX Finance é cobrada pela Stripe. O app **não guarda dados de cartão**: o pagamento
 acontece no Checkout hospedado da Stripe e o gerenciamento (cartão, faturas, recibos, troca de plano)
 no Portal do Cliente, também hospedado.
