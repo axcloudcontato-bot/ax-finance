@@ -8,6 +8,7 @@ import { GlobalMonthSelector } from "@/components/global-month-selector";
 import { PageActionsSlot } from "@/components/page-actions-slot";
 import { BottomMenu } from "@/components/ui/bottom-menu";
 import { NotificationToasts } from "@/components/notification-toasts";
+import type { WriteBlockNotice } from "@/lib/write-block-notice";
 import type { MembershipRole } from "@ax-finance/db";
 
 export function AppShell({
@@ -19,6 +20,7 @@ export function AppShell({
   planCode,
   logoutAction,
   notifications,
+  blockNotice = null,
   children,
 }: {
   userName: string;
@@ -29,6 +31,8 @@ export function AppShell({
   planCode: "PERSONAL" | "ESSENTIAL";
   logoutAction: () => void | Promise<void>;
   notifications: AppNotification[];
+  /** Aviso discreto de empresa bloqueada para escrita (assinatura), ou null. */
+  blockNotice?: WriteBlockNotice | null;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -86,7 +90,7 @@ export function AppShell({
         </div>
       </div>
 
-      <NotificationToasts notifications={notifications} />
+      <NotificationToasts notifications={notifications} blockNotice={blockNotice} />
     </div>
   );
 }

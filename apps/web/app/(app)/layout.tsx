@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { getCompanyAccess, getCompanyPlanAccess, getPlatformAdminAccess, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
+import { getCompanyAccess, getCompanyPlanAccess, getPlatformAdminAccess, getWriteBlockReason, listCompaniesForUser, listNotifications } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { AppShell } from "@/components/app-shell";
 import { logoutAction } from "./actions";
 import { noIndexMetadata } from "@/lib/site";
+import { writeBlockNotice } from "@/lib/write-block-notice";
 
 export const metadata: Metadata = noIndexMetadata;
 
@@ -29,12 +30,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const company = await requirePrimaryCompany(user.id);
-  const [notifications, access, planAccess, platformAdmin] = await Promise.all([
+  const [notifications, access, planAccess, platformAdmin, blockReason] = await Promise.all([
     listNotifications(user.id, company.id),
     getCompanyAccess(user.id, company.id),
     getCompanyPlanAccess(user.id, company.id),
     getPlatformAdminAccess(user.id),
+    getWriteBlockReason(user.id, company.id),
   ]);
+  const canManageMembers = access.permissions.includes("MEMBERS_MANAGE");
 
   return (
     <>
@@ -45,9 +48,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       userName={user.name}
       userEmail={user.email}
       membershipRole={access.role}
-      canManageMembers={access.permissions.includes("MEMBERS_MANAGE")}
+      canManageMembers={canManageMembers}
       isPlatformAdmin={Boolean(platformAdmin)}
       planCode={planAccess.code}
+      blockNotice={writeBlockNotice(blockReason, canManageMembers)}
       logoutAction={logoutAction}
       notifications={notifications.map((notification) => ({
         id: notification.id,

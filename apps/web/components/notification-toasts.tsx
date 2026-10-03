@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppNotification } from "@/components/app-topbar";
+import type { WriteBlockNotice } from "@/lib/write-block-notice";
 
 const SHOWN_KEY = "ax-finance:toasts-shown:v1";
+const BLOCK_DISMISSED_KEY = "ax-finance:block-notice-dismissed:v1";
 const MAX_VISIBLE = 2;
 const AUTO_DISMISS_MS = 9000;
 
@@ -29,10 +31,36 @@ function writeShown(ids: Set<string>) {
  * Lembretes e alertas não lidos aparecem uma vez por sessão num cartão pequeno no canto
  * inferior direito. Não substitui a campainha: fechar o aviso não marca como lida, abrir
  * o link marca. No máximo dois por vez, o mais recente primeiro.
+ *
+ * Com a empresa bloqueada para escrita, o primeiro cartão é o aviso de bloqueio: no mesmo
+ * lugar e tamanho, mas sem sumir sozinho; fica até ser fechado (e volta na próxima sessão).
  */
-export function NotificationToasts({ notifications }: { notifications: AppNotification[] }) {
+export function NotificationToasts({ notifications, blockNotice = null }: { notifications: AppNotification[]; blockNotice?: WriteBlockNotice | null }) {
   const router = useRouter();
   const [visible, setVisible] = useState<AppNotification[]>([]);
+  const [showBlock, setShowBlock] = useState(false);
+
+  // Decidido no navegador (sessionStorage), depois da hidratação, para não piscar no servidor.
+  useEffect(() => {
+    if (!blockNotice) {
+      setShowBlock(false);
+      return;
+    }
+    try {
+      setShowBlock(sessionStorage.getItem(BLOCK_DISMISSED_KEY) !== blockNotice.id);
+    } catch {
+      setShowBlock(true);
+    }
+  }, [blockNotice]);
+
+  const dismissBlock = useCallback(() => {
+    setShowBlock(false);
+    try {
+      if (blockNotice) sessionStorage.setItem(BLOCK_DISMISSED_KEY, blockNotice.id);
+    } catch {
+      // Sem storage, o aviso volta na próxima carga; nada além disso.
+    }
+  }, [blockNotice]);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const dismiss = useCallback((id: string) => {
@@ -90,11 +118,33 @@ export function NotificationToasts({ notifications }: { notifications: AppNotifi
       .catch(() => undefined);
   }
 
-  if (visible.length === 0) return null;
+  const blockVisible = showBlock && blockNotice;
+  const shown = visible.slice(0, MAX_VISIBLE - (blockVisible ? 1 : 0));
+  if (!blockVisible && shown.length === 0) return null;
 
   return (
     <div className="ax-toasts" role="region" aria-label="Avisos recentes" aria-live="polite">
-      {visible.map((notification) => (
+      {blockVisible ? (
+        <div className="ax-toast is-alert">
+          {blockNotice.href ? (
+            <Link href={blockNotice.href} className="ax-toast-body">
+              <strong>{blockNotice.title}</strong>
+              <span>{blockNotice.body}</span>
+            </Link>
+          ) : (
+            <div className="ax-toast-body">
+              <strong>{blockNotice.title}</strong>
+              <span>{blockNotice.body}</span>
+            </div>
+          )}
+          <button type="button" className="ax-toast-close" aria-label="Fechar aviso" onClick={dismissBlock}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      ) : null}
+      {shown.map((notification) => (
         <div
           key={notification.id}
           className="ax-toast"
