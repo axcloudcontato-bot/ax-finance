@@ -1,5 +1,6 @@
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { getWriteBlockReason } from "../subscriptions/write-access";
 import { computeOccurrenceDates } from "./recurrence-dates";
 
 const HORIZON_DAYS = 90;
@@ -24,6 +25,10 @@ function addDaysUTC(dateStr: string, days: number): string {
  */
 export async function generateDueOccurrences(userId: string, companyId: string) {
   await assertActiveMembership(userId, companyId);
+
+  // A rotina diária cria títulos sozinha; com a assinatura bloqueada ela para em silêncio
+  // (lançar erro faria o job agendado falhar e reentrar todo dia).
+  if (await getWriteBlockReason(userId, companyId)) return { createdCount: 0 };
 
   const today = toDateOnlyString(new Date());
   const horizon = addDaysUTC(today, HORIZON_DAYS);

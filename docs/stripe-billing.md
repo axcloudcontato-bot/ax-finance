@@ -121,8 +121,26 @@ Para ver as correções: `SELECT type, outcome, detail, created_at FROM billing_
 3. Rode o comando acima: o resumo deve mostrar `"corrected":1` e o app passa a `CANCELLATION_SCHEDULED`.
 4. Desfaça com `cancel_at_period_end=false`, rode de novo e confira que volta ao normal.
 
+## Suspensa para escrita
+
+Com a assinatura **Suspensa** (`unpaid`/`paused` na Stripe) ou **encerrada** (`canceled`), a empresa
+continua vendo e exportando os dados, mas **não cria nem altera lançamentos** (DIRECAO §21):
+
+- **Bloqueia:** toda operação com permissão de escrita (lançamentos, baixas, estornos, transferências,
+  cadastros, importação, anexos, fechamento). A regra vive num único ponto, em
+  `assertCompanyPermission`, e a mensagem diz como regularizar. A rotina diária de recorrências do
+  worker para em silêncio, sem gerar erro nem títulos.
+- **Libera:** leitura de todas as telas, exportação completa, a página de Assinatura (pagar, portal,
+  cancelar) e a gestão de usuários. Zerar lançamentos também continua com o proprietário.
+- **Não bloqueia:** pagamento pendente e carência de 7 dias; só avisam. Cancelamento agendado grava até
+  a data efetiva e, depois dela, vale como encerrado mesmo sem sinal da Stripe.
+- Voltar a pagar (a Stripe devolve `active`) libera a escrita na hora.
+
+Limite conhecido: o trial vencido **sem** assinatura na Stripe continua `TRIAL`; nada o transforma em
+suspenso, porque a Stripe não conhece esse cliente. Se for desejado bloquear o fim do trial, é uma regra
+nova (data `trial_ends_at`) a decidir.
+
 ## O que ainda não existe
 
-- **Bloqueio de escrita** quando a assinatura está *Suspensa*: o estado é mostrado e notificado, mas
-  nenhuma rota bloqueia gravação por causa dele.
 - **Boleto/Pix** e **nota fiscal** da assinatura.
+- Bloqueio por **fim do trial sem pagamento** (ver acima).
