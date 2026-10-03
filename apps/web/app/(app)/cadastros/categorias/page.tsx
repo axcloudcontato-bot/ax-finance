@@ -8,6 +8,7 @@ import { NATURE_LABEL } from "@/lib/category-labels";
 import { Modal } from "@/components/ui/modal";
 import { ActionModal } from "@/components/ui/action-modal";
 import { archiveCategoryAction, createCategoryAction, reactivateCategoryAction, updateCategoryAction } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function CategoriasPage(
   props: {
@@ -76,7 +77,7 @@ export default async function CategoriasPage(
               placeholder="Ex.: Receita de serviços, Pessoal, Estrutura..."
             />
 
-            <button type="submit">Criar categoria</button>
+            <SubmitButton>Criar categoria</SubmitButton>
           </form>
         </Modal>
       </div>
@@ -111,17 +112,17 @@ export default async function CategoriasPage(
                         <label htmlFor={`nature-${category.id}`}>Natureza</label><select id={`nature-${category.id}`} name="nature" defaultValue={category.nature}>{Object.entries(NATURE_LABEL).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
                         <label htmlFor={`parent-${category.id}`}>Categoria pai</label><select id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}><option value="">Nenhuma</option>{topLevelActive.filter((item) => item.id !== category.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
                         <label htmlFor={`group-${category.id}`}>Grupo gerencial</label><input id={`group-${category.id}`} name="managerialGroup" defaultValue={category.managerialGroup ?? ""} maxLength={200} />
-                        <button type="submit">Salvar alterações</button>
+                        <SubmitButton>Salvar alterações</SubmitButton>
                       </form>
                     </ActionModal>
                     {category.status === "ACTIVE" ? (
                       <form action={archiveCategoryAction} className="inline">
                         <input type="hidden" name="categoryId" value={category.id} />
-                        <button type="submit" className="secondary">
+                        <SubmitButton className="secondary">
                           Arquivar
-                        </button>
+                        </SubmitButton>
                       </form>
-                    ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><button type="submit" className="secondary">Reativar</button></form>}
+                    ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
                     </div>
                   </td>
                 </tr>

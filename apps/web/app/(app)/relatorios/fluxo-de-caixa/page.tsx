@@ -7,6 +7,7 @@ import { formatDateOnly } from "@/lib/dates";
 import { NATURE_LABEL } from "@/lib/category-labels";
 import { resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { formatPercentageChange } from "@/lib/comparison";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function FluxoDeCaixaPage(
   props: {
@@ -63,9 +64,9 @@ export default async function FluxoDeCaixaPage(
             <label htmlFor="ate">Até</label>
             <input id="ate" name="ate" type="date" defaultValue={to} />
           </div>
-          <button type="submit" style={{ marginTop: 0 }}>
+          <SubmitButton style={{ marginTop: 0 }}>
             Filtrar intervalo customizado
-          </button>
+          </SubmitButton>
           <a href={exportHref} className="button-link">
             Exportar CSV
           </a>

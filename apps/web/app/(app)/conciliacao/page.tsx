@@ -17,6 +17,7 @@ import {
   undoReconciliationAction,
 } from "./actions";
 import { isComparisonMode, periodQuery as buildPeriodQuery, resolvePeriodRange } from "@/lib/month";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "Pendente",
@@ -120,7 +121,7 @@ export default async function ConciliacaoPage(
           <input type="hidden" name="financialAccountId" value={activeAccountId} />
           <label htmlFor="file">Arquivo CSV ou OFX</label>
           <input id="file" name="file" type="file" accept=".csv,.ofx,text/csv,application/x-ofx" required />
-          <button type="submit">Revisar arquivo</button>
+          <SubmitButton>Revisar arquivo</SubmitButton>
         </form>
       </div>
 
@@ -220,26 +221,26 @@ export default async function ConciliacaoPage(
                               </option>
                             ))}
                           </select>
-                          <button type="submit" className="secondary" style={{ marginTop: 0 }}>
+                          <SubmitButton className="secondary" style={{ marginTop: 0 }}>
                             Conciliar
-                          </button>
+                          </SubmitButton>
                         </form>
                         <form action={ignoreLineAction} className="inline">
                           <input type="hidden" name="lineId" value={line.id} />
                           <input type="hidden" name="financialAccountId" value={activeAccountId} />
                           <input type="text" name="reason" placeholder="Motivo" style={{ width: "auto" }} required />
-                          <button type="submit" className="secondary" style={{ marginTop: 0 }}>
+                          <SubmitButton className="secondary" style={{ marginTop: 0 }}>
                             Ignorar
-                          </button>
+                          </SubmitButton>
                         </form>
                       </div>
                     ) : (
                       <form action={undoReconciliationAction} className="inline">
                         <input type="hidden" name="lineId" value={line.id} />
                         <input type="hidden" name="financialAccountId" value={activeAccountId} />
-                        <button type="submit" className="secondary">
+                        <SubmitButton className="secondary">
                           Desfazer
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>

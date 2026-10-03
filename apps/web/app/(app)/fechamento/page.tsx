@@ -5,6 +5,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { addMonths, currentYearMonth, monthLabel } from "@/lib/month";
 import { closePeriodAction, reopenPeriodAction } from "./actions";
 import { requirePlanFeature } from "@/lib/plan-access";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function FechamentoPage(
   props: {
@@ -72,16 +73,16 @@ export default async function FechamentoPage(
                       <form action={reopenPeriodAction} className="inline" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                         <input type="hidden" name="period" value={period} />
                         <input type="text" name="reason" placeholder="Motivo da reabertura" style={{ width: "auto" }} required />
-                        <button type="submit" className="secondary" style={{ marginTop: 0 }}>
+                        <SubmitButton className="secondary" style={{ marginTop: 0 }}>
                           Reabrir
-                        </button>
+                        </SubmitButton>
                       </form>
                     ) : (
                       <form action={closePeriodAction} className="inline">
                         <input type="hidden" name="period" value={period} />
-                        <button type="submit" className="secondary">
+                        <SubmitButton className="secondary">
                           Fechar
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>

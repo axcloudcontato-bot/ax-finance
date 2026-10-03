@@ -4,6 +4,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { InviteUserForm } from "./invite-user-form";
 import { revokeInvitationAction, revokeMemberAction, transferOwnershipAction, updateMemberAccessAction, updateMemberRoleAction } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const ROLE_LABEL: Record<string, string> = {
   OWNER: "Proprietário",
@@ -61,7 +62,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
                             <option value="ACCOUNTANT">Contador</option>
                             <option value="VIEWER">Consulta</option>
                           </select>
-                          <button type="submit" className="secondary">Salvar</button>
+                          <SubmitButton className="secondary">Salvar</SubmitButton>
                         </form>
                       )}
                     </td>
@@ -80,7 +81,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
                               <legend>Centros de custo</legend>
                               {costCenters.length === 0 ? <span className="muted">Nenhum centro cadastrado.</span> : costCenters.map((center) => <label key={center.id}><input type="checkbox" name="costCenterIds" value={center.id} defaultChecked={membership.costCenterAccess.some((item) => item.costCenterId === center.id)} /> {center.name}</label>)}
                             </fieldset>
-                            <button type="submit" className="secondary">Salvar escopo</button>
+                            <SubmitButton className="secondary">Salvar escopo</SubmitButton>
                           </form>
                         </details>
                       )}
@@ -88,7 +89,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
                     <td>{membership.status === "ACTIVE" ? "Ativo" : "Revogado"}</td>
                     <td>{membership.role !== "OWNER" && membership.status === "ACTIVE" ? (
                       <form action={revokeMemberAction.bind(null, membership.id)} className="inline">
-                        <button type="submit" className="danger-button">Revogar</button>
+                        <SubmitButton className="danger-button">Revogar</SubmitButton>
                       </form>
                     ) : null}</td>
                   </tr>
@@ -108,7 +109,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
                     <td>{invitation.email}</td><td>{ROLE_LABEL[invitation.role]}</td>
                     <td>{expired ? "Expirado" : invitation.status === "PENDING" ? "Pendente" : invitation.status === "ACCEPTED" ? "Aceito" : "Revogado"}</td>
                     <td>{invitation.expiresAt.toLocaleDateString("pt-BR")}</td>
-                    <td>{invitation.status === "PENDING" && !expired ? <form action={revokeInvitationAction.bind(null, invitation.id)} className="inline"><button type="submit" className="danger-button">Revogar</button></form> : null}</td>
+                    <td>{invitation.status === "PENDING" && !expired ? <form action={revokeInvitationAction.bind(null, invitation.id)} className="inline"><SubmitButton className="danger-button">Revogar</SubmitButton></form> : null}</td>
                   </tr>;
                 })}</tbody>
               </table>
@@ -128,7 +129,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
               </select>
               <label htmlFor="ownership-confirmation">Digite TRANSFERIR para confirmar</label>
               <input id="ownership-confirmation" name="confirmation" required pattern="TRANSFERIR" autoComplete="off" />
-              <button type="submit" className="danger-button">Transferir propriedade</button>
+              <SubmitButton className="danger-button">Transferir propriedade</SubmitButton>
             </form>
           </div>
         </div>

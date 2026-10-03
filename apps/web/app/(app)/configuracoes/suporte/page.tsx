@@ -4,6 +4,7 @@ import { listCompanySupportCases } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { createSupportCaseAction } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const STATUS: Record<string,string> = { OPEN:"Aberto", IN_PROGRESS:"Em atendimento", WAITING_CUSTOMER:"Aguardando resposta", RESOLVED:"Resolvido", CLOSED:"Encerrado" };
 const PRIORITY: Record<string,string> = { LOW:"Baixa", NORMAL:"Normal", HIGH:"Alta", URGENT:"Crítica" };
@@ -26,7 +27,7 @@ export default async function CustomerSupportPage(props:{ searchParams: Promise<
           <label>Prioridade<select name="priority" defaultValue="NORMAL"><option value="LOW">Baixa — dúvida ou orientação</option><option value="NORMAL">Normal — problema com alternativa</option><option value="HIGH">Alta — fluxo principal bloqueado</option></select></label>
           <label>Descrição<textarea name="summary" required minLength={20} maxLength={4000} rows={7} placeholder="O que você esperava, o que aconteceu, quando e em qual tela?" /></label>
           <div className="settings-info-note"><ShieldCheck className="size-4" /> Nunca envie senha, código MFA, token, chave de API ou extrato completo.</div>
-          <button type="submit">Abrir chamado</button>
+          <SubmitButton>Abrir chamado</SubmitButton>
         </form>
       </section>
       <aside className="card settings-panel support-policy-card">

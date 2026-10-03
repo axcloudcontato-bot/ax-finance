@@ -1,14 +1,11 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormState } from "react-dom";
 import { inviteUserAction, type InviteUserState } from "./actions";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const initialState: InviteUserState = {};
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return <button type="submit" disabled={pending}>{pending ? "Enviando..." : "Enviar convite"}</button>;
-}
 
 export function InviteUserForm() {
   const [state, action] = useFormState(inviteUserAction, initialState);
@@ -32,9 +29,15 @@ export function InviteUserForm() {
           <strong>Prévia local do convite.</strong>
           <p className="muted">Este link aparece apenas no ambiente de desenvolvimento.</p>
           <input aria-label="Link do convite" readOnly value={inviteUrl} onFocus={(event) => event.currentTarget.select()} />
-          <button type="button" className="secondary" onClick={() => navigator.clipboard.writeText(inviteUrl)}>
+          <LoadingButton
+            className="mt-6"
+            onAction={() => navigator.clipboard.writeText(inviteUrl)}
+            pendingLabel="Copiando…"
+            successLabel="Link copiado"
+            errorLabel="Não foi possível copiar"
+          >
             Copiar link
-          </button>
+          </LoadingButton>
         </div>
       ) : null}
       <form action={action}>
@@ -47,7 +50,7 @@ export function InviteUserForm() {
           <option value="ACCOUNTANT">Contador</option>
           <option value="VIEWER">Consulta</option>
         </select>
-        <SubmitButton />
+        <SubmitButton pendingLabel="Enviando...">Enviar convite</SubmitButton>
       </form>
     </div>
   );

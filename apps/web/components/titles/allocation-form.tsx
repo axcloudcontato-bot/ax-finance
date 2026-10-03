@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type Option = { id: string; name: string; parentId?: string | null };
 type Initial = { categoryId: string; costCenterId: string | null; amount: string };
@@ -21,6 +22,6 @@ export function AllocationForm({ action, clearAction, categories, costCenters, i
       <button type="button" className="secondary" onClick={() => setRows((current) => current.filter((_,i) => i !== index))} disabled={rows.length <= 2}>Remover</button>
     </div>)}
     <input type="hidden" name="rowCount" value={rows.length}/>
-    <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}><button type="button" className="secondary" onClick={() => setRows((current) => [...current,{categoryId:categories[0]?.id ?? "",costCenterId:null,amount:""}])} disabled={rows.length >= 50}>+ Linha</button><button type="submit">Salvar rateio</button>{initial.length ? <button type="submit" formAction={clearAction} className="secondary">Remover rateio</button> : null}</div>
+    <div style={{display:"flex",gap:"0.75rem",flexWrap:"wrap"}}><button type="button" className="secondary" onClick={() => setRows((current) => [...current,{categoryId:categories[0]?.id ?? "",costCenterId:null,amount:""}])} disabled={rows.length >= 50}>+ Linha</button><SubmitButton>Salvar rateio</SubmitButton>{initial.length ? <SubmitButton formAction={clearAction} className="secondary">Remover rateio</SubmitButton> : null}</div>
   </form></>;
 }

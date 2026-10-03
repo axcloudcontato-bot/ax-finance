@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { listCompaniesForUser } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { onboardingAction } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function OnboardingPage(
   props: {
@@ -23,7 +24,7 @@ export default async function OnboardingPage(
   const selectedPlan = searchParams.plano?.toUpperCase() === "PERSONAL" ? "PERSONAL" : "ESSENTIAL";
 
   return (
-    <main className="narrow">
+    <main className="narrow ax-model-buttons">
       <div className="card">
         <h1>Vamos configurar sua gestão</h1>
         <p className="subtitle">
@@ -88,7 +89,7 @@ export default async function OnboardingPage(
             required
           />
 
-          <button type="submit">Criar empresa e continuar</button>
+          <SubmitButton>Criar empresa e continuar</SubmitButton>
         </form>
       </div>
     </main>

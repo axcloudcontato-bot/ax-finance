@@ -39,7 +39,7 @@ export function ActionModal({
       <button
         type="button"
         className="button-link"
-        style={{ marginTop: 0, border: "none" }}
+        style={{ marginTop: 0 }}
         onClick={() => setOpen(true)}
       >
         {triggerLabel}

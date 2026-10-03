@@ -1,6 +1,7 @@
 import { Download, Paperclip, Trash2 } from "@/components/ui/animated-icons";
 import type { listTitleAttachments } from "@ax-finance/domain";
 import { deleteTitleAttachmentAction, uploadTitleAttachmentAction } from "@/app/(app)/attachments/actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type Attachments = Awaited<ReturnType<typeof listTitleAttachments>>;
 
@@ -40,7 +41,7 @@ export function TitleAttachments({
 
       <form action={uploadAction} className="attachment-upload-form">
         <input name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required />
-        <button type="submit"><Paperclip className="size-4" /> Anexar arquivo</button>
+        <SubmitButton><Paperclip className="size-4" /> Anexar arquivo</SubmitButton>
       </form>
 
       {attachments.length === 0 ? (
@@ -60,9 +61,9 @@ export function TitleAttachments({
                   <Download className="size-4" /> Baixar
                 </a>
                 <form action={deleteAction} className="inline">
-                  <button type="submit" className="secondary" aria-label={`Remover ${attachment.originalName}`}>
+                  <SubmitButton className="secondary" aria-label={`Remover ${attachment.originalName}`}>
                     <Trash2 className="size-4" />
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             );

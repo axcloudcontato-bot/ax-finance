@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
@@ -112,11 +113,11 @@ export function TitleForm({
           </div>
 
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button type="submit">Salvar</button>
+            <SubmitButton>Salvar</SubmitButton>
             {actionAndContinue ? (
-              <button type="submit" formAction={actionAndContinue} className="secondary">
+              <SubmitButton formAction={actionAndContinue} className="secondary">
                 Salvar e nova
-              </button>
+              </SubmitButton>
             ) : null}
           </div>
         </form>

@@ -34,7 +34,7 @@ export function AppShell({
   const dashboardOwnsToolbar = pathname === "/dashboard";
 
   return (
-    <div className="flex h-svh w-full min-w-0 flex-col bg-background">
+    <div className="ax-model-buttons flex h-svh w-full min-w-0 flex-col bg-background">
       <AppTopbar />
 
       <div className="flex min-h-0 flex-1">

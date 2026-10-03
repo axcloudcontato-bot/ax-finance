@@ -5,6 +5,7 @@ import { getMfaStatus, getPendingMfaSetup } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { beginMfaSetupAction, confirmMfaSetupAction, disableMfaAction } from "./actions";
 import { ConfirmMfaForm } from "./confirm-mfa-form";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function SecurityPage(
   props: {
@@ -44,7 +45,7 @@ export default async function SecurityPage(
                 <form action={disableMfaAction} className="security-disable-form">
                   <div><label htmlFor="current-password">Senha atual</label><input id="current-password" name="password" type="password" autoComplete="current-password" required /></div>
                   <div><label htmlFor="disable-code">Código do autenticador ou de recuperação</label><input id="disable-code" name="code" autoComplete="one-time-code" required /></div>
-                  <button className="danger-button" type="submit">Desativar proteção</button>
+                  <SubmitButton className="danger-button">Desativar proteção</SubmitButton>
                 </form>
               </details>
             </>
@@ -62,7 +63,7 @@ export default async function SecurityPage(
             <div className="security-empty-state">
               <Smartphone className="size-10" />
               <div><h3>Proteção adicional desativada</h3><p>Além da senha, você confirmará o acesso com um código temporário gerado no celular.</p></div>
-              <form action={beginMfaSetupAction}><button type="submit">Configurar autenticação em duas etapas</button></form>
+              <form action={beginMfaSetupAction}><SubmitButton>Configurar autenticação em duas etapas</SubmitButton></form>
             </div>
           )}
         </section>

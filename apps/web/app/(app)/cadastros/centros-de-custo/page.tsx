@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { archiveCostCenterAction, createCostCenterAction } from "./actions";
 import { reactivateCostCenterAction, updateCostCenterAction } from "./actions";
 import { ActionModal } from "@/components/ui/action-modal";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function CostCentersPage(
   props: { searchParams: Promise<{ erro?: string; criado?: string; arquivado?: string; atualizado?: string }> }
@@ -29,8 +30,8 @@ export default async function CostCentersPage(
           <tbody>{costCenters.map((center) => <tr key={center.id}>
             <td>{center.name}</td><td>{center.code || "—"}</td><td>{center.status === "ACTIVE" ? "Ativo" : "Arquivado"}</td>
             <td><div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
-              <ActionModal triggerLabel="Editar" title={`Editar centro — ${center.name}`}><form action={updateCostCenterAction.bind(null, center.id)}><label htmlFor={`center-name-${center.id}`}>Nome</label><input id={`center-name-${center.id}`} name="name" defaultValue={center.name} required maxLength={200}/><label htmlFor={`center-code-${center.id}`}>Código</label><input id={`center-code-${center.id}`} name="code" defaultValue={center.code ?? ""} maxLength={50}/><button type="submit">Salvar alterações</button></form></ActionModal>
-              {center.status === "ACTIVE" ? <form action={archiveCostCenterAction.bind(null, center.id)} className="inline"><button type="submit" className="secondary">Arquivar</button></form> : <form action={reactivateCostCenterAction.bind(null, center.id)} className="inline"><button type="submit" className="secondary">Reativar</button></form>}
+              <ActionModal triggerLabel="Editar" title={`Editar centro — ${center.name}`}><form action={updateCostCenterAction.bind(null, center.id)}><label htmlFor={`center-name-${center.id}`}>Nome</label><input id={`center-name-${center.id}`} name="name" defaultValue={center.name} required maxLength={200}/><label htmlFor={`center-code-${center.id}`}>Código</label><input id={`center-code-${center.id}`} name="code" defaultValue={center.code ?? ""} maxLength={50}/><SubmitButton>Salvar alterações</SubmitButton></form></ActionModal>
+              {center.status === "ACTIVE" ? <form action={archiveCostCenterAction.bind(null, center.id)} className="inline"><SubmitButton className="secondary">Arquivar</SubmitButton></form> : <form action={reactivateCostCenterAction.bind(null, center.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
             </div></td>
           </tr>)}</tbody>
         </table>}
@@ -42,7 +43,7 @@ export default async function CostCentersPage(
           <input id="cost-center-name" name="name" required maxLength={200} />
           <label htmlFor="cost-center-code">Código (opcional)</label>
           <input id="cost-center-code" name="code" maxLength={50} />
-          <button type="submit">Criar centro de custo</button>
+          <SubmitButton>Criar centro de custo</SubmitButton>
         </form>
       </div>
     </div>

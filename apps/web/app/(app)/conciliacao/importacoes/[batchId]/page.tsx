@@ -10,6 +10,7 @@ import { requirePlanFeature } from "@/lib/plan-access";
 import { formatCents } from "@/lib/currency";
 import { getCurrentUser } from "@/lib/session";
 import { confirmBankImportAction } from "../../actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 function ColumnSelect({
   name,
@@ -100,7 +101,7 @@ export default async function BankImportPreviewPage(
           </>
         )}
 
-        <button type="submit">Confirmar importação</button>
+        <SubmitButton>Confirmar importação</SubmitButton>
         {batch.fileSizeBytes >= 512 * 1024 || batch.rowCount >= 2_000 ? (
           <p className="muted">Arquivo grande: o processamento continuará em segundo plano.</p>
         ) : null}

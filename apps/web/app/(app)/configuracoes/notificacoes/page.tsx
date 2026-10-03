@@ -4,6 +4,7 @@ import { getNotificationPreference } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { updateNotificationPreferenceAction } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function NotificationSettingsPage(
   props: {
@@ -98,7 +99,7 @@ export default async function NotificationSettingsPage(
 
         <div className="settings-save-bar">
           <div><strong>Preferências de {company.name}</strong><span>As alterações valem para o seu usuário nesta empresa.</span></div>
-          <button type="submit">Salvar preferências</button>
+          <SubmitButton>Salvar preferências</SubmitButton>
         </div>
       </form>
     </main>

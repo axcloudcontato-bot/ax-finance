@@ -39,6 +39,7 @@ import {
   reverseSaidaRefundAction,
   updateSaidaAction,
 } from "../actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function SaidaDetailPage(
   props: {
@@ -99,7 +100,7 @@ export default async function SaidaDetailPage(
             </ActionModal>
             <ActionModal triggerLabel="Duplicar" title="Duplicar saída">
               <p className="subtitle">A cópia nasce em aberto, sem pagamentos nem anexos. Ajuste as datas se necessário.</p>
-              <form action={duplicateSaidaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><button type="submit">Criar cópia</button></form>
+              <form action={duplicateSaidaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><SubmitButton>Criar cópia</SubmitButton></form>
             </ActionModal>
             {showSettlementForm ? (
               <ActionModal
@@ -183,9 +184,9 @@ export default async function SaidaDetailPage(
           <form action={cancelAction} style={{ marginTop: "1rem" }}>
             <label htmlFor="reason">Cancelar saldo remanescente — motivo</label>
             <input id="reason" name="reason" type="text" maxLength={500} required />
-            <button type="submit" className="secondary">
+            <SubmitButton className="secondary">
               Cancelar título
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
 
@@ -193,9 +194,9 @@ export default async function SaidaDetailPage(
           <label htmlFor="deleteReason">Remover das telas — motivo</label>
           <p className="muted">O histórico, as baixas, conciliações e anexos serão preservados para auditoria.</p>
           <input id="deleteReason" name="reason" type="text" maxLength={500} required />
-          <button type="submit" className="secondary">
+          <SubmitButton className="secondary">
             Remover título
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
@@ -213,9 +214,9 @@ export default async function SaidaDetailPage(
                   required
                   style={{ width: "auto" }}
                 />
-                <button type="submit" className="secondary" style={{ marginTop: 0 }}>
+                <SubmitButton className="secondary" style={{ marginTop: 0 }}>
                   Remover parcelamento ({installments.length} parcelas)
-                </button>
+                </SubmitButton>
               </form>
             ) : null}
           </div>
@@ -298,13 +299,13 @@ export default async function SaidaDetailPage(
                       ) : (
                         <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
                         <ActionModal triggerLabel="Registrar reembolso" title="Registrar reembolso">
-                          <form action={registerSaidaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={toDateOnlyString(new Date())} required/><label>Motivo</label><input name="reason" required maxLength={500}/><button type="submit">Registrar reembolso</button></form>
+                          <form action={registerSaidaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={toDateOnlyString(new Date())} required/><label>Motivo</label><input name="reason" required maxLength={500}/><SubmitButton>Registrar reembolso</SubmitButton></form>
                         </ActionModal>
                         <form action={reverseAction} className="inline">
                           <input type="hidden" name="reason" value="Estornado pelo usuário" />
-                          <button type="submit" className="secondary">
+                          <SubmitButton className="secondary">
                             Estornar
-                          </button>
+                          </SubmitButton>
                         </form></div>
                       )}
                     </td>
@@ -314,7 +315,7 @@ export default async function SaidaDetailPage(
             </tbody>
           </table>
         )}
-        {title.settlements.some((item)=>item.refunds.length>0) ? <><h2 style={{marginTop:"1.5rem"}}>Reembolsos</h2><table><thead><tr><th>Data</th><th>Pagamento</th><th>Conta</th><th>Valor</th><th>Motivo</th><th></th></tr></thead><tbody>{title.settlements.flatMap((settlement)=>settlement.refunds.map((refund)=><tr key={refund.id} style={refund.reversedAt?{opacity:0.5}:undefined}><td>{formatDateOnly(refund.effectiveDate)}</td><td>{formatDateOnly(settlement.effectiveDate)}</td><td>{refund.financialAccount.name}</td><td>{formatCents(refund.amountCents)}</td><td>{refund.reason}</td><td>{refund.reversedAt?"Estornado":<form action={reverseSaidaRefundAction.bind(null,title.id,refund.id)} className="inline"><button type="submit" className="secondary">Estornar</button></form>}</td></tr>))}</tbody></table></> : null}
+        {title.settlements.some((item)=>item.refunds.length>0) ? <><h2 style={{marginTop:"1.5rem"}}>Reembolsos</h2><table><thead><tr><th>Data</th><th>Pagamento</th><th>Conta</th><th>Valor</th><th>Motivo</th><th></th></tr></thead><tbody>{title.settlements.flatMap((settlement)=>settlement.refunds.map((refund)=><tr key={refund.id} style={refund.reversedAt?{opacity:0.5}:undefined}><td>{formatDateOnly(refund.effectiveDate)}</td><td>{formatDateOnly(settlement.effectiveDate)}</td><td>{refund.financialAccount.name}</td><td>{formatCents(refund.amountCents)}</td><td>{refund.reason}</td><td>{refund.reversedAt?"Estornado":<form action={reverseSaidaRefundAction.bind(null,title.id,refund.id)} className="inline"><SubmitButton className="secondary">Estornar</SubmitButton></form>}</td></tr>))}</tbody></table></> : null}
       </div>
       <div className="card">
         <h1>Histórico</h1>

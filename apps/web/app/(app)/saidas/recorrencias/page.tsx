@@ -15,6 +15,7 @@ import {
   pauseSaidaRecurrenceAction,
   resumeSaidaRecurrenceAction,
 } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Ativa",
@@ -66,9 +67,9 @@ export default async function SaidasRecorrenciasPage(
         <div className="page-header" style={{ marginBottom: "0.5rem" }}>
           <h1>Regras cadastradas</h1>
           <form action={generateSaidaOccurrencesAction}>
-            <button type="submit" className="secondary">
+            <SubmitButton className="secondary">
               Gerar títulos pendentes
-            </button>
+            </SubmitButton>
           </form>
         </div>
         {searchParams.gerados ? (
@@ -103,16 +104,16 @@ export default async function SaidasRecorrenciasPage(
                     {rule.status === "ACTIVE" ? (
                       <form action={pauseSaidaRecurrenceAction} className="inline">
                         <input type="hidden" name="ruleId" value={rule.id} />
-                        <button type="submit" className="secondary">
+                        <SubmitButton className="secondary">
                           Pausar
-                        </button>
+                        </SubmitButton>
                       </form>
                     ) : rule.status === "PAUSED" ? (
                       <form action={resumeSaidaRecurrenceAction} className="inline">
                         <input type="hidden" name="ruleId" value={rule.id} />
-                        <button type="submit" className="secondary">
+                        <SubmitButton className="secondary">
                           Retomar
-                        </button>
+                        </SubmitButton>
                       </form>
                     ) : null}
                   </td>

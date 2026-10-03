@@ -61,7 +61,7 @@ export function Modal({
       <button
         type="button"
         className={triggerClassName ?? "button-link"}
-        style={triggerClassName ? undefined : { marginTop: 0, border: "none" }}
+        style={triggerClassName ? undefined : { marginTop: 0 }}
         onClick={() => setOpen(true)}
       >
         {triggerLabel}

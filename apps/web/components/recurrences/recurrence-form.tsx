@@ -1,4 +1,5 @@
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
@@ -90,7 +91,7 @@ export function RecurrenceForm({
           <label htmlFor="notes">Observações</label>
           <input id="notes" name="notes" type="text" maxLength={2000} />
 
-          <button type="submit">Criar recorrência</button>
+          <SubmitButton>Criar recorrência</SubmitButton>
         </form>
       )}
     </>

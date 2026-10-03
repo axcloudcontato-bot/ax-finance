@@ -17,6 +17,7 @@ import {
   pauseSaidaRecurrenceAction,
   resumeSaidaRecurrenceAction,
 } from "../actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Ativa",
@@ -101,26 +102,26 @@ export default async function SaidaRecorrenciaDetailPage(
         <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem", flexWrap: "wrap" }}>
           <form action={generateSaidaOccurrencesAction}>
             <input type="hidden" name="returnTo" value={`/saidas/recorrencias/${rule.id}`} />
-            <button type="submit" className="secondary">
+            <SubmitButton className="secondary">
               Gerar títulos pendentes
-            </button>
+            </SubmitButton>
           </form>
 
           {rule.status === "ACTIVE" ? (
             <form action={pauseSaidaRecurrenceAction}>
               <input type="hidden" name="ruleId" value={rule.id} />
-              <button type="submit" className="secondary">
+              <SubmitButton className="secondary">
                 Pausar
-              </button>
+              </SubmitButton>
             </form>
           ) : null}
 
           {rule.status === "PAUSED" ? (
             <form action={resumeSaidaRecurrenceAction}>
               <input type="hidden" name="ruleId" value={rule.id} />
-              <button type="submit" className="secondary">
+              <SubmitButton className="secondary">
                 Retomar
-              </button>
+              </SubmitButton>
             </form>
           ) : null}
         </div>
@@ -142,9 +143,9 @@ export default async function SaidaRecorrenciaDetailPage(
                 Também cancelar títulos abertos já gerados (sem baixa)
               </label>
             </div>
-            <button type="submit" className="secondary" style={{ marginTop: "1rem" }}>
+            <SubmitButton className="secondary" style={{ marginTop: "1rem" }}>
               Cancelar recorrência
-            </button>
+            </SubmitButton>
           </form>
         ) : null}
       </div>

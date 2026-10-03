@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { listFinancialAccounts } from "@ax-finance/domain";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type AccountOption = Awaited<ReturnType<typeof listFinancialAccounts>>[number];
 
@@ -83,7 +84,7 @@ export function SettlementForm({
           <label htmlFor="paymentMethod">Meio de pagamento</label>
           <input id="paymentMethod" name="paymentMethod" type="text" maxLength={100} />
 
-          <button type="submit">{submitLabel}</button>
+          <SubmitButton>{submitLabel}</SubmitButton>
         </form>
       )}
     </>

@@ -5,6 +5,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { BUCKET_LABEL } from "@/lib/aging-labels";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function EmAbertoPage(
   props: {
@@ -46,9 +47,9 @@ export default async function EmAbertoPage(
             <label htmlFor="data">Data de referência</label>
             <input id="data" name="data" type="date" defaultValue={asOfDate} />
           </div>
-          <button type="submit" style={{ marginTop: 0 }}>
+          <SubmitButton style={{ marginTop: 0 }}>
             Filtrar
-          </button>
+          </SubmitButton>
           <a href={exportHref} className="button-link">
             Exportar CSV
           </a>

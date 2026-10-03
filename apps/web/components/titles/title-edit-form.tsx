@@ -1,5 +1,6 @@
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
 import { toDateOnlyString } from "@/lib/dates";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type Category = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type Party = Awaited<ReturnType<typeof listParties>>[number];
@@ -21,6 +22,6 @@ export function TitleEditForm({ action, title, categories, parties, costCenters,
       <div><label htmlFor="edit-competence">Competência</label><input id="edit-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/></div>
       <div><label htmlFor="edit-due">Vencimento</label><input id="edit-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/></div>
       <div className="span-2"><label htmlFor="edit-title-notes">Observações</label><textarea id="edit-title-notes" name="notes" defaultValue={title.notes ?? ""} maxLength={2000}/></div>
-    </div><button type="submit">Salvar alterações</button>
+    </div><SubmitButton>Salvar alterações</SubmitButton>
   </form></>;
 }

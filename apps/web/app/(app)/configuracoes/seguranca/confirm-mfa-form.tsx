@@ -2,10 +2,11 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import type { ConfirmMfaState } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 function ConfirmButton() {
   const { pending } = useFormStatus();
-  return <button type="submit" disabled={pending}>{pending ? "Confirmando..." : "Ativar autenticação em duas etapas"}</button>;
+  return <SubmitButton disabled={pending}>{pending ? "Confirmando..." : "Ativar autenticação em duas etapas"}</SubmitButton>;
 }
 
 export function ConfirmMfaForm({

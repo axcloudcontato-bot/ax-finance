@@ -3,6 +3,7 @@ import type { listTitles } from "@ax-finance/domain";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { TitleStatusBadge } from "./title-status-badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type TitleRow = Awaited<ReturnType<typeof listTitles>>[number];
 
@@ -45,7 +46,7 @@ export function TitleListTable({ titles, basePath }: { titles: TitleRow[]; baseP
         ))}
       </tbody>
     </table>
-    <button type="submit" className="secondary" style={{marginTop:"1rem"}}>Operações em lote</button>
+    <SubmitButton className="secondary" style={{marginTop:"1rem"}}>Operações em lote</SubmitButton>
     </form>
   );
 }

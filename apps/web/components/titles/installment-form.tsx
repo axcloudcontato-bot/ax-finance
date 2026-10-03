@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
@@ -132,7 +133,7 @@ export function InstallmentForm({
             </div>
           </div>
 
-          <button type="submit">Parcelar</button>
+          <SubmitButton>Parcelar</SubmitButton>
         </form>
       )}
     </div>

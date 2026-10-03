@@ -9,6 +9,7 @@ import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { deactivatePartyAction } from "../actions";
 import { reactivatePartyAction, updatePartyAction } from "../actions";
 import { ActionModal } from "@/components/ui/action-modal";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function PessoaDetailPage(
   props: {
@@ -112,17 +113,17 @@ export default async function PessoaDetailPage(
             <label htmlFor="edit-notes">Observações</label><textarea id="edit-notes" name="notes" defaultValue={party.notes ?? ""} maxLength={2000}/>
             <label><input type="checkbox" name="isClient" value="true" defaultChecked={party.isClient}/> Cliente</label>
             <label><input type="checkbox" name="isSupplier" value="true" defaultChecked={party.isSupplier}/> Fornecedor</label>
-            <button type="submit">Salvar alterações</button>
+            <SubmitButton>Salvar alterações</SubmitButton>
           </form>
         </ActionModal>
         {party.status === "ACTIVE" ? (
           <form action={deactivatePartyAction} style={{ marginTop: "1rem" }}>
             <input type="hidden" name="partyId" value={party.id} />
-            <button type="submit" className="secondary">
+            <SubmitButton className="secondary">
               Inativar
-            </button>
+            </SubmitButton>
           </form>
-        ) : <form action={reactivatePartyAction.bind(null, party.id)} className="inline"><button type="submit" className="secondary">Reativar</button></form>}
+        ) : <form action={reactivatePartyAction.bind(null, party.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
         </div>
       </div>
 

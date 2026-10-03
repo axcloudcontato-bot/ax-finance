@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { Modal } from "@/components/ui/modal";
 import { createPartyAction } from "./actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function PessoasPage(
   props: {
@@ -108,7 +109,7 @@ export default async function PessoasPage(
             <label htmlFor="notes">Observações (opcional)</label>
             <input id="notes" name="notes" type="text" maxLength={2000} />
 
-            <button type="submit">Criar pessoa</button>
+            <SubmitButton>Criar pessoa</SubmitButton>
           </form>
         </Modal>
       </div>

@@ -4,6 +4,7 @@ import { listFinancialAccounts } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { createTransferAction } from "../actions";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function NovaTransferenciaPage(
   props: {
@@ -99,7 +100,7 @@ export default async function NovaTransferenciaPage(
               </div>
             </div>
 
-            <button type="submit">Transferir</button>
+            <SubmitButton>Transferir</SubmitButton>
           </form>
         )}
       </div>

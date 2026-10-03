@@ -7,6 +7,7 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { reverseTransferAction } from "./actions";
 import { resolvePeriodRange } from "@/lib/month";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function TransferenciasPage(
   props: {
@@ -65,9 +66,9 @@ export default async function TransferenciasPage(
                       ) : (
                         <form action={reverseAction} className="inline">
                           <input type="hidden" name="reason" value="Estornado pelo usuário" />
-                          <button type="submit" className="secondary">
+                          <SubmitButton className="secondary">
                             Estornar
-                          </button>
+                          </SubmitButton>
                         </form>
                       )}
                     </td>

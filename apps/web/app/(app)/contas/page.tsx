@@ -11,6 +11,7 @@ import { ActionModal } from "@/components/ui/action-modal";
 import { Modal } from "@/components/ui/modal";
 import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction, setAccountArchivedAction, updateAccountAction } from "./actions";
 import { resolvePeriodRange } from "@/lib/month";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
   BANK: "Conta bancária",
@@ -90,7 +91,7 @@ export default async function ContasPage(
               <label htmlFor="openingDate">Data do saldo de abertura</label>
               <input id="openingDate" name="openingDate" type="date" defaultValue={today} required />
 
-              <button type="submit">Criar conta</button>
+              <SubmitButton>Criar conta</SubmitButton>
             </form>
           </Modal>
         </div>
@@ -134,7 +135,7 @@ export default async function ContasPage(
                             <option value="BANK">Conta bancária</option><option value="CASH">Dinheiro em caixa</option><option value="WALLET">Carteira de recebimentos</option>
                           </select>
                           <label><input type="checkbox" name="includedInAvailableTotal" value="true" defaultChecked={account.includedInAvailableTotal} /> Incluir no saldo disponível</label>
-                          <button type="submit">Salvar alterações</button>
+                          <SubmitButton>Salvar alterações</SubmitButton>
                         </form>
                       </ActionModal>
                       {account.status === "ACTIVE" ? <ActionModal
@@ -175,11 +176,11 @@ export default async function ContasPage(
                           <label htmlFor={`reason-${account.id}`}>Motivo</label>
                           <input id={`reason-${account.id}`} name="reason" type="text" maxLength={500} required />
 
-                          <button type="submit">Ajustar saldo</button>
+                          <SubmitButton>Ajustar saldo</SubmitButton>
                         </form>
                       </ActionModal> : null}
                       <form action={setAccountArchivedAction.bind(null, account.id, account.status === "ACTIVE")} className="inline">
-                        <button type="submit" className="secondary">{account.status === "ACTIVE" ? "Arquivar" : "Reativar"}</button>
+                        <SubmitButton className="secondary">{account.status === "ACTIVE" ? "Arquivar" : "Reativar"}</SubmitButton>
                       </form>
                       </div>
                     </td>
@@ -224,9 +225,9 @@ export default async function ContasPage(
                         className="inline"
                       >
                         <input type="hidden" name="reason" value="Estornado pelo usuário" />
-                        <button type="submit" className="secondary">
+                        <SubmitButton className="secondary">
                           Estornar
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>
