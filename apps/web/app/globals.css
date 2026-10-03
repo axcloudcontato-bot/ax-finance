@@ -558,14 +558,14 @@ button:disabled {
 }
 
 :root[data-ax-theme="dark"] .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply) {
-  border-color: rgba(255, 255, 255, 0.16);
-  background: #252522;
-  color: #e7e5e4;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--card) 80%, #8fb0ff 20%);
+  color: var(--text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-ax-theme="dark"] .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply):hover:not(:disabled) {
-  background: #2a2a27;
+  background: color-mix(in srgb, var(--card) 72%, #8fb0ff 28%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -3429,7 +3429,7 @@ main.settings-page {
 .concil-panel { order: -1; padding: 1.25rem; }
 
 @container (min-width: 880px) {
-  .concil-bench {
+  .concil-bench:has(> .concil-panel) {
     grid-template-columns: minmax(0, 1fr) minmax(330px, 400px);
     align-items: start;
   }
@@ -3610,4 +3610,223 @@ main.settings-page {
   .concil-candidates li form { grid-column: 1 / -1; }
   .concil-import > summary { grid-template-columns: minmax(0, 1fr) auto; }
   .concil-import-meta { display: none; }
+}
+
+/* ===== Refino: gaveta de navegação no celular, tema escuro e responsividade ===== */
+.app-nav-toggle {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.app-nav-toggle:hover { background: rgba(255, 255, 255, 0.16); }
+.app-nav-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+@media (max-width: 767px) {
+  .app-sidebar-backdrop {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgba(8, 13, 24, 0.55);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 220ms ease, visibility 0s linear 220ms;
+  }
+
+  .app-sidebar-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 220ms ease, visibility 0s;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 4rem;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    width: min(300px, 86vw);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--card);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 240ms;
+  }
+
+  .app-sidebar.is-open {
+    transform: none;
+    visibility: visible;
+    box-shadow: 12px 0 32px rgba(8, 13, 24, 0.28);
+    transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar,
+  .app-sidebar-backdrop { transition: none !important; }
+}
+
+/* --- Tema escuro: superfícies que tinham cor clara fixa. Tons semânticos saem
+   do próprio --card, então acompanham a paleta em vez de repetir hexadecimais. --- */
+:root[data-ax-theme="dark"] {
+  --tone-info: #8fb0ff;
+  --tone-warn: #ffc266;
+  --tone-bad: #ff8a8a;
+  --tone-ok: #5fd6a6;
+}
+
+:root[data-ax-theme="dark"] :is(.error, .period-filter-error) {
+  border-color: color-mix(in srgb, var(--tone-bad) 38%, var(--card));
+  background: color-mix(in srgb, var(--tone-bad) 12%, var(--card));
+  color: #ffb3b3;
+}
+
+:root[data-ax-theme="dark"] .success-box,
+:root[data-ax-theme="dark"] .security-state-card,
+:root[data-ax-theme="dark"] .dashboard-alert.success {
+  border-color: color-mix(in srgb, var(--tone-ok) 38%, var(--card));
+  background: color-mix(in srgb, var(--tone-ok) 11%, var(--card));
+  color: #8be5c1;
+}
+
+:root[data-ax-theme="dark"] :is(.period-comparison-chip, .comparison-banner, .security-empty-state, .settings-info-note) {
+  border-color: color-mix(in srgb, var(--tone-info) 36%, var(--card));
+  background: color-mix(in srgb, var(--tone-info) 11%, var(--card));
+  color: #b7ccff;
+}
+
+:root[data-ax-theme="dark"] :is(.subscription-upgrade-notice, .dashboard-alert.warning) {
+  border-color: color-mix(in srgb, var(--tone-warn) 40%, var(--card));
+  background: color-mix(in srgb, var(--tone-warn) 11%, var(--card));
+  color: #ffd699;
+}
+
+:root[data-ax-theme="dark"] :is(.dashboard-alert.danger, .subscription-cancellation) {
+  border-color: color-mix(in srgb, var(--tone-bad) 38%, var(--card));
+  background: color-mix(in srgb, var(--tone-bad) 11%, var(--card));
+  color: #ffb3b3;
+}
+
+:root[data-ax-theme="dark"] .subscription-danger-panel { border-color: color-mix(in srgb, var(--tone-bad) 38%, var(--border)); }
+
+:root[data-ax-theme="dark"] .quick-action-card.revenue {
+  border-color: color-mix(in srgb, var(--tone-ok) 36%, var(--card));
+  background: color-mix(in srgb, var(--tone-ok) 10%, var(--card));
+  color: #8be5c1;
+}
+
+:root[data-ax-theme="dark"] .quick-action-card.expense {
+  border-color: color-mix(in srgb, #ff7aa8 36%, var(--card));
+  background: color-mix(in srgb, #ff7aa8 10%, var(--card));
+  color: #ffb0cb;
+}
+
+:root[data-ax-theme="dark"] :is(.notification-settings-form .notification-channel, .subscription-date-grid > div, .mfa-secret, .recovery-codes code) {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--text) 5%, var(--card));
+  color: var(--text);
+}
+
+:root[data-ax-theme="dark"] .notification-settings-form .notification-channel:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+}
+
+:root[data-ax-theme="dark"] .security-info-card {
+  background: linear-gradient(160deg, var(--card), color-mix(in srgb, var(--accent) 8%, var(--card)));
+}
+
+:root[data-ax-theme="dark"] .dashboard-command-icon { background: color-mix(in srgb, var(--accent) 16%, var(--card)); }
+:root[data-ax-theme="dark"] .category-ranking-track { background: color-mix(in srgb, var(--text) 12%, transparent); }
+:root[data-ax-theme="dark"] .category-ranking-row strong.positive { color: #3fd6c8; }
+:root[data-ax-theme="dark"] .category-ranking-row strong.negative { color: #ff7aa8; }
+:root[data-ax-theme="dark"] .settings-icon { color: #8fb0ff; }
+:root[data-ax-theme="dark"] .settings-icon.teal { color: #3fd6c8; }
+:root[data-ax-theme="dark"] .settings-icon.orange { color: #ffb04d; }
+
+:root[data-ax-theme="dark"] .dashboard-flow-tooltip {
+  border-color: var(--border);
+  background: var(--card);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-ax-theme="dark"] :is(.dashboard-flow-tooltip > strong, .dashboard-flow-tooltip b, .dashboard-flow-legend-title) { color: var(--text); }
+:root[data-ax-theme="dark"] :is(.dashboard-flow-tooltip > div > span, .dashboard-flow-legend-item) { color: var(--muted); }
+:root[data-ax-theme="dark"] .dashboard-flow-legend { border-top-color: var(--border); }
+
+:root[data-ax-theme="dark"] .expandable-search-form.is-open {
+  border-color: var(--border);
+  background: var(--card);
+}
+
+:root[data-ax-theme="dark"] .expandable-search-form input::placeholder { color: var(--muted); }
+
+:root[data-ax-theme="dark"] .month-selector a:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+
+/* --- Celular (< 768px): o menu já virou gaveta; aqui entram espaçamentos, tabelas
+   que rolam em vez de espremer colunas e cabeçalhos que quebram linha. --- */
+@media (max-width: 767px) {
+  main { padding: 1.25rem 1rem 2.5rem; }
+  .card { padding: 1.1rem; margin-bottom: 1.1rem; border-radius: 12px; }
+
+  .card:has(table), .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  main table:not(.concil-table) { min-width: 34rem; }
+  .card:has(table) table { margin-top: 0.25rem; }
+
+  .page-header { flex-wrap: wrap; align-items: flex-start; gap: 0.75rem 1rem; }
+  .page-header > div:has(> h1) { min-width: 0; flex: 1 1 12rem; }
+  .page-header > div:not(:has(> h1)) { flex-wrap: wrap; row-gap: 0.5rem; }
+  .page-header :is(.button-link, button) { flex-shrink: 0; }
+  .filters { flex-wrap: wrap; }
+
+  .app-toolbar { row-gap: 0.6rem; }
+  .global-period-filter { flex-wrap: wrap; row-gap: 0.4rem; }
+  .month-selector span { min-width: 7.5rem; }
+  .custom-period-label span { min-width: 0; }
+}
+
+/* Grades que empilham em 1 coluna com `1fr` simples crescem até o conteúdo
+   mais largo (uma tabela, por exemplo) e estouram a tela; minmax(0, 1fr) segura. */
+@media (max-width: 900px) {
+  .split,
+  .settings-grid,
+  .security-settings-grid,
+  .subscription-settings-grid,
+  .subscription-actions-grid,
+  .support-settings-grid,
+  .subscription-plan-grid,
+  .mfa-setup { grid-template-columns: minmax(0, 1fr); }
+
+  .split > *,
+  .settings-grid > *,
+  .security-settings-grid > *,
+  .subscription-settings-grid > * { min-width: 0; }
+}
+
+.period-filter-dates > div { flex: 1 1 0; min-width: 0; }
+.period-filter-row input,
+.period-filter-dates input { min-width: 0; }
+.form-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+@media (max-width: 560px) {
+  .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .modal-overlay { padding: 1rem 0.75rem; }
+  .modal-dialog { padding: 1.25rem; max-height: calc(100dvh - 2rem); }
+}
+
+/* CSS sem camada vence as utilities do Tailwind, então o desktop esconde o
+   hambúrguer aqui e não pelo `md:hidden` do componente. */
+@media (min-width: 768px) {
+  .app-nav-toggle { display: none; }
 }

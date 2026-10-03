@@ -312,13 +312,8 @@ export default async function ConciliacaoPage(
           )}
         </section>
 
+        {selected ? (
         <aside className="card concil-panel" aria-label="Linha selecionada">
-          {!selected ? (
-            <div className="concil-empty">
-              <strong>Selecione uma linha</strong>
-              <p className="muted">Ao escolher uma linha do extrato, as baixas que combinam com ela aparecem aqui.</p>
-            </div>
-          ) : (
             <>
               <div className="concil-panel-head">
                 <h2>{selected.description}</h2>
@@ -417,8 +412,8 @@ export default async function ConciliacaoPage(
                 </section>
               )}
             </>
-          )}
         </aside>
+        ) : null}
       </div>
       </div>
     </main>

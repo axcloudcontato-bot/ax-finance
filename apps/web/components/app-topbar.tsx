@@ -11,13 +11,14 @@ export interface AppNotification {
 }
 
 // Marca à esquerda e, à direita, o menu de ações (criar, buscar, notificações, perfil e tema).
-export function AppTopbar({ children }: { children?: ReactNode }) {
+export function AppTopbar({ leading, children }: { leading?: ReactNode; children?: ReactNode }) {
   return (
     <header
-      className="flex h-16 w-full shrink-0 items-center justify-between px-5 text-white"
+      className="relative z-40 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-3 text-white sm:px-5"
       style={{ background: "var(--grad-blue)" }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
+        {leading}
         <div className="grid size-8 shrink-0 place-items-center rounded-[6px] bg-white/20">
           <Wallet className="size-4" />
         </div>
