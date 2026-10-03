@@ -7,6 +7,7 @@ import { AppTopbar, type AppNotification } from "@/components/app-topbar";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
 import { PageActionsSlot } from "@/components/page-actions-slot";
 import { BottomMenu } from "@/components/ui/bottom-menu";
+import { NotificationToasts } from "@/components/notification-toasts";
 import type { MembershipRole } from "@ax-finance/db";
 
 export function AppShell({
@@ -84,6 +85,8 @@ export function AppShell({
           {children}
         </div>
       </div>
+
+      <NotificationToasts notifications={notifications} />
     </div>
   );
 }
