@@ -12,6 +12,7 @@
     "@ax-finance/db": "workspace:*",
     "@ax-finance/domain": "workspace:*",
     "nodemailer": "^10.0.11",
+    "stripe": "^23.0.0",
     "tsx": "^4.16.2"
   },
   "devDependencies": {

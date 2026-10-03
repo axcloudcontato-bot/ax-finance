@@ -126,6 +126,12 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      # Conciliação periódica da cobrança com a Stripe (precisa só da chave e dos preços;
+      # o segredo do webhook é do serviço web). Sem elas, a conciliação fica desligada.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PRICE_PERSONAL: ${STRIPE_PRICE_PERSONAL:-}
+      STRIPE_PRICE_ESSENTIAL: ${STRIPE_PRICE_ESSENTIAL:-}
+      BILLING_RECONCILE_INTERVAL_MS: ${BILLING_RECONCILE_INTERVAL_MS:-3600000}
       WORKER_POLL_INTERVAL_MS: ${WORKER_POLL_INTERVAL_MS:-5000}
       WORKER_BATCH_SIZE: ${WORKER_BATCH_SIZE:-10}
       IMPORT_WORKER_BATCH_SIZE: ${IMPORT_WORKER_BATCH_SIZE:-2}

@@ -86,10 +86,43 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe   # imprime o whse
 - Cada mudança de estado confirmada pela Stripe gera um evento de auditoria *Assinatura atualizada pela
   cobrança*, com autor "Stripe".
 
+## Conciliação periódica
+
+O webhook é o caminho principal, mas pode falhar (app fora do ar por muito tempo, entrega esgotada,
+evento perdido). Por isso o worker confere a cobrança com a Stripe **a cada hora e na partida**
+(`BILLING_RECONCILE_INTERVAL_MS`, mínimo de 1 minuto):
+
+- Lê, na Stripe, cada assinatura local ligada a ela e que não terminou, e corrige o que divergiu
+  (status, plano, fim do ciclo, cancelamento agendado). Usa a mesma gravação e a mesma proteção de
+  ordem do webhook, então rodar junto com um webhook é seguro.
+- Recupera o **primeiro pagamento cujo webhook nunca chegou**: empresas que abriram o checkout nos
+  últimos 3 dias e ainda não têm assinatura vinculada são procuradas pelo cliente, e a assinatura que
+  leva o `companyId` delas nos metadados é vinculada.
+- Cada correção vira uma linha em `billing_events` (`reconciliation.drift`, com o que mudou) e um
+  evento de auditoria. Falha de rede em uma empresa não impede as outras
+  (`reconciliation.error`, `FAILED`). Assinatura que não existe mais na Stripe só é contada.
+- O worker só concilia se tiver `STRIPE_SECRET_KEY` e os dois `STRIPE_PRICE_*` (o `whsec_` é do web).
+  O log estruturado `worker.billing_reconciliation_completed` traz `checked`, `inSync`, `corrected`,
+  `missingInProvider` e `failed`; vira `warn` quando algo foi corrigido ou falhou.
+
+Para rodar uma vez, na hora:
+
+```bash
+docker compose run --rm worker pnpm --filter worker start -- --reconcile-billing
+```
+
+Para ver as correções: `SELECT type, outcome, detail, created_at FROM billing_events WHERE type LIKE 'reconciliation.%' ORDER BY created_at DESC;`
+
+### Testar um webhook perdido (modo de teste)
+
+1. Pare o `stripe listen` e, na Stripe, agende o cancelamento:
+   `stripe subscriptions update sub_XXX -d cancel_at_period_end=true`
+2. Confirme que o app **não** mudou (`status` ainda `ACTIVE` ou `TRIAL`).
+3. Rode o comando acima: o resumo deve mostrar `"corrected":1` e o app passa a `CANCELLATION_SCHEDULED`.
+4. Desfaça com `cancel_at_period_end=false`, rode de novo e confira que volta ao normal.
+
 ## O que ainda não existe
 
-- **Conciliação periódica** entre assinaturas locais e Stripe (DIRECAO §21): hoje o estado só avança por
-  webhook. Se um webhook for perdido por muito tempo, o estado local pode ficar defasado.
 - **Bloqueio de escrita** quando a assinatura está *Suspensa*: o estado é mostrado e notificado, mas
   nenhuma rota bloqueia gravação por causa dele.
 - **Boleto/Pix** e **nota fiscal** da assinatura.

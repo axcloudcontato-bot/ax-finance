@@ -94,3 +94,37 @@ export async function linkStripeCustomer(userId: string, companyId: string, cust
     return updated;
   });
 }
+
+export interface ReconcilableSubscription {
+  companyId: string;
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  status: string;
+  planCode: string;
+  currentPeriodEnd: Date | null;
+  cancellationEffectiveAt: Date | null;
+}
+
+/** Assinaturas a conferir com a Stripe, as mais antigas sem sincronização primeiro. */
+export async function listReconcilableSubscriptions(limit = 200): Promise<ReconcilableSubscription[]> {
+  const rows = await prisma.$queryRaw<
+    {
+      company_id: string;
+      stripe_customer_id: string | null;
+      stripe_subscription_id: string | null;
+      status: string;
+      plan_code: string;
+      current_period_end: Date | null;
+      cancellation_effective_at: Date | null;
+    }[]
+  >`SELECT * FROM app_billing_list_reconcilable(${limit}::integer)`;
+  return rows.map((row) => ({
+    companyId: row.company_id,
+    stripeCustomerId: row.stripe_customer_id,
+    stripeSubscriptionId: row.stripe_subscription_id,
+    status: row.status,
+    planCode: row.plan_code,
+    currentPeriodEnd: row.current_period_end,
+    cancellationEffectiveAt: row.cancellation_effective_at,
+  }));
+}

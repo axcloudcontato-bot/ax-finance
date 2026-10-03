@@ -284,6 +284,9 @@ importers:
       nodemailer:
         specifier: ^10.0.11
         version: 10.0.11
+      stripe:
+        specifier: ^23.0.0
+        version: 23.0.0(@types/node@20.19.43)
       tsx:
         specifier: ^4.16.2
         version: 4.23.15

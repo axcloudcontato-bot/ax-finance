@@ -25,6 +25,7 @@ import {
   setBankImportProcessing,
   structuredLog,
 } from "@ax-finance/domain";
+import { maybeRunBillingReconciliation } from "./billing-reconciliation";
 import { sendOutboxEmail } from "./email";
 import { monitorOperations } from "./monitoring";
 import { writeWorkerHeartbeat } from "./runtime-health";
@@ -184,6 +185,8 @@ export async function runOutboxWorker() {
   structuredLog("info", "worker.started", { workerId, intervalMs });
   let lastMaintenance = 0;
   let lastMonitoring = 0;
+  // lastRun 0: concilia logo na partida, para recuperar o que se perdeu enquanto o worker esteve parado.
+  const billingReconciliation = { lastRun: 0 };
   do {
     const importResult = await processImportJobsBatch(workerId);
     if (importResult.claimed > 0) structuredLog("info", "worker.import_batch_completed", {
@@ -210,6 +213,7 @@ export async function runOutboxWorker() {
       await monitorOperations();
       lastMonitoring = Date.now();
     }
+    await maybeRunBillingReconciliation(billingReconciliation);
     await writeWorkerHeartbeat(workerId);
     if (!runOnce && !stopping && importResult.claimed === 0 && scheduledResult.claimed === 0 && outboxResult.claimed === 0) {
       await new Promise((resolve) => setTimeout(resolve, intervalMs));

@@ -37,6 +37,48 @@ export interface MappedSubscriptionState {
 
 export type PriceCatalog = Partial<Record<SelectablePlanCode, string>>;
 
+/** Ids de preço mensal de cada plano, lidos do ambiente (web e worker usam o mesmo). */
+export function priceCatalogFromEnv(env: Record<string, string | undefined> = process.env): PriceCatalog {
+  return {
+    PERSONAL: env.STRIPE_PRICE_PERSONAL || undefined,
+    ESSENTIAL: env.STRIPE_PRICE_ESSENTIAL || undefined,
+  };
+}
+
+/**
+ * Forma mínima do objeto Subscription da Stripe (a SDK real satisfaz). Mantém o
+ * domínio sem depender da SDK e deixa testar com objetos simples.
+ */
+export interface StripeSubscriptionLike {
+  id: string;
+  customer: string | { id: string };
+  status: string;
+  cancel_at_period_end: boolean;
+  cancel_at: number | null;
+  trial_end: number | null;
+  metadata?: Record<string, string> | null;
+  items?: { data: { current_period_end?: number | null; price?: { id: string } | null }[] } | null;
+}
+
+/** O fim do ciclo vem dos itens da assinatura (API atual); vale o mais próximo. */
+export function snapshotFromStripe(subscription: StripeSubscriptionLike): StripeSubscriptionSnapshot {
+  const items = subscription.items?.data ?? [];
+  const periodEnds = items
+    .map((item) => item.current_period_end)
+    .filter((value): value is number => typeof value === "number");
+  return {
+    id: subscription.id,
+    customerId: typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id,
+    status: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    currentPeriodEnd: periodEnds.length > 0 ? Math.min(...periodEnds) : null,
+    trialEnd: subscription.trial_end,
+    cancelAt: subscription.cancel_at,
+    priceId: items[0]?.price?.id ?? null,
+    companyHint: subscription.metadata?.companyId || null,
+  };
+}
+
 function fromEpoch(value: number | null): Date | null {
   return value && value > 0 ? new Date(value * 1000) : null;
 }

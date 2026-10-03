@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import type { PriceCatalog, StripeSubscriptionSnapshot } from "@ax-finance/domain";
+import { priceCatalogFromEnv, snapshotFromStripe, type PriceCatalog, type StripeSubscriptionSnapshot } from "@ax-finance/domain";
 
 /**
  * Configuração da Stripe, lida do ambiente. Nada é obrigatório em desenvolvimento:
@@ -11,10 +11,7 @@ import type { PriceCatalog, StripeSubscriptionSnapshot } from "@ax-finance/domai
  *   STRIPE_PRICE_ESSENTIAL   id do preço mensal do plano Essencial (price_…)
  */
 export function priceCatalog(): PriceCatalog {
-  return {
-    PERSONAL: process.env.STRIPE_PRICE_PERSONAL || undefined,
-    ESSENTIAL: process.env.STRIPE_PRICE_ESSENTIAL || undefined,
-  };
+  return priceCatalogFromEnv();
 }
 
 export function stripeConfigured(): boolean {
@@ -40,21 +37,8 @@ function idOf(value: string | { id: string } | null | undefined): string | null 
   return typeof value === "string" ? value : value.id;
 }
 
-/** O fim do ciclo vem dos itens da assinatura (API atual); vale o mais próximo. */
 export function toSubscriptionSnapshot(subscription: Stripe.Subscription): StripeSubscriptionSnapshot {
-  const items = subscription.items?.data ?? [];
-  const periodEnds = items.map((item) => item.current_period_end).filter((value): value is number => typeof value === "number");
-  return {
-    id: subscription.id,
-    customerId: idOf(subscription.customer) ?? "",
-    status: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    currentPeriodEnd: periodEnds.length > 0 ? Math.min(...periodEnds) : null,
-    trialEnd: subscription.trial_end,
-    cancelAt: subscription.cancel_at,
-    priceId: items[0]?.price?.id ?? null,
-    companyHint: subscription.metadata?.companyId || null,
-  };
+  return snapshotFromStripe(subscription);
 }
 
 /** Id da assinatura a que o evento se refere, ou null quando o evento não é de cobrança. */
