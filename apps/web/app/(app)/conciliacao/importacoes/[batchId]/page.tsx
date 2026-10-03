@@ -57,7 +57,7 @@ export default async function BankImportPreviewPage(
   const confirmAction = confirmBankImportAction.bind(null, batch.id);
 
   return (
-    <main className="wide">
+    <main className="wide concil">
       <div className="page-header">
         <div>
           <h1>Pré-visualizar importação</h1>
@@ -70,10 +70,52 @@ export default async function BankImportPreviewPage(
 
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 
-      <form action={confirmAction} className="card">
+      <div className="concil-bench-wrap">
+      <div className="concil-bench">
+
+      <section className="card concil-list" aria-label="Amostra do arquivo">
+        <h2 className="concil-card-title">Amostra do arquivo</h2>
+        <p className="concil-sample-stats">
+          <span className="concil-chip is-ok">{preview.validCount} válida(s)</span>
+          <span className={`concil-chip ${preview.invalidCount > 0 ? "is-bad" : ""}`}>{preview.invalidCount} inválida(s)</span>
+          <span className="muted">com o mapeamento sugerido · exibindo até 10 linhas</span>
+        </p>
+        {preview.format === "CSV" ? (
+          <div className="table-scroll">
+            <table className="concil-table">
+              <thead><tr>{preview.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
+              <tbody>
+                {preview.rawRows.map((row, index) => (
+                  <tr key={index}>{preview.headers.map((header) => <td key={header}>{row[header]}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <table className="concil-table">
+            <thead><tr><th>Data</th><th>Descrição</th><th className="is-num">Valor</th></tr></thead>
+            <tbody>
+              {preview.normalizedRows.map((row, index) => (
+                <tr key={index}>
+                  <td>{row.lineDate.split("-").reverse().join("/")}</td>
+                  <td>{row.description}</td>
+                  <td className="is-num concil-amount">{formatCents(row.amountCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {preview.invalidRows.length > 0 ? (
+          <details className="concil-ignore">
+            <summary>Ver primeiras inconsistências</summary>
+            <ul>{preview.invalidRows.map((row) => <li key={row.rowNumber}>Linha {row.rowNumber}: {row.reason}</li>)}</ul>
+          </details>
+        ) : null}
+      </section>
+      <form action={confirmAction} className="card concil-panel concil-mapping">
         {preview.format === "CSV" ? (
           <>
-            <h1>Mapeamento das colunas</h1>
+            <h2>Mapeamento das colunas</h2>
             <p className="subtitle">
               As opções foram sugeridas pelos cabeçalhos. Confirme ou ajuste antes de importar.
             </p>
@@ -96,53 +138,17 @@ export default async function BankImportPreviewPage(
           </>
         ) : (
           <>
-            <h1>Arquivo OFX reconhecido</h1>
+            <h2>Arquivo OFX reconhecido</h2>
             <p className="subtitle">Data, descrição, valor e FITID são lidos automaticamente.</p>
           </>
         )}
 
-        <SubmitButton>Confirmar importação</SubmitButton>
+        <SubmitButton style={{ marginTop: "1.25rem" }}>Confirmar importação</SubmitButton>
         {batch.fileSizeBytes >= 512 * 1024 || batch.rowCount >= 2_000 ? (
           <p className="muted">Arquivo grande: o processamento continuará em segundo plano.</p>
         ) : null}
       </form>
-
-      <div className="card">
-        <h1>Amostra do arquivo</h1>
-        {preview.format === "CSV" ? (
-          <div className="table-scroll">
-            <table>
-              <thead><tr>{preview.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
-              <tbody>
-                {preview.rawRows.map((row, index) => (
-                  <tr key={index}>{preview.headers.map((header) => <td key={header}>{row[header]}</td>)}</tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <table>
-            <thead><tr><th>Data</th><th>Descrição</th><th>Valor</th></tr></thead>
-            <tbody>
-              {preview.normalizedRows.map((row, index) => (
-                <tr key={index}>
-                  <td>{row.lineDate.split("-").reverse().join("/")}</td>
-                  <td>{row.description}</td>
-                  <td>{formatCents(row.amountCents)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <p className="muted">
-          Exibindo até 10 linhas · {preview.validCount} válida(s) · {preview.invalidCount} inválida(s) com o mapeamento sugerido.
-        </p>
-        {preview.invalidRows.length > 0 ? (
-          <details>
-            <summary>Ver primeiras inconsistências</summary>
-            <ul>{preview.invalidRows.map((row) => <li key={row.rowNumber}>Linha {row.rowNumber}: {row.reason}</li>)}</ul>
-          </details>
-        ) : null}
+      </div>
       </div>
     </main>
   );
