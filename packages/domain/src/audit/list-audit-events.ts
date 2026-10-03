@@ -40,6 +40,6 @@ export async function listAuditEvents(userId: string, companyId: string, filter:
 
   return events.map((event) => ({
     ...event,
-    actorName: actorNameById.get(event.actorUserId) ?? "Usuário removido",
+    actorName: actorNameById.get(event.actorUserId) ?? (event.actorUserId === "system:stripe" ? "Stripe" : "Usuário removido"),
   }));
 }

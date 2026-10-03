@@ -5,6 +5,7 @@ export * from "./idempotency/index";
 export * from "./scheduled-jobs/index";
 export * from "./notifications/index";
 export * from "./subscriptions/index";
+export * from "./billing/index";
 export * from "./observability/index";
 export * from "./operations/index";
 export * from "./attachments/index";

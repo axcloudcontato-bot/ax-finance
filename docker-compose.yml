@@ -64,6 +64,12 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      # Cobrança da assinatura (Stripe). Sem as quatro, a tela de assinatura volta ao
+      # fluxo "solicitar mudança pelo suporte". Ver docs/stripe-billing.md.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_PERSONAL: ${STRIPE_PRICE_PERSONAL:-}
+      STRIPE_PRICE_ESSENTIAL: ${STRIPE_PRICE_ESSENTIAL:-}
       ATTACHMENTS_DIR: /data/attachments
       ATTACHMENT_STORAGE_BACKEND: ${ATTACHMENT_STORAGE_BACKEND:-local}
       ATTACHMENT_SCAN_REQUIRED: ${ATTACHMENT_SCAN_REQUIRED:-false}

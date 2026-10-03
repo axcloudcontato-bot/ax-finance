@@ -21,7 +21,7 @@ Este documento separa o que o software já executa do que depende de aprovação
 - [ ] Responsável comercial aprovar preço de lançamento, limites de uso justo, escopo da implantação e política de reembolso.
 - [ ] Operações testar um cancelamento e uma exportação completa em homologação, incluindo leitura independente do JSON.
 - [ ] Operações validar que anexos necessários foram baixados separadamente antes do encerramento.
-- [ ] Configurar e testar checkout, PSP, webhooks e conciliação de cobrança; o estado de assinatura sozinho não cobra o cliente.
+- [ ] Configurar a Stripe em produção e testar ponta a ponta com chaves de teste (checkout, falha de cartão, cancelamento, portal) — roteiro em `docs/stripe-billing.md`. A integração existe, mas só passou por testes automatizados com a Stripe simulada; falta a conciliação periódica entre cobranças locais e o provedor e o bloqueio de escrita em assinatura suspensa.
 - [ ] Publicar identificação e canais definitivos nos documentos jurídicos.
 
 ## Evidência de aceite

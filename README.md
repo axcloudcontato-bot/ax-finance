@@ -83,8 +83,10 @@ perderem:
   depende da infraestrutura escolhida em produção.
 - **Ciclo de assinatura inicial**: cada empresa recebe trial de 14 dias e mantém estado de
   assinatura para avisos de trial, renovação, pagamento pendente, carência, suspensão e
-  cancelamento. A integração com checkout, PSP e webhooks de cobrança ainda não foi implementada;
-  esses estados serão alimentados pelo provedor quando essa integração entrar.
+  cancelamento. A cobrança é da Stripe (Checkout hospedado só com cartão, portal para cartão,
+  faturas e troca de plano, e webhooks assinados): o estado local só muda pelo que a Stripe
+  confirma, nunca pela volta do navegador. Configuração e testes em `docs/stripe-billing.md`;
+  sem as chaves, a tela cai no fluxo antigo de solicitar mudança pelo suporte.
 - **Importação e conciliação completas**: CSV com mapeamento assistido de valor ou de
   débito/crédito, OFX 1.x/2.x, pré-visualização antes da confirmação, deduplicação por linha/FITID
   e processamento persistente em segundo plano para arquivos grandes. A tela acompanha o status

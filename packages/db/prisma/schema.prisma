@@ -3,7 +3,8 @@
 // Núcleo financeiro: categorias, títulos, baixas, transferências, clientes/fornecedores,
 // parcelamento, recorrências, conciliação bancária, trilha de auditoria, fechamento de
 // período e ajuste manual de saldo (Seções 5-13, 17-19 do DIRECAO.md).
-// Assinatura já mantém ciclo local e notificações; checkout, PSP e webhooks ainda não existem.
+// Assinatura mantém ciclo local e notificações; a cobrança é da Stripe (checkout hospedado,
+// portal e webhooks assinados), que alimenta o estado via funções app_billing_*.
 // Anexos privados, recuperação de senha, verificação de e-mail, limitação de tentativas,
 // MFA e outbox/worker já fazem parte do núcleo.
 // Convites/revogação e permissões por papel já são aplicados no domínio; ver limitações e
@@ -470,11 +471,34 @@ model Subscription {
   currentPeriodEnd        DateTime?          @map("current_period_end")
   graceEndsAt             DateTime?          @map("grace_ends_at")
   cancellationEffectiveAt DateTime?          @map("cancellation_effective_at")
+  /// Vínculos com a Stripe, a fonte da verdade do pagamento (DIRECAO §21).
+  stripeCustomerId        String?            @unique @map("stripe_customer_id")
+  stripeSubscriptionId    String?            @unique @map("stripe_subscription_id")
+  /// Instante do último estado confirmado no provedor; descarta sinais fora de ordem.
+  billingEventAt          DateTime?          @map("billing_event_at")
   createdAt               DateTime           @default(now()) @map("created_at")
   updatedAt               DateTime           @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("subscriptions")
+}
+
+/// Cada webhook de cobrança recebido (deduplicação e rastro de falhas). Sem RLS de
+/// leitura para o role da aplicação: só as funções app_billing_* tocam nesta tabela.
+model BillingEvent {
+  id        String   @id @default(uuid())
+  provider  String   @default("STRIPE")
+  eventId   String   @map("event_id")
+  type      String
+  companyId String?  @map("company_id")
+  outcome   String   @default("RECEIVED")
+  detail    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  @@unique([provider, eventId])
+  @@index([outcome, createdAt])
+  @@map("billing_events")
 }
 
 model IdempotencyRecord {

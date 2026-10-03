@@ -37,4 +37,6 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   FINANCIAL_ACCOUNT_ARCHIVED: "Conta arquivada",
   FINANCIAL_ACCOUNT_REACTIVATED: "Conta reativada",
   COMPANY_LEDGER_RESET: "Lançamentos zerados (reset da conta)",
+  SUBSCRIPTION_BILLING_SYNCED: "Assinatura atualizada pela cobrança",
+  SUBSCRIPTION_BILLING_CUSTOMER_LINKED: "Cliente de cobrança criado",
 };
