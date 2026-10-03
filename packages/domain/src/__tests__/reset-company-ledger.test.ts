@@ -9,6 +9,8 @@ import { createBalanceAdjustment } from "../financial-accounts/create-balance-ad
 import { createCategory } from "../categories/create-category";
 import { createTitle } from "../titles/create-title";
 import { listTitles } from "../titles/list-titles";
+import { deleteTitle } from "../titles/delete-title";
+import { createTitleAttachment } from "../attachments/attachments";
 import { registerSettlement } from "../titles/register-settlement";
 import { createTransfer } from "../transfers/create-transfer";
 import { createRecurrenceRule } from "../recurrences/create-recurrence-rule";
@@ -54,7 +56,7 @@ afterAll(async () => {
 });
 
 describe("reset da conta (zerar lançamentos)", () => {
-  it("zera títulos, baixas, transferências, ajustes, recorrências e fechamentos sem apagar nada, e mantém o saldo de abertura", async () => {
+  it("apaga de verdade títulos, baixas, transferências, ajustes, recorrências, anexos, extratos e fechamentos, e mantém contas e cadastros", async () => {
     const { user, company, accountA, accountB, revenue } = await setup("reset");
     const today = new Date().toISOString().slice(0, 10);
 
@@ -94,6 +96,27 @@ describe("reset da conta (zerar lançamentos)", () => {
     await generateDueOccurrences(user.id, company.id);
     await closePeriod(user.id, company.id, { period: "2026-08" });
 
+    // Título já removido das telas (soft delete) também precisa sumir do banco.
+    const removed = await createTitle(user.id, company.id, {
+      type: "PAYABLE",
+      description: "Já excluído",
+      categoryId: revenue.id,
+      originalAmountCents: 1_000,
+      competenceDate: "2026-09-01",
+      dueDate: "2026-09-01",
+    });
+    await deleteTitle(user.id, company.id, removed.id, { reason: "teste" });
+
+    const attachmentId = randomUUID();
+    await createTitleAttachment(user.id, company.id, title.id, {
+      id: attachmentId,
+      originalName: "nota.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 1234,
+      sha256: "a".repeat(64),
+      storageKey: `${company.id}/${title.id}/${attachmentId}`,
+    });
+
     await importBankStatement(user.id, company.id, {
       financialAccountId: accountA.id,
       fileName: "extrato.csv",
@@ -109,37 +132,54 @@ describe("reset da conta (zerar lançamentos)", () => {
       settlements: 1,
       transfers: 1,
       balanceAdjustments: 1,
-      statementLinesUnreconciled: 1,
-      periodsReopened: 1,
+      statementLines: 1,
+      importBatches: 1,
+      recurrenceRules: 1,
+      periodClosures: 1,
     });
-    expect(summary.titles).toBeGreaterThan(1);
-    expect(summary.recurrenceRulesCancelled).toBe(1);
+    expect(summary.titles).toBeGreaterThan(2); // título, ocorrências da recorrência e o já excluído
+    expect(summary.files.attachments).toEqual([
+      { storageKey: `${company.id}/${title.id}/${attachmentId}`, storageBackend: "LOCAL" },
+    ]);
 
-    // Saldos voltam ao de abertura.
+    // Nada de lançamento sobrou no banco, nem o que estava só marcado como excluído.
+    const where = { companyId: company.id };
+    expect(await rootClient.title.count({ where })).toBe(0);
+    expect(await rootClient.settlement.count({ where })).toBe(0);
+    expect(await rootClient.transfer.count({ where })).toBe(0);
+    expect(await rootClient.balanceAdjustment.count({ where })).toBe(0);
+    expect(await rootClient.recurrenceRule.count({ where })).toBe(0);
+    expect(await rootClient.bankStatementLine.count({ where })).toBe(0);
+    expect(await rootClient.importBatch.count({ where })).toBe(0);
+    expect(await rootClient.periodClosure.count({ where })).toBe(0);
+    expect(await rootClient.attachment.count({ where })).toBe(0);
+    expect(await rootClient.idempotencyRecord.count({ where })).toBe(0);
+
+    // Saldos voltam ao de abertura e a rotina recorrente não tem o que gerar.
     const accounts = await listFinancialAccountsWithBalance(user.id, company.id);
     expect(accounts.find((a) => a.id === accountA.id)!.currentBalanceCents).toBe(100_000n);
     expect(accounts.find((a) => a.id === accountB.id)!.currentBalanceCents).toBe(0n);
-
-    // Nada de títulos nas telas; a rotina recorrente não gera mais nada.
     expect(await listTitles(user.id, company.id)).toHaveLength(0);
     expect((await generateDueOccurrences(user.id, company.id)).createdCount).toBe(0);
+    expect(await listPeriodClosures(user.id, company.id)).toHaveLength(0);
+    expect(await listBankStatementLines(user.id, company.id, { financialAccountId: accountA.id })).toHaveLength(0);
 
-    // Linha de extrato volta a pendente; período reaberto.
-    const lines = await listBankStatementLines(user.id, company.id, { financialAccountId: accountA.id });
-    expect(lines[0]).toMatchObject({ status: "PENDING", reconciledSettlementId: null });
-    const closures = await listPeriodClosures(user.id, company.id);
-    expect(closures.every((closure) => closure.status !== "CLOSED")).toBe(true);
-
-    // Nada foi apagado fisicamente: títulos e baixas continuam no banco, com motivo.
-    expect(await rootClient.title.count({ where: { companyId: company.id } })).toBe(summary.titles);
-    const archivedSettlement = await rootClient.settlement.findUniqueOrThrow({ where: { id: settlement.id } });
-    expect(archivedSettlement.reversedAt).not.toBeNull();
-    expect(archivedSettlement.reversalReason).toBeTruthy();
-
-    // Cadastros ficam; auditoria registra o reset.
+    // Contas e cadastros ficam; a auditoria registra o reset.
+    expect(await rootClient.financialAccount.count({ where })).toBe(2);
     expect(await rootClient.category.count({ where: { companyId: company.id, id: revenue.id } })).toBe(1);
     const events = await listAuditEvents(user.id, company.id, {});
     expect(events.some((event) => event.eventType === "COMPANY_LEDGER_RESET")).toBe(true);
+
+    // Dá para começar de novo na mesma empresa.
+    const again = await createTitle(user.id, company.id, {
+      type: "RECEIVABLE",
+      description: "Depois do reset",
+      categoryId: revenue.id,
+      originalAmountCents: 5_000,
+      competenceDate: "2026-09-10",
+      dueDate: "2026-09-10",
+    });
+    expect(again.id).toBeTruthy();
   });
 
   it("exige o nome exato da empresa e não altera nada quando a confirmação falha", async () => {

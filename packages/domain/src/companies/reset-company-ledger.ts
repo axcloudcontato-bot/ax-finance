@@ -9,18 +9,30 @@ export const resetCompanyLedgerInput = z.object({
   confirmation: z.string(),
 });
 
-const RESET_REASON = "Reset da conta pelo proprietário";
+export interface ResetCompanyLedgerFiles {
+  /** Anexos de títulos: quem chama apaga os objetos do storage (LOCAL/S3). */
+  attachments: { storageKey: string; storageBackend: "LOCAL" | "S3" }[];
+  /** Arquivos de extratos importados: apagados com `deleteImportSource`. */
+  imports: string[];
+}
+
+const LEDGER_NOTIFICATION_TYPES = ["TITLE_OVERDUE", "TITLE_DUE_TODAY", "TITLE_DUE_SOON", "WEEKLY_SUMMARY"] as const;
 
 /**
- * Zera os lançamentos da empresa SEM apagar nada (Seção 18 regras 7 e 10):
- * baixas, devoluções, transferências e ajustes são estornados, os títulos
- * saem das telas (soft delete), as regras recorrentes são canceladas e os
- * fechamentos de período são reabertos. Contas financeiras (com saldo de
- * abertura), categorias, clientes/fornecedores, centros de custo, usuários e
- * assinatura permanecem. Linhas de extrato conciliadas voltam a pendentes.
+ * Zera a empresa APAGANDO de verdade todos os lançamentos: títulos (inclusive
+ * os já removidos das telas), baixas, devoluções, rateios, anexos, transferências,
+ * ajustes de saldo, regras recorrentes, extratos importados e linhas de extrato,
+ * fechamentos de período, chaves de idempotência e lembretes financeiros.
+ * Irreversível — por decisão do proprietário, esta é a única operação que foge da
+ * regra de nunca apagar lançamento (Seção 18).
  *
- * Tudo numa só transação junto com o evento de auditoria: ou zera e registra,
- * ou nada acontece. Só o proprietário (MEMBERS_MANAGE) pode executar.
+ * Permanecem: contas financeiras (com saldo de abertura), categorias, clientes e
+ * fornecedores, centros de custo, usuários, assinatura e a trilha de auditoria
+ * (imutável por desenho do banco), onde fica o evento COMPANY_LEDGER_RESET.
+ *
+ * Tudo numa só transação junto com o evento de auditoria; só o proprietário
+ * (MEMBERS_MANAGE) executa. Devolve as chaves de arquivos para o chamador limpar
+ * o storage depois do commit.
  */
 export async function resetCompanyLedger(userId: string, companyId: string, input: unknown) {
   const data = resetCompanyLedgerInput.parse(input);
@@ -32,33 +44,23 @@ export async function resetCompanyLedger(userId: string, companyId: string, inpu
       throw new CompanyResetConfirmationError();
     }
 
-    const now = new Date();
-    const reversal = { reversedAt: now, reversalReason: RESET_REASON };
+    const [attachmentRows, batchRows] = await Promise.all([
+      tx.attachment.findMany({ where: { companyId }, select: { storageKey: true, storageBackend: true } }),
+      tx.importBatch.findMany({ where: { companyId, storageKey: { not: null } }, select: { storageKey: true } }),
+    ]);
 
-    const refunds = await tx.settlementRefund.updateMany({ where: { companyId, reversedAt: null }, data: reversal });
-    const settlements = await tx.settlement.updateMany({ where: { companyId, reversedAt: null }, data: reversal });
-    const transfers = await tx.transfer.updateMany({ where: { companyId, reversedAt: null }, data: reversal });
-    const adjustments = await tx.balanceAdjustment.updateMany({ where: { companyId, reversedAt: null }, data: reversal });
-
-    const statementLines = await tx.bankStatementLine.updateMany({
-      where: { companyId, status: "RECONCILED" },
-      data: { status: "PENDING", reconciledSettlementId: null, ignoreReason: null },
-    });
-
-    const titles = await tx.title.updateMany({
-      where: { companyId, deletedAt: null },
-      data: { deletedAt: now, deletedByUserId: userId, deleteReason: RESET_REASON },
-    });
-
-    const recurrences = await tx.recurrenceRule.updateMany({
-      where: { companyId, status: { in: ["ACTIVE", "PAUSED"] } },
-      data: { status: "CANCELLED" },
-    });
-
-    const closures = await tx.periodClosure.updateMany({
-      where: { companyId, status: "CLOSED" },
-      data: { status: "REOPENED", reopenedByUserId: userId, reopenedAt: now, reopenReason: RESET_REASON },
-    });
+    // Ordem imposta pelas chaves estrangeiras (todas RESTRICT): quem aponta primeiro.
+    const statementLines = await tx.bankStatementLine.deleteMany({ where: { companyId } });
+    const importBatches = await tx.importBatch.deleteMany({ where: { companyId } }); // ImportJob cai em cascata
+    const refunds = await tx.settlementRefund.deleteMany({ where: { companyId } });
+    const settlements = await tx.settlement.deleteMany({ where: { companyId } });
+    const titles = await tx.title.deleteMany({ where: { companyId } }); // rateios e anexos caem em cascata
+    const recurrences = await tx.recurrenceRule.deleteMany({ where: { companyId } });
+    const transfers = await tx.transfer.deleteMany({ where: { companyId } });
+    const adjustments = await tx.balanceAdjustment.deleteMany({ where: { companyId } });
+    const closures = await tx.periodClosure.deleteMany({ where: { companyId } });
+    await tx.idempotencyRecord.deleteMany({ where: { companyId } });
+    await tx.notification.deleteMany({ where: { companyId, type: { in: [...LEDGER_NOTIFICATION_TYPES] } } });
 
     const summary = {
       titles: titles.count,
@@ -66,9 +68,10 @@ export async function resetCompanyLedger(userId: string, companyId: string, inpu
       refunds: refunds.count,
       transfers: transfers.count,
       balanceAdjustments: adjustments.count,
-      statementLinesUnreconciled: statementLines.count,
-      recurrenceRulesCancelled: recurrences.count,
-      periodsReopened: closures.count,
+      statementLines: statementLines.count,
+      importBatches: importBatches.count,
+      recurrenceRules: recurrences.count,
+      periodClosures: closures.count,
     };
 
     await recordAuditEvent(tx, {
@@ -77,10 +80,18 @@ export async function resetCompanyLedger(userId: string, companyId: string, inpu
       eventType: "COMPANY_LEDGER_RESET",
       resourceType: "Company",
       resourceId: companyId,
-      summary: RESET_REASON,
-      metadata: summary,
+      summary: "Lançamentos apagados pelo proprietário",
+      metadata: { ...summary, attachments: attachmentRows.length },
     });
 
-    return summary;
+    const files: ResetCompanyLedgerFiles = {
+      attachments: attachmentRows.map((row) => ({
+        storageKey: row.storageKey,
+        storageBackend: row.storageBackend === "S3" ? "S3" : "LOCAL",
+      })),
+      imports: batchRows.flatMap((row) => (row.storageKey ? [row.storageKey] : [])),
+    };
+
+    return { ...summary, files };
   });
 }

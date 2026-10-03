@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createCompanyInvitation,
+  deleteImportSource,
   revokeCompanyInvitation,
   resetCompanyLedger,
   revokeCompanyMember,
@@ -14,6 +15,7 @@ import {
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { emailPreviewEnabled } from "@/lib/email";
+import { deleteAttachmentObject } from "@/lib/attachment-storage";
 
 export interface InviteUserState {
   error?: string;
@@ -122,11 +124,18 @@ export async function resetCompanyLedgerAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
+  let files;
   try {
-    await resetCompanyLedger(user.id, company.id, { confirmation: String(formData.get("confirmation") ?? "") });
+    ({ files } = await resetCompanyLedger(user.id, company.id, { confirmation: String(formData.get("confirmation") ?? "") }));
   } catch (error) {
     redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao zerar os lançamentos.")}`);
   }
+  // Os registros já foram apagados no banco; agora some também o conteúdo dos arquivos.
+  // Falha aqui não desfaz o reset, só deixa arquivo órfão no storage.
+  await Promise.allSettled([
+    ...files.attachments.map((attachment) => deleteAttachmentObject(attachment.storageKey, attachment.storageBackend)),
+    ...files.imports.map((storageKey) => deleteImportSource(storageKey)),
+  ]);
   revalidatePath("/", "layout");
   redirect("/configuracoes/usuarios?zerado=1");
 }

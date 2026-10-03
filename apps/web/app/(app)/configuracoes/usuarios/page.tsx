@@ -42,7 +42,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
       </div>
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
       {searchParams.atualizado ? <p className="success-box">Acesso atualizado com sucesso.</p> : null}
-      {searchParams.zerado ? <p className="success-box">Lançamentos zerados. Contas, categorias e cadastros foram mantidos.</p> : null}
+      {searchParams.zerado ? <p className="success-box">Lançamentos apagados. Contas, categorias e cadastros foram mantidos.</p> : null}
 
       <div className="split">
         <div>
@@ -137,9 +137,9 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
           <div className="card subscription-danger-panel">
             <h1>Zerar lançamentos</h1>
             <p className="subtitle">
-              Remove das telas todos os títulos, baixas, transferências, ajustes de saldo e recorrências, e reabre os períodos fechados.
+              <strong>Apaga definitivamente</strong> todos os títulos, baixas, transferências, ajustes de saldo, recorrências, anexos, extratos importados e fechamentos de período.
               Os saldos voltam ao saldo de abertura de cada conta. Contas, categorias, clientes e fornecedores, centros de custo e usuários continuam.
-              Nada é apagado do banco: a operação fica registrada na auditoria.
+              Não há como desfazer; só a trilha de auditoria é mantida, com o registro de que o reset aconteceu.
             </p>
             <form action={resetCompanyLedgerAction}>
               <label htmlFor="reset-confirmation">Digite o nome da empresa para confirmar: <strong>{company.name}</strong></label>
