@@ -3830,3 +3830,13 @@ main.settings-page {
 @media (min-width: 768px) {
   .app-nav-toggle { display: none; }
 }
+
+/* Barra superior: o azul claro do tema claro fica estridente sobre o fundo escuro;
+   no escuro ela usa um azul profundo, da mesma família da paleta. */
+.app-topbar { background: var(--grad-blue); }
+
+:root[data-ax-theme="dark"] .app-topbar {
+  --grad-blue-solid: #234a9b;
+  background: linear-gradient(135deg, #1a2f63 0%, #234a9b 100%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+}

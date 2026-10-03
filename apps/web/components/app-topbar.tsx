@@ -14,8 +14,7 @@ export interface AppNotification {
 export function AppTopbar({ leading, children }: { leading?: ReactNode; children?: ReactNode }) {
   return (
     <header
-      className="relative z-40 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-3 text-white sm:px-5"
-      style={{ background: "var(--grad-blue)" }}
+      className="app-topbar relative z-40 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-3 text-white sm:px-5"
     >
       <div className="flex min-w-0 items-center gap-2">
         {leading}
