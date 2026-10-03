@@ -3080,10 +3080,16 @@ main.settings-page {
   transform: translateX(-50%);
 }
 
+/* Painel opaco e sem sombra: o contêiner (overflow hidden) cortava a sombra em
+   retângulo e o fundo translúcido deixava o conteúdo atrás aparecer. */
 .bottom-menu-popover {
   overflow: hidden;
   border-radius: 18px;
+  border-color: var(--border);
+  background: var(--card);
   color: var(--text);
+  box-shadow: none;
+  backdrop-filter: none;
   pointer-events: auto;
 }
 
