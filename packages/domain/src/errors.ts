@@ -468,11 +468,13 @@ export class IncidentNotFoundError extends DomainError {
 }
 
 export class SubscriptionWriteBlockedError extends DomainError {
-  constructor(reason: "SUSPENDED" | "ENDED") {
+  constructor(reason: "SUSPENDED" | "ENDED" | "TRIAL_ENDED") {
     super(
       reason === "SUSPENDED"
         ? "A assinatura desta empresa está suspensa por falta de pagamento. Você ainda pode consultar e exportar os dados; regularize em Configurações → Assinatura para voltar a lançar."
-        : "A assinatura desta empresa foi encerrada. Você ainda pode consultar e exportar os dados; assine novamente em Configurações → Assinatura para voltar a lançar.",
+        : reason === "TRIAL_ENDED"
+          ? "O período de avaliação desta empresa terminou. Você ainda pode consultar e exportar os dados; assine um plano em Configurações → Assinatura para voltar a lançar."
+          : "A assinatura desta empresa foi encerrada. Você ainda pode consultar e exportar os dados; assine novamente em Configurações → Assinatura para voltar a lançar.",
       "SUBSCRIPTION_WRITE_BLOCKED"
     );
   }

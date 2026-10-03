@@ -36,6 +36,28 @@ describe("writeBlockReason", () => {
     expect(writeBlockReason(sub("CANCELLATION_SCHEDULED", null), NOW)).toBeNull();
   });
 
+  it("trial vencido sem assinatura na Stripe bloqueia; trial em curso ou com assinatura da Stripe não", () => {
+    const trial = (trialEndsAt: Date | null, stripeSubscriptionId: string | null = null) => ({
+      status: "TRIAL",
+      cancellationEffectiveAt: null,
+      trialEndsAt,
+      stripeSubscriptionId,
+    });
+    expect(writeBlockReason(trial(new Date("2026-10-03T11:59:59Z")), NOW)).toBe("TRIAL_ENDED");
+    expect(writeBlockReason(trial(new Date("2026-10-03T12:00:00Z")), NOW)).toBe("TRIAL_ENDED");
+    expect(writeBlockReason(trial(new Date("2026-10-03T12:00:01Z")), NOW)).toBeNull();
+    expect(writeBlockReason(trial(null), NOW)).toBeNull();
+    // Trial da própria Stripe: quem decide é o provedor (o webhook pode demorar a chegar).
+    expect(writeBlockReason(trial(new Date("2026-09-01T00:00:00Z"), "sub_123"), NOW)).toBeNull();
+  });
+
+  it("outros estados ignoram a data do trial", () => {
+    const past = new Date("2026-09-01T00:00:00Z");
+    for (const status of ["ACTIVE", "PAYMENT_PENDING", "GRACE_PERIOD"]) {
+      expect(writeBlockReason({ status, cancellationEffectiveAt: null, trialEndsAt: past, stripeSubscriptionId: null }, NOW)).toBeNull();
+    }
+  });
+
   it("empresa sem registro de assinatura segue liberada", () => {
     expect(writeBlockReason(null, NOW)).toBeNull();
   });
@@ -127,6 +149,37 @@ describe("suspensa para escrita", () => {
 
     await setStatus(company.id, "CANCELLATION_SCHEDULED", new Date(Date.now() - day));
     await expect(createTitle(user.id, company.id, titleInput(category.id, "depois"))).rejects.toThrow(/encerrada/);
+  });
+
+  it("trial vencido bloqueia, assinar ou estender o trial libera, e quem tem trial da Stripe não é bloqueado pela data", async () => {
+    const { user, company, category } = await setup("trial");
+    const day = 24 * 60 * 60 * 1000;
+    const trialUntil = (when: number, stripeSubscriptionId: string | null = null) =>
+      rootClient.subscription.update({
+        where: { companyId: company.id },
+        data: { status: "TRIAL", trialEndsAt: new Date(when), stripeSubscriptionId },
+      });
+
+    await trialUntil(Date.now() + 3 * day);
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "no trial"))).resolves.toBeDefined();
+
+    await trialUntil(Date.now() - 1000);
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "vencido"))).rejects.toThrow(/período de avaliação desta empresa terminou/);
+    // Leitura e exportação seguem liberadas.
+    expect((await listTitles(user.id, company.id)).length).toBe(1);
+    expect((await buildCompanyFinalExport(user.id, company.id)).titles).toHaveLength(1);
+
+    // O proprietário (ou o suporte) estende o trial: libera de novo.
+    await trialUntil(Date.now() + 7 * day);
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "estendido"))).resolves.toBeDefined();
+
+    // Trial da Stripe com data vencida: o provedor decide, não a data.
+    await trialUntil(Date.now() - day, "sub_stripe");
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "trial stripe"))).resolves.toBeDefined();
+
+    // Assinatura paga libera mesmo com a data do trial no passado.
+    await rootClient.subscription.update({ where: { companyId: company.id }, data: { status: "ACTIVE", stripeSubscriptionId: null } });
+    await expect(createTitle(user.id, company.id, titleInput(category.id, "ativa"))).resolves.toBeDefined();
   });
 
   it("a rotina de recorrências para em silêncio, sem lançar erro, e o dono ainda pode zerar a conta", async () => {

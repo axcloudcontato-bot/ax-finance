@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CalendarDays, CheckCircle2, CreditCard, Download, Mail, ShieldAlert } from "@/components/ui/animated-icons";
-import { getCompanySubscription, resolvePlanDefinition } from "@ax-finance/domain";
+import { getCompanySubscription, resolvePlanDefinition, writeBlockReason } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { scheduleCancellationAction, undoCancellationAction } from "./actions";
@@ -34,6 +34,9 @@ export default async function SubscriptionPage(props:{ searchParams: Promise<{ e
   // Cobrança por cartão via Stripe: só aparece com a integração configurada no ambiente.
   const billingEnabled = stripeConfigured();
   const hasPaidSubscription = Boolean(subscription.stripeSubscriptionId) && subscription.status !== "CANCELLED";
+  // Mesma regra que bloqueia a escrita; aqui só explica o estado e o caminho para regularizar.
+  const blockReason = writeBlockReason(subscription);
+  const statusLabel = blockReason === "TRIAL_ENDED" ? "Avaliação encerrada" : (STATUS_LABEL[subscription.status] ?? subscription.status);
   const blockedResource = query.recurso ? ({
     "conciliacao-bancaria": "Conciliação bancária",
     fechamento: "Fechamento de período",
@@ -80,8 +83,14 @@ export default async function SubscriptionPage(props:{ searchParams: Promise<{ e
           <p className="settings-eyebrow">Plano atual</p>
           <h2>{plan.name}</h2>
           <strong className="subscription-plan-price">R$ {(plan.monthlyPriceCents / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}<small>/mês</small></strong>
-          <span className="subscription-status"><CheckCircle2 className="size-4" />{STATUS_LABEL[subscription.status] ?? subscription.status}</span>
+          <span className="subscription-status"><CheckCircle2 className="size-4" />{statusLabel}</span>
           <p>Assinatura vinculada à empresa <strong>{company.name}</strong>.</p>
+          {blockReason ? (
+            <p>
+              Lançamentos bloqueados: você ainda consulta e exporta os dados.{" "}
+              {billingEnabled ? (hasPaidSubscription ? "Regularize o pagamento em “Gerenciar cobrança”." : "Assine um plano abaixo para voltar a lançar.") : "Fale com o suporte para regularizar."}
+            </p>
+          ) : null}
           {billingEnabled && subscription.stripeCustomerId ? (
             <form action={openBillingPortalAction}><SubmitButton className="secondary">Gerenciar cobrança</SubmitButton></form>
           ) : null}

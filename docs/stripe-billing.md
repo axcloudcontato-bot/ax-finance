@@ -123,8 +123,9 @@ Para ver as correções: `SELECT type, outcome, detail, created_at FROM billing_
 
 ## Suspensa para escrita
 
-Com a assinatura **Suspensa** (`unpaid`/`paused` na Stripe) ou **encerrada** (`canceled`), a empresa
-continua vendo e exportando os dados, mas **não cria nem altera lançamentos** (DIRECAO §21):
+Com a assinatura **Suspensa** (`unpaid`/`paused` na Stripe), **encerrada** (`canceled`) ou com o
+**trial vencido sem pagamento**, a empresa continua vendo e exportando os dados, mas **não cria nem
+altera lançamentos** (DIRECAO §21):
 
 - **Bloqueia:** toda operação com permissão de escrita (lançamentos, baixas, estornos, transferências,
   cadastros, importação, anexos, fechamento). A regra vive num único ponto, em
@@ -136,11 +137,19 @@ continua vendo e exportando os dados, mas **não cria nem altera lançamentos** 
   a data efetiva e, depois dela, vale como encerrado mesmo sem sinal da Stripe.
 - Voltar a pagar (a Stripe devolve `active`) libera a escrita na hora.
 
-Limite conhecido: o trial vencido **sem** assinatura na Stripe continua `TRIAL`; nada o transforma em
-suspenso, porque a Stripe não conhece esse cliente. Se for desejado bloquear o fim do trial, é uma regra
-nova (data `trial_ends_at`) a decidir.
+**Fim do trial sem pagamento:** o trial local de 14 dias termina em `trial_ends_at`; a partir daí, quem
+não tem assinatura na Stripe fica bloqueado para escrita até assinar (a tela mostra "Avaliação
+encerrada" e o caminho para assinar). Quem já assinou com cartão durante o trial **não** é bloqueado
+pela data: o trial passa a ser o da Stripe, a primeira cobrança é no fim dele e quem decide o estado é
+o provedor (o webhook que vira `ACTIVE` pode levar alguns minutos). Para estender um trial, o painel
+interno ajusta `trial_ends_at` e a escrita volta na hora. O aviso de "trial próximo do fim" (7, 3 e 1
+dia) e o de "trial encerrado" já existiam nas notificações.
+
+**Antes de ligar para clientes reais:** a Stripe de **produção** precisa estar configurada. Sem ela, a
+empresa bloqueada pelo fim do trial não tem como assinar sozinha.
 
 ## O que ainda não existe
 
 - **Boleto/Pix** e **nota fiscal** da assinatura.
-- Bloqueio por **fim do trial sem pagamento** (ver acima).
+- **Carência depois do fim do trial** (hoje o bloqueio é imediato) e **aviso na tela** de que a empresa está
+  bloqueada (hoje o usuário descobre ao tentar gravar, pela Assinatura e pela campainha).
