@@ -346,6 +346,14 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
   --accent: #4680ff;
   --danger: #a4302f;
 
+  /* Cores dos gráficos (modelo shadcn chart). Só estes tokens vêm do modelo: o :root dele
+     sobrescreveria --background/--card/--border do app. */
+  --chart-1: #3978db;
+  --chart-2: #d58a25;
+  --chart-3: #078f85;
+  --chart-4: #c23d68;
+  --chart-5: #7655d8;
+
   /* Paleta de cards em gradiente do dashboard (Seção 5) — inspirada num
      template de admin dashboard, não copiada de nenhum arquivo/asset dele. */
   --grad-blue: linear-gradient(135deg, #4680ff, #7cb0ff);
@@ -373,6 +381,11 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
   --muted: #aab6ca;
   --accent: #6f9cff;
   --danger: #ff789a;
+  --chart-1: #6f9cff;
+  --chart-2: #ffc266;
+  --chart-3: #3fd6c8;
+  --chart-4: #ff7aa8;
+  --chart-5: #b9a2ff;
 }
 
 * {
@@ -1975,8 +1988,8 @@ main.settings-page {
 .dashboard-cash-chart { width: 100%; height: 260px; }
 .dashboard-projection-legend { display: flex; flex-wrap: wrap; gap: 0.7rem 1.3rem; margin-top: 0.5rem; color: var(--muted); font-size: 0.75rem; }
 .dashboard-projection-legend > span { display: inline-flex; align-items: center; gap: 0.45rem; }
-.dashboard-projection-legend i { display: block; width: 1.5rem; border-top: 3px solid #3978db; }
-.dashboard-projection-legend i.is-without-overdue { border-color: #d58a25; border-top-style: dashed; }
+.dashboard-projection-legend i { display: block; width: 1.5rem; border-top: 3px solid var(--chart-1); }
+.dashboard-projection-legend i.is-without-overdue { border-color: var(--chart-2); border-top-style: dashed; }
 .dashboard-projection-note { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.74rem; }
 
 .dashboard-filter-card {
