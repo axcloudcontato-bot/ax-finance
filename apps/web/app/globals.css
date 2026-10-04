@@ -3960,7 +3960,7 @@ main.settings-page {
 .workspace-list-toolbar p { margin: 0; color: var(--muted); font-size: 0.8rem; }
 .workspace-list-toolbar form { display: flex; align-items: center; gap: 0.4rem; }
 .workspace-list-toolbar input { width: min(250px, 42vw); min-height: 36px; border-radius: 8px; font-size: 0.82rem; }
-.workspace-list-toolbar button[type="submit"] { margin-top: 0; }
+.ax-model-buttons .workspace-list-toolbar form button[type="submit"] { margin-top: 0; }
 .workspace-list-toolbar a { color: var(--muted); font-size: 0.8rem; text-decoration: none; }
 .workspace-list-toolbar a:hover { color: var(--accent); }
 
