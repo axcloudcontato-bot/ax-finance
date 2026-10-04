@@ -2988,8 +2988,8 @@ main.settings-page {
 .public-v2-chart-legend { display: flex; gap: 0.8rem; }
 .public-v2-chart-legend span { display: inline-flex; align-items: center; gap: 0.28rem; color: #71809a; font-size: 0.5rem; font-weight: 600; }
 .public-v2-chart-legend span::before { width: 6px; height: 6px; border-radius: 999px; background: currentColor; content: ""; }
-.public-v2-chart-legend span.is-teal { color: #18b8aa; }
-.public-v2-chart-legend span.is-blue { color: #4d82ed; }
+.public-v2-chart-legend span.is-teal { color: var(--chart-3); }
+.public-v2-chart-legend span.is-blue { color: var(--chart-1); }
 .public-v2-chart-area { height: 164px; margin-top: 0.35rem; }
 .public-v2-reconciliation { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.65rem; padding: 0.65rem 0.75rem; border-radius: 9px; background: #fff8e8; color: #9c6a12; font-size: 0.55rem; }
 .public-v2-reconciliation small { margin-left: auto; color: #9c6a12; font-size: 0.52rem; font-weight: 700; }

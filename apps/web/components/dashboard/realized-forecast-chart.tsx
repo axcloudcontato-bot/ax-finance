@@ -1,6 +1,7 @@
 "use client";
 
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 export interface RealizedForecastPoint {
   label: string;
@@ -12,11 +13,12 @@ export interface RealizedForecastPoint {
 
 type SeriesKey = keyof Omit<RealizedForecastPoint, "label">;
 
+// Recebimentos em verde-azulado e pagamentos em rosa; o previsto usa a mesma cor, tracejada.
 const SERIES = [
-  { key: "recebimentosRealizados", label: "Recebimentos realizados", shortLabel: "Realizado", color: "#078f85", group: "Recebimentos", dashed: false },
-  { key: "recebimentosPrevistos", label: "Recebimentos previstos", shortLabel: "Previsto", color: "#2bc8ba", group: "Recebimentos", dashed: true },
-  { key: "pagamentosRealizados", label: "Pagamentos realizados", shortLabel: "Realizado", color: "#d93f78", group: "Pagamentos", dashed: false },
-  { key: "pagamentosPrevistos", label: "Pagamentos previstos", shortLabel: "Previsto", color: "#fb6b9f", group: "Pagamentos", dashed: true },
+  { key: "recebimentosRealizados", label: "Recebimentos realizados", shortLabel: "Realizado", color: "var(--chart-3)", group: "Recebimentos", dashed: false },
+  { key: "recebimentosPrevistos", label: "Recebimentos previstos", shortLabel: "Previsto", color: "var(--chart-3)", group: "Recebimentos", dashed: true },
+  { key: "pagamentosRealizados", label: "Pagamentos realizados", shortLabel: "Realizado", color: "var(--chart-4)", group: "Pagamentos", dashed: false },
+  { key: "pagamentosPrevistos", label: "Pagamentos previstos", shortLabel: "Previsto", color: "var(--chart-4)", group: "Pagamentos", dashed: true },
 ] as const satisfies ReadonlyArray<{
   key: SeriesKey;
   label: string;
@@ -26,8 +28,11 @@ const SERIES = [
   dashed: boolean;
 }>;
 
-const SERIES_BY_KEY = Object.fromEntries(SERIES.map((series) => [series.key, series])) as Record<SeriesKey, (typeof SERIES)[number]>;
 const GROUPS = ["Recebimentos", "Pagamentos"] as const;
+
+const chartConfig = Object.fromEntries(
+  SERIES.map((series) => [series.key, { label: series.label, color: series.color }]),
+) as ChartConfig;
 
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -65,72 +70,45 @@ function FlowLegend() {
   );
 }
 
+/**
+ * Realizado × previsto no modelo shadcn "chart-area". O realizado tem área mais cheia e traço
+ * contínuo; o previsto, área leve e traço tracejado. Sem `stackId`: são séries independentes.
+ */
 export function RealizedForecastChart({ data }: { data: RealizedForecastPoint[] }) {
   return (
     <div className="dashboard-flow-chart">
       <div className="dashboard-flow-plot">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 14, right: 18, left: 2, bottom: 2 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#e7ebf2" vertical={false} />
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 11, fontWeight: 500, fill: "#697386" }}
-              axisLine={{ stroke: "#dfe4ec" }}
-              tickLine={false}
-              minTickGap={28}
-              tickMargin={10}
+        <ChartContainer config={chartConfig} className="h-full w-full aspect-auto" role="img" aria-label="Recebimentos e pagamentos realizados e previstos">
+          <AreaChart accessibilityLayer data={data} margin={{ top: 14, left: 4, right: 18, bottom: 2 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={10} minTickGap={28} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} width={72} tickFormatter={(value: number) => compactCurrency.format(value)} />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="dot" className="min-w-[14rem] gap-2 shadow-none" valueFormatter={(value) => currency.format(value)} />}
             />
-            <YAxis
-              tick={{ fontSize: 11, fontWeight: 500, fill: "#697386" }}
-              axisLine={false}
-              tickLine={false}
-              width={72}
-              tickMargin={8}
-              tickFormatter={(value) => compactCurrency.format(Number(value))}
-            />
-            <Tooltip
-              cursor={{ stroke: "#cfd6e3", strokeWidth: 1, strokeDasharray: "3 4" }}
-              content={({ active, payload, label }) => {
-                if (!active || !payload?.length) return null;
-                return (
-                  <div className="dashboard-flow-tooltip">
-                    <strong>{label}</strong>
-                    <div>
-                      {payload.map((entry) => {
-                        const series = SERIES_BY_KEY[entry.dataKey as SeriesKey];
-                        if (!series) return null;
-                        return (
-                          <span key={series.key}>
-                            <i style={{ background: series.color }} aria-hidden="true" />
-                            <span>{series.label}</span>
-                            <b>{currency.format(Number(entry.value))}</b>
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              }}
-            />
+            <defs>
+              {SERIES.map((series) => (
+                <linearGradient key={series.key} id={`fill-${series.key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={`var(--color-${series.key})`} stopOpacity={series.dashed ? 0.18 : 0.5} />
+                  <stop offset="95%" stopColor={`var(--color-${series.key})`} stopOpacity={0.02} />
+                </linearGradient>
+              ))}
+            </defs>
             {SERIES.map((series) => (
-              <Line
+              <Area
                 key={series.key}
-                type="monotoneX"
                 dataKey={series.key}
-                name={series.label}
-                stroke={series.color}
-                strokeWidth={series.dashed ? 2.25 : 3}
+                type="monotoneX"
+                fill={`url(#fill-${series.key})`}
+                fillOpacity={0.4}
+                stroke={`var(--color-${series.key})`}
+                strokeWidth={series.dashed ? 2 : 2.5}
                 strokeDasharray={series.dashed ? "7 5" : undefined}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                dot={false}
-                activeDot={{ r: series.dashed ? 3.5 : 4.5, strokeWidth: 2, fill: "#ffffff", stroke: series.color }}
-                animationDuration={650}
-                animationEasing="ease-out"
               />
             ))}
-          </LineChart>
-        </ResponsiveContainer>
+          </AreaChart>
+        </ChartContainer>
       </div>
       <FlowLegend />
     </div>

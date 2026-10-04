@@ -12,7 +12,8 @@ import {
   Users,
   Wallet,
 } from "@/components/ui/animated-icons";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 const chartData = [
   { month: "Jan", entradas: 18, saidas: 8 },
@@ -24,6 +25,11 @@ const chartData = [
   { month: "Jul", entradas: 46, saidas: 25 },
   { month: "Ago", entradas: 42, saidas: 22 },
 ];
+
+const chartConfig = {
+  entradas: { label: "Entradas", color: "var(--chart-3)" },
+  saidas: { label: "Saídas", color: "var(--chart-1)" },
+} satisfies ChartConfig;
 
 const navigation = [
   { label: "Visão geral", icon: LayoutDashboard, active: true },
@@ -63,16 +69,29 @@ export function PublicDashboardPreview() {
         <div className="public-v2-chart-panel">
           <div className="public-v2-chart-heading"><div><strong>Fluxo de caixa</strong><span>Realizado nos últimos 8 meses</span></div><div className="public-v2-chart-legend"><span className="is-teal">Entradas</span><span className="is-blue">Saídas</span></div></div>
           <div className="public-v2-chart-area">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 4, left: -28, bottom: 0 }} barGap={2}>
-                <CartesianGrid stroke="#e8edf5" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#8490a5", fontSize: 9 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#9aa4b5", fontSize: 8 }} />
-                <Tooltip cursor={{ fill: "#f4f7fc" }} contentStyle={{ border: "1px solid #dce4f0", borderRadius: 10, fontSize: 11 }} />
-                <Bar dataKey="entradas" fill="#22c7b8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="saidas" fill="#4a82f7" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartContainer config={chartConfig} className="h-full w-full aspect-auto">
+              <AreaChart accessibilityLayer data={chartData} margin={{ top: 8, right: 6, left: -22, bottom: 0 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={6} tick={{ fontSize: 9 }} />
+                <YAxis tickLine={false} axisLine={false} tickMargin={4} tick={{ fontSize: 8 }} />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" className="shadow-none" valueFormatter={(value) => `R$ ${value} mil`} />}
+                />
+                <defs>
+                  <linearGradient id="fillLandingEntradas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-entradas)" stopOpacity={0.6} />
+                    <stop offset="95%" stopColor="var(--color-entradas)" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="fillLandingSaidas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-saidas)" stopOpacity={0.5} />
+                    <stop offset="95%" stopColor="var(--color-saidas)" stopOpacity={0.05} />
+                  </linearGradient>
+                </defs>
+                <Area dataKey="saidas" type="natural" fill="url(#fillLandingSaidas)" fillOpacity={0.4} stroke="var(--color-saidas)" strokeWidth={1.75} />
+                <Area dataKey="entradas" type="natural" fill="url(#fillLandingEntradas)" fillOpacity={0.4} stroke="var(--color-entradas)" strokeWidth={1.75} />
+              </AreaChart>
+            </ChartContainer>
           </div>
         </div>
 
