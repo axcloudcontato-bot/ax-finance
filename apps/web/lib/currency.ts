@@ -4,15 +4,24 @@ export function formatCents(cents: bigint, currency = "BRL"): string {
   );
 }
 
-/** Aceita "1.234,56" ou "1234.56" digitados em um input de texto. */
+/**
+ * Lê um valor digitado em um input de texto: "1.234,56", "1234,56", "1234.56" ou "R$ 59,00".
+ *
+ * A vírgula é o decimal brasileiro. Um grupo de três dígitos depois dela ("2,500", "0,999")
+ * NÃO é tratado como milhar: adivinhar isso gravaria um valor mil vezes maior sem aviso, então
+ * o texto é recusado (null) e o usuário corrige. A vírgula só funciona como milhar na grafia
+ * americana que a comprova ("1,234.56" ou "1,234,567"). Um milhar nunca começa com zero.
+ */
 export function parseAmountToCentsOrNull(raw: string): number | null {
   const input = raw.trim().replace(/^R\$\s*/, "").replace(/\s/g, "");
   if (!input) return 0;
 
   let normalized: string;
-  if (/^-?\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(input)) {
+  if (/^-?[1-9]\d{0,2}(?:\.\d{3})+(?:,\d{1,2})?$/.test(input)) {
+    // 1.234 / 1.234,56 / 1.234.567,89: ponto de milhar e vírgula decimal.
     normalized = input.replace(/\./g, "").replace(",", ".");
-  } else if (/^-?\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(input)) {
+  } else if (/^-?[1-9]\d{0,2}(?:,\d{3})+\.\d{1,2}$/.test(input) || /^-?[1-9]\d{0,2}(?:,\d{3}){2,}$/.test(input)) {
+    // 1,234.56 / 1,234,567: grafia americana, só com decimal ponto ou dois grupos ou mais.
     normalized = input.replace(/,/g, "");
   } else if (/^-?\d+(?:,\d{1,2})?$/.test(input)) {
     normalized = input.replace(",", ".");
