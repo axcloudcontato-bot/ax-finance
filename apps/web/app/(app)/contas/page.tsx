@@ -51,6 +51,11 @@ export default async function ContasPage(
     listBalanceAdjustments(user.id, company.id, period),
   ]);
   const today = new Date().toISOString().slice(0, 10);
+  const activeAccounts = accounts.filter((account) => account.status === "ACTIVE");
+  const includedAccounts = activeAccounts.filter((account) => account.includedInAvailableTotal);
+  const availableCents = includedAccounts.reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
+  const otherCents = activeAccounts.filter((account) => !account.includedInAvailableTotal)
+    .reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
 
   return (
     <main className="wide">
@@ -62,6 +67,7 @@ export default async function ContasPage(
           </Link>
           <Modal
             triggerLabel="+ Nova conta"
+            triggerClassName="button-link workspace-primary-action"
             title="Nova conta"
             icon={<Landmark className="size-5" strokeWidth={1.5} />}
           >
@@ -97,21 +103,40 @@ export default async function ContasPage(
         </div>
       </div>
 
+      <section className="workspace-metrics" aria-label="Resumo das contas">
+        <div className="workspace-metric workspace-metric-primary">
+          <span className="workspace-metric-label">Saldo disponível</span>
+          <strong>{formatCents(availableCents)}</strong>
+          <span className="workspace-metric-detail">{includedAccounts.length} {includedAccounts.length === 1 ? "conta incluída" : "contas incluídas"}</span>
+        </div>
+        <div className="workspace-metric">
+          <span className="workspace-metric-label">Fora do disponível</span>
+          <strong>{formatCents(otherCents)}</strong>
+          <span className="workspace-metric-detail">Contas ativas excluídas do saldo</span>
+        </div>
+        <div className="workspace-metric">
+          <span className="workspace-metric-label">Contas ativas</span>
+          <strong>{activeAccounts.length}</strong>
+          <span className="workspace-metric-detail">Saldos atuais, sem filtro de período</span>
+        </div>
+      </section>
+
       <div className="card">
           {searchParams.erroConta ? <p className="error">{searchParams.erroConta}</p> : null}
           {searchParams.contaAtualizada ? <p className="success-box">Conta atualizada.</p> : null}
           {accounts.length === 0 ? (
-            <p className="muted">Nenhuma conta cadastrada ainda.</p>
+            <div className="workspace-empty"><strong>Nenhuma conta cadastrada</strong><p>Crie sua primeira conta para acompanhar saldos e movimentações.</p></div>
           ) : (
-            <table>
+            <div className="table-scroll"><table className="workspace-table">
               <thead>
                 <tr>
                   <th>Nome</th>
                   <th>Tipo</th>
-                  <th>Saldo de abertura</th>
-                  <th>Saldo atual</th>
+                  <th className="money">Saldo de abertura</th>
+                  <th className="money">Saldo atual</th>
+                  <th>Disponível</th>
                   <th>Status</th>
-                  <th></th>
+                  <th><span className="sr-only">Ações</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -119,13 +144,16 @@ export default async function ContasPage(
                   <tr key={account.id}>
                     <td>{account.name}</td>
                     <td>{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td>
-                    <td>{formatCents(account.openingBalanceCents, account.currency)}</td>
-                    <td style={{ fontWeight: 600 }}>
+                    <td className="money">{formatCents(account.openingBalanceCents, account.currency)}</td>
+                    <td className="money" style={{ fontWeight: 600 }}>
                       {formatCents(account.currentBalanceCents, account.currency)}
                     </td>
-                    <td>{account.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
+                    <td>{account.includedInAvailableTotal && account.status === "ACTIVE" ? "Incluída" : "Fora do total"}</td>
+                    <td><span className={`workspace-status ${account.status === "ACTIVE" ? "is-active" : ""}`}>{account.status === "ACTIVE" ? "Ativa" : "Arquivada"}</span></td>
                     <td>
-                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <details className="workspace-row-actions">
+                        <summary>Gerenciar</summary>
+                        <div>
                       <ActionModal triggerLabel="Editar" title={`Editar conta — ${account.name}`}>
                         <form action={updateAccountAction.bind(null, account.id)}>
                           <label htmlFor={`name-${account.id}`}>Nome</label>
@@ -182,27 +210,28 @@ export default async function ContasPage(
                       <form action={setAccountArchivedAction.bind(null, account.id, account.status === "ACTIVE")} className="inline">
                         <SubmitButton className="secondary">{account.status === "ACTIVE" ? "Arquivar" : "Reativar"}</SubmitButton>
                       </form>
-                      </div>
+                        </div>
+                      </details>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
       </div>
 
       <div className="card">
-        <h1>Histórico de ajustes de saldo</h1>
+        <div className="workspace-card-heading"><div><h2>Histórico de ajustes de saldo</h2><p>O período selecionado afeta apenas este histórico. Os saldos acima são atuais.</p></div></div>
         {searchParams.erroEstorno ? <p className="error">{searchParams.erroEstorno}</p> : null}
         {adjustments.length === 0 ? (
-          <p className="muted">Nenhum ajuste registrado ainda.</p>
+          <div className="workspace-empty"><strong>Nenhum ajuste neste período</strong><p>Ajustes registrados aparecem aqui para conferência e estorno.</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Data</th>
                 <th>Conta</th>
-                <th>Ajuste</th>
+                <th className="money">Ajuste</th>
                 <th>Motivo</th>
                 <th></th>
               </tr>
@@ -212,7 +241,7 @@ export default async function ContasPage(
                 <tr key={adjustment.id} style={adjustment.reversedAt ? { opacity: 0.5 } : undefined}>
                   <td>{formatDateOnly(adjustment.effectiveDate)}</td>
                   <td>{adjustment.financialAccount.name}</td>
-                  <td>
+                  <td className="money">
                     {formatCents(adjustment.amountCents, adjustment.financialAccount.currency)}
                   </td>
                   <td>{adjustment.reversedAt ? `${adjustment.reason} (estornado: ${adjustment.reversalReason})` : adjustment.reason}</td>
@@ -234,7 +263,7 @@ export default async function ContasPage(
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </main>

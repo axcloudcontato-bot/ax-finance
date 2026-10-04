@@ -31,7 +31,7 @@ export function TitleAttachments({
     <div className="card">
       <div className="page-header" style={{ marginBottom: "0.75rem" }}>
         <div>
-          <h1>Anexos</h1>
+          <h2>Anexos</h2>
           <p className="subtitle">PDF ou imagem, até 10 MB. Os arquivos são privados.</p>
         </div>
       </div>
@@ -55,7 +55,7 @@ export function TitleAttachments({
                 <Paperclip className="size-4" />
                 <span className="attachment-info">
                   <strong>{attachment.originalName}</strong>
-                  <small>{formatBytes(attachment.sizeBytes)} · {attachment.uploadedBy.name} · {attachment.createdAt.toLocaleString("pt-BR")} · {attachment.scanStatus === "CLEAN" ? "Verificado pelo antivírus" : "Não verificado"} · {attachment.storageBackend}</small>
+                  <small>{formatBytes(attachment.sizeBytes)} · {attachment.uploadedBy.name} · {attachment.createdAt.toLocaleString("pt-BR")} · {attachment.scanStatus === "CLEAN" ? "Verificado pelo antivírus" : "Não verificado"}</small>
                 </span>
                 <a href={`/api/attachments/${attachment.id}`} className="button-link" download>
                   <Download className="size-4" /> Baixar

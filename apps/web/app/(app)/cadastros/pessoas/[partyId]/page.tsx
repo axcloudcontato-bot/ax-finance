@@ -35,72 +35,46 @@ export default async function PessoaDetailPage(
     throw error;
   }
 
-  const { party, titles, openTotalCents, overdueTotalCents, overdueCount } = result;
+  const { party, titles } = result;
+  const openTitles = titles.filter((title) => (title.status === "OPEN" || title.status === "PARTIALLY_SETTLED") && title.remainingCents > BigInt(0));
+  const totalFor = (type: "RECEIVABLE" | "PAYABLE", overdue = false) => openTitles
+    .filter((title) => title.type === type && (!overdue || title.overdue))
+    .reduce((sum, title) => sum + title.remainingCents, BigInt(0));
+  const overdueCountFor = (type: "RECEIVABLE" | "PAYABLE") => openTitles.filter((title) => title.type === type && title.overdue).length;
+  const hasReceivables = party.isClient || titles.some((title) => title.type === "RECEIVABLE");
+  const hasPayables = party.isSupplier || titles.some((title) => title.type === "PAYABLE");
   const roles = [party.isClient ? "Cliente" : null, party.isSupplier ? "Fornecedor" : null]
     .filter(Boolean)
     .join(" · ");
 
   return (
-    <main className="wide">
+    <main className="wide record-detail">
+      <nav className="record-detail-nav" aria-label="Navegação da pessoa"><Link href="/cadastros/pessoas">← Clientes e fornecedores</Link><span>/</span><span>Detalhe do cadastro</span></nav>
       <div className="card">
-        <div className="page-header" style={{ marginBottom: "0.5rem" }}>
-          <h1>{party.name}</h1>
-          <span className="subtitle" style={{ marginBottom: 0 }}>
+        <div className="page-header record-detail-header">
+          <div className="record-detail-heading"><span className="record-detail-eyebrow">{roles}</span><h1>{party.name}</h1>{party.tradeName ? <p className="subtitle">{party.tradeName}</p> : null}</div>
+          <span className={`workspace-status ${party.status === "ACTIVE" ? "is-active" : ""}`}>
             {party.status === "ACTIVE" ? "Ativa" : "Inativa"}
           </span>
         </div>
-        <p className="subtitle">{roles}</p>
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
         {searchParams.atualizado ? <p className="success-box">Cadastro atualizado.</p> : null}
 
-        <table>
-          <tbody>
-            {party.tradeName ? (
-              <tr>
-                <td>Nome fantasia</td>
-                <td>{party.tradeName}</td>
-              </tr>
-            ) : null}
-            {party.document ? (
-              <tr>
-                <td>Documento</td>
-                <td>{party.document}</td>
-              </tr>
-            ) : null}
-            {party.email ? (
-              <tr>
-                <td>E-mail</td>
-                <td>{party.email}</td>
-              </tr>
-            ) : null}
-            {party.phone ? (
-              <tr>
-                <td>Telefone</td>
-                <td>{party.phone}</td>
-              </tr>
-            ) : null}
-            {party.address ? (
-              <tr>
-                <td>Endereço</td>
-                <td>{party.address}</td>
-              </tr>
-            ) : null}
-            {party.responsibleName ? (
-              <tr>
-                <td>Responsável</td>
-                <td>{party.responsibleName}</td>
-              </tr>
-            ) : null}
-            {party.notes ? (
-              <tr>
-                <td>Observações</td>
-                <td>{party.notes}</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        <div className={`record-detail-metrics ${hasReceivables && hasPayables ? "record-detail-metrics-four" : "record-detail-metrics-two"}`}>
+          {hasReceivables ? <><div className="record-detail-metric is-primary"><span>A receber</span><strong>{formatCents(totalFor("RECEIVABLE"))}</strong><small>Saldo aberto de entradas</small></div><div className="record-detail-metric"><span>Recebíveis vencidos</span><strong>{formatCents(totalFor("RECEIVABLE", true))}</strong><small>{overdueCountFor("RECEIVABLE")} {overdueCountFor("RECEIVABLE") === 1 ? "título" : "títulos"}</small></div></> : null}
+          {hasPayables ? <><div className="record-detail-metric is-primary"><span>A pagar</span><strong>{formatCents(totalFor("PAYABLE"))}</strong><small>Saldo aberto de saídas</small></div><div className="record-detail-metric"><span>Pagáveis vencidos</span><strong>{formatCents(totalFor("PAYABLE", true))}</strong><small>{overdueCountFor("PAYABLE")} {overdueCountFor("PAYABLE") === 1 ? "título" : "títulos"}</small></div></> : null}
+        </div>
 
-        <div style={{display:"flex",gap:"0.75rem",marginTop:"1rem",flexWrap:"wrap"}}>
+        <dl className="record-detail-facts">
+          {party.document ? <div><dt>Documento</dt><dd>{party.document}</dd></div> : null}
+          {party.email ? <div><dt>E-mail</dt><dd><a href={`mailto:${party.email}`}>{party.email}</a></dd></div> : null}
+          {party.phone ? <div><dt>Telefone</dt><dd>{party.phone}</dd></div> : null}
+          {party.address ? <div><dt>Endereço</dt><dd>{party.address}</dd></div> : null}
+          {party.responsibleName ? <div><dt>Responsável</dt><dd>{party.responsibleName}</dd></div> : null}
+          {party.notes ? <div><dt>Observações</dt><dd>{party.notes}</dd></div> : null}
+        </dl>
+
+        <div className="record-detail-inline-actions">
         <ActionModal triggerLabel="Editar" title={`Editar pessoa — ${party.name}`}>
           <form action={updatePartyAction.bind(null, party.id)}>
             <label htmlFor="edit-party-name">Nome</label><input id="edit-party-name" name="name" defaultValue={party.name} required maxLength={200}/>
@@ -117,42 +91,23 @@ export default async function PessoaDetailPage(
           </form>
         </ActionModal>
         {party.status === "ACTIVE" ? (
-          <form action={deactivatePartyAction} style={{ marginTop: "1rem" }}>
-            <input type="hidden" name="partyId" value={party.id} />
-            <SubmitButton className="secondary">
-              Inativar
-            </SubmitButton>
-          </form>
+          <ActionModal triggerLabel="Inativar" title="Inativar cadastro"><p className="subtitle">Este cadastro deixará de aparecer na seleção de novos lançamentos. Os títulos existentes permanecem no histórico.</p><form action={deactivatePartyAction}><input type="hidden" name="partyId" value={party.id}/><SubmitButton className="secondary">Confirmar inativação</SubmitButton></form></ActionModal>
         ) : <form action={reactivatePartyAction.bind(null, party.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-        <div className="card" style={{ flex: "1 1 200px" }}>
-          <h1>Saldo aberto</h1>
-          <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>{formatCents(openTotalCents)}</p>
-        </div>
-        <div className="card" style={{ flex: "1 1 200px" }}>
-          <h1>Vencidos</h1>
-          <p className="subtitle">
-            {overdueCount > 0 ? `${overdueCount} título(s)` : "Nada vencido"}
-          </p>
-          <p style={{ fontSize: "1.5rem", fontWeight: 700 }}>{formatCents(overdueTotalCents)}</p>
-        </div>
-      </div>
-
       <div className="card">
-        <h1>Títulos</h1>
+        <h2>Títulos vinculados</h2>
         {titles.length === 0 ? (
           <p className="muted">Nenhum título vinculado ainda.</p>
         ) : (
-          <table>
+          <table className="workspace-table">
             <thead>
               <tr>
                 <th>Descrição</th>
                 <th>Tipo</th>
                 <th>Vencimento</th>
-                <th>Saldo aberto</th>
+                <th className="money">Saldo aberto</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -166,7 +121,7 @@ export default async function PessoaDetailPage(
                   </td>
                   <td>{title.type === "RECEIVABLE" ? "Entrada" : "Saída"}</td>
                   <td>{formatDateOnly(title.dueDate)}</td>
-                  <td>{formatCents(title.remainingCents, title.currency)}</td>
+                  <td className="money">{title.status === "CANCELLED" ? "—" : formatCents(title.remainingCents, title.currency)}</td>
                   <td>
                     <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
                   </td>

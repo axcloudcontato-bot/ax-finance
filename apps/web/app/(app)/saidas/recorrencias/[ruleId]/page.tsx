@@ -18,6 +18,7 @@ import {
   resumeSaidaRecurrenceAction,
 } from "../actions";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ActionModal } from "@/components/ui/action-modal";
 
 const STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Ativa",
@@ -52,57 +53,35 @@ export default async function SaidaRecorrenciaDetailPage(
   const titles = await listOccurrenceTitles(user.id, company.id, rule.id);
 
   return (
-    <main className="wide">
+    <main className="wide record-detail">
+      <nav className="record-detail-nav" aria-label="Navegação da recorrência"><Link href="/saidas/recorrencias">← Recorrências de saída</Link><span>/</span><span>Detalhe da regra</span></nav>
       <div className="card">
-        <div className="page-header" style={{ marginBottom: "0.5rem" }}>
-          <h1>{rule.description}</h1>
-          <span className="subtitle" style={{ marginBottom: 0 }}>
+        <div className="page-header record-detail-header">
+          <div className="record-detail-heading"><span className="record-detail-eyebrow">Recorrência de saída</span><h1>{rule.description}</h1><p className="subtitle">{rule.category.parentId ? "↳ " : ""}{rule.category.name}{rule.party ? ` · ${rule.party.name}` : ""}</p></div>
+          <span className={`workspace-status ${rule.status === "ACTIVE" ? "is-active" : ""}`}>
             {STATUS_LABEL[rule.status] ?? rule.status}
           </span>
         </div>
-        <p className="subtitle">
-          {rule.category.parentId ? "↳ " : ""}
-          {rule.category.name}
-          {rule.party ? ` · ${rule.party.name}` : ""}
-        </p>
 
         {searchParams.gerados ? (
-          <p className="subtitle">{searchParams.gerados} título(s) gerado(s) agora.</p>
+          <p className="success-box">{searchParams.gerados} título(s) gerado(s) agora.</p>
         ) : null}
 
-        <table>
-          <tbody>
-            <tr>
-              <td>Valor mensal</td>
-              <td>{formatCents(rule.amountCents)}</td>
-            </tr>
-            <tr>
-              <td>Dia de vencimento</td>
-              <td>{rule.dayOfMonth}</td>
-            </tr>
-            <tr>
-              <td>Início</td>
-              <td>{formatDateOnly(rule.startDate)}</td>
-            </tr>
-            {rule.endDate ? (
-              <tr>
-                <td>Término</td>
-                <td>{formatDateOnly(rule.endDate)}</td>
-              </tr>
-            ) : null}
-            {rule.notes ? (
-              <tr>
-                <td>Observações</td>
-                <td>{rule.notes}</td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+        <div className="record-detail-metrics">
+          <div className="record-detail-metric is-primary"><span>Valor por ocorrência</span><strong>{formatCents(rule.amountCents)}</strong><small>Programado pela regra</small></div>
+          <div className="record-detail-metric"><span>Dia de vencimento</span><strong>Dia {rule.dayOfMonth}</strong><small>Em cada mês previsto</small></div>
+          <div className="record-detail-metric"><span>Títulos gerados</span><strong>{titles.length}</strong><small>Desde o início da regra</small></div>
+        </div>
+        <dl className="record-detail-facts">
+          <div><dt>Início</dt><dd>{formatDateOnly(rule.startDate)}</dd></div>
+          {rule.endDate ? <div><dt>Término</dt><dd>{formatDateOnly(rule.endDate)}</dd></div> : null}
+          {rule.notes ? <div><dt>Observações</dt><dd>{rule.notes}</dd></div> : null}
+        </dl>
 
-        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem", flexWrap: "wrap" }}>
+        <div className="record-detail-inline-actions">
           <form action={generateSaidaOccurrencesAction}>
             <input type="hidden" name="returnTo" value={`/saidas/recorrencias/${rule.id}`} />
-            <SubmitButton className="secondary">
+            <SubmitButton className="secondary" disabled={rule.status !== "ACTIVE"}>
               Gerar títulos pendentes
             </SubmitButton>
           </form>
@@ -127,39 +106,34 @@ export default async function SaidaRecorrenciaDetailPage(
         </div>
 
         {rule.status !== "CANCELLED" ? (
-          <form action={cancelSaidaRecurrenceAction} style={{ marginTop: "1rem" }}>
-            <input type="hidden" name="ruleId" value={rule.id} />
-            <label htmlFor="reason">Cancelar recorrência — motivo</label>
-            <input id="reason" name="reason" type="text" maxLength={500} required />
-            <div style={{ marginTop: "0.75rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              <input
-                id="alsoCancelOpenTitles"
-                name="alsoCancelOpenTitles"
-                type="checkbox"
-                value="true"
-                style={{ width: "auto" }}
-              />
-              <label htmlFor="alsoCancelOpenTitles" style={{ margin: 0 }}>
-                Também cancelar títulos abertos já gerados (sem baixa)
-              </label>
+          <details className="record-detail-more">
+            <summary>Mais ações</summary>
+            <div className="record-detail-more-actions">
+              <ActionModal triggerLabel="Cancelar recorrência" title="Cancelar recorrência de saída">
+                <p className="subtitle">A regra deixará de gerar novos títulos. Você pode escolher se cancela também os títulos abertos já gerados.</p>
+                <form action={cancelSaidaRecurrenceAction}>
+                  <input type="hidden" name="ruleId" value={rule.id} />
+                  <label htmlFor="cancel-exit-rule-reason">Motivo</label>
+                  <input id="cancel-exit-rule-reason" name="reason" type="text" maxLength={500} required />
+                  <label className="record-detail-checkbox"><input name="alsoCancelOpenTitles" type="checkbox" value="true" /> Também cancelar títulos abertos já gerados (sem baixa)</label>
+                  <SubmitButton className="secondary">Confirmar cancelamento</SubmitButton>
+                </form>
+              </ActionModal>
             </div>
-            <SubmitButton className="secondary" style={{ marginTop: "1rem" }}>
-              Cancelar recorrência
-            </SubmitButton>
-          </form>
+          </details>
         ) : null}
       </div>
 
       <div className="card">
-        <h1>Títulos gerados</h1>
+        <h2>Títulos gerados</h2>
         {titles.length === 0 ? (
           <p className="muted">Nenhum título gerado ainda.</p>
         ) : (
-          <table>
+          <table className="workspace-table">
             <thead>
               <tr>
                 <th>Vencimento</th>
-                <th>Saldo aberto</th>
+                <th className="money">Saldo aberto</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -169,7 +143,7 @@ export default async function SaidaRecorrenciaDetailPage(
                   <td>
                     <Link href={`/saidas/${title.id}`}>{formatDateOnly(title.dueDate)}</Link>
                   </td>
-                  <td>{formatCents(title.remainingCents, title.currency)}</td>
+                  <td className="money">{formatCents(title.remainingCents, title.currency)}</td>
                   <td>
                     <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
                   </td>

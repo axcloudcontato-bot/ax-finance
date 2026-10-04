@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 export function StatCard({
   icon,
@@ -11,6 +11,7 @@ export function StatCard({
   comparisonLabel,
   comparisonValue,
   gradient,
+  prominent = false,
   modalTitle,
   children,
 }: {
@@ -22,26 +23,51 @@ export function StatCard({
   comparisonLabel?: string;
   comparisonValue?: string;
   gradient: "blue" | "teal" | "orange" | "pink";
+  prominent?: boolean;
   modalTitle: string;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const titleId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    const dialog = dialogRef.current;
+    const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])') ?? []);
+    focusable()[0]?.focus();
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) {
+        event.preventDefault();
+        dialog?.focus();
+      } else if (event.shiftKey && document.activeElement === items[0]) {
+        event.preventDefault();
+        items[items.length - 1]?.focus();
+      } else if (!event.shiftKey && document.activeElement === items[items.length - 1]) {
+        event.preventDefault();
+        items[0]?.focus();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      triggerRef.current?.focus();
+    };
   }, [open]);
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
-        className="stat-card"
-        style={{ background: `var(--grad-${gradient})` }}
+        className={`stat-card is-${gradient}${prominent ? " is-prominent" : ""}`}
         onClick={() => setOpen(true)}
       >
         <div className="stat-icon">{icon}</div>
@@ -61,11 +87,11 @@ export function StatCard({
 
       {open ? (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
-          <div className="modal-dialog" style={{ maxWidth: "640px" }} onClick={(event) => event.stopPropagation()}>
+          <div ref={dialogRef} className="modal-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ maxWidth: "640px" }} onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 {icon}
-                <h1>{modalTitle}</h1>
+                <h2 id={titleId}>{modalTitle}</h2>
               </div>
               <button
                 type="button"

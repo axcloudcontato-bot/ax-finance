@@ -7,7 +7,6 @@ import { formatDateOnly } from "@/lib/dates";
 import { resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { formatPercentageChange } from "@/lib/comparison";
 import { requirePlanFeature } from "@/lib/plan-access";
-import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function DrePage(
   props: {
@@ -41,7 +40,7 @@ export default async function DrePage(
 
   return (
     <main className="wide">
-      <h1 style={{ marginBottom: "0.25rem" }}>DRE gerencial básica</h1>
+      <div className="page-header"><h1>DRE gerencial</h1><a href={exportHref} className="button-link">Exportar CSV</a></div>
       <p className="muted" style={{ marginBottom: "1rem" }}>
         {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · regime de competência ·
         gerado em {new Date().toLocaleString("pt-BR")}
@@ -52,62 +51,42 @@ export default async function DrePage(
         </p>
       ) : null}
 
-      <div className="card">
-        <p className="subtitle">
-          Usa a competência e o valor original de cada título (não a baixa) — títulos ainda em
-          aberto entram no cálculo. Títulos cancelados ficam de fora. Categorias sem grupo
-          gerencial definido aparecem agrupadas pela natureza.
-        </p>
-
-        <form method="get" style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-          {comparison ? <input type="hidden" name="comparar" value={comparison.mode} /> : null}
-          <div>
-            <label htmlFor="de">De</label>
-            <input id="de" name="de" type="date" defaultValue={from} />
-          </div>
-          <div>
-            <label htmlFor="ate">Até</label>
-            <input id="ate" name="ate" type="date" defaultValue={to} />
-          </div>
-          <SubmitButton style={{ marginTop: 0 }}>
-            Filtrar intervalo customizado
-          </SubmitButton>
-          <a href={exportHref} className="button-link">
-            Exportar CSV
-          </a>
-        </form>
-      </div>
+      <section className="workspace-metrics workspace-metrics-two" aria-label="Resumo da DRE gerencial">
+        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Resultado gerencial</span><strong>{formatCents(report.totalCents)}</strong><span className="workspace-metric-detail">Regime de competência no período</span></div>
+        <div className="workspace-metric"><span className="workspace-metric-label">Grupos apresentados</span><strong>{groupRows.length}</strong><span className="workspace-metric-detail">Categorias agrupadas por gestão</span></div>
+      </section>
+      <details className="workspace-method-note"><summary>Como este resultado é calculado</summary><p>Considera a competência e o valor original dos títulos, inclusive os ainda em aberto. Títulos cancelados ficam fora. Categorias sem grupo gerencial são agrupadas pela natureza.</p></details>
 
       <div className="card">
-        <h1>Por grupo gerencial</h1>
+        <h2>Por grupo gerencial</h2>
         {groupRows.length === 0 ? (
-          <p className="muted">Nenhum título com competência no período.</p>
+          <div className="workspace-empty"><strong>Sem títulos neste período</strong><p>Altere o período acima para analisar outra competência.</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Grupo</th>
-                <th>Período atual</th>
-                {comparisonReport ? <><th>{comparison?.label}</th><th>Variação</th></> : null}
+                <th className="money">Período atual</th>
+                {comparisonReport ? <><th className="money">{comparison?.label}</th><th className="money">Variação</th></> : null}
               </tr>
             </thead>
             <tbody>
               {groupRows.map((group) => (
                 <tr key={group.label}>
                   <td>{group.label}</td>
-                  <td>{formatCents(group.current)}</td>
-                  {comparisonReport ? <><td>{formatCents(group.previous)}</td><td>{formatPercentageChange(group.current, group.previous)}</td></> : null}
+                  <td className="money">{formatCents(group.current)}</td>
+                  {comparisonReport ? <><td className="money">{formatCents(group.previous)}</td><td className="money">{formatPercentageChange(group.current, group.previous)}</td></> : null}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <td style={{ fontWeight: 700 }}>Resultado gerencial</td>
-                <td style={{ fontWeight: 700 }}>{formatCents(report.totalCents)}</td>
-                {comparisonReport ? <><td style={{ fontWeight: 700 }}>{formatCents(comparisonReport.totalCents)}</td><td style={{ fontWeight: 700 }}>{formatPercentageChange(report.totalCents, comparisonReport.totalCents)}</td></> : null}
+                <td className="money" style={{ fontWeight: 700 }}>{formatCents(report.totalCents)}</td>
+                {comparisonReport ? <><td className="money" style={{ fontWeight: 700 }}>{formatCents(comparisonReport.totalCents)}</td><td className="money" style={{ fontWeight: 700 }}>{formatPercentageChange(report.totalCents, comparisonReport.totalCents)}</td></> : null}
               </tr>
             </tfoot>
-          </table>
+          </table></div>
         )}
       </div>
     </main>

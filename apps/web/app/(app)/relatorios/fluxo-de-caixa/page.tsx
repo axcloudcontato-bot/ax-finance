@@ -7,7 +7,6 @@ import { formatDateOnly } from "@/lib/dates";
 import { NATURE_LABEL } from "@/lib/category-labels";
 import { resolveComparison, resolvePeriodRange } from "@/lib/month";
 import { formatPercentageChange } from "@/lib/comparison";
-import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function FluxoDeCaixaPage(
   props: {
@@ -30,6 +29,8 @@ export default async function FluxoDeCaixaPage(
     comparison ? getCashFlowReport(user.id, company.id, comparison) : Promise.resolve(null),
   ]);
   const exportHref = `/api/reports/cash-flow?de=${from}&ate=${to}`;
+  const receivedCents = report.entries.reduce((sum, entry) => sum + (entry.cashDeltaCents > BigInt(0) ? entry.cashDeltaCents : BigInt(0)), BigInt(0));
+  const paidCents = report.entries.reduce((sum, entry) => sum + (entry.cashDeltaCents < BigInt(0) ? -entry.cashDeltaCents : BigInt(0)), BigInt(0));
   const comparisonByNature = new Map(comparisonReport?.subtotalsByNature.map((row) => [row.nature, row.cents]) ?? []);
   const natureRows = [...new Set([
     ...report.subtotalsByNature.map((row) => row.nature),
@@ -42,7 +43,7 @@ export default async function FluxoDeCaixaPage(
 
   return (
     <main className="wide">
-      <h1 style={{ marginBottom: "0.25rem" }}>Fluxo de caixa realizado</h1>
+      <div className="page-header"><h1>Fluxo de caixa realizado</h1><a href={exportHref} className="button-link">Exportar CSV</a></div>
       <p className="muted" style={{ marginBottom: "1rem" }}>
         {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · gerado em{" "}
         {new Date().toLocaleString("pt-BR")}
@@ -53,72 +54,55 @@ export default async function FluxoDeCaixaPage(
         </p>
       ) : null}
 
-      <div className="card">
-        <form method="get" style={{ display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-          {comparison ? <input type="hidden" name="comparar" value={comparison.mode} /> : null}
-          <div>
-            <label htmlFor="de">De</label>
-            <input id="de" name="de" type="date" defaultValue={from} />
-          </div>
-          <div>
-            <label htmlFor="ate">Até</label>
-            <input id="ate" name="ate" type="date" defaultValue={to} />
-          </div>
-          <SubmitButton style={{ marginTop: 0 }}>
-            Filtrar intervalo customizado
-          </SubmitButton>
-          <a href={exportHref} className="button-link">
-            Exportar CSV
-          </a>
-        </form>
-      </div>
+      <section className="workspace-metrics" aria-label="Resumo do fluxo de caixa realizado">
+        <div className="workspace-metric"><span className="workspace-metric-label">Recebimentos</span><strong>{formatCents(receivedCents)}</strong><span className="workspace-metric-detail">Entradas efetivas no período</span></div>
+        <div className="workspace-metric"><span className="workspace-metric-label">Pagamentos</span><strong>{formatCents(paidCents)}</strong><span className="workspace-metric-detail">Saídas efetivas no período</span></div>
+        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Variação líquida</span><strong>{formatCents(report.totalCents)}</strong><span className="workspace-metric-detail">Recebimentos menos pagamentos</span></div>
+      </section>
 
       <div className="card">
-        <h1>Por natureza</h1>
+        <h2>Por natureza</h2>
         {natureRows.length === 0 ? (
-          <p className="muted">Nenhuma baixa no período.</p>
+          <div className="workspace-empty"><strong>Sem movimentação realizada</strong><p>Altere o período acima para consultar baixas em outras datas.</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Natureza</th>
-                <th>Período atual</th>
-                {comparisonReport ? <><th>{comparison?.label}</th><th>Variação</th></> : null}
+                <th className="money">Período atual</th>
+                {comparisonReport ? <><th className="money">{comparison?.label}</th><th className="money">Variação</th></> : null}
               </tr>
             </thead>
             <tbody>
               {natureRows.map((row) => (
                 <tr key={row.nature}>
                   <td>{NATURE_LABEL[row.nature] ?? row.nature}</td>
-                  <td>{formatCents(row.current)}</td>
-                  {comparisonReport ? <><td>{formatCents(row.previous)}</td><td>{formatPercentageChange(row.current, row.previous)}</td></> : null}
+                  <td className="money">{formatCents(row.current)}</td>
+                  {comparisonReport ? <><td className="money">{formatCents(row.previous)}</td><td className="money">{formatPercentageChange(row.current, row.previous)}</td></> : null}
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr>
                 <td style={{ fontWeight: 700 }}>Total</td>
-                <td style={{ fontWeight: 700 }}>{formatCents(report.totalCents)}</td>
-                {comparisonReport ? <><td style={{ fontWeight: 700 }}>{formatCents(comparisonReport.totalCents)}</td><td style={{ fontWeight: 700 }}>{formatPercentageChange(report.totalCents, comparisonReport.totalCents)}</td></> : null}
+                <td className="money" style={{ fontWeight: 700 }}>{formatCents(report.totalCents)}</td>
+                {comparisonReport ? <><td className="money" style={{ fontWeight: 700 }}>{formatCents(comparisonReport.totalCents)}</td><td className="money" style={{ fontWeight: 700 }}>{formatPercentageChange(report.totalCents, comparisonReport.totalCents)}</td></> : null}
               </tr>
             </tfoot>
-          </table>
+          </table></div>
         )}
       </div>
 
-      <div className="card">
-        <h1>Baixas do período</h1>
-        {report.entries.length === 0 ? (
-          <p className="muted">Nenhuma baixa no período.</p>
-        ) : (
-          <table>
+      {report.entries.length > 0 ? <div className="card">
+        <h2>Baixas do período</h2>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Data</th>
                 <th>Tipo</th>
                 <th>Descrição</th>
                 <th>Categoria</th>
-                <th>Valor</th>
+                <th className="money">Valor</th>
               </tr>
             </thead>
             <tbody>
@@ -128,13 +112,12 @@ export default async function FluxoDeCaixaPage(
                   <td>{entry.titleType === "RECEIVABLE" ? "Entrada" : "Saída"}</td>
                   <td>{entry.titleDescription}</td>
                   <td>{entry.categoryName}</td>
-                  <td>{formatCents(entry.cashDeltaCents)}</td>
+                  <td className="money">{formatCents(entry.cashDeltaCents)}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        )}
-      </div>
+          </table></div>
+      </div> : null}
     </main>
   );
 }

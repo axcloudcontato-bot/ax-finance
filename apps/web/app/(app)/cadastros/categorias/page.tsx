@@ -12,7 +12,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function CategoriasPage(
   props: {
-    searchParams: Promise<{ erro?: string; atualizado?: string }>;
+    searchParams: Promise<{ erro?: string; atualizado?: string; busca?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -25,6 +25,12 @@ export default async function CategoriasPage(
   const categories = await listCategories(user.id, company.id);
   const ordered = sortCategoriesTree(categories);
   const topLevelActive = categories.filter((c) => !c.parentId && c.status === "ACTIVE");
+  const search = (searchParams.busca ?? "").trim().slice(0, 100);
+  const searchable = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  const query = searchable(search);
+  const visibleCategories = query
+    ? ordered.filter((category) => searchable(`${category.name} ${category.managerialGroup ?? ""} ${NATURE_LABEL[category.nature] ?? ""}`).includes(query))
+    : ordered;
 
   return (
     <main className="wide">
@@ -32,6 +38,7 @@ export default async function CategoriasPage(
         <h1>Categorias</h1>
         <Modal
           triggerLabel="+ Nova categoria"
+          triggerClassName="button-link workspace-primary-action"
           title="Nova categoria"
           icon={<Tag className="size-5" strokeWidth={1.5} />}
         >
@@ -84,10 +91,14 @@ export default async function CategoriasPage(
 
       <div className="card">
         {searchParams.atualizado ? <p className="success-box">Categoria atualizada.</p> : null}
-        {ordered.length === 0 ? (
-          <p className="muted">Nenhuma categoria ainda.</p>
+        <div className="workspace-list-toolbar">
+          <p>{visibleCategories.length} {visibleCategories.length === 1 ? "categoria exibida" : "categorias exibidas"}</p>
+          <form method="get" action="/cadastros/categorias"><input name="busca" type="search" defaultValue={search} placeholder="Buscar categoria ou grupo" aria-label="Buscar categoria ou grupo" /><button type="submit" className="secondary">Buscar</button>{search ? <a href="/cadastros/categorias">Limpar</a> : null}</form>
+        </div>
+        {visibleCategories.length === 0 ? (
+          <div className="workspace-empty"><strong>{search ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}</strong><p>{search ? "Tente outro termo ou limpe a busca." : "Crie categorias para organizar lançamentos e relatórios."}</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -98,14 +109,14 @@ export default async function CategoriasPage(
               </tr>
             </thead>
             <tbody>
-              {ordered.map((category) => (
+              {visibleCategories.map((category) => (
                 <tr key={category.id}>
                   <td>{category.parentId ? `↳ ${category.name}` : category.name}</td>
                   <td>{NATURE_LABEL[category.nature] ?? category.nature}</td>
                   <td>{category.managerialGroup ?? "—"}</td>
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                   <td>
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <details className="workspace-row-actions"><summary>Gerenciar</summary><div>
                     <ActionModal triggerLabel="Editar" title={`Editar categoria — ${category.name}`}>
                       <form action={updateCategoryAction.bind(null, category.id)}>
                         <label htmlFor={`name-${category.id}`}>Nome</label><input id={`name-${category.id}`} name="name" defaultValue={category.name} required maxLength={200} />
@@ -123,12 +134,12 @@ export default async function CategoriasPage(
                         </SubmitButton>
                       </form>
                     ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
-                    </div>
+                    </div></details>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </main>

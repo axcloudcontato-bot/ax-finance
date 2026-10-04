@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { TitleListTable } from "@/components/titles/title-list-table";
+import { TitleListSummary } from "@/components/titles/title-list-summary";
 import { TitleForm } from "@/components/titles/title-form";
 import { Modal } from "@/components/ui/modal";
 import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
@@ -15,11 +16,11 @@ import { createEntradaAction, createEntradaAndContinueAction } from "./actions";
 type Filter = "vencidas" | "hoje" | "proximas" | "quitadas" | "todas";
 
 const FILTER_LABEL: Record<Filter, string> = {
+  todas: "Todas",
   vencidas: "Vencidas",
   hoje: "Hoje",
   proximas: "Próximas",
   quitadas: "Quitadas",
-  todas: "Todas",
 };
 
 export default async function EntradasPage(
@@ -48,14 +49,14 @@ export default async function EntradasPage(
 
   const titles = allTitles.filter((title) => {
     const due = toDateOnlyString(title.dueDate);
+    if (filter === "vencidas" || filter === "hoje") {
+      if (title.status === "SETTLED" || title.status === "CANCELLED") return false;
+      return filter === "vencidas" ? due < today : due === today;
+    }
     if (due < monthFrom || due > monthTo) return false;
-
     if (filter === "todas") return true;
     if (filter === "quitadas") return title.status === "SETTLED";
     if (title.status === "SETTLED" || title.status === "CANCELLED") return false;
-
-    if (filter === "vencidas") return due < today;
-    if (filter === "hoje") return due === today;
     if (filter === "proximas") return due > today;
     return true;
   });
@@ -80,6 +81,7 @@ export default async function EntradasPage(
           <Modal
             key={searchParams.continuar ?? "novo"}
             triggerLabel="+ Novo lançamento"
+            triggerClassName="button-link workspace-primary-action"
             title="Nova entrada"
             icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />}
             maxWidth="720px"
@@ -100,15 +102,18 @@ export default async function EntradasPage(
 
       <div className="filters">
         {(Object.keys(FILTER_LABEL) as Filter[]).map((key) => (
-          <Link key={key} href={filterHref(key)} className={filter === key ? "active" : ""}>
+          <Link key={key} href={filterHref(key)} className={filter === key ? "active" : ""} aria-current={filter === key ? "page" : undefined}>
             {FILTER_LABEL[key]}
           </Link>
         ))}
       </div>
+      {filter === "vencidas" || filter === "hoje" ? <p className="workspace-filter-note">{filter === "vencidas" ? "Vencidas de todos os meses." : "Vencimentos de hoje em qualquer período."} O seletor de período acima não limita esta lista.</p> : null}
+
+      <TitleListSummary titles={titles} kind="entradas" overdueView={filter === "vencidas"} scopeNote={filter === "vencidas" || filter === "hoje" ? "Todas as datas" : "Conforme período e filtro acima"} />
 
       <div className="card">
         {searchParams.loteConcluido ? <p className="success-box">Operação concluída em {searchParams.loteConcluido} entrada(s).</p> : null}
-        <TitleListTable titles={titles} basePath="/entradas" />
+        <TitleListTable titles={titles} basePath="/entradas" userId={user.id} companyId={company.id} />
       </div>
     </main>
   );

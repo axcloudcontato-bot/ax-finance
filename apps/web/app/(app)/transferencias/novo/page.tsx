@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { listFinancialAccounts } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { createTransferAction } from "../actions";
-import { SubmitButton } from "@/components/ui/submit-button";
+import { TransferForm } from "@/components/transfers/transfer-form";
 
 export default async function NovaTransferenciaPage(
   props: {
@@ -23,85 +24,17 @@ export default async function NovaTransferenciaPage(
 
   return (
     <main>
-      <h1 style={{ marginBottom: "1rem" }}>Nova transferência</h1>
+      <div className="page-header"><div><h1>Nova transferência</h1><p className="subtitle">Mova dinheiro entre contas da empresa e confira o efeito nos saldos antes de confirmar.</p></div><Link href="/transferencias" className="button-link">← Voltar</Link></div>
+      <p className="workspace-method-note">Transferências internas não são receita nem despesa. Apenas a tarifa reduz o saldo total da empresa.</p>
 
       <div className="card">
+        <h2>Dados da movimentação</h2>
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 
         {accounts.length < 2 ? (
-          <p className="muted">
-            Você precisa de pelo menos duas contas para transferir entre elas.{" "}
-            <a href="/contas">Cadastre outra conta</a>.
-          </p>
+          <div className="workspace-empty"><strong>Falta uma segunda conta</strong><p>Cadastre pelo menos duas contas ativas para registrar uma transferência interna.</p><Link href="/contas" className="button-link">Ir para Contas</Link></div>
         ) : (
-          <form action={createTransferAction}>
-            <input type="hidden" name="idempotencyKey" value={randomUUID()} />
-            <div className="form-grid">
-              <div>
-                <label htmlFor="fromAccountId">Conta de origem</label>
-                <select id="fromAccountId" name="fromAccountId" required defaultValue="">
-                  <option value="" disabled>
-                    Selecione
-                  </option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="toAccountId">Conta de destino</label>
-                <select id="toAccountId" name="toAccountId" required defaultValue="">
-                  <option value="" disabled>
-                    Selecione
-                  </option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="amount">Valor (R$)</label>
-                <input
-                  id="amount"
-                  name="amount"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label htmlFor="fee">Tarifa (R$)</label>
-                <input
-                  id="fee"
-                  name="fee"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0,00"
-                  defaultValue="0,00"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="transferDate">Data</label>
-                <input id="transferDate" name="transferDate" type="date" defaultValue={today} required />
-              </div>
-
-              <div>
-                <label htmlFor="description">Descrição</label>
-                <input id="description" name="description" type="text" maxLength={500} />
-              </div>
-            </div>
-
-            <SubmitButton>Transferir</SubmitButton>
-          </form>
+          <TransferForm accounts={accounts.map(({ id, name }) => ({ id, name }))} action={createTransferAction} today={today} idempotencyKey={randomUUID()} />
         )}
       </div>
     </main>

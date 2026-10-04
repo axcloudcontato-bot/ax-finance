@@ -16,10 +16,11 @@ export function TitleDetailList({ titles }: { titles: TitleDetailRow[] }) {
   }
 
   return (
-    <table>
+    <table className="dashboard-detail-table">
       <thead>
         <tr>
           <th>Descrição</th>
+          <th>Tipo</th>
           <th>Vencimento</th>
           <th>Saldo aberto</th>
         </tr>
@@ -27,13 +28,14 @@ export function TitleDetailList({ titles }: { titles: TitleDetailRow[] }) {
       <tbody>
         {titles.map((title) => (
           <tr key={title.id}>
-            <td>
+            <td data-label="Descrição">
               <Link href={title.type === "RECEIVABLE" ? `/entradas/${title.id}` : `/saidas/${title.id}`}>
                 {title.description}
               </Link>
             </td>
-            <td>{formatDateOnly(title.dueDate)}</td>
-            <td>{formatCents(title.remainingCents)}</td>
+            <td data-label="Tipo">{title.type === "RECEIVABLE" ? "A receber" : "A pagar"}</td>
+            <td data-label="Vencimento">{formatDateOnly(title.dueDate)}</td>
+            <td data-label="Saldo aberto">{formatCents(title.remainingCents)}</td>
           </tr>
         ))}
       </tbody>

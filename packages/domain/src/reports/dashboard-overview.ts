@@ -316,16 +316,33 @@ export async function getDashboardOverview(userId: string, companyId: string, in
 
     let runningBalance = availableBalanceCents;
     let firstNegativeDate: string | null = runningBalance < BigInt(0) ? today : null;
+    let firstNegativeWithoutOverdueDate: string | null = firstNegativeDate;
     const projectionByDate = new Map<string, bigint>();
+    const projectionWithoutOverdueReceivablesByDate = new Map<string, bigint>();
     for (const title of projectionTitles) {
       const due = asDateOnly(title.dueDate);
       const date = due < today ? today : due;
       const delta = title.type === "RECEIVABLE" ? title.remainingCents : -title.remainingCents;
       projectionByDate.set(date, (projectionByDate.get(date) ?? BigInt(0)) + delta);
+      if (title.type !== "RECEIVABLE" || due >= today) {
+        projectionWithoutOverdueReceivablesByDate.set(
+          date,
+          (projectionWithoutOverdueReceivablesByDate.get(date) ?? BigInt(0)) + delta
+        );
+      }
     }
-    for (const [date, delta] of [...projectionByDate.entries()].sort(([left], [right]) => left.localeCompare(right))) {
-      runningBalance += delta;
+    let balanceWithoutOverdueReceivablesCents = availableBalanceCents;
+    const cashProjectionSeries: Array<{
+      date: string;
+      projectedBalanceCents: bigint;
+      withoutOverdueReceivablesCents: bigint;
+    }> = [];
+    for (let date = today; date <= projectionEnd; date = addDays(date, 1)) {
+      runningBalance += projectionByDate.get(date) ?? BigInt(0);
+      balanceWithoutOverdueReceivablesCents += projectionWithoutOverdueReceivablesByDate.get(date) ?? BigInt(0);
+      cashProjectionSeries.push({ date, projectedBalanceCents: runningBalance, withoutOverdueReceivablesCents: balanceWithoutOverdueReceivablesCents });
       if (!firstNegativeDate && runningBalance < BigInt(0)) firstNegativeDate = date;
+      if (!firstNegativeWithoutOverdueDate && balanceWithoutOverdueReceivablesCents < BigInt(0)) firstNegativeWithoutOverdueDate = date;
     }
 
     const categoryTotals = new Map<string, { categoryId: string; categoryName: string; cents: bigint }>();
@@ -376,7 +393,10 @@ export async function getDashboardOverview(userId: string, companyId: string, in
       projectionEnd,
       availableBalanceCents,
       projectedBalanceCents,
+      balanceWithoutOverdueReceivablesCents,
       firstNegativeDate,
+      firstNegativeWithoutOverdueDate,
+      cashProjectionSeries,
       accounts: accounts.map((account) => ({
         id: account.id,
         name: account.name,

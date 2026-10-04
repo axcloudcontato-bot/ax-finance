@@ -10,7 +10,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function PessoasPage(
   props: {
-    searchParams: Promise<{ erro?: string }>;
+    searchParams: Promise<{ erro?: string; busca?: string; papel?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -21,6 +21,14 @@ export default async function PessoasPage(
   const company = await requirePrimaryCompany(user.id);
 
   const parties = await listParties(user.id, company.id);
+  const search = (searchParams.busca ?? "").trim().slice(0, 100);
+  const role = searchParams.papel === "cliente" || searchParams.papel === "fornecedor" ? searchParams.papel : "todos";
+  const searchable = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  const query = searchable(search);
+  const visibleParties = parties.filter((party) =>
+    (role === "todos" || (role === "cliente" ? party.isClient : party.isSupplier)) &&
+    (!query || searchable(`${party.name} ${party.tradeName ?? ""} ${party.document ?? ""}`).includes(query))
+  );
 
   return (
     <main className="wide">
@@ -28,6 +36,7 @@ export default async function PessoasPage(
         <h1>Clientes e fornecedores</h1>
         <Modal
           triggerLabel="+ Nova pessoa"
+          triggerClassName="button-link workspace-primary-action"
           title="Nova pessoa"
           icon={<UserPlus className="size-5" strokeWidth={1.5} />}
           maxWidth="680px"
@@ -115,10 +124,14 @@ export default async function PessoasPage(
       </div>
 
       <div className="card">
-        {parties.length === 0 ? (
-          <p className="muted">Nenhuma pessoa cadastrada ainda.</p>
+        <div className="workspace-list-toolbar">
+          <p>{visibleParties.length} {visibleParties.length === 1 ? "pessoa exibida" : "pessoas exibidas"}</p>
+          <form method="get" action="/cadastros/pessoas"><input name="busca" type="search" defaultValue={search} placeholder="Nome ou documento" aria-label="Buscar nome ou documento" /><select name="papel" defaultValue={role} aria-label="Filtrar por papel"><option value="todos">Todos os papéis</option><option value="cliente">Clientes</option><option value="fornecedor">Fornecedores</option></select><button type="submit" className="secondary">Filtrar</button>{search || role !== "todos" ? <a href="/cadastros/pessoas">Limpar</a> : null}</form>
+        </div>
+        {visibleParties.length === 0 ? (
+          <div className="workspace-empty"><strong>{search || role !== "todos" ? "Nenhuma pessoa encontrada" : "Nenhum cliente ou fornecedor cadastrado"}</strong><p>{search || role !== "todos" ? "Altere os filtros para ampliar a busca." : "Cadastre pessoas para vinculá-las a entradas e saídas."}</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -128,7 +141,7 @@ export default async function PessoasPage(
               </tr>
             </thead>
             <tbody>
-              {parties.map((party) => (
+              {visibleParties.map((party) => (
                 <tr key={party.id}>
                   <td>
                     <Link href={`/cadastros/pessoas/${party.id}`}>{party.name}</Link>
@@ -143,7 +156,7 @@ export default async function PessoasPage(
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </main>

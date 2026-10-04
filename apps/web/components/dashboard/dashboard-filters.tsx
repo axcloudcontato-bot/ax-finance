@@ -44,6 +44,7 @@ export function DashboardFilters({
   const searchParams = useSearchParams();
   const storageKey = `${SESSION_PREFIX}${companyId}`;
   const [draft, setDraft] = useState<DashboardFilterValues>(values);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const hasFiltersInUrl = FILTER_KEYS.some((key) => searchParams.has(key));
 
   const allowed = useMemo(() => ({
@@ -112,11 +113,18 @@ export function DashboardFilters({
         {actions ? <div className="dashboard-command-actions" aria-label="Ações financeiras rápidas">{actions}</div> : null}
       </div>
 
-      <div className="dashboard-filter-subheading">
-        <span>Segmentação dos dados</span>
-        {activeCount > 0 ? <strong>{activeCount} ativo(s)</strong> : <span className="dashboard-filter-scope">Todos os dados autorizados</span>}
-      </div>
-      <div className="dashboard-filter-grid">
+      <button
+        type="button"
+        className="dashboard-filter-toggle"
+        data-active-count={activeCount}
+        aria-expanded={filtersOpen}
+        aria-controls="dashboard-advanced-filters"
+        onClick={() => setFiltersOpen((open) => !open)}
+      >
+        <span><Filter className="size-4" /> Filtrar dados</span>
+        <span>{activeCount > 0 ? `${activeCount} ${activeCount === 1 ? "filtro ativo" : "filtros ativos"}` : "Conta, categoria, pessoa e centro de custo"}</span>
+      </button>
+      <div id="dashboard-advanced-filters" className="dashboard-filter-grid" hidden={!filtersOpen}>
         <label>
           Conta
           <select value={draft.conta ?? ""} onChange={(event) => update("conta", event.target.value)}>
@@ -155,10 +163,6 @@ export function DashboardFilters({
           </button>
         </div>
       </div>
-      <p className="dashboard-filter-note">
-        Conta filtra saldo, movimentos realizados e conciliação. Como títulos abertos ainda não possuem conta prevista,
-        previsões usam categoria, pessoa e centro de custo, sem atribuição bancária artificial.
-      </p>
     </section>
   );
 }

@@ -130,6 +130,16 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, n
   }, [closeMenu]);
 
   useEffect(() => {
+    function openSearch(event: KeyboardEvent) {
+      if (event.isComposing || event.key.toLowerCase() !== "k" || (!event.ctrlKey && !event.metaKey)) return;
+      event.preventDefault();
+      setView("search");
+    }
+    window.addEventListener("keydown", openSearch);
+    return () => window.removeEventListener("keydown", openSearch);
+  }, []);
+
+  useEffect(() => {
     if (view === "search") searchInputRef.current?.focus();
   }, [view]);
 
@@ -307,7 +317,7 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, n
         {MENU_ITEMS.map((item) => {
           const active = view === item.name;
           return (
-            <button key={item.name} type="button" aria-label={item.label} title={item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active")}>
+            <button key={item.name} type="button" aria-label={item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active")}>
               <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.8} />
               {item.name === "notifications" && unreadCount > 0 ? <span className="bottom-menu-badge">{Math.min(unreadCount, 9)}{unreadCount > 9 ? "+" : ""}</span> : null}
             </button>

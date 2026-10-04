@@ -86,6 +86,7 @@ describe("visão analítica do dashboard", () => {
     expect(overview.comparison?.receivedCents).toBe(BigInt(0));
     expect(overview.availableBalanceCents).toBe(BigInt(158_000));
     expect(overview.projectedBalanceCents).toBe(BigInt(151_000));
+    expect(overview.balanceWithoutOverdueReceivablesCents).toBe(BigInt(151_000));
     expect(overview.projectionTitles.map((title) => title.description)).toEqual(["Conta vencida", "Aluguel", "Contrato mensal"]);
     expect(overview.overdueTitles).toHaveLength(1);
     expect(overview.reconciliation.pendingCount).toBe(1);
@@ -133,5 +134,38 @@ describe("visão analítica do dashboard", () => {
     expect(overview.projectionTitles.map((title) => title.description)).toEqual(["Imposto", "Recebimento futuro"]);
     expect(overview.projectedBalanceCents).toBe(BigInt(15_000));
     expect(overview.firstNegativeDate).toBe("2026-10-02");
+  });
+
+  it("expõe o risco de caixa quando recebíveis vencidos não entram hoje", async () => {
+    const user = await registerUser({ email: uniqueEmail("overdue-forecast"), name: "Gestora", password: "senha-forte-123" });
+    const company = await createCompany(user.id, { name: "Empresa Cenários" });
+    await createFinancialAccount(user.id, company.id, {
+      name: "Banco", type: "BANK", openingBalanceCents: 10_000, openingDate: "2026-01-01",
+    });
+    const revenue = await createCategory(user.id, company.id, { name: "Serviços", nature: "OPERATING_REVENUE" });
+    const expense = await createCategory(user.id, company.id, { name: "Despesas", nature: "EXPENSE" });
+    await createTitle(user.id, company.id, {
+      type: "RECEIVABLE", description: "Cliente atrasado", categoryId: revenue.id,
+      originalAmountCents: 20_000, competenceDate: "2026-09-01", dueDate: "2026-09-20",
+    });
+    await createTitle(user.id, company.id, {
+      type: "PAYABLE", description: "Fornecedor atrasado", categoryId: expense.id,
+      originalAmountCents: 15_000, competenceDate: "2026-09-01", dueDate: "2026-09-25",
+    });
+
+    const overview = await getDashboardOverview(user.id, company.id, {
+      from: "2026-10-01", to: "2026-10-31", today: "2026-10-04",
+    });
+
+    expect(overview.projectedBalanceCents).toBe(BigInt(15_000));
+    expect(overview.balanceWithoutOverdueReceivablesCents).toBe(BigInt(-5_000));
+    expect(overview.firstNegativeDate).toBeNull();
+    expect(overview.firstNegativeWithoutOverdueDate).toBe("2026-10-04");
+    expect(overview.cashProjectionSeries[0]).toMatchObject({
+      date: "2026-10-04",
+      projectedBalanceCents: BigInt(15_000),
+      withoutOverdueReceivablesCents: BigInt(-5_000),
+    });
+    expect(overview.cashProjectionSeries).toHaveLength(31);
   });
 });

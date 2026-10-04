@@ -25,27 +25,30 @@ export default async function FechamentoPage(
 
   const now = currentYearMonth();
   const periods = Array.from({ length: 12 }, (_, index) => addMonths(now, -index));
+  const closedCount = periods.filter((period) => closureByPeriod.get(period)?.status === "CLOSED").length;
 
   return (
     <main className="wide">
-      <h1 style={{ marginBottom: "1rem" }}>Fechamento de período</h1>
+      <div className="page-header"><h1>Fechamento de período</h1></div>
       <p className="subtitle">
         Fechar um período bloqueia novas baixas e estornos com data efetiva naquele mês. Título
         novo, cancelamento e transferências não são afetados nesta etapa.
       </p>
 
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
-      {searchParams.fechado ? <p className="subtitle">Período {searchParams.fechado} fechado.</p> : null}
-      {searchParams.reaberto ? <p className="subtitle">Período {searchParams.reaberto} reaberto.</p> : null}
+      {searchParams.fechado ? <p className="success-box">Período {searchParams.fechado} fechado.</p> : null}
+      {searchParams.reaberto ? <p className="success-box">Período {searchParams.reaberto} reaberto.</p> : null}
+
+      <section className="workspace-metrics workspace-metrics-two" aria-label="Resumo dos períodos"><div className="workspace-metric"><span className="workspace-metric-label">Períodos fechados</span><strong>{closedCount}</strong><span className="workspace-metric-detail">Nos últimos 12 meses</span></div><div className="workspace-metric"><span className="workspace-metric-label">Períodos abertos</span><strong>{periods.length - closedCount}</strong><span className="workspace-metric-detail">Baixas e estornos ainda permitidos</span></div></section>
 
       <div className="card">
-        <table>
+        <div className="table-scroll"><table className="workspace-table">
           <thead>
             <tr>
               <th>Mês</th>
               <th>Status</th>
               <th>Detalhe</th>
-              <th></th>
+              <th><span className="sr-only">Ação</span></th>
             </tr>
           </thead>
           <tbody>
@@ -56,7 +59,7 @@ export default async function FechamentoPage(
               return (
                 <tr key={period}>
                   <td>{monthLabel(period)}</td>
-                  <td>{isClosed ? "Fechado" : closure?.status === "REOPENED" ? "Reaberto" : "Aberto"}</td>
+                  <td><span className={`workspace-status ${isClosed ? "" : "is-active"}`}>{isClosed ? "Fechado" : closure?.status === "REOPENED" ? "Reaberto" : "Aberto"}</span></td>
                   <td>
                     {isClosed && closure ? (
                       <p className="muted" style={{ margin: 0 }}>
@@ -90,7 +93,7 @@ export default async function FechamentoPage(
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </main>
   );

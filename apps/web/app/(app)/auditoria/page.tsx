@@ -62,25 +62,26 @@ export default async function AuditoriaPage(
 
   return (
     <main className="wide">
-      <h1 style={{ marginBottom: "1rem" }}>Auditoria</h1>
+      <div className="page-header"><div><h1>Auditoria</h1><p className="subtitle">Histórico de alterações e operações no período selecionado.</p></div></div>
 
       <div className="filters">
-        <a href={filterHref(undefined)} className={!resourceType ? "active" : ""}>
+        <a href={filterHref(undefined)} className={!resourceType ? "active" : ""} aria-current={!resourceType ? "page" : undefined}>
           Todos
         </a>
-        <a href={filterHref("Title")} className={resourceType === "Title" ? "active" : ""}>
+        <a href={filterHref("Title")} className={resourceType === "Title" ? "active" : ""} aria-current={resourceType === "Title" ? "page" : undefined}>
           Títulos
         </a>
-        <a href={filterHref("Transfer")} className={resourceType === "Transfer" ? "active" : ""}>
+        <a href={filterHref("Transfer")} className={resourceType === "Transfer" ? "active" : ""} aria-current={resourceType === "Transfer" ? "page" : undefined}>
           Transferências
         </a>
       </div>
 
       <div className="card">
+        <div className="workspace-list-toolbar"><p>{events.length} {events.length === 1 ? "evento encontrado" : "eventos encontrados"}</p></div>
         {events.length === 0 ? (
-          <p className="muted">Nenhum evento nesse período/filtro.</p>
+          <div className="workspace-empty"><strong>Nenhum evento encontrado</strong><p>Altere o período ou o tipo de recurso para ampliar a consulta.</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Data</th>
@@ -110,7 +111,7 @@ export default async function AuditoriaPage(
                 );
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </main>

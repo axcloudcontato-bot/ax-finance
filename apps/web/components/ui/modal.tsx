@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
+import { useModalFocus } from "./use-modal-focus";
 
 /**
  * Server Actions redirecionam via navegação client-side (o Next não recarrega
@@ -39,6 +40,10 @@ export function Modal({
   const lastParamsKey = useRef(paramsKey);
 
   const [open, setOpen] = useState(shouldReopen);
+  const titleId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open, setOpen, triggerRef, dialogRef);
 
   useEffect(() => {
     if (paramsKey !== lastParamsKey.current) {
@@ -47,18 +52,10 @@ export function Modal({
     }
   }, [paramsKey, shouldReopen]);
 
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
-
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         className={triggerClassName ?? "button-link"}
         style={triggerClassName ? undefined : { marginTop: 0 }}
@@ -70,14 +67,19 @@ export function Modal({
       {open ? (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
           <div
+            ref={dialogRef}
             className="modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
             style={maxWidth ? { maxWidth } : undefined}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 {icon}
-                <h1>{title}</h1>
+                <h2 id={titleId}>{title}</h2>
               </div>
               <button
                 type="button"

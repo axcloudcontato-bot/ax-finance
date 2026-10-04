@@ -288,10 +288,11 @@ export async function registerEntradaRefundAction(titleId: string, settlementId:
   redirect(`/entradas/${titleId}`);
 }
 
-export async function reverseEntradaRefundAction(titleId: string, refundId: string) {
+export async function reverseEntradaRefundAction(titleId: string, refundId: string, formData: FormData) {
   const user = await getCurrentUser(); if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
-  try { await reverseSettlementRefund(user.id, company.id, refundId, { reason: "Estornado pelo usuário" }); }
+  const reason = String(formData.get("reason") ?? "").trim();
+  try { await reverseSettlementRefund(user.id, company.id, refundId, { reason }); }
   catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível estornar a devolução.")}`); }
   redirect(`/entradas/${titleId}`);
 }

@@ -41,6 +41,7 @@ export default async function EntradasRecorrenciasPage(
     listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" }),
     listCostCenters(user.id, company.id),
   ]);
+  const activeRuleCount = rules.filter((rule) => rule.status === "ACTIVE").length;
 
   return (
     <main className="wide">
@@ -48,6 +49,7 @@ export default async function EntradasRecorrenciasPage(
         <h1>Recorrências de entrada</h1>
         <Modal
           triggerLabel="+ Nova recorrência"
+          triggerClassName="button-link workspace-primary-action"
           title="Nova recorrência"
           icon={<Repeat className="size-5" strokeWidth={1.5} />}
           maxWidth="600px"
@@ -64,30 +66,30 @@ export default async function EntradasRecorrenciasPage(
       </div>
 
       <div className="card">
-        <div className="page-header" style={{ marginBottom: "0.5rem" }}>
-          <h1>Regras cadastradas</h1>
+        <div className="workspace-card-heading">
+          <div><h2>Regras cadastradas</h2><p>{activeRuleCount} {activeRuleCount === 1 ? "ativa" : "ativas"} de {rules.length}</p></div>
           <form action={generateEntradaOccurrencesAction}>
-            <SubmitButton className="secondary">
+            <SubmitButton className="secondary" disabled={activeRuleCount === 0}>
               Gerar títulos pendentes
             </SubmitButton>
           </form>
         </div>
         {searchParams.gerados ? (
-          <p className="subtitle">{searchParams.gerados} título(s) gerado(s) agora.</p>
+          <p className="success-box">{searchParams.gerados} título(s) gerado(s) agora.</p>
         ) : null}
 
         {rules.length === 0 ? (
-          <p className="muted">Nenhuma recorrência cadastrada ainda.</p>
+          <div className="workspace-empty"><strong>Nenhuma recorrência cadastrada</strong><p>Crie uma regra para gerar entradas nos próximos vencimentos.</p></div>
         ) : (
-          <table>
+          <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
                 <th>Descrição</th>
-                <th>Valor</th>
+                <th className="money">Valor</th>
                 <th>Dia</th>
                 <th>Início</th>
                 <th>Status</th>
-                <th></th>
+                <th><span className="sr-only">Ação</span></th>
               </tr>
             </thead>
             <tbody>
@@ -96,10 +98,10 @@ export default async function EntradasRecorrenciasPage(
                   <td>
                     <Link href={`/entradas/recorrencias/${rule.id}`}>{rule.description}</Link>
                   </td>
-                  <td>{formatCents(rule.amountCents)}</td>
+                  <td className="money">{formatCents(rule.amountCents)}</td>
                   <td>{rule.dayOfMonth}</td>
                   <td>{formatDateOnly(rule.startDate)}</td>
-                  <td>{STATUS_LABEL[rule.status] ?? rule.status}</td>
+                  <td><span className={`workspace-status ${rule.status === "ACTIVE" ? "is-active" : ""}`}>{STATUS_LABEL[rule.status] ?? rule.status}</span></td>
                   <td>
                     {rule.status === "ACTIVE" ? (
                       <form action={pauseEntradaRecurrenceAction} className="inline">
@@ -120,7 +122,7 @@ export default async function EntradasRecorrenciasPage(
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </main>

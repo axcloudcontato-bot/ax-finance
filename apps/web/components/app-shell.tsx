@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppTopbar, type AppNotification } from "@/components/app-topbar";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
-import { PageActionsSlot } from "@/components/page-actions-slot";
 import { BottomMenu } from "@/components/ui/bottom-menu";
 import { NotificationToasts } from "@/components/notification-toasts";
 import type { WriteBlockNotice } from "@/lib/write-block-notice";
@@ -37,6 +36,10 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const dashboardOwnsToolbar = pathname === "/dashboard";
+  const showsPeriod = new Set([
+    "/entradas", "/saidas", "/contas", "/transferencias", "/conciliacao",
+    "/auditoria", "/relatorios/fluxo-de-caixa", "/relatorios/dre",
+  ]).has(pathname);
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = useCallback(() => setNavOpen(false), []);
 
@@ -80,10 +83,9 @@ export function AppShell({
         />
 
         <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-          {!dashboardOwnsToolbar ? (
+          {!dashboardOwnsToolbar && showsPeriod ? (
             <div className="app-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-4 md:px-6">
               <GlobalMonthSelector />
-              <PageActionsSlot />
             </div>
           ) : null}
           {children}

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
+import { useModalFocus } from "./use-modal-focus";
 
 /**
  * Modal de estado local (não observa a query string, ao contrário de
@@ -11,12 +12,14 @@ import { useEffect, useState, type ReactNode } from "react";
  */
 export function ActionModal({
   triggerLabel,
+  triggerClassName = "button-link",
   title,
   icon,
   initiallyOpen = false,
   children,
 }: {
   triggerLabel: string;
+  triggerClassName?: string;
   title: string;
   /** Mesma família animada de ícones do sidebar, ex.: <Landmark className="size-5" />. */
   icon?: ReactNode;
@@ -24,21 +27,17 @@ export function ActionModal({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(initiallyOpen);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  const titleId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(open, setOpen, triggerRef, dialogRef);
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
-        className="button-link"
+        className={triggerClassName}
         style={{ marginTop: 0 }}
         onClick={() => setOpen(true)}
       >
@@ -47,11 +46,11 @@ export function ActionModal({
 
       {open ? (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
-          <div className="modal-dialog" onClick={(event) => event.stopPropagation()}>
+          <div ref={dialogRef} className="modal-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 {icon}
-                <h1>{title}</h1>
+                <h2 id={titleId}>{title}</h2>
               </div>
               <button
                 type="button"
