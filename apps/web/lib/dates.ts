@@ -20,6 +20,18 @@ export function toDateOnlyString(date: Date | string): string {
   return new Date(date).toISOString().slice(0, 10);
 }
 
-export function todayDateOnlyString(): string {
-  return toDateOnlyString(new Date());
+/** Fuso do calendário do app. Mesmo valor de DEFAULT_TIME_ZONE no domínio (toda empresa nasce com ele). */
+export const APP_TIME_ZONE = "America/Sao_Paulo";
+
+/**
+ * "Hoje" ("YYYY-MM-DD") em Brasília. Com UTC, depois das 21h o dia já viraria: o "vencido" apareceria
+ * uma noite antes e a data padrão de um lançamento sairia como amanhã.
+ */
+export function todayDateOnlyString(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}
+
+/** Data de calendário de hoje como Date em UTC ao meio-dia: `getUTC*` devolve o dia certo em qualquer servidor. */
+export function calendarNow(now: Date = new Date()): Date {
+  return new Date(`${todayDateOnlyString(now)}T12:00:00.000Z`);
 }

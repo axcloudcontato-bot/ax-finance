@@ -2,6 +2,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { getWriteBlockReason } from "../subscriptions/write-access";
 import { computeOccurrenceDates } from "./recurrence-dates";
+import { getCompanyToday } from "../shared/today";
 
 const HORIZON_DAYS = 90;
 
@@ -30,7 +31,7 @@ export async function generateDueOccurrences(userId: string, companyId: string) 
   // (lançar erro faria o job agendado falhar e reentrar todo dia).
   if (await getWriteBlockReason(userId, companyId)) return { createdCount: 0 };
 
-  const today = toDateOnlyString(new Date());
+  const today = await getCompanyToday(userId, companyId);
   const horizon = addDaysUTC(today, HORIZON_DAYS);
 
   return withCompanyContext(userId, companyId, async (tx) => {

@@ -6,8 +6,8 @@ import {
   installmentCompetenceDate,
   invoiceStage,
   splitInstallments,
-  todayInTimeZone,
 } from "../credit-cards/invoice-cycle";
+import { todayInTimeZone } from "../shared/today";
 
 const card = { closingDay: 10, dueDay: 20 };
 

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { todayDateOnlyString } from "@/lib/dates";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
 type PartyOption = Awaited<ReturnType<typeof listParties>>[number];
@@ -21,7 +22,7 @@ export function InstallmentForm({
   partyLabel?: string;
   error?: string;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayDateOnlyString();
 
   return (
     <div className="card">

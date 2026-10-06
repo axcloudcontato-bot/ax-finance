@@ -18,6 +18,7 @@ import {
   writeAttachmentObject,
 } from "@/lib/attachment-storage";
 import { scanAttachment } from "@/lib/attachment-antivirus";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 type TitleBasePath = "entradas" | "saidas";
 
@@ -61,7 +62,7 @@ export async function uploadTitleAttachmentAction(
     });
   } catch (error) {
     if (storageKey) await deleteAttachmentObject(storageKey).catch(() => undefined);
-    const message = error instanceof Error ? error.message : "Não foi possível enviar o anexo.";
+    const message = actionErrorMessage(error, "Não foi possível enviar o anexo.");
     redirect(`${returnPath}?erroAnexo=${encodeURIComponent(message)}`);
   }
 
@@ -83,7 +84,7 @@ export async function deleteTitleAttachmentAction(
     const attachment = await deleteTitleAttachment(user.id, company.id, attachmentId);
     await deleteAttachmentObject(attachment.storageKey, attachment.storageBackend === "S3" ? "S3" : "LOCAL");
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível remover o anexo.";
+    const message = actionErrorMessage(error, "Não foi possível remover o anexo.");
     redirect(`${returnPath}?erroAnexo=${encodeURIComponent(message)}`);
   }
 

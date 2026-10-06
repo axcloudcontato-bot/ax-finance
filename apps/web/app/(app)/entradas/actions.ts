@@ -19,6 +19,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 /**
  * Só a chamada ao domínio (que pode lançar DomainError) fica dentro do
@@ -66,7 +67,7 @@ export async function createEntradaAction(formData: FormData) {
   try {
     titleId = await createEntradaCore(user.id, company.id, formData);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar o lançamento.";
+    const message = actionErrorMessage(error, "Não foi possível criar o lançamento.");
     redirect(`/entradas?erro=${encodeURIComponent(message)}`);
   }
 
@@ -85,7 +86,7 @@ export async function createEntradaAndContinueAction(formData: FormData) {
   try {
     titleId = await createEntradaCore(user.id, company.id, formData);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar o lançamento.";
+    const message = actionErrorMessage(error, "Não foi possível criar o lançamento.");
     redirect(`/entradas?erro=${encodeURIComponent(message)}`);
   }
 
@@ -129,7 +130,7 @@ export async function createEntradaInstallmentPlanAction(formData: FormData) {
       idempotencyKey,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar o parcelamento.";
+    const message = actionErrorMessage(error, "Não foi possível criar o parcelamento.");
     redirect(`/entradas/parcelado?erro=${encodeURIComponent(message)}`);
   }
 
@@ -164,7 +165,7 @@ export async function registerEntradaSettlementAction(titleId: string, formData:
       idempotencyKey,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível registrar a baixa.";
+    const message = actionErrorMessage(error, "Não foi possível registrar a baixa.");
     redirect(`/entradas/${titleId}?erroBaixa=${encodeURIComponent(message)}`);
   }
 
@@ -186,7 +187,7 @@ export async function reverseEntradaSettlementAction(
   try {
     await reverseSettlement(user.id, company.id, settlementId, { reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível estornar.";
+    const message = actionErrorMessage(error, "Não foi possível estornar.");
     redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
   }
 
@@ -204,7 +205,7 @@ export async function cancelEntradaAction(titleId: string, formData: FormData) {
   try {
     await cancelTitle(user.id, company.id, titleId, { reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível cancelar.";
+    const message = actionErrorMessage(error, "Não foi possível cancelar.");
     redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
   }
 
@@ -223,7 +224,7 @@ export async function deleteEntradaAction(titleId: string, formData: FormData) {
   try {
     await deleteTitle(user.id, company.id, titleId, { reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível excluir.";
+    const message = actionErrorMessage(error, "Não foi possível excluir.");
     redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
   }
 
@@ -252,7 +253,7 @@ export async function deleteEntradaInstallmentPlanAction(
   try {
     await deleteInstallmentPlan(user.id, company.id, installmentGroupId, { reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível excluir o parcelamento.";
+    const message = actionErrorMessage(error, "Não foi possível excluir o parcelamento.");
     redirect(`/entradas/${titleId}?erro=${encodeURIComponent(message)}`);
   }
 
@@ -267,7 +268,7 @@ export async function updateEntradaAction(titleId: string, formData: FormData) {
     partyId: String(formData.get("partyId") ?? "") || undefined, costCenterId: String(formData.get("costCenterId") ?? "") || undefined,
     originalAmountCents: parseAmountToCents(String(formData.get("amount") ?? "0")), competenceDate: String(formData.get("competenceDate") ?? ""),
     dueDate: String(formData.get("dueDate") ?? ""), notes: String(formData.get("notes") ?? "") || undefined,
-  }); } catch (error) { redirect(`/entradas/${titleId}?erroEdicao=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível editar o título.")}`); }
+  }); } catch (error) { redirect(`/entradas/${titleId}?erroEdicao=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar o título."))}`); }
   redirect(`/entradas/${titleId}?atualizado=1`);
 }
 
@@ -276,7 +277,7 @@ export async function duplicateEntradaAction(titleId: string, formData: FormData
   const company = await requirePrimaryCompany(user.id);
   let duplicateId: string;
   try { duplicateId = (await duplicateTitle(user.id, company.id, titleId, { competenceDate: String(formData.get("competenceDate") ?? "") || undefined, dueDate: String(formData.get("dueDate") ?? "") || undefined })).id; }
-  catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível duplicar.")}`); }
+  catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível duplicar."))}`); }
   redirect(`/entradas/${duplicateId}?duplicado=1`);
 }
 
@@ -284,7 +285,7 @@ export async function registerEntradaRefundAction(titleId: string, settlementId:
   const user = await getCurrentUser(); if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
   try { await registerSettlementRefund(user.id, company.id, settlementId, { financialAccountId: String(formData.get("financialAccountId") ?? ""), amountCents: parseAmountToCents(String(formData.get("amount") ?? "0")), effectiveDate: String(formData.get("effectiveDate") ?? ""), reason: String(formData.get("reason") ?? "") }); }
-  catch (error) { redirect(`/entradas/${titleId}?erroDevolucao=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível registrar a devolução.")}`); }
+  catch (error) { redirect(`/entradas/${titleId}?erroDevolucao=${encodeURIComponent(actionErrorMessage(error, "Não foi possível registrar a devolução."))}`); }
   redirect(`/entradas/${titleId}`);
 }
 
@@ -293,7 +294,7 @@ export async function reverseEntradaRefundAction(titleId: string, refundId: stri
   const company = await requirePrimaryCompany(user.id);
   const reason = String(formData.get("reason") ?? "").trim();
   try { await reverseSettlementRefund(user.id, company.id, refundId, { reason }); }
-  catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível estornar a devolução.")}`); }
+  catch (error) { redirect(`/entradas/${titleId}?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível estornar a devolução."))}`); }
   redirect(`/entradas/${titleId}`);
 }
 
@@ -301,7 +302,7 @@ export async function replaceEntradaAllocationsAction(titleId: string, formData:
   const user = await getCurrentUser(); if (!user) redirect("/login"); const company = await requirePrimaryCompany(user.id);
   const count = Number(formData.get("rowCount") ?? 0); const allocations = Array.from({length:count},(_,index) => ({ categoryId:String(formData.get(`categoryId-${index}`) ?? ""), costCenterId:String(formData.get(`costCenterId-${index}`) ?? "") || undefined, amountCents:parseAmountToCents(String(formData.get(`amount-${index}`) ?? "0")) }));
   try { await replaceTitleAllocations(user.id, company.id, titleId, { allocations }); }
-  catch (error) { redirect(`/entradas/${titleId}?erroRateio=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível salvar o rateio.")}`); }
+  catch (error) { redirect(`/entradas/${titleId}?erroRateio=${encodeURIComponent(actionErrorMessage(error, "Não foi possível salvar o rateio."))}`); }
   redirect(`/entradas/${titleId}?rateado=1`);
 }
 

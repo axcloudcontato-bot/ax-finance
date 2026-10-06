@@ -8,6 +8,7 @@ import {
   setSessionCookie,
 } from "@/lib/session";
 import { safeAuthReturnTo } from "@/lib/auth-return";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export interface MfaLoginState {
   error?: string;
@@ -34,7 +35,7 @@ export async function completeMfaAction(
     await clearMfaChallengeCookie();
   } catch (error) {
     if (error instanceof MfaChallengeInvalidError) await clearMfaChallengeCookie();
-    return { error: error instanceof Error ? error.message : "Não foi possível validar o código." };
+    return { error: actionErrorMessage(error, "Não foi possível validar o código.") };
   }
 
   redirect(returnTo === "/" ? "/painel" : returnTo);

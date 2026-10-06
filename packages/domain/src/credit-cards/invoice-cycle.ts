@@ -95,14 +95,6 @@ export function installmentCompetenceDate(purchaseDate: string, index: number): 
   return clampedDate(year, month + index, day);
 }
 
-/**
- * "Hoje" no fuso da empresa ("YYYY-MM-DD"). Em UTC, depois das 21h em Brasília já seria amanhã, e uma
- * compra de véspera de fechamento cairia na fatura errada.
- */
-export function todayInTimeZone(timeZone: string, now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-}
-
 export type InvoiceStage = "OPEN" | "FUTURE" | "CLOSED" | "OVERDUE" | "PAID" | "EMPTY";
 
 /**

@@ -6,7 +6,8 @@ import {
   CreditCardInvoiceNotPayableError,
   TitleManagedByCreditCardError,
 } from "../errors";
-import { formatReferenceMonth, todayInTimeZone, type InvoiceCycle } from "./invoice-cycle";
+import { companyToday } from "../shared/today";
+import { formatReferenceMonth, type InvoiceCycle } from "./invoice-cycle";
 
 export const CARD_INVOICE_CATEGORY_NAME = "Fatura de cartão de crédito";
 
@@ -25,12 +26,6 @@ export async function assertCardAccess(tx: TenantScopedClient, userId: string, c
 export async function assertTitleNotCardInvoice(tx: TenantScopedClient, companyId: string, titleId: string) {
   const invoice = await tx.creditCardInvoice.findFirst({ where: { companyId, titleId }, select: { id: true } });
   if (invoice) throw new TitleManagedByCreditCardError();
-}
-
-/** "Hoje" no fuso cadastrado da empresa; os testes passam `today` explicitamente. */
-export async function companyToday(tx: TenantScopedClient, companyId: string): Promise<string> {
-  const company = await tx.company.findUnique({ where: { id: companyId }, select: { timezone: true } });
-  return todayInTimeZone(company?.timezone ?? "America/Sao_Paulo");
 }
 
 /**

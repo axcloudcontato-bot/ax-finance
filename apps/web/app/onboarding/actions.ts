@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { completeOnboarding } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { parseAmountToCents } from "@/lib/currency";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function onboardingAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -37,7 +38,7 @@ export async function onboardingAction(formData: FormData) {
     });
     companyId = company.id;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível concluir.";
+    const message = actionErrorMessage(error, "Não foi possível concluir.");
     redirect(`/onboarding?erro=${encodeURIComponent(message)}`);
   }
 

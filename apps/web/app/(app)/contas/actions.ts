@@ -5,6 +5,7 @@ import { archiveFinancialAccount, createBalanceAdjustment, createFinancialAccoun
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createAccountAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -28,7 +29,7 @@ export async function createAccountAction(formData: FormData) {
     });
     accountId = account.id;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar a conta.";
+    const message = actionErrorMessage(error, "Não foi possível criar a conta.");
     redirect(`/contas?erro=${encodeURIComponent(message)}`);
   }
 
@@ -63,7 +64,7 @@ export async function createBalanceAdjustmentAction(financialAccountId: string, 
     });
     adjustmentId = adjustment.id;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível ajustar o saldo.";
+    const message = actionErrorMessage(error, "Não foi possível ajustar o saldo.");
     redirect(`/contas?contaAjuste=${financialAccountId}&erroAjuste=${encodeURIComponent(message)}`);
   }
 
@@ -86,7 +87,7 @@ export async function reverseBalanceAdjustmentAction(adjustmentId: string, formD
   } catch (error) {
     // "erroEstorno" (não "erro") pra não abrir por engano o modal de "Nova
     // conta", que observa "erro=" pra decidir se reabre.
-    const message = error instanceof Error ? error.message : "Não foi possível estornar o ajuste.";
+    const message = actionErrorMessage(error, "Não foi possível estornar o ajuste.");
     redirect(`/contas?erroEstorno=${encodeURIComponent(message)}`);
   }
 
@@ -104,7 +105,7 @@ export async function updateAccountAction(accountId: string, formData: FormData)
       includedInAvailableTotal: formData.get("includedInAvailableTotal") === "true",
     });
   } catch (error) {
-    redirect(`/contas?erroConta=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível editar a conta.")}`);
+    redirect(`/contas?erroConta=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar a conta."))}`);
   }
   redirect("/contas?contaAtualizada=1");
 }
@@ -117,7 +118,7 @@ export async function setAccountArchivedAction(accountId: string, archived: bool
     if (archived) await archiveFinancialAccount(user.id, company.id, accountId);
     else await reactivateFinancialAccount(user.id, company.id, accountId);
   } catch (error) {
-    redirect(`/contas?erroConta=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível alterar a conta.")}`);
+    redirect(`/contas?erroConta=${encodeURIComponent(actionErrorMessage(error, "Não foi possível alterar a conta."))}`);
   }
   redirect("/contas");
 }

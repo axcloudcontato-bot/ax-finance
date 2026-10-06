@@ -5,6 +5,7 @@ import { assertActiveMembership } from "../companies/assert-membership";
 import { computeAccountBalanceDeltas } from "../financial-accounts/account-balances";
 import { settlementCashDelta } from "../titles/settlement-cash-delta";
 import { isPlanFeatureEnabled } from "../subscriptions/plan-features";
+import { getCompanyToday } from "../shared/today";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -188,7 +189,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
   const data = dashboardOverviewInput.parse(input);
   await assertActiveMembership(userId, companyId);
 
-  const today = data.today ?? asDateOnly(new Date());
+  const today = data.today ?? (await getCompanyToday(userId, companyId));
   const projectionEnd = addDays(today, 30);
   const comparisonRanges = data.comparisonFrom && data.comparisonTo
     ? [{ effectiveDate: { gte: atUtc(data.comparisonFrom), lte: atUtc(data.comparisonTo) } }]

@@ -1,10 +1,12 @@
+import { calendarNow } from "./dates";
+
 /**
  * "YYYY-MM" é o formato usado na URL (?mes=) e nos helpers abaixo — sempre em
  * UTC, mesmo cuidado de fuso já usado em lib/dates.ts (evita o mês mudar um
  * dia antes/depois dependendo do fuso do servidor).
  */
 export function currentYearMonth(): string {
-  return new Date().toISOString().slice(0, 7);
+  return calendarNow().toISOString().slice(0, 7);
 }
 
 export function isYearMonth(value: string | undefined | null): value is string {
@@ -70,7 +72,7 @@ function presetRange(preset: PeriodPreset, now: Date) {
   return { from: `${year}-01-01`, to: `${year}-12-31` };
 }
 
-export function resolvePeriodRange(input: PeriodInput, now = new Date()): ResolvedPeriod {
+export function resolvePeriodRange(input: PeriodInput, now = calendarNow()): ResolvedPeriod {
   if (isPeriodPreset(input.periodo)) {
     const range = presetRange(input.periodo, now);
     return { mode: "preset", preset: input.periodo, month: range.to.slice(0, 7), ...range };

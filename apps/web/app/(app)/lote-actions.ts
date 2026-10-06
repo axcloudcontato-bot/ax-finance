@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { TitleBatchInvalidError, applyTitleBatch, previewTitleBatch } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function executeTitleBatchAction(basePath: "entradas" | "saidas", formData: FormData) {
   const user = await getCurrentUser(); if (!user) redirect("/login");
@@ -20,7 +21,7 @@ export async function executeTitleBatchAction(basePath: "entradas" | "saidas", f
     // erro "sem saldo aberto" em vez de reaproveitar o resultado.
     await applyTitleBatch(user.id, company.id, input);
   } catch (error) {
-    let message = error instanceof Error ? error.message : "Não foi possível concluir a operação em lote.";
+    let message = actionErrorMessage(error, "Não foi possível concluir a operação em lote.");
     if (error instanceof TitleBatchInvalidError) {
       const preview = await previewTitleBatch(user.id, company.id, input).catch(() => null);
       if (preview?.problems.length) message = preview.problems.join("; ");

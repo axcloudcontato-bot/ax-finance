@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { resetPassword } from "@ax-finance/domain";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function resetPasswordAction(token: string, formData: FormData) {
   const password = String(formData.get("password") ?? "");
@@ -13,7 +14,7 @@ export async function resetPasswordAction(token: string, formData: FormData) {
   try {
     await resetPassword(token, password);
   } catch (error) {
-    redirect(`/redefinir-senha/${token}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível redefinir a senha.")}`);
+    redirect(`/redefinir-senha/${token}?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível redefinir a senha."))}`);
   }
   redirect("/login?senhaRedefinida=1");
 }

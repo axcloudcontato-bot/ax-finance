@@ -1,6 +1,7 @@
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { PartyNotFoundError } from "../errors";
+import { getCompanyToday } from "../shared/today";
 
 function toDateOnlyString(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -24,7 +25,7 @@ export async function getParty(userId: string, companyId: string, partyId: strin
     })
   );
 
-  const today = toDateOnlyString(new Date());
+  const today = await getCompanyToday(userId, companyId);
 
   const titles = rawTitles.map(({ settlements, ...title }) => {
     const settledPrincipalEquivalent = settlements.reduce(

@@ -6,7 +6,7 @@ import { listBalanceAdjustments, listFinancialAccountsWithBalance } from "@ax-fi
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly } from "@/lib/dates";
+import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
 import { Modal } from "@/components/ui/modal";
 import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction, setAccountArchivedAction, updateAccountAction } from "./actions";
@@ -50,7 +50,7 @@ export default async function ContasPage(
     listFinancialAccountsWithBalance(user.id, company.id),
     listBalanceAdjustments(user.id, company.id, period),
   ]);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayDateOnlyString();
   const activeAccounts = accounts.filter((account) => account.status === "ACTIVE");
   const includedAccounts = activeAccounts.filter((account) => account.includedInAvailableTotal);
   const availableCents = includedAccounts.reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));

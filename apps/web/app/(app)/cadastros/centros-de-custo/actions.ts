@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { archiveCostCenter, createCostCenter, reactivateCostCenter, updateCostCenter } from "@ax-finance/domain";
 import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createCostCenterAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -16,7 +17,7 @@ export async function createCostCenterAction(formData: FormData) {
       code: String(formData.get("code") ?? ""),
     });
   } catch (error) {
-    redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao criar centro de custo.")}`);
+    redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao criar centro de custo."))}`);
   }
   revalidatePath("/cadastros/centros-de-custo");
   redirect("/cadastros/centros-de-custo?criado=1");
@@ -29,7 +30,7 @@ export async function archiveCostCenterAction(costCenterId: string) {
   try {
     await archiveCostCenter(user.id, company.id, costCenterId);
   } catch (error) {
-    redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao arquivar centro de custo.")}`);
+    redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao arquivar centro de custo."))}`);
   }
   revalidatePath("/cadastros/centros-de-custo");
   redirect("/cadastros/centros-de-custo?arquivado=1");
@@ -39,7 +40,7 @@ export async function updateCostCenterAction(costCenterId: string, formData: For
   const user = await getCurrentUser(); if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
   try { await updateCostCenter(user.id, company.id, costCenterId, { name: String(formData.get("name") ?? ""), code: String(formData.get("code") ?? "") }); }
-  catch (error) { redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao editar centro de custo.")}`); }
+  catch (error) { redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao editar centro de custo."))}`); }
   redirect("/cadastros/centros-de-custo?atualizado=1");
 }
 

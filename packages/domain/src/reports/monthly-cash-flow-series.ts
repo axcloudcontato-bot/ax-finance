@@ -1,6 +1,7 @@
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { settlementCashDelta } from "../titles/settlement-cash-delta";
+import { getCompanyToday } from "../shared/today";
 
 const MONTH_LABEL = [
   "jan",
@@ -36,10 +37,7 @@ export async function getMonthlyCashFlowSeries(
 ) {
   await assertActiveMembership(userId, companyId);
 
-  const now = new Date();
-  const [endYear, endMonthIndex] = endMonth
-    ? endMonth.split("-").map(Number)
-    : [now.getUTCFullYear(), now.getUTCMonth() + 1];
+  const [endYear, endMonthIndex] = (endMonth ?? (await getCompanyToday(userId, companyId)).slice(0, 7)).split("-").map(Number);
   const from = new Date(Date.UTC(endYear!, endMonthIndex! - 1 - (months - 1), 1));
   const to = new Date(Date.UTC(endYear!, endMonthIndex!, 1));
 

@@ -3,6 +3,7 @@ import { listCompaniesForUser } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { onboardingAction } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { todayDateOnlyString } from "@/lib/dates";
 
 export default async function OnboardingPage(
   props: {
@@ -20,7 +21,7 @@ export default async function OnboardingPage(
     redirect(`/dashboard?empresa=${companies[0]!.id}`);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayDateOnlyString();
   const selectedPlan = searchParams.plano?.toUpperCase() === "PERSONAL" ? "PERSONAL" : "ESSENTIAL";
 
   return (

@@ -17,7 +17,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly } from "@/lib/dates";
+import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
 import { ActionModal } from "@/components/ui/action-modal";
@@ -294,7 +294,7 @@ export default async function SaidaDetailPage(
                       ) : (
                         <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}>
                         <ActionModal triggerLabel="Registrar reembolso" title="Registrar reembolso">
-                          <form action={registerSaidaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={toDateOnlyString(new Date())} required/><label>Motivo</label><input name="reason" required maxLength={500}/><SubmitButton>Registrar reembolso</SubmitButton></form>
+                          <form action={registerSaidaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={todayDateOnlyString()} required/><label>Motivo</label><input name="reason" required maxLength={500}/><SubmitButton>Registrar reembolso</SubmitButton></form>
                         </ActionModal>
                         <ActionModal triggerLabel="Estornar pagamento" title="Estornar pagamento">
                           <p className="subtitle">O pagamento de {formatCents(settlement.principalAmountCents)} em {formatDateOnly(settlement.effectiveDate)} será revertido e o saldo do título será recalculado.</p>

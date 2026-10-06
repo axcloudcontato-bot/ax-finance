@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { listFinancialAccounts } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { todayDateOnlyString } from "@/lib/dates";
 
 type AccountOption = Awaited<ReturnType<typeof listFinancialAccounts>>[number];
 
@@ -15,7 +16,7 @@ export function SettlementForm({
   error?: string;
   submitLabel?: string;
 }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayDateOnlyString();
 
   return (
     <>

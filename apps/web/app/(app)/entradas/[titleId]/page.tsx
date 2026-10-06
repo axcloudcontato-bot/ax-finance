@@ -17,7 +17,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly } from "@/lib/dates";
+import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
 import { ActionModal } from "@/components/ui/action-modal";
@@ -278,7 +278,7 @@ export default async function EntradaDetailPage(
                         "Estornada"
                       ) : (
                         <div style={{display:"flex",gap:"0.5rem",flexWrap:"wrap"}}><ActionModal triggerLabel="Registrar devolução" title="Registrar devolução">
-                          <form action={registerEntradaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={toDateOnlyString(new Date())} required/><label>Motivo</label><input name="reason" required maxLength={500}/><SubmitButton>Registrar devolução</SubmitButton></form>
+                          <form action={registerEntradaRefundAction.bind(null,title.id,settlement.id)}><label>Conta</label><select name="financialAccountId" defaultValue={settlement.financialAccountId} required>{accounts.map((account)=><option key={account.id} value={account.id}>{account.name}</option>)}</select><label>Valor (R$)</label><input name="amount" inputMode="decimal" required/><label>Data</label><input name="effectiveDate" type="date" defaultValue={todayDateOnlyString()} required/><label>Motivo</label><input name="reason" required maxLength={500}/><SubmitButton>Registrar devolução</SubmitButton></form>
                         </ActionModal><ActionModal triggerLabel="Estornar baixa" title="Estornar baixa">
                           <p className="subtitle">A baixa de {formatCents(settlement.principalAmountCents)} em {formatDateOnly(settlement.effectiveDate)} será revertida e o saldo do título será recalculado.</p>
                           <form action={reverseAction}><label htmlFor={`reverse-entry-settlement-${settlement.id}`}>Motivo</label><input id={`reverse-entry-settlement-${settlement.id}`} name="reason" maxLength={500} required/><SubmitButton className="secondary">Confirmar estorno</SubmitButton></form>

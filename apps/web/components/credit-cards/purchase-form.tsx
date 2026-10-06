@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { CARD_INVOICE_CATEGORY_NAME } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
+import { todayDateOnlyString } from "@/lib/dates";
 
 interface Option {
   id: string;
@@ -52,7 +53,7 @@ export function PurchaseForm({
   today?: string;
 }) {
   const editing = Boolean(defaults);
-  const defaultDate = today ?? new Date().toISOString().slice(0, 10);
+  const defaultDate = today ?? todayDateOnlyString();
   const options = purchaseCategoryOptions(categories);
 
   if (options.length === 0) {

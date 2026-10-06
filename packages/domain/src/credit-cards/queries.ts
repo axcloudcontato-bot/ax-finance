@@ -1,7 +1,8 @@
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { CreditCardInvoiceNotFoundError, CreditCardNotFoundError } from "../errors";
-import { assertCardAccess, companyToday } from "./invoices";
+import { companyToday } from "../shared/today";
+import { assertCardAccess } from "./invoices";
 import { cycleForPurchaseDate, invoiceStage, type InvoiceStage } from "./invoice-cycle";
 
 function dateOnly(date: Date): string {

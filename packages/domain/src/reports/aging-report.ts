@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { getCompanyToday } from "../shared/today";
 
 export const AGING_BUCKETS = ["A_VENCER", "D1_7", "D8_15", "D16_30", "D31_60", "D60_PLUS"] as const;
 export type AgingBucket = (typeof AGING_BUCKETS)[number];
@@ -47,7 +48,7 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
   const data = agingReportInput.parse(input);
   await assertActiveMembership(userId, companyId);
 
-  const asOf = toDateOnlyString(data.asOfDate ?? new Date());
+  const asOf = data.asOfDate ? toDateOnlyString(data.asOfDate) : await getCompanyToday(userId, companyId);
 
   const titles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
@@ -87,7 +88,7 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
   }
 
   return {
-    asOfDate: data.asOfDate ?? new Date(),
+    asOfDate: new Date(`${asOf}T00:00:00Z`),
     entries,
     totalsByBucket: AGING_BUCKETS.map((bucket) => ({
       bucket,

@@ -5,6 +5,7 @@ import { createTransfer, reverseTransfer } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createTransferAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -32,7 +33,7 @@ export async function createTransferAction(formData: FormData) {
       idempotencyKey,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar a transferência.";
+    const message = actionErrorMessage(error, "Não foi possível criar a transferência.");
     redirect(`/transferencias/novo?erro=${encodeURIComponent(message)}`);
   }
 
@@ -50,7 +51,7 @@ export async function reverseTransferAction(transferId: string, formData: FormDa
   try {
     await reverseTransfer(user.id, company.id, transferId, { reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível estornar.";
+    const message = actionErrorMessage(error, "Não foi possível estornar.");
     redirect(`/transferencias?erro=${encodeURIComponent(message)}`);
   }
 

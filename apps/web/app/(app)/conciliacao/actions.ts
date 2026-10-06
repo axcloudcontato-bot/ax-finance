@@ -25,6 +25,7 @@ import {
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function importBankStatementAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -63,7 +64,7 @@ export async function importBankStatementAction(formData: FormData) {
     });
   } catch (error) {
     if (storageKey) await deleteImportSource(storageKey).catch(() => undefined);
-    const message = error instanceof Error ? error.message : "Não foi possível importar o arquivo.";
+    const message = actionErrorMessage(error, "Não foi possível importar o arquivo.");
     redirect(`/conciliacao?conta=${financialAccountId}&erro=${encodeURIComponent(message)}`);
   }
   redirect(`/conciliacao/importacoes/${batchId}`);
@@ -101,7 +102,7 @@ export async function confirmBankImportAction(batchId: string, formData: FormDat
     );
   } catch (error) {
     if (error && typeof error === "object" && "digest" in error) throw error;
-    const message = error instanceof Error ? error.message : "Não foi possível confirmar a importação.";
+    const message = actionErrorMessage(error, "Não foi possível confirmar a importação.");
     if (confirmed && batch) {
       await markBankImportFailed(user.id, company.id, batch.id, error).catch(() => undefined);
       if (batch.storageKey) await deleteImportSource(batch.storageKey).catch(() => undefined);
@@ -126,7 +127,7 @@ export async function reconcileLineAction(formData: FormData) {
   try {
     await reconcileBankStatementLine(user.id, company.id, lineId, { settlementId });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível conciliar.";
+    const message = actionErrorMessage(error, "Não foi possível conciliar.");
     redirect(`/conciliacao?conta=${financialAccountId}&erro=${encodeURIComponent(message)}`);
   }
 
@@ -147,7 +148,7 @@ export async function ignoreLineAction(formData: FormData) {
   try {
     await ignoreBankStatementLine(user.id, company.id, lineId, { reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível ignorar.";
+    const message = actionErrorMessage(error, "Não foi possível ignorar.");
     redirect(`/conciliacao?conta=${financialAccountId}&erro=${encodeURIComponent(message)}`);
   }
 

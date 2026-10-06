@@ -4,7 +4,8 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { CreditCardInvoiceNotFoundError, CreditCardInvoiceNotPayableError, CreditCardInvoicePaidError } from "../errors";
 import { idempotencyKeySchema } from "../idempotency/operations";
 import { registerSettlement } from "../titles/register-settlement";
-import { assertCardAccess, companyToday } from "./invoices";
+import { companyToday } from "../shared/today";
+import { assertCardAccess } from "./invoices";
 import { invoiceStage } from "./invoice-cycle";
 
 export const payCreditCardInvoiceInput = z.object({

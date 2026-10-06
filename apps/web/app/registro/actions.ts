@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { registerUser } from "@ax-finance/domain";
 import { ZodError } from "zod";
 import { publicBaseUrl, verificationPreviewPath } from "@/lib/email";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function registerAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -33,9 +34,7 @@ export async function registerAction(formData: FormData) {
     const message =
       error instanceof ZodError
         ? "Verifique o e-mail, nome e senha (mínimo 8 caracteres)."
-        : error instanceof Error
-          ? error.message
-          : "Não foi possível concluir o cadastro.";
+        : actionErrorMessage(error, "Não foi possível concluir o cadastro.");
     redirect(`/registro?erro=${encodeURIComponent(message)}&plano=${planCode}${returnTo ? `&retorno=${encodeURIComponent(returnTo)}` : ""}`);
   }
 

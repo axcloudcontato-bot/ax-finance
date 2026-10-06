@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createCompanySupportCase } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createSupportCaseAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -17,7 +18,7 @@ export async function createSupportCaseAction(formData: FormData) {
       priority: String(formData.get("priority") ?? "NORMAL"),
     });
   } catch (error) {
-    redirect(`/configuracoes/suporte?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível abrir o chamado.")}`);
+    redirect(`/configuracoes/suporte?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível abrir o chamado."))}`);
   }
   redirect("/configuracoes/suporte?criado=1");
 }

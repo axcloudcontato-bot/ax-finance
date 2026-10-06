@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createParty, deactivateParty, reactivateParty, updateParty } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createPartyAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -38,7 +39,7 @@ export async function createPartyAction(formData: FormData) {
       isSupplier,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar a pessoa.";
+    const message = actionErrorMessage(error, "Não foi possível criar a pessoa.");
     redirect(`/cadastros/pessoas?erro=${encodeURIComponent(message)}`);
   }
 
@@ -72,7 +73,7 @@ export async function updatePartyAction(partyId: string, formData: FormData) {
   const user = await getCurrentUser(); if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
   try { await updateParty(user.id, company.id, partyId, partyFormData(formData)); }
-  catch (error) { redirect(`/cadastros/pessoas/${partyId}?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível editar a pessoa.")}`); }
+  catch (error) { redirect(`/cadastros/pessoas/${partyId}?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar a pessoa."))}`); }
   redirect(`/cadastros/pessoas/${partyId}?atualizado=1`);
 }
 

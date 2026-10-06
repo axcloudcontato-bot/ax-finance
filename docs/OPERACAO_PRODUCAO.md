@@ -162,6 +162,25 @@ O driver `json-file` é limitado por `LOG_MAX_SIZE` e `LOG_MAX_FILES`, evitando 
 logs preencham o disco. Se houver centralização, mantenha acesso restrito, TLS e
 retenção compatível com a política abaixo.
 
+### Erros não tratados no web
+
+Toda falha inesperada do servidor (tela que não monta, rota de API ou server action que lança algo
+que não é erro de regra de negócio) gera uma linha `web.unhandled_error` com `errorRef`, `source`
+(`request` ou `action`), `route` (o modelo da rota, como `/saidas/[titleId]`, nunca o caminho com
+ids), `method`, `digest` e `errorFingerprint`. Mensagem do erro, corpo da requisição e valores
+nunca entram na linha: um erro de banco pode carregar dado financeiro no texto.
+
+O usuário vê um código curto: o `errorRef` (formulários) ou o `digest` (telas). Para achar o caso:
+
+```bash
+docker compose logs web | grep web.unhandled_error | grep <codigo>
+```
+
+Com `ALERT_WEBHOOK_URL` configurada, o web também dispara o alerta `web_unhandled_error` no mesmo
+canal do worker, no máximo um por tipo de erro e rota a cada `ALERT_COOLDOWN_MINUTES` (padrão 30).
+Sem webhook, o aviso continua só nos logs. Isso cobre o essencial de um Sentry sem enviar dados a
+terceiros; se um dia houver agregação externa, ela deve receber só os campos acima.
+
 ## 7. Retenção e LGPD
 
 Limpeza automática diária do worker:

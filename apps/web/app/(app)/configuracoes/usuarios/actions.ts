@@ -16,6 +16,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { getCurrentUser } from "@/lib/session";
 import { emailPreviewEnabled } from "@/lib/email";
 import { deleteAttachmentObject } from "@/lib/attachment-storage";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export interface InviteUserState {
   error?: string;
@@ -42,7 +43,7 @@ export async function inviteUserAction(
       invitePath: emailPreviewEnabled() ? `/convites/${rawToken}` : undefined,
     };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível criar o convite." };
+    return { error: actionErrorMessage(error, "Não foi possível criar o convite.") };
   }
 }
 
@@ -53,7 +54,7 @@ export async function revokeInvitationAction(invitationId: string) {
   try {
     await revokeCompanyInvitation(user.id, company.id, invitationId);
   } catch (error) {
-    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao revogar convite.")}`);
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao revogar convite."))}`);
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/configuracoes/usuarios?atualizado=1");
@@ -68,7 +69,7 @@ export async function updateMemberRoleAction(membershipId: string, formData: For
       role: String(formData.get("role") ?? "VIEWER"),
     });
   } catch (error) {
-    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao alterar papel.")}`);
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao alterar papel."))}`);
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/configuracoes/usuarios?atualizado=1");
@@ -81,7 +82,7 @@ export async function revokeMemberAction(membershipId: string) {
   try {
     await revokeCompanyMember(user.id, company.id, membershipId);
   } catch (error) {
-    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao revogar acesso.")}`);
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao revogar acesso."))}`);
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/configuracoes/usuarios?atualizado=1");
@@ -98,7 +99,7 @@ export async function updateMemberAccessAction(membershipId: string, formData: F
       costCenterIds: formData.getAll("costCenterIds").map(String),
     });
   } catch (error) {
-    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao atualizar restrições.")}`);
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao atualizar restrições."))}`);
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/configuracoes/usuarios?atualizado=1");
@@ -114,7 +115,7 @@ export async function transferOwnershipAction(formData: FormData) {
     }
     await transferCompanyOwnership(user.id, company.id, String(formData.get("membershipId") ?? ""));
   } catch (error) {
-    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao transferir a propriedade.")}`);
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao transferir a propriedade."))}`);
   }
   revalidatePath("/configuracoes/usuarios");
   redirect("/dashboard?propriedadeTransferida=1");
@@ -128,7 +129,7 @@ export async function resetCompanyLedgerAction(formData: FormData) {
   try {
     ({ files } = await resetCompanyLedger(user.id, company.id, { confirmation: String(formData.get("confirmation") ?? "") }));
   } catch (error) {
-    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(error instanceof Error ? error.message : "Falha ao zerar os lançamentos.")}`);
+    redirect(`/configuracoes/usuarios?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao zerar os lançamentos."))}`);
   }
   // Os registros já foram apagados no banco; agora some também o conteúdo dos arquivos.
   // Falha aqui não desfaz o reset, só deixa arquivo órfão no storage.

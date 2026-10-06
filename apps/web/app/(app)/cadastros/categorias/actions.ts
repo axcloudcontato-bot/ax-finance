@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { archiveCategory, createCategory, reactivateCategory, updateCategory } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createCategoryAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -21,7 +22,7 @@ export async function createCategoryAction(formData: FormData) {
   try {
     category = await createCategory(user.id, company.id, { name, nature, parentId, managerialGroup });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar a categoria.";
+    const message = actionErrorMessage(error, "Não foi possível criar a categoria.");
     redirect(`/cadastros/categorias?erro=${encodeURIComponent(message)}`);
   }
 
@@ -52,7 +53,7 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
       managerialGroup: String(formData.get("managerialGroup") ?? "") || undefined,
     });
   } catch (error) {
-    redirect(`/cadastros/categorias?erro=${encodeURIComponent(error instanceof Error ? error.message : "Não foi possível editar a categoria.")}`);
+    redirect(`/cadastros/categorias?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar a categoria."))}`);
   }
   redirect("/cadastros/categorias?atualizado=1");
 }

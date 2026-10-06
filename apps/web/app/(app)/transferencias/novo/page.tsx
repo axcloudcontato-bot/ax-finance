@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { createTransferAction } from "../actions";
 import { TransferForm } from "@/components/transfers/transfer-form";
+import { todayDateOnlyString } from "@/lib/dates";
 
 export default async function NovaTransferenciaPage(
   props: {
@@ -20,7 +21,7 @@ export default async function NovaTransferenciaPage(
   const company = await requirePrimaryCompany(user.id);
 
   const accounts = await listFinancialAccounts(user.id, company.id);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayDateOnlyString();
 
   return (
     <main>

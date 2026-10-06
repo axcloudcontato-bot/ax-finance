@@ -11,6 +11,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function createSaidaRecurrenceAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -44,7 +45,7 @@ export async function createSaidaRecurrenceAction(formData: FormData) {
       notes: notes || undefined,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível criar a recorrência.";
+    const message = actionErrorMessage(error, "Não foi possível criar a recorrência.");
     redirect(`/saidas/recorrencias?erro=${encodeURIComponent(message)}`);
   }
 

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { closePeriod, reopenPeriod } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 export async function closePeriodAction(formData: FormData) {
   const user = await getCurrentUser();
@@ -17,7 +18,7 @@ export async function closePeriodAction(formData: FormData) {
   try {
     await closePeriod(user.id, company.id, { period });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível fechar o período.";
+    const message = actionErrorMessage(error, "Não foi possível fechar o período.");
     redirect(`/fechamento?erro=${encodeURIComponent(message)}`);
   }
 
@@ -37,7 +38,7 @@ export async function reopenPeriodAction(formData: FormData) {
   try {
     await reopenPeriod(user.id, company.id, { period, reason });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível reabrir o período.";
+    const message = actionErrorMessage(error, "Não foi possível reabrir o período.");
     redirect(`/fechamento?erro=${encodeURIComponent(message)}`);
   }
 

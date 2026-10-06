@@ -14,6 +14,7 @@ import {
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
+import { actionErrorMessage } from "@/lib/action-errors";
 
 // Mesmo cuidado das demais actions: só a chamada ao domínio (que lança DomainError) fica dentro do
 // try/catch, porque `redirect()` lança um erro especial que o catch engoliria.
@@ -57,7 +58,7 @@ export async function createCardAction(formData: FormData) {
   try {
     cardId = (await createCreditCard(user.id, company.id, cardInput(formData))).id;
   } catch (error) {
-    toRedirect("/cartoes", { erro: error instanceof Error ? error.message : "Não foi possível criar o cartão." });
+    toRedirect("/cartoes", { erro: actionErrorMessage(error, "Não foi possível criar o cartão.") });
   }
   redirect(`/cartoes/${cardId}?novo=1`);
 }
@@ -67,7 +68,7 @@ export async function updateCardAction(cardId: string, formData: FormData) {
   try {
     await updateCreditCard(user.id, company.id, cardId, cardInput(formData));
   } catch (error) {
-    toRedirect(`/cartoes/${cardId}`, { erroCartao: error instanceof Error ? error.message : "Não foi possível salvar o cartão." });
+    toRedirect(`/cartoes/${cardId}`, { erroCartao: actionErrorMessage(error, "Não foi possível salvar o cartão.") });
   }
   toRedirect(`/cartoes/${cardId}`, { atualizado: "1" });
 }
@@ -78,7 +79,7 @@ export async function setCardArchivedAction(cardId: string, archive: boolean) {
     if (archive) await archiveCreditCard(user.id, company.id, cardId);
     else await reactivateCreditCard(user.id, company.id, cardId);
   } catch (error) {
-    toRedirect(`/cartoes/${cardId}`, { erroCartao: error instanceof Error ? error.message : "Não foi possível alterar o cartão." });
+    toRedirect(`/cartoes/${cardId}`, { erroCartao: actionErrorMessage(error, "Não foi possível alterar o cartão.") });
   }
   toRedirect("/cartoes", archive ? { arquivado: "1" } : { reativado: "1" });
 }
@@ -106,7 +107,7 @@ export async function createPurchaseAction(cardId: string, voltar: string, formD
     });
     firstId = purchases[0]!.id;
   } catch (error) {
-    toRedirect(base, { erro: error instanceof Error ? error.message : "Não foi possível lançar a compra.", cartao: cardId });
+    toRedirect(base, { erro: actionErrorMessage(error, "Não foi possível lançar a compra."), cartao: cardId });
   }
   toRedirect(base, { comprado: firstId });
 }
@@ -123,7 +124,7 @@ export async function updatePurchaseAction(cardId: string, invoiceId: string, pu
       notes: optional(formData, "notes"),
     });
   } catch (error) {
-    toRedirect(base, { erroEdicao: error instanceof Error ? error.message : "Não foi possível salvar a compra.", compra: purchaseId });
+    toRedirect(base, { erroEdicao: actionErrorMessage(error, "Não foi possível salvar a compra."), compra: purchaseId });
   }
   toRedirect(base, { editado: purchaseId });
 }
@@ -137,7 +138,7 @@ export async function cancelPurchaseAction(cardId: string, invoiceId: string, pu
       includeFollowingInstallments: text(formData, "includeFollowingInstallments") === "true",
     });
   } catch (error) {
-    toRedirect(base, { erroCancelamento: error instanceof Error ? error.message : "Não foi possível cancelar a compra.", compra: purchaseId });
+    toRedirect(base, { erroCancelamento: actionErrorMessage(error, "Não foi possível cancelar a compra."), compra: purchaseId });
   }
   toRedirect(base, { cancelado: purchaseId });
 }
@@ -157,7 +158,7 @@ export async function payInvoiceAction(cardId: string, invoiceId: string, formDa
       idempotencyKey: optional(formData, "idempotencyKey"),
     });
   } catch (error) {
-    toRedirect(base, { erroPagamento: error instanceof Error ? error.message : "Não foi possível registrar o pagamento." });
+    toRedirect(base, { erroPagamento: actionErrorMessage(error, "Não foi possível registrar o pagamento.") });
   }
   toRedirect(base, { pago: "1" });
 }
