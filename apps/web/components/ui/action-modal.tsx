@@ -12,13 +12,16 @@ import { useModalFocus } from "./use-modal-focus";
  */
 export function ActionModal({
   triggerLabel,
+  triggerAriaLabel,
   triggerClassName = "button-link",
   title,
   icon,
   initiallyOpen = false,
   children,
 }: {
-  triggerLabel: string;
+  triggerLabel: ReactNode;
+  /** Para gatilho só com ícone: nome acessível e dica do botão. */
+  triggerAriaLabel?: string;
   triggerClassName?: string;
   title: string;
   /** Mesma família animada de ícones do sidebar, ex.: <Landmark className="size-5" />. */
@@ -38,6 +41,8 @@ export function ActionModal({
         ref={triggerRef}
         type="button"
         className={triggerClassName}
+        aria-label={triggerAriaLabel}
+        title={triggerAriaLabel}
         style={{ marginTop: 0 }}
         onClick={() => setOpen(true)}
       >

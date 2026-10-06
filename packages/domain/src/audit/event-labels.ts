@@ -20,6 +20,7 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   COMPANY_OWNERSHIP_TRANSFERRED: "Propriedade transferida",
   COMPANY_MEMBER_REVOKED: "Acesso de usuário revogado",
   ATTACHMENT_ADDED: "Anexo adicionado",
+  BANK_IMPORT_DELETED: "Importação de extrato removida",
   ATTACHMENT_DELETED: "Anexo removido",
   COST_CENTER_CREATED: "Centro de custo criado",
   COST_CENTER_ARCHIVED: "Centro de custo arquivado",

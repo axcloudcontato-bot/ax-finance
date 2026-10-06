@@ -9,6 +9,7 @@ import {
   confirmBankImport,
   createBankImportPreview,
   decodeImportSource,
+  deleteBankImportBatch,
   deleteImportSource,
   getBankImportBatch,
   ignoreBankStatementLine,
@@ -111,6 +112,27 @@ export async function confirmBankImportAction(batchId: string, formData: FormDat
     }
     redirect(`/conciliacao/importacoes/${batchId}?erro=${encodeURIComponent(message)}`);
   }
+}
+
+/** Descarta (aguardando confirmação), remove (falha) ou desfaz (concluída, linhas ainda pendentes) uma importação. */
+export async function deleteBankImportAction(batchId: string) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+
+  let accountId: string;
+  try {
+    accountId = (await getBankImportBatch(user.id, company.id, batchId)).financialAccountId;
+  } catch (error) {
+    redirect(`/conciliacao?erro=${encodeURIComponent(actionErrorMessage(error, "Importação não encontrada."))}`);
+  }
+
+  try {
+    await deleteBankImportBatch(user.id, company.id, batchId);
+  } catch (error) {
+    redirect(`/conciliacao?conta=${accountId}&erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível remover a importação."))}`);
+  }
+  redirect(`/conciliacao?conta=${accountId}&removida=1`);
 }
 
 export async function reconcileLineAction(formData: FormData) {

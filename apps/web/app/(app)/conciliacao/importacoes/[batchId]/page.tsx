@@ -9,8 +9,10 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { requirePlanFeature } from "@/lib/plan-access";
 import { formatCents } from "@/lib/currency";
 import { getCurrentUser } from "@/lib/session";
-import { confirmBankImportAction } from "../../actions";
+import { confirmBankImportAction, deleteBankImportAction } from "../../actions";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ActionModal } from "@/components/ui/action-modal";
+import { Trash2 } from "@/components/ui/animated-icons";
 
 function ColumnSelect({
   name,
@@ -65,7 +67,15 @@ export default async function BankImportPreviewPage(
             {batch.fileName} · {preview.format} · conta {batch.financialAccount.name} · {preview.totalRows} linha(s)
           </p>
         </div>
-        <a className="button-link" href={`/conciliacao?conta=${batch.financialAccountId}`}>Voltar</a>
+        <div className="concil-recent-actions">
+          <ActionModal triggerLabel={<Trash2 size={16} />} triggerAriaLabel="Descartar importação" triggerClassName="concil-icon-btn is-danger" title="Descartar importação">
+            <p>O arquivo {batch.fileName} não será importado e a cópia enviada será apagada. Nenhuma linha entra na conciliação.</p>
+            <form action={deleteBankImportAction.bind(null, batch.id)}>
+              <SubmitButton>Descartar importação</SubmitButton>
+            </form>
+          </ActionModal>
+          <a className="button-link" href={`/conciliacao?conta=${batch.financialAccountId}`}>Voltar</a>
+        </div>
       </div>
 
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}

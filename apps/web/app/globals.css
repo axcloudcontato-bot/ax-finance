@@ -3290,6 +3290,32 @@ main.settings-page {
   transform: none;
 }
 
+/* Ações de uma linha/cabeçalho da conciliação (continuar, descartar, voltar). */
+.concil-recent-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.35rem; }
+
+/* Ícone pequeno e sem moldura: lixeira vermelha (remover/descartar) e seta azul (continuar). */
+.concil-icon-btn {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+.concil-icon-btn.is-danger { color: var(--danger); }
+.concil-icon-btn.is-danger:hover { background: color-mix(in srgb, var(--danger) 12%, var(--card)); }
+.concil-icon-btn.is-primary { color: var(--accent); }
+.concil-icon-btn.is-primary:hover { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+.concil-icon-btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+
 /* Novidades: pontinho no botão e lista do painel. */
 .bottom-menu-dot {
   position: absolute;

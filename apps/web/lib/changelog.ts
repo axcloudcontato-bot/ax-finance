@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-06-remover-importacao",
+    date: "2026-10-06",
+    title: "Remover importação de extrato",
+    summary: "Enviou o arquivo errado ou desistiu de importar? Agora dá para descartar ou remover a importação na Conciliação.",
+    changes: [
+      { kind: "NEW", text: "Descartar uma importação que ainda aguarda confirmação: o arquivo enviado é apagado e nenhuma linha entra na conciliação." },
+      { kind: "NEW", text: "Remover uma importação concluída, desde que nenhuma das linhas tenha sido conciliada ou ignorada. Baixas e saldos não mudam, e reenviar o arquivo traz as linhas de volta." },
+      { kind: "NEW", text: "Importações que falharam também podem ser retiradas da lista." },
+    ],
+  },
+  {
     id: "2026-10-06-menu-e-novidades",
     date: "2026-10-06",
     title: "Menu mais limpo e central de novidades",

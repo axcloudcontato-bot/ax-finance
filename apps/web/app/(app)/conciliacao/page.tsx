@@ -13,6 +13,7 @@ import { requirePlanFeature } from "@/lib/plan-access";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import {
+  deleteBankImportAction,
   ignoreLineAction,
   importBankStatementAction,
   reconcileLineAction,
@@ -20,6 +21,8 @@ import {
 } from "./actions";
 import { isComparisonMode, periodQuery as buildPeriodQuery, resolvePeriodRange } from "@/lib/month";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ActionModal } from "@/components/ui/action-modal";
+import { ArrowRight, Trash2 } from "@/components/ui/animated-icons";
 
 type Line = Awaited<ReturnType<typeof listBankStatementLines>>[number];
 type Candidate = Awaited<ReturnType<typeof listUnreconciledSettlements>>[number];
@@ -86,6 +89,40 @@ function Chip({ tone, children }: { tone: string; children: string }) {
   return <span className={`concil-chip ${tone}`}>{children}</span>;
 }
 
+const REMOVE_COPY: Record<string, { trigger: string; title: string; body: (file: string, imported: number) => string; confirm: string }> = {
+  PREVIEW: {
+    trigger: "Descartar",
+    title: "Descartar importação",
+    body: (file) => `O arquivo ${file} não será importado e a cópia enviada será apagada. Nenhuma linha entra na conciliação.`,
+    confirm: "Descartar importação",
+  },
+  FAILED: {
+    trigger: "Remover",
+    title: "Remover importação",
+    body: (file) => `A importação ${file} falhou e será retirada da lista. Você pode enviar o arquivo de novo depois.`,
+    confirm: "Remover importação",
+  },
+  COMPLETED: {
+    trigger: "Remover",
+    title: "Remover importação",
+    body: (file, imported) => `${imported === 1 ? "A linha trazida" : `As ${imported} linhas trazidas`} por ${file} ${imported === 1 ? "será apagada" : "serão apagadas"} da conciliação. Só é possível se nenhuma delas tiver sido conciliada ou ignorada. Baixas e saldos não mudam, e reenviar o arquivo traz as linhas de volta.`,
+    confirm: "Remover importação",
+  },
+};
+
+function RemoveImportModal({ batchId, fileName, status, importedCount }: { batchId: string; fileName: string; status: string; importedCount: number }) {
+  const copy = REMOVE_COPY[status];
+  if (!copy) return null;
+  return (
+    <ActionModal triggerLabel={<Trash2 size={16} />} triggerAriaLabel={copy.trigger} triggerClassName="concil-icon-btn is-danger" title={copy.title}>
+      <p>{copy.body(fileName, importedCount)}</p>
+      <form action={deleteBankImportAction.bind(null, batchId)}>
+        <SubmitButton>{copy.confirm}</SubmitButton>
+      </form>
+    </ActionModal>
+  );
+}
+
 export default async function ConciliacaoPage(
   props: {
     searchParams: Promise<{
@@ -97,6 +134,7 @@ export default async function ConciliacaoPage(
       duplicado?: string;
       invalido?: string;
       enfileirado?: string;
+      removida?: string;
       mes?: string;
       de?: string;
       ate?: string;
@@ -161,7 +199,7 @@ export default async function ConciliacaoPage(
   const lastBatch = importBatches[0];
   const batchNeedsAttention = importBatches.some((batch) => ["PREVIEW", "QUEUED", "PROCESSING", "FAILED"].includes(batch.status));
   const importOpen = Boolean(
-    searchParams.erro || searchParams.importado || searchParams.enfileirado || batchNeedsAttention || importBatches.length === 0
+    searchParams.erro || searchParams.importado || searchParams.enfileirado || searchParams.removida || batchNeedsAttention || importBatches.length === 0
   );
 
   const summary =
@@ -217,6 +255,7 @@ export default async function ConciliacaoPage(
               {searchParams.invalido} inválida(s).
             </p>
           ) : null}
+          {searchParams.removida ? <p className="success-box">Importação removida.</p> : null}
           {searchParams.enfileirado ? (
             <p className="success-box">Importação adicionada à fila. Você receberá uma notificação ao terminar.</p>
           ) : null}
@@ -244,9 +283,16 @@ export default async function ConciliacaoPage(
                         <td>{batch.status === "COMPLETED"
                           ? `${batch.importedCount} importada(s) · ${batch.duplicateCount} duplicada(s) · ${batch.invalidCount} inválida(s)`
                           : batch.status === "FAILED" ? "Revise o arquivo e tente novamente." : "—"}</td>
-                        <td>{batch.status === "PREVIEW"
-                          ? <Link href={`/conciliacao/importacoes/${batch.id}`} className="concil-link">Continuar</Link>
-                          : null}</td>
+                        <td>
+                          <div className="concil-recent-actions">
+                            {batch.status === "PREVIEW"
+                              ? <Link href={`/conciliacao/importacoes/${batch.id}`} className="concil-icon-btn is-primary" aria-label="Continuar importação" title="Continuar importação"><ArrowRight size={16} /></Link>
+                              : null}
+                            {batch.status === "QUEUED" || batch.status === "PROCESSING" ? null : (
+                              <RemoveImportModal batchId={batch.id} fileName={batch.fileName} status={batch.status} importedCount={batch.importedCount} />
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

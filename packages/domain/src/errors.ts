@@ -370,6 +370,21 @@ export class ImportBatchInvalidStateError extends DomainError {
   }
 }
 
+export class ImportBatchInProgressError extends DomainError {
+  constructor() {
+    super("Esta importação está na fila ou sendo processada. Aguarde terminar para removê-la.", "IMPORT_BATCH_IN_PROGRESS");
+  }
+}
+
+export class ImportBatchHasWorkedLinesError extends DomainError {
+  constructor() {
+    super(
+      "Há linhas desta importação já conciliadas ou ignoradas. Desfaça essas conciliações (ou reative as linhas ignoradas) para poder remover o extrato.",
+      "IMPORT_BATCH_HAS_WORKED_LINES"
+    );
+  }
+}
+
 export class BankStatementLineNotFoundError extends DomainError {
   constructor() {
     super("Linha do extrato não encontrada.", "BANK_STATEMENT_LINE_NOT_FOUND");
