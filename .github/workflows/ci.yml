@@ -1,0 +1,72 @@
+name: CI
+
+# Barreira de qualidade em todo PR e push: estilo (ESLint), tipos e os testes de integração contra um
+# Postgres real. Os testes verificam isolamento entre empresas (RLS), saldos, baixas e estornos, então
+# um push que os quebre não deve chegar ao servidor. O build e a auditoria de dependências ficam em
+# security.yml.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-types:
+    name: Lint e tipos
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  tests:
+    name: Testes de integração
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-postgres
+          POSTGRES_DB: ax_finance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Dono do banco (migrations e limpeza entre testes) e role de aplicação, que fica sujeito à RLS.
+      TEST_DATABASE_URL: postgresql://postgres:ci-postgres@localhost:5432/ax_finance_test
+      TEST_APP_DATABASE_URL: postgresql://ax_app:ci-app-role@localhost:5432/ax_finance_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Aplicar as migrations num banco vazio
+        run: pnpm db:migrate:deploy
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - name: Trocar a senha da role de aplicação (a migration cria a role com uma senha fixa)
+        run: echo "ALTER ROLE ax_app PASSWORD 'ci-app-role';" | pnpm --filter @ax-finance/db exec prisma db execute --url "$TEST_DATABASE_URL" --stdin
+      - run: pnpm test

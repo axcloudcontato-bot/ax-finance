@@ -126,7 +126,7 @@ export default async function PessoasPage(
       <div className="card">
         <div className="workspace-list-toolbar">
           <p>{visibleParties.length} {visibleParties.length === 1 ? "pessoa exibida" : "pessoas exibidas"}</p>
-          <form method="get" action="/cadastros/pessoas"><input name="busca" type="search" defaultValue={search} placeholder="Nome ou documento" aria-label="Buscar nome ou documento" /><select name="papel" defaultValue={role} aria-label="Filtrar por papel"><option value="todos">Todos os papéis</option><option value="cliente">Clientes</option><option value="fornecedor">Fornecedores</option></select><button type="submit" className="secondary">Filtrar</button>{search || role !== "todos" ? <a href="/cadastros/pessoas">Limpar</a> : null}</form>
+          <form method="get" action="/cadastros/pessoas"><input name="busca" type="search" defaultValue={search} placeholder="Nome ou documento" aria-label="Buscar nome ou documento" /><select name="papel" defaultValue={role} aria-label="Filtrar por papel"><option value="todos">Todos os papéis</option><option value="cliente">Clientes</option><option value="fornecedor">Fornecedores</option></select><button type="submit" className="secondary">Filtrar</button>{search || role !== "todos" ? <Link href="/cadastros/pessoas">Limpar</Link> : null}</form>
         </div>
         {visibleParties.length === 0 ? (
           <div className="workspace-empty"><strong>{search || role !== "todos" ? "Nenhuma pessoa encontrada" : "Nenhum cliente ou fornecedor cadastrado"}</strong><p>{search || role !== "todos" ? "Altere os filtros para ampliar a busca." : "Cadastre pessoas para vinculá-las a entradas e saídas."}</p></div>

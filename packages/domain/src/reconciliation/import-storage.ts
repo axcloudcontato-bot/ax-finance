@@ -62,6 +62,7 @@ export function decodeImportSource(bytes: Buffer) {
 }
 
 export function safeImportFileName(value: string) {
+  // eslint-disable-next-line no-control-regex -- remover/recusar caracteres de controle no nome do arquivo é o objetivo
   const name = path.basename(value).replace(/[\u0000-\u001f\u007f]/g, "_").trim();
   return (name || "extrato").slice(0, 255);
 }

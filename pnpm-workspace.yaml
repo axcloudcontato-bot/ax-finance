@@ -6,5 +6,6 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+  unrs-resolver: false
 overrides:
   postcss@8.4.31: 8.5.28

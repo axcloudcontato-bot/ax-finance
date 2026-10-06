@@ -44,6 +44,12 @@ estão em [docs/OPERACAO_PRODUCAO.md](./docs/OPERACAO_PRODUCAO.md).
 `pnpm test` roda os testes de integração (Vitest) contra `ax_finance_test`, cobrindo isolamento
 multiempresa, regras de saldo/baixa/estorno, fechamento de período, auditoria, busca e mais.
 
+`pnpm lint` roda o ESLint (config em `.eslintrc.cjs`; erro quebra, aviso não) e `pnpm typecheck`
+confere os tipos de todos os pacotes. O workflow `.github/workflows/ci.yml` roda lint, tipos e os
+testes de integração (Postgres 16 como serviço, migrations aplicadas num banco vazio) em todo PR e
+push na `master`; `security.yml` cuida da auditoria de dependências e do build. Os testes só
+precisam de `TEST_DATABASE_URL` e `TEST_APP_DATABASE_URL`, vindos do `.env` local ou do ambiente.
+
 ## Estado atual e limitações conhecidas
 
 Um levantamento (set/2026) comparando a especificação com o código encontrou os pontos abaixo.

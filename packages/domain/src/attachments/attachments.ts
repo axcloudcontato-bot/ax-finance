@@ -13,6 +13,7 @@ const ALLOWED_MIME_TYPES = [
 
 export const attachmentMetadataInput = z.object({
   id: z.string().uuid(),
+  // eslint-disable-next-line no-control-regex -- remover/recusar caracteres de controle no nome do arquivo é o objetivo
   originalName: z.string().trim().min(1).max(255).refine((value) => !/[\u0000-\u001f\u007f]/.test(value)),
   mimeType: z.enum(ALLOWED_MIME_TYPES),
   sizeBytes: z.number().int().positive().max(10 * 1024 * 1024),

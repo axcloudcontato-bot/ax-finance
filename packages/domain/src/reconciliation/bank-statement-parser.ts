@@ -113,7 +113,7 @@ export function parseAmountCents(raw: string): bigint | null {
     negative = true;
     value = value.slice(1, -1);
   }
-  value = value.replace(/R\$/gi, "").replace(/[^0-9,\.\-+]/g, "");
+  value = value.replace(/R\$/gi, "").replace(/[^0-9,.\-+]/g, "");
   if (value.startsWith("-")) negative = !negative;
   value = value.replace(/^[+-]/, "");
   if (!value || /[+-]/.test(value)) return null;

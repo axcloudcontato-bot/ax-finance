@@ -9,7 +9,7 @@ import { createTitle } from "../titles/create-title";
 import { registerSettlement } from "../titles/register-settlement";
 import { createTransfer } from "../transfers/create-transfer";
 import { reverseTransfer } from "../transfers/reverse-transfer";
-import { CompanyAccessDeniedError, TransferSameAccountError } from "../errors";
+import { TransferSameAccountError } from "../errors";
 import { rootClient, resetDatabase } from "./test-db";
 
 function uniqueEmail(label: string) {
