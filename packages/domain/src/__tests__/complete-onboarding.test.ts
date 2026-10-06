@@ -21,6 +21,26 @@ afterAll(async () => {
 });
 
 describe("onboarding completo (empresa + conta + categorias numa transação)", () => {
+  it("plano Gestão Pessoal começa com categorias pessoais; Essencial, com as de empresa de serviços", async () => {
+    const input = { accountName: "Conta", accountType: "BANK", openingBalanceCents: 0, openingDate: "2026-01-01" } as const;
+    const personalUser = await registerUser({ email: uniqueEmail("pessoal"), name: "Pessoa", password: "senha-forte-123" });
+    const personal = await completeOnboarding(personalUser.id, { ...input, companyName: "Minhas finanças", planCode: "PERSONAL" });
+    const businessUser = await registerUser({ email: uniqueEmail("empresa"), name: "Empresa", password: "senha-forte-123" });
+    const business = await completeOnboarding(businessUser.id, { ...input, companyName: "Minha empresa", planCode: "ESSENTIAL" });
+
+    const personalNames = (await listCategories(personalUser.id, personal.company.id)).map((category) => category.name);
+    expect(personalNames).toEqual(expect.arrayContaining(["Renda", "Salário", "Moradia", "Supermercado", "Reserva de emergência"]));
+    expect(personalNames).not.toContain("Receita de serviços");
+
+    const businessNames = (await listCategories(businessUser.id, business.company.id)).map((category) => category.name);
+    expect(businessNames).toContain("Receita de serviços");
+    expect(businessNames).not.toContain("Salário");
+
+    // Renda precisa ser receita operacional: é a natureza que o seletor de "Nova entrada" aceita.
+    const income = (await listCategories(personalUser.id, personal.company.id)).filter((category) => category.name === "Salário" || category.name === "Renda");
+    expect(income.every((category) => category.nature === "OPERATING_REVENUE")).toBe(true);
+  });
+
   it("cria empresa, conta e categorias padrão de uma vez", async () => {
     const user = await registerUser({
       email: uniqueEmail("onboard"),

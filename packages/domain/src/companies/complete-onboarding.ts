@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { withUserContext } from "@ax-finance/db";
-import { createDefaultCategoriesInTx } from "../categories/seed-default-categories";
+import { categoryTemplateForPlan, createDefaultCategoriesInTx } from "../categories/seed-default-categories";
 import { scheduleCompanyJobsInTx } from "../scheduled-jobs/jobs";
 import { createTrialSubscriptionInTx } from "../subscriptions/subscriptions";
 
@@ -66,7 +66,7 @@ export async function completeOnboarding(userId: string, input: unknown) {
       },
     });
 
-    await createDefaultCategoriesInTx(tx, companyId);
+    await createDefaultCategoriesInTx(tx, companyId, categoryTemplateForPlan(data.planCode));
 
     const company = await tx.company.findUniqueOrThrow({ where: { id: companyId } });
 
