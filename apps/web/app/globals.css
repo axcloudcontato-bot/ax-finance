@@ -4065,7 +4065,7 @@ main.settings-page {
 .card-tile-actions, .card-config-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .card-tile-actions { margin-top: auto; }
 /* O .button-link global tem margem superior própria; dentro destas barras ela só desalinharia os botões. */
-.ax-model-buttons main :is(.card-tile-actions, .card-config-actions) > :is(a.button-link, button, form), .ax-model-buttons main .card-config-actions form button { margin-top: 0; }
+.ax-model-buttons main :is(.card-tile-actions, .card-config-actions) > :is(a.button-link, button, form), .ax-model-buttons main .card-config-actions form button[type="submit"].secondary { margin-top: 0; }
 
 .limit-bar-track { height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 12%, transparent); }
 .limit-bar-track > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.3s ease; }
