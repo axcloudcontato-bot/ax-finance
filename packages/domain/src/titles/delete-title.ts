@@ -4,6 +4,7 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { TitleNotFoundError } from "../errors";
+import { assertTitleNotCardInvoice } from "../credit-cards/invoices";
 
 export const deleteTitleInput = z.object({
   reason: z.string().trim().min(1).max(500),
@@ -24,6 +25,7 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
     if (!title) {
       throw new TitleNotFoundError();
     }
+    await assertTitleNotCardInvoice(tx, companyId, title.id);
 
     await assertPeriodOpen(tx, companyId, title.competenceDate);
 

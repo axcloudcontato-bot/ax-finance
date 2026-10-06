@@ -3,6 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { TitleHasActiveSettlementsError, TitleNotFoundError } from "../errors";
+import { assertTitleNotCardInvoice } from "../credit-cards/invoices";
 
 export const cancelTitleInput = z.object({
   reason: z.string().trim().min(1).max(500),
@@ -23,6 +24,7 @@ export async function cancelTitle(
     if (!title) {
       throw new TitleNotFoundError();
     }
+    await assertTitleNotCardInvoice(tx, companyId, title.id);
 
     const activeSettlement = await tx.settlement.findFirst({
       where: { titleId, reversedAt: null },

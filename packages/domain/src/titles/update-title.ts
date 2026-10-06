@@ -11,6 +11,7 @@ import {
   TitleAmountBelowSettledError,
   TitleNotFoundError,
 } from "../errors";
+import { assertTitleNotCardInvoice } from "../credit-cards/invoices";
 
 export const updateTitleInput = z.object({
   description: z.string().trim().min(1).max(500),
@@ -33,6 +34,7 @@ export async function updateTitle(userId: string, companyId: string, titleId: st
       include: { settlements: { where: { reversedAt: null } }, allocations: true },
     });
     if (!title) throw new TitleNotFoundError();
+    await assertTitleNotCardInvoice(tx, companyId, title.id);
 
     const category = await tx.category.findFirst({ where: { id: data.categoryId, companyId, status: "ACTIVE" } });
     if (!category) throw new CategoryNotFoundError();

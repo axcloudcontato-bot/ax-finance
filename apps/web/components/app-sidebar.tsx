@@ -50,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
           { id: "transferencias", title: "Transferências", icon: Landmark, href: "/transferencias" },
         ],
       },
+      { id: "cartoes", title: "Cartões de crédito", icon: CreditCard, href: "/cartoes" },
       { id: "conciliacao", title: "Conciliação", icon: ListChecks, href: "/conciliacao" },
     ],
   },
@@ -103,6 +104,7 @@ export function AppSidebar({
   canManageMembers,
   isPlatformAdmin,
   planCode,
+  canUseCreditCards,
   logoutAction,
   mobileOpen = false,
   onMobileClose,
@@ -113,6 +115,8 @@ export function AppSidebar({
   canManageMembers: boolean;
   isPlatformAdmin: boolean;
   planCode: "PERSONAL" | "ESSENTIAL";
+  /** Falso para quem tem acesso restrito a centros de custo: a fatura mistura vários centros. */
+  canUseCreditCards: boolean;
   logoutAction: () => void | Promise<void>;
   /** Abaixo de md o menu vira uma gaveta; quem controla a abertura é o AppShell. */
   mobileOpen?: boolean;
@@ -178,9 +182,10 @@ export function AppSidebar({
     ACCOUNTANT: "Contador",
     VIEWER: "Consulta",
   };
-  const unavailableItems = planCode === "PERSONAL"
-    ? new Set(["conciliacao", "rel-dre", "auditoria", "fechamento"])
-    : new Set<string>();
+  const unavailableItems = new Set<string>(
+    planCode === "PERSONAL" ? ["conciliacao", "rel-dre", "auditoria", "fechamento"] : [],
+  );
+  if (!canUseCreditCards) unavailableItems.add("cartoes");
   const visibleGroups = NAV_GROUPS.map((group) => ({
     ...group,
     items: group.items

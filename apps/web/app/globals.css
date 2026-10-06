@@ -4042,3 +4042,43 @@ main.settings-page {
   .record-detail-metrics-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .record-detail-facts > div { grid-template-columns: 1fr; gap: 0.25rem; }
 }
+
+/* Cartões de crédito: lista de cartões, barra de limite e navegação interna. Só tokens do tema,
+   então claro e escuro herdam sem regra própria. */
+/* Modal aberto de dentro de um menu "Gerenciar" herdava o nowrap dos botões e estourava a largura. */
+.workspace-row-actions .modal-dialog { white-space: normal; }
+.breadcrumb { margin: 0 0 0.4rem; color: var(--muted); font-size: 0.8rem; }
+.breadcrumb a { color: var(--muted); text-decoration: none; }
+.breadcrumb a:hover { color: var(--accent); }
+
+.card-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 1rem; align-items: start; }
+.card-tile { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 0; }
+.card-tile.is-archived { opacity: 0.7; }
+.card-tile-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+.card-tile-header h2 { margin: 0 0 0.15rem; font-size: 1.05rem; }
+.card-tile-header h2 a { color: inherit; text-decoration: none; }
+.card-tile-header h2 a:hover { color: var(--accent); }
+.card-tile-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; margin: 0; }
+.card-tile-facts dt { color: var(--muted); font-size: 0.74rem; font-weight: 600; }
+.card-tile-facts dd { margin: 0.1rem 0 0.15rem; font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.card-tile-facts small { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+.card-tile-actions, .card-config-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.card-tile-actions { margin-top: auto; }
+/* O .button-link global tem margem superior própria; dentro destas barras ela só desalinharia os botões. */
+.ax-model-buttons main :is(.card-tile-actions, .card-config-actions) > :is(a.button-link, button, form), .ax-model-buttons main .card-config-actions form button { margin-top: 0; }
+
+.limit-bar-track { height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 12%, transparent); }
+.limit-bar-track > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.3s ease; }
+.limit-bar-track > span.is-high { background: #d58a25; }
+.limit-bar-track > span.is-over { background: #c23d68; }
+.limit-bar-legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.25rem 1rem; margin-top: 0.4rem; color: var(--muted); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.limit-bar-legend .is-over { color: #c23d68; font-weight: 650; }
+.workspace-metric strong.negative { color: #c23d68; }
+:root[data-ax-theme="dark"] .limit-bar-track > span.is-high { background: #ffc266; }
+:root[data-ax-theme="dark"] .limit-bar-track > span.is-over { background: #ff7aa8; }
+:root[data-ax-theme="dark"] .limit-bar-legend .is-over,
+:root[data-ax-theme="dark"] .workspace-metric strong.negative { color: #ff7aa8; }
+
+@media (max-width: 640px) {
+  .card-tile-facts { grid-template-columns: 1fr; }
+}

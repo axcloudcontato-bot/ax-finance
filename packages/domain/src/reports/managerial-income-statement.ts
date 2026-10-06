@@ -26,17 +26,25 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   await assertActiveMembership(userId, companyId);
   await assertCompanyPlanFeature(userId, companyId, "MANAGERIAL_DRE");
 
-  const titles = await withCompanyContext(userId, companyId, (tx) =>
-    tx.title.findMany({
+  const range = { gte: new Date(data.from), lte: new Date(data.to) };
+  const { titles, cardPurchases } = await withCompanyContext(userId, companyId, async (tx) => ({
+    // O título da fatura de cartão fica de fora: o gasto entra pelas compras (abaixo), cada uma na
+    // sua categoria e competência. Contar os dois somaria o mesmo dinheiro duas vezes.
+    titles: await tx.title.findMany({
       where: {
         companyId,
         deletedAt: null,
         status: { not: "CANCELLED" },
-        competenceDate: { gte: new Date(data.from), lte: new Date(data.to) },
+        competenceDate: range,
+        creditCardInvoice: null,
       },
       include: { category: true, allocations: { include: { category: true } } },
-    })
-  );
+    }),
+    cardPurchases: await tx.creditCardPurchase.findMany({
+      where: { companyId, canceledAt: null, competenceDate: range },
+      include: { category: true },
+    }),
+  }));
 
   const totalsByGroup = new Map<string, bigint>();
   for (const title of titles) {
@@ -48,6 +56,11 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
       const signedCents = title.type === "RECEIVABLE" ? line.amountCents : -line.amountCents;
       totalsByGroup.set(label, (totalsByGroup.get(label) ?? BigInt(0)) + signedCents);
     }
+  }
+
+  for (const purchase of cardPurchases) {
+    const label = purchase.category.managerialGroup?.trim() || NATURE_LABEL[purchase.category.nature] || purchase.category.nature;
+    totalsByGroup.set(label, (totalsByGroup.get(label) ?? BigInt(0)) - purchase.amountCents);
   }
 
   const groups = Array.from(totalsByGroup.entries())

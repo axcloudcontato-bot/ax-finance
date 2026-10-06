@@ -13,6 +13,8 @@ export async function getTitle(userId: string, companyId: string, titleId: strin
         party: true,
         costCenter: true,
         recurrenceRule: { select: { id: true, description: true } },
+        // Fatura de cartão: a tela esconde edição/cancelamento e leva para a fatura, de onde o valor vem.
+        creditCardInvoice: { select: { id: true, cardId: true, referenceMonth: true } },
         settlements: {
           orderBy: { createdAt: "asc" },
           include: { financialAccount: true, refunds: { include: { financialAccount: true }, orderBy: { createdAt: "asc" } } },

@@ -51,6 +51,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       canManageMembers={canManageMembers}
       isPlatformAdmin={Boolean(platformAdmin)}
       planCode={planAccess.code}
+      canUseCreditCards={access.canUseCreditCards}
       blockNotice={writeBlockNotice(blockReason, canManageMembers)}
       logoutAction={logoutAction}
       notifications={notifications.map((notification) => ({

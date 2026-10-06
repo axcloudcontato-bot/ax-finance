@@ -64,5 +64,7 @@ export async function getCompanyAccess(userId: string, companyId: string) {
   return {
     role: membership.role,
     permissions: [...ROLE_PERMISSIONS[membership.role]],
+    /** Cartão de crédito reúne vários centros de custo numa fatura: só acesso total opera. */
+    canUseCreditCards: membership.role === "OWNER" || membership.accessScope !== "RESTRICTED",
   };
 }

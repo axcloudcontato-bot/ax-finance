@@ -3,6 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertCompanyPermission } from "../companies/permissions";
 import { TitleNotFoundError } from "../errors";
+import { assertTitleNotCardInvoice } from "../credit-cards/invoices";
 
 const duplicateTitleInput = z.object({
   competenceDate: z.coerce.date().optional(),
@@ -15,6 +16,7 @@ export async function duplicateTitle(userId: string, companyId: string, titleId:
   return withCompanyContext(userId, companyId, async (tx) => {
     const source = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!source) throw new TitleNotFoundError();
+    await assertTitleNotCardInvoice(tx, companyId, source.id);
     const duplicate = await tx.title.create({
       data: {
         companyId, type: source.type, description: `${source.description} (cópia)`, categoryId: source.categoryId,

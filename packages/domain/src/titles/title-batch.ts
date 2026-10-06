@@ -6,6 +6,7 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { randomUUID } from "node:crypto";
 import { CategoryNotFoundError, CostCenterNotFoundError, FinancialAccountNotFoundError, TitleBatchInvalidError } from "../errors";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { assertInvoiceTitlePayable, assertTitleNotCardInvoice } from "../credit-cards/invoices";
 
 export const titleBatchInput = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("SETTLE_FULL"), titleIds: z.array(z.string().uuid()).min(1).max(100), financialAccountId: z.string().uuid(), effectiveDate: z.coerce.date(), idempotencyKey: idempotencyKeySchema }),
@@ -34,8 +35,10 @@ export async function previewTitleBatch(userId: string, companyId: string, input
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
     const titles = await loadBatch(tx, companyId, data.titleIds);
+    const cardInvoiceTitleIds = new Set((await tx.creditCardInvoice.findMany({ where: { companyId, titleId: { in: titles.map((title) => title.id) } }, select: { titleId: true } })).map((invoice) => invoice.titleId));
     const problems = titles.flatMap((title) => {
       if (data.operation === "SETTLE_FULL" && (title.status === "CANCELLED" || title.remainingCents <= BigInt(0))) return [`${title.description}: sem saldo aberto`];
+      if (data.operation !== "SETTLE_FULL" && cardInvoiceTitleIds.has(title.id)) return [`${title.description}: é fatura de cartão e muda pelas compras`];
       if (data.operation === "CANCEL" && title.settlements.length > 0) return [`${title.description}: possui baixa ativa`];
       if (data.operation === "CANCEL" && title.status === "CANCELLED") return [`${title.description}: já está cancelado`];
       return [];
@@ -86,6 +89,9 @@ export async function applyTitleBatch(userId: string, companyId: string, input: 
 
     await lockBatchTitles(tx, companyId, data.titleIds);
     const titles = await loadBatch(tx, companyId, data.titleIds);
+    if (data.operation !== "SETTLE_FULL") {
+      for (const title of titles) await assertTitleNotCardInvoice(tx, companyId, title.id);
+    }
     const invalid = titles.some((title) =>
       data.operation === "SETTLE_FULL" ? title.status === "CANCELLED" || title.remainingCents <= BigInt(0)
       : data.operation === "CANCEL" ? title.status === "CANCELLED" || title.settlements.length > 0
@@ -96,6 +102,7 @@ export async function applyTitleBatch(userId: string, companyId: string, input: 
     if (data.operation === "SETTLE_FULL") {
       if (!(await tx.financialAccount.findFirst({ where: { id: data.financialAccountId, companyId, status: "ACTIVE" } }))) throw new FinancialAccountNotFoundError();
       await assertPeriodOpen(tx, companyId, data.effectiveDate);
+      for (const title of titles) await assertInvoiceTitlePayable(tx, companyId, title.id);
       for (const title of titles) {
         await tx.settlement.create({ data: { companyId, titleId: title.id, financialAccountId: data.financialAccountId, principalAmountCents: title.remainingCents, effectiveDate: data.effectiveDate, notes: "Baixa integral em lote" } });
         await tx.title.update({ where: { id: title.id }, data: { status: "SETTLED" } });

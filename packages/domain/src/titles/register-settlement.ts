@@ -3,6 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
+import { assertInvoiceTitlePayable } from "../credit-cards/invoices";
 import {
   FinancialAccountNotFoundError,
   IdempotencyResultUnavailableError,
@@ -94,6 +95,7 @@ export async function registerSettlement(
     }
 
     await assertPeriodOpen(tx, companyId, data.effectiveDate);
+    await assertInvoiceTitlePayable(tx, companyId, titleId);
 
     const existingSettlements = await tx.settlement.findMany({
       where: { titleId, reversedAt: null },

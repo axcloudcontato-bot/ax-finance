@@ -21,12 +21,12 @@ const LEDGER_NOTIFICATION_TYPES = ["TITLE_OVERDUE", "TITLE_DUE_TODAY", "TITLE_DU
 /**
  * Zera a empresa APAGANDO de verdade todos os lançamentos: títulos (inclusive
  * os já removidos das telas), baixas, devoluções, rateios, anexos, transferências,
- * ajustes de saldo, regras recorrentes, extratos importados e linhas de extrato,
+ * ajustes de saldo, compras e faturas de cartão, regras recorrentes, extratos importados e linhas de extrato,
  * fechamentos de período, chaves de idempotência e lembretes financeiros.
  * Irreversível — por decisão do proprietário, esta é a única operação que foge da
  * regra de nunca apagar lançamento (Seção 18).
  *
- * Permanecem: contas financeiras (com saldo de abertura), categorias, clientes e
+ * Permanecem: contas financeiras (com saldo de abertura), cartões de crédito, categorias, clientes e
  * fornecedores, centros de custo, usuários, assinatura e a trilha de auditoria
  * (imutável por desenho do banco), onde fica o evento COMPANY_LEDGER_RESET.
  *
@@ -52,6 +52,10 @@ export async function resetCompanyLedger(userId: string, companyId: string, inpu
     // Ordem imposta pelas chaves estrangeiras (todas RESTRICT): quem aponta primeiro.
     const statementLines = await tx.bankStatementLine.deleteMany({ where: { companyId } });
     const importBatches = await tx.importBatch.deleteMany({ where: { companyId } }); // ImportJob cai em cascata
+    // Compras e faturas de cartão apontam para os títulos das faturas; saem antes deles. Os cartões
+    // em si (cadastro, limite, dias) permanecem, como as contas financeiras.
+    const cardPurchases = await tx.creditCardPurchase.deleteMany({ where: { companyId } });
+    const cardInvoices = await tx.creditCardInvoice.deleteMany({ where: { companyId } });
     const refunds = await tx.settlementRefund.deleteMany({ where: { companyId } });
     const settlements = await tx.settlement.deleteMany({ where: { companyId } });
     const titles = await tx.title.deleteMany({ where: { companyId } }); // rateios e anexos caem em cascata
@@ -72,6 +76,8 @@ export async function resetCompanyLedger(userId: string, companyId: string, inpu
       importBatches: importBatches.count,
       recurrenceRules: recurrences.count,
       periodClosures: closures.count,
+      creditCardPurchases: cardPurchases.count,
+      creditCardInvoices: cardInvoices.count,
     };
 
     await recordAuditEvent(tx, {

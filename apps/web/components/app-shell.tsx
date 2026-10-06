@@ -17,6 +17,7 @@ export function AppShell({
   canManageMembers,
   isPlatformAdmin,
   planCode,
+  canUseCreditCards,
   logoutAction,
   notifications,
   blockNotice = null,
@@ -28,6 +29,7 @@ export function AppShell({
   canManageMembers: boolean;
   isPlatformAdmin: boolean;
   planCode: "PERSONAL" | "ESSENTIAL";
+  canUseCreditCards: boolean;
   logoutAction: () => void | Promise<void>;
   notifications: AppNotification[];
   /** Aviso discreto de empresa bloqueada para escrita (assinatura), ou null. */
@@ -77,6 +79,7 @@ export function AppShell({
           canManageMembers={canManageMembers}
           isPlatformAdmin={isPlatformAdmin}
           planCode={planCode}
+          canUseCreditCards={canUseCreditCards}
           logoutAction={logoutAction}
           mobileOpen={navOpen}
           onMobileClose={closeNav}

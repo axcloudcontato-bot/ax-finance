@@ -37,6 +37,13 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   FINANCIAL_ACCOUNT_ARCHIVED: "Conta arquivada",
   FINANCIAL_ACCOUNT_REACTIVATED: "Conta reativada",
   COMPANY_LEDGER_RESET: "Lançamentos zerados (reset da conta)",
+  CREDIT_CARD_CREATED: "Cartão de crédito criado",
+  CREDIT_CARD_UPDATED: "Cartão de crédito atualizado",
+  CREDIT_CARD_ARCHIVED: "Cartão de crédito arquivado",
+  CREDIT_CARD_REACTIVATED: "Cartão de crédito reativado",
+  CREDIT_CARD_PURCHASE_CREATED: "Compra no cartão lançada",
+  CREDIT_CARD_PURCHASE_UPDATED: "Compra no cartão atualizada",
+  CREDIT_CARD_PURCHASE_CANCELED: "Compra no cartão cancelada",
   SUBSCRIPTION_BILLING_SYNCED: "Assinatura atualizada pela cobrança",
   SUBSCRIPTION_BILLING_CUSTOMER_LINKED: "Cliente de cobrança criado",
 };

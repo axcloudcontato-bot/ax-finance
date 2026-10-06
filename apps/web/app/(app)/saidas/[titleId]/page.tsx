@@ -86,6 +86,7 @@ export default async function SaidaDetailPage(
   const deleteInstallmentPlanAction = title.installmentGroupId
     ? deleteSaidaInstallmentPlanAction.bind(null, title.installmentGroupId, title.id)
     : null;
+  const cardInvoice = title.creditCardInvoice;
   const showSettlementForm = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
   const openBalanceCents = title.status === "CANCELLED" ? BigInt(0) : title.remainingCents;
 
@@ -110,6 +111,10 @@ export default async function SaidaDetailPage(
           </div>
           <div className="record-detail-actions">
             <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
+            {cardInvoice ? (
+              <Link href={`/cartoes/${cardInvoice.cardId}/faturas/${cardInvoice.id}`} className="button-link">Abrir fatura do cartão</Link>
+            ) : (
+              <>
             <ActionModal triggerLabel="Editar" title="Editar saída" initiallyOpen={Boolean(searchParams.erroEdicao)}>
               <TitleEditForm action={updateSaidaAction.bind(null, title.id)} title={title} categories={categories} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" error={searchParams.erroEdicao}/>
             </ActionModal>
@@ -117,6 +122,8 @@ export default async function SaidaDetailPage(
               <p className="subtitle">A cópia nasce em aberto, sem pagamentos nem anexos. Ajuste as datas se necessário.</p>
               <form action={duplicateSaidaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><SubmitButton>Criar cópia</SubmitButton></form>
             </ActionModal>
+              </>
+            )}
             {showSettlementForm ? (
               <ActionModal
                 triggerLabel="Registrar pagamento"
@@ -145,6 +152,13 @@ export default async function SaidaDetailPage(
           </p>
         ) : null}
 
+        {cardInvoice ? (
+          <p className="subtitle">
+            Esta saída é a fatura {cardInvoice.referenceMonth.slice(5)}/{cardInvoice.referenceMonth.slice(0, 4)} de um cartão de crédito: o valor vem das compras lançadas nela.{" "}
+            <Link href={`/cartoes/${cardInvoice.cardId}/faturas/${cardInvoice.id}`}>Ver compras da fatura</Link>. O pagamento pode ser registrado e estornado aqui normalmente.
+          </p>
+        ) : null}
+
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
         {searchParams.atualizado ? <p className="success-box">Título atualizado.</p> : null}
         {searchParams.duplicado ? <p className="success-box">Cópia criada.</p> : null}
@@ -161,7 +175,7 @@ export default async function SaidaDetailPage(
           {title.status === "CANCELLED" && title.cancelReason ? <div><dt>Motivo do cancelamento</dt><dd>{title.cancelReason}</dd></div> : null}
         </dl>
 
-        <details className="record-detail-more">
+        {cardInvoice ? null : <details className="record-detail-more">
           <summary>Mais ações</summary>
           <div className="record-detail-more-actions">
             {title.status === "OPEN" && !hasActiveSettlement ? (
@@ -193,7 +207,7 @@ export default async function SaidaDetailPage(
               </ActionModal>
             ) : null}
           </div>
-        </details>
+        </details>}
       </div>
 
       {installments.length > 0 ? (
@@ -239,11 +253,11 @@ export default async function SaidaDetailPage(
         removed={Boolean(searchParams.anexoRemovido)}
       />
 
-      <div className="card">
+      {cardInvoice ? null : <div className="card">
         <div className="page-header" style={{marginBottom:"0.5rem"}}><div><h2>Rateio</h2><p className="subtitle">Divida o valor entre categorias e centros de custo. A soma precisa fechar o valor original.</p></div></div>
         {searchParams.rateado ? <p className="success-box">Rateio atualizado.</p> : null}
         <AllocationForm action={replaceSaidaAllocationsAction.bind(null,title.id)} clearAction={clearSaidaAllocationsAction.bind(null,title.id)} categories={categories} costCenters={costCenters} error={searchParams.erroRateio} initial={title.allocations.map((item)=>({categoryId:item.categoryId,costCenterId:item.costCenterId,amount:(Number(item.amountCents)/100).toFixed(2).replace(".",",")}))}/>
-      </div>
+      </div>}
 
       <div className="card">
         <h2>Pagamentos registrados</h2>

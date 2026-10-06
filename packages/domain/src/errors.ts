@@ -494,3 +494,93 @@ export class PlanFeatureUnavailableError extends DomainError {
     );
   }
 }
+
+export class CreditCardNotFoundError extends DomainError {
+  constructor() {
+    super("Cartão de crédito não encontrado ou arquivado.", "CREDIT_CARD_NOT_FOUND");
+  }
+}
+
+export class CreditCardInvoiceNotFoundError extends DomainError {
+  constructor() {
+    super("Fatura não encontrada.", "CREDIT_CARD_INVOICE_NOT_FOUND");
+  }
+}
+
+export class CreditCardPurchaseNotFoundError extends DomainError {
+  constructor() {
+    super("Compra não encontrada.", "CREDIT_CARD_PURCHASE_NOT_FOUND");
+  }
+}
+
+export class CreditCardPurchaseAlreadyCanceledError extends DomainError {
+  constructor() {
+    super("Esta compra já foi cancelada.", "CREDIT_CARD_PURCHASE_ALREADY_CANCELED");
+  }
+}
+
+export class CreditCardAccessRestrictedError extends DomainError {
+  constructor() {
+    super(
+      "Seu acesso é restrito a centros de custo. O cartão de crédito reúne compras de vários centros numa só fatura e fica disponível para quem tem acesso total.",
+      "CREDIT_CARD_ACCESS_RESTRICTED"
+    );
+  }
+}
+
+export class CreditCardInvoicePaidError extends DomainError {
+  constructor(referenceMonth: string) {
+    const [year, month] = referenceMonth.split("-");
+    super(
+      `A fatura de ${month}/${year} já foi paga. Estorne o pagamento dela para alterar as compras, ou lance a compra em outra data.`,
+      "CREDIT_CARD_INVOICE_PAID"
+    );
+  }
+}
+
+export class CreditCardInvoiceBelowSettledError extends DomainError {
+  constructor(referenceMonth: string) {
+    const [year, month] = referenceMonth.split("-");
+    super(
+      `A fatura de ${month}/${year} já recebeu pagamentos maiores que o novo total. Estorne o pagamento antes de cancelar esta compra.`,
+      "CREDIT_CARD_INVOICE_BELOW_SETTLED"
+    );
+  }
+}
+
+export class CreditCardHasOpenInvoicesError extends DomainError {
+  constructor() {
+    super("Este cartão ainda tem fatura em aberto. Pague ou cancele as compras antes de arquivá-lo.", "CREDIT_CARD_HAS_OPEN_INVOICES");
+  }
+}
+
+export class CreditCardInstallmentCountInvalidError extends DomainError {
+  constructor() {
+    super("O número de parcelas deve ser de 1 a 48, e cada parcela precisa ter pelo menos R$ 0,01.", "CREDIT_CARD_INSTALLMENT_COUNT_INVALID");
+  }
+}
+
+export class TitleManagedByCreditCardError extends DomainError {
+  constructor() {
+    super(
+      "Este título é a fatura de um cartão de crédito e o valor dele vem das compras. Ajuste as compras na fatura, ou registre o pagamento aqui normalmente.",
+      "TITLE_MANAGED_BY_CREDIT_CARD"
+    );
+  }
+}
+
+export class CreditCardCategoryInvalidError extends DomainError {
+  constructor() {
+    super("Escolha uma categoria de despesa ou custo para a compra no cartão.", "CREDIT_CARD_CATEGORY_INVALID");
+  }
+}
+
+export class CreditCardInvoiceNotPayableError extends DomainError {
+  constructor(closingDate: string) {
+    const [year, month, day] = closingDate.split("-");
+    super(
+      `A fatura ainda está aberta e recebendo compras. Ela fecha em ${day}/${month}/${year}; registre o pagamento depois do fechamento.`,
+      "CREDIT_CARD_INVOICE_NOT_PAYABLE"
+    );
+  }
+}

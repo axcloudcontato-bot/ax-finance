@@ -15,6 +15,7 @@ export * from "./categories/index";
 export * from "./cost-centers/index";
 export * from "./parties/index";
 export * from "./titles/index";
+export * from "./credit-cards/index";
 export * from "./recurrences/index";
 export * from "./transfers/index";
 export * from "./reports/index";

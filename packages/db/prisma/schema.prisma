@@ -374,6 +374,9 @@ model Company {
   auditEvents             AuditEvent[]
   periodClosures          PeriodClosure[]
   balanceAdjustments      BalanceAdjustment[]
+  creditCards             CreditCard[]
+  creditCardInvoices      CreditCardInvoice[]
+  creditCardPurchases     CreditCardPurchase[]
   invitations             CompanyInvitation[]
   idempotencyRecords      IdempotencyRecord[]
   notifications           Notification[]
@@ -584,6 +587,7 @@ model FinancialAccount {
   bankStatementLines BankStatementLine[]
   balanceAdjustments BalanceAdjustment[]
   membershipAccess   MembershipFinancialAccount[]
+  creditCards        CreditCard[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -608,6 +612,7 @@ model CostCenter {
   titles           Title[]
   titleAllocations TitleAllocation[]
   recurrenceRules  RecurrenceRule[]
+  creditCardPurchases CreditCardPurchase[]
   membershipAccess MembershipCostCenter[]
 
   @@unique([id, companyId])
@@ -701,6 +706,7 @@ model Category {
   titles          Title[]
   titleAllocations TitleAllocation[]
   recurrenceRules RecurrenceRule[]
+  creditCardPurchases CreditCardPurchase[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -734,6 +740,7 @@ model Party {
 
   titles          Title[]
   recurrenceRules RecurrenceRule[]
+  creditCardPurchases CreditCardPurchase[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -820,6 +827,7 @@ model Title {
   settlements Settlement[]
   allocations TitleAllocation[]
   attachments Attachment[]
+  creditCardInvoice CreditCardInvoice?
 
   @@unique([id, companyId])
   @@unique([recurrenceRuleId, recurrenceOccurrenceDate])
@@ -1102,4 +1110,109 @@ model PeriodClosure {
 
   @@unique([companyId, period])
   @@map("period_closures")
+}
+
+enum CreditCardBrand {
+  VISA
+  MASTERCARD
+  ELO
+  AMEX
+  HIPERCARD
+  OTHER
+}
+
+enum CreditCardStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// Cartão de crédito. O dia de fechamento e o de vencimento definem em qual fatura cada
+/// compra cai; mudar esses dias só vale para faturas ainda não criadas.
+model CreditCard {
+  id                      String            @id @default(uuid())
+  companyId               String            @map("company_id")
+  company                 Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  name                    String
+  brand                   CreditCardBrand   @default(OTHER)
+  lastDigits              String?           @map("last_digits")
+  limitCents              BigInt            @map("limit_cents")
+  closingDay              Int               @map("closing_day")
+  dueDay                  Int               @map("due_day")
+  defaultPaymentAccountId String?           @map("default_payment_account_id")
+  defaultPaymentAccount   FinancialAccount? @relation(fields: [defaultPaymentAccountId, companyId], references: [id, companyId], onDelete: Restrict)
+  status                  CreditCardStatus  @default(ACTIVE)
+  createdAt               DateTime          @default(now()) @map("created_at")
+  updatedAt               DateTime          @updatedAt @map("updated_at")
+
+  invoices  CreditCardInvoice[]
+  purchases CreditCardPurchase[]
+
+  @@unique([id, companyId])
+  @@index([companyId, status])
+  @@map("credit_cards")
+}
+
+/// Fatura de um ciclo do cartão. O valor a pagar vive num título PAYABLE (`titleId`), mantido
+/// igual à soma das compras ativas: pagar a fatura é uma baixa comum desse título (parcial,
+/// com juros, estornável e conciliável com o extrato). `referenceMonth` é o mês do vencimento.
+model CreditCardInvoice {
+  id             String     @id @default(uuid())
+  companyId      String     @map("company_id")
+  company        Company    @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  cardId         String     @map("card_id")
+  card           CreditCard @relation(fields: [cardId, companyId], references: [id, companyId], onDelete: Restrict)
+  referenceMonth String     @map("reference_month")
+  closingDate    DateTime   @map("closing_date") @db.Date
+  dueDate        DateTime   @map("due_date") @db.Date
+  titleId        String     @unique @map("title_id")
+  title          Title      @relation(fields: [titleId], references: [id], onDelete: Restrict)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  purchases CreditCardPurchase[]
+
+  @@unique([id, companyId])
+  @@unique([cardId, referenceMonth])
+  @@index([companyId, cardId])
+  @@index([companyId, dueDate])
+  @@map("credit_card_invoices")
+}
+
+/// Compra no cartão. Compra parcelada vira uma linha por parcela, cada uma na sua fatura.
+/// `competenceDate` é o mês em que a parcela pesa no resultado (DRE); `purchaseDate` é o dia
+/// real da compra, igual em todas as parcelas.
+model CreditCardPurchase {
+  id                 String            @id @default(uuid())
+  companyId          String            @map("company_id")
+  company            Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  cardId             String            @map("card_id")
+  card               CreditCard        @relation(fields: [cardId, companyId], references: [id, companyId], onDelete: Restrict)
+  invoiceId          String            @map("invoice_id")
+  invoice            CreditCardInvoice @relation(fields: [invoiceId, companyId], references: [id, companyId], onDelete: Restrict)
+  description        String
+  categoryId         String            @map("category_id")
+  category           Category          @relation(fields: [categoryId, companyId], references: [id, companyId], onDelete: Restrict)
+  costCenterId       String?           @map("cost_center_id")
+  costCenter         CostCenter?       @relation(fields: [costCenterId, companyId], references: [id, companyId], onDelete: Restrict)
+  partyId            String?           @map("party_id")
+  party              Party?            @relation(fields: [partyId, companyId], references: [id, companyId], onDelete: Restrict)
+  amountCents        BigInt            @map("amount_cents")
+  purchaseDate       DateTime          @map("purchase_date") @db.Date
+  competenceDate     DateTime          @map("competence_date") @db.Date
+  installmentGroupId String?           @map("installment_group_id")
+  installmentNumber  Int?              @map("installment_number")
+  installmentCount   Int?              @map("installment_count")
+  notes              String?
+  canceledAt         DateTime?         @map("canceled_at")
+  cancelReason       String?           @map("cancel_reason")
+  createdByUserId    String            @map("created_by_user_id")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  @@unique([id, companyId])
+  @@index([companyId, cardId])
+  @@index([companyId, invoiceId])
+  @@index([companyId, competenceDate])
+  @@index([companyId, installmentGroupId])
+  @@map("credit_card_purchases")
 }
