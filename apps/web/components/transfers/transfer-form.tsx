@@ -12,11 +12,14 @@ export function TransferForm({
   action,
   today,
   idempotencyKey,
+  onCancel,
 }: {
   accounts: AccountOption[];
   action: (formData: FormData) => void | Promise<void>;
   today: string;
   idempotencyKey: string;
+  /** Dentro de um modal: o cancelar fecha o modal em vez de navegar para a lista. */
+  onCancel?: () => void;
 }) {
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
@@ -80,7 +83,11 @@ export function TransferForm({
       </div>
       <div className="record-detail-inline-actions">
         <SubmitButton disabled={!ready}>Confirmar transferência</SubmitButton>
-        <Link href="/transferencias" className="button-link">Cancelar</Link>
+        {onCancel ? (
+          <button type="button" className="secondary" onClick={onCancel}>Cancelar</button>
+        ) : (
+          <Link href="/transferencias" className="button-link">Cancelar</Link>
+        )}
       </div>
     </form>
   );

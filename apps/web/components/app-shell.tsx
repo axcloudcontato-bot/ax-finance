@@ -7,6 +7,7 @@ import { AppTopbar, type AppNotification } from "@/components/app-topbar";
 import { GlobalMonthSelector } from "@/components/global-month-selector";
 import { BottomMenu } from "@/components/ui/bottom-menu";
 import { NotificationToasts } from "@/components/notification-toasts";
+import { QuickCreateModal } from "@/components/quick-create";
 import type { WriteBlockNotice } from "@/lib/write-block-notice";
 import type { MembershipRole } from "@ax-finance/db";
 
@@ -94,6 +95,7 @@ export function AppShell({
         </div>
       </div>
 
+      <QuickCreateModal />
       <NotificationToasts notifications={notifications} blockNotice={blockNotice} />
     </div>
   );

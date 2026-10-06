@@ -461,6 +461,14 @@ select {
   font-size: 1rem;
 }
 
+/* A lista nativa do select não herda o fundo transparente do campo: sem cor própria, o texto claro
+   do tema escuro (ou o escuro do claro) cai sobre o branco do sistema e as opções somem. */
+select option,
+select optgroup {
+  background-color: var(--card);
+  color: var(--text);
+}
+
 :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary, .button-link, .public-button, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply) {
   --ax-button-edge: #2f68e8;
   --ax-button-spark: #dce9ff;

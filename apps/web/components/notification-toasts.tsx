@@ -10,6 +10,9 @@ const SHOWN_KEY = "ax-finance:toasts-shown:v1";
 const BLOCK_DISMISSED_KEY = "ax-finance:block-notice-dismissed:v1";
 const MAX_VISIBLE = 2;
 const AUTO_DISMISS_MS = 9000;
+const FLASH_DISMISS_MS = 4000;
+/** Confirmação curta disparada por outros componentes (ex.: "Entrada criada." no modal de criação rápida). */
+const FLASH_EVENT = "ax:flash";
 
 function readShown(): Set<string> {
   try {
@@ -39,6 +42,24 @@ export function NotificationToasts({ notifications, blockNotice = null }: { noti
   const router = useRouter();
   const [visible, setVisible] = useState<AppNotification[]>([]);
   const [showBlock, setShowBlock] = useState(false);
+  const [flashes, setFlashes] = useState<{ id: number; message: string }[]>([]);
+
+  useEffect(() => {
+    let counter = 0;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    const onFlash = (event: Event) => {
+      const id = ++counter;
+      const message = String((event as CustomEvent<string>).detail ?? "");
+      if (!message) return;
+      setFlashes((current) => [...current, { id, message }].slice(-2));
+      timeouts.push(setTimeout(() => setFlashes((current) => current.filter((item) => item.id !== id)), FLASH_DISMISS_MS));
+    };
+    window.addEventListener(FLASH_EVENT, onFlash);
+    return () => {
+      window.removeEventListener(FLASH_EVENT, onFlash);
+      timeouts.forEach(clearTimeout);
+    };
+  }, []);
 
   // Decidido no navegador (sessionStorage), depois da hidratação, para não piscar no servidor.
   useEffect(() => {
@@ -120,10 +141,15 @@ export function NotificationToasts({ notifications, blockNotice = null }: { noti
 
   const blockVisible = showBlock && blockNotice;
   const shown = visible.slice(0, MAX_VISIBLE - (blockVisible ? 1 : 0));
-  if (!blockVisible && shown.length === 0) return null;
+  if (!blockVisible && shown.length === 0 && flashes.length === 0) return null;
 
   return (
     <div className="ax-toasts" role="region" aria-label="Avisos recentes" aria-live="polite">
+      {flashes.map((item) => (
+        <div key={item.id} className="ax-toast is-flash" role="status">
+          <div className="ax-toast-body"><strong>{item.message}</strong></div>
+        </div>
+      ))}
       {blockVisible ? (
         <div className="ax-toast is-alert">
           {blockNotice.href ? (

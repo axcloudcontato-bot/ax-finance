@@ -15,16 +15,13 @@ import { getCurrentUser } from "@/lib/session";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { periodQuery, resolveComparison, resolvePeriodRange } from "@/lib/month";
-import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
+import { sortCategoriesTree } from "@/lib/categories";
 import { Reveal } from "@/components/gsap/reveal";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { TitleDetailList } from "@/components/dashboard/title-detail-list";
 import { CashProjectionChart } from "@/components/dashboard/cash-projection-chart";
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
-import { Modal } from "@/components/ui/modal";
-import { TitleForm } from "@/components/titles/title-form";
-import { createEntradaAction, createEntradaAndContinueAction } from "../entradas/actions";
-import { createSaidaAction, createSaidaAndContinueAction } from "../saidas/actions";
+import { QuickCreateButton } from "@/components/quick-create";
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardOverview>>;
 type OpenTitle = DashboardData["periodOpenTitles"][number];
@@ -159,8 +156,6 @@ export default async function DashboardPage(
     overview.reconciliation.available && overview.reconciliation.pendingCount > 0 ? { tone: "warning", title: "Conciliação pendente", body: `${overview.reconciliation.pendingCount} ${overview.reconciliation.pendingCount === 1 ? "linha aguarda" : "linhas aguardam"} conferência, somando ${formatCents(overview.reconciliation.pendingAmountCents)}${overview.reconciliation.oldestPendingDate ? `, desde ${formatDateOnly(overview.reconciliation.oldestPendingDate)}` : ""}.`, href: selected.conta ? `/conciliacao?conta=${selected.conta}` : "/conciliacao", action: "Conciliar" } : null,
     overview.reconciliation.available && overview.reconciliation.failedImportCount > 0 ? { tone: "danger", title: "Importação com falha", body: `${overview.reconciliation.failedImportCount} ${overview.reconciliation.failedImportCount === 1 ? "importação precisa" : "importações precisam"} de atenção.`, href: "/conciliacao", action: "Diagnosticar" } : null,
   ].filter((alert): alert is NonNullable<typeof alert> => Boolean(alert));
-  const clients = parties.filter((party) => party.isClient);
-  const suppliers = parties.filter((party) => party.isSupplier);
 
   return (
     <main className="wide dashboard-page">
@@ -170,12 +165,8 @@ export default async function DashboardPage(
         parties={parties.map(({ id, name }) => ({ id, name }))} costCenters={costCenters.map(({ id, name }) => ({ id, name }))} values={selected}
         actions={(
           <div className="quick-actions">
-            <Modal triggerLabel={<><span className="quick-action-icon"><ArrowDownCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova receita</>} triggerClassName="quick-action-card revenue" title="Nova entrada" icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
-              <TitleForm action={createEntradaAction} actionAndContinue={createEntradaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))} parties={clients} costCenters={costCenters} partyLabel="Cliente" kind="RECEIVABLE" />
-            </Modal>
-            <Modal triggerLabel={<><span className="quick-action-icon"><ArrowUpCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova despesa</>} triggerClassName="quick-action-card expense" title="Nova saída" icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
-              <TitleForm action={createSaidaAction} actionAndContinue={createSaidaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" kind="PAYABLE" />
-            </Modal>
+            <QuickCreateButton kind="RECEIVABLE" className="quick-action-card revenue"><span className="quick-action-icon"><ArrowDownCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova receita</QuickCreateButton>
+            <QuickCreateButton kind="PAYABLE" className="quick-action-card expense"><span className="quick-action-icon"><ArrowUpCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova despesa</QuickCreateButton>
           </div>
         )} />
       <Reveal className="stat-grid dashboard-primary-grid">

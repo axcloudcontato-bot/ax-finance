@@ -27,6 +27,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import useMeasure from "react-use-measure";
 import type { AppNotification } from "@/components/app-topbar";
+import { openQuickCreate } from "@/components/quick-create";
 import { CHANGELOG, LATEST_CHANGELOG_ID, unreadChangelogCount } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,15 @@ function applyTheme(preference: ThemePreference) {
     : preference;
   document.documentElement.dataset.axTheme = resolved;
   document.documentElement.style.colorScheme = resolved;
+}
+
+function ActionRow({ icon, children, onClick }: { icon: typeof PlusSignIcon; children: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="bottom-menu-row group">
+      <HugeiconsIcon icon={icon} size={19} strokeWidth={1.8} />
+      <span>{children}</span>
+    </button>
+  );
 }
 
 function MenuRow({ href, icon, children, onClick }: { href: string; icon: typeof PlusSignIcon; children: ReactNode; onClick: () => void }) {
@@ -229,9 +239,10 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
     if (view === "actions") {
       return (
         <div className="bottom-menu-list min-w-[230px]">
-          <MenuRow href="/entradas?novo=1" icon={ArrowDown01Icon} onClick={closeMenu}>Nova receita</MenuRow>
-          <MenuRow href="/saidas?novo=1" icon={ArrowUp01Icon} onClick={closeMenu}>Nova despesa</MenuRow>
-          <MenuRow href="/transferencias/novo" icon={Exchange01Icon} onClick={closeMenu}>Nova transferência</MenuRow>
+          {/* Abrem o formulário num modal sobre a tela atual, sem navegar. */}
+          <ActionRow icon={ArrowDown01Icon} onClick={() => { closeMenu(); openQuickCreate("RECEIVABLE"); }}>Nova receita</ActionRow>
+          <ActionRow icon={ArrowUp01Icon} onClick={() => { closeMenu(); openQuickCreate("PAYABLE"); }}>Nova despesa</ActionRow>
+          <ActionRow icon={Exchange01Icon} onClick={() => { closeMenu(); openQuickCreate("TRANSFER"); }}>Nova transferência</ActionRow>
         </div>
       );
     }
