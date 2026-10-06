@@ -189,8 +189,7 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 .admin-page-header h1 { margin: 0; color: #182136; font-size: clamp(1.65rem, 2.3vw, 2.15rem); font-weight: 720; letter-spacing: -0.035em; line-height: 1.12; }
 .admin-page-header > div:first-child > p:last-child { margin: 0.55rem 0 0; color: var(--admin-muted); font-size: 0.9rem; line-height: 1.55; }
 .admin-page-actions { display: flex; align-items: center; gap: 0.65rem; }
-.admin-page-actions .button-link { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; margin: 0; padding: 0.62rem 1rem; border: 1px solid transparent !important; border-radius: 999px; background: linear-gradient(135deg, #3e7df8, #2f68e8) padding-box, conic-gradient(from var(--ax-button-angle), #2f68e8 0 72%, #dce9ff 80%, #2f68e8 88%) border-box; color: #fff; font-size: 0.78rem; font-weight: 650; text-decoration: none; box-shadow: 0 8px 20px rgba(47, 104, 232, 0.2); }
-.admin-page-actions .button-link:first-child { border-color: transparent !important; background: linear-gradient(#fff, #fff) padding-box, conic-gradient(from var(--ax-button-angle), #dce2ed 0 72%, #79a4ff 80%, #dce2ed 88%) border-box; color: #27334a; box-shadow: 0 6px 16px rgba(30, 50, 90, 0.08); }
+.admin-page-actions .button-link { text-decoration: none; }
 .admin-role-pill, .admin-health-pill { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid #dfe5ef; border-radius: 999px; background: #fff; color: #667189; font-size: 0.69rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; box-shadow: 0 3px 12px rgba(30, 44, 75, 0.04); }
 .admin-health-pill span { width: 7px; height: 7px; border-radius: 50%; background: #25af65; box-shadow: 0 0 0 3px #e4f8ed; }
 
@@ -222,7 +221,7 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 .admin-table-wrap { width: 100%; overflow-x: auto; }
 .admin-table { width: 100%; margin: 0; border-collapse: collapse; font-size: 0.76rem; }
 .admin-table th { padding: 0.72rem 1rem; border-bottom: 1px solid #e9edf4; background: #fafbfd; color: #7c879d; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.055em; text-align: left; text-transform: uppercase; white-space: nowrap; }
-.admin-table td { padding: 0.9rem 1rem; border-bottom: 1px solid #edf0f5; color: #465168; vertical-align: middle; }
+.admin-table td { padding: 0.9rem 1rem; font-size: 0.76rem; border-bottom: 1px solid #edf0f5; color: #465168; vertical-align: middle; }
 .admin-table tbody tr:last-child td { border-bottom: 0; }
 .admin-table tbody tr { transition: background 120ms ease; }
 .admin-table tbody tr:hover { background: #fbfcff; }
@@ -239,14 +238,6 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 .admin-usage strong { color: #263149; font-size: 1rem; }
 .admin-usage span { color: #7a8599; font-size: 0.67rem; }
 .admin-usage small { grid-column: 1 / -1; margin-top: 0.15rem; color: #98a1b2; font-size: 0.62rem; white-space: nowrap; }
-.admin-table .button-link { margin: 0; padding: 0.42rem 0.75rem; border: 1px solid transparent !important; border-radius: 999px; background: linear-gradient(#fff, #fff) padding-box, conic-gradient(from var(--ax-button-angle), #d9e0eb 0 72%, #79a4ff 80%, #d9e0eb 88%) border-box; color: #40506e; font-size: 0.68rem; white-space: nowrap; box-shadow: 0 5px 12px rgba(31, 54, 96, 0.07); }
-.admin-table .button-link:hover {
-  border-color: transparent !important;
-  background:
-    linear-gradient(#f5f8ff, #f5f8ff) padding-box,
-    conic-gradient(from var(--ax-button-angle), #c9d4e6 0 72%, #5d8df6 80%, #c9d4e6 88%) border-box;
-  color: #2f61d8;
-}
 
 .admin-badge { display: inline-flex; align-items: center; width: fit-content; padding: 0.28rem 0.48rem; border: 1px solid transparent; border-radius: 999px; font-size: 0.62rem; font-weight: 650; line-height: 1; white-space: nowrap; }
 .admin-badge.is-success { border-color: #bde8d1; background: #eaf8f1; color: #16794b; }
@@ -266,10 +257,9 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 .admin-filter-heading strong { color: #263149; font-size: 0.76rem; }
 .admin-filter-heading small { color: #9099aa; font-size: 0.65rem; }
 .admin-filter-fields { display: grid; grid-template-columns: minmax(260px, 2fr) minmax(190px, 0.8fr) auto; gap: 0.75rem; }
-.admin-filter-fields input, .admin-filter-fields select { height: 40px; margin: 0; border-color: #dfe4ed; border-radius: 8px; background: #fbfcfe; color: #465168; font-size: 0.76rem; }
-.admin-filter-fields button { height: 40px; margin: 0; padding: 0 1.1rem; border: 1px solid transparent; border-radius: 999px; background: linear-gradient(135deg, #3e7df8, #2f68e8) padding-box, conic-gradient(from var(--ax-button-angle), #2f68e8 0 72%, #dce9ff 80%, #2f68e8 88%) border-box; font-size: 0.73rem; box-shadow: 0 8px 20px rgba(47, 104, 232, 0.18); }
-.admin-search-field { position: relative; }
-.admin-search-field svg { position: absolute; top: 11px; left: 12px; color: #96a0b2; }
+.admin-filter-fields input, .admin-filter-fields select { height: 36px; margin: 0; border-color: #dfe4ed; border-radius: 8px; background: #fbfcfe; color: #465168; font-size: 0.76rem; }
+.admin-search-field { position: relative; display: flex; align-items: center; }
+.admin-search-field > [data-animated-icon] { position: absolute; left: 12px; top: 50%; display: grid; place-items: center; transform: translateY(-50%); color: #96a0b2; pointer-events: none; }
 .admin-search-field input { padding-left: 2.4rem; }
 
 .admin-alert { margin-bottom: 1rem; padding: 0.75rem 0.9rem; border: 1px solid; border-radius: 9px; font-size: 0.75rem; }
@@ -283,8 +273,8 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 .admin-empty-inline.neutral { color: #78849a; }
 
 .admin-reprocess-form { display: flex; min-width: 330px; align-items: center; gap: 0.4rem; }
-.admin-reprocess-form input { height: 34px; margin: 0; padding: 0.4rem 0.55rem; border-color: #dfe4ed; border-radius: 7px; font-size: 0.68rem; }
-.admin-icon-button { display: inline-flex; height: 34px; align-items: center; gap: 0.35rem; margin: 0; padding: 0 0.75rem; border: 1px solid transparent; border-radius: 999px; background: linear-gradient(#edf3ff, #edf3ff) padding-box, conic-gradient(from var(--ax-button-angle), #cedafb 0 72%, #5d8df6 80%, #cedafb 88%) border-box; color: #315fc9; font-size: 0.66rem; white-space: nowrap; box-shadow: 0 5px 12px rgba(49, 95, 201, 0.1); }
+.admin-reprocess-form input { height: 36px; margin: 0; padding: 0.4rem 0.55rem; border-color: #dfe4ed; border-radius: 7px; font-size: 0.68rem; }
+.admin-icon-button { white-space: nowrap; }
 .admin-progress-cell { display: grid; grid-template-columns: 42px 82px; align-items: center; gap: 0.55rem; }
 .admin-progress-cell > span { color: #526078; font-size: 0.69rem; font-weight: 650; }
 .admin-progress-cell i { display: block; overflow: hidden; width: 82px; height: 5px; border-radius: 999px; background: #e9eef7; }
@@ -303,7 +293,7 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 .admin-shell .modal-dialog input:focus,
 .admin-shell .modal-dialog select:focus,
 .admin-shell .modal-dialog textarea:focus { outline: 3px solid #e7efff; border-color: #6f96f3; }
-.admin-shell .modal-dialog form > button[type="submit"] { width: 100%; margin-top: 1.15rem; border-radius: 999px; background: linear-gradient(135deg, #3e7df8, #2f68e8) padding-box, conic-gradient(from var(--ax-button-angle), #2f68e8 0 72%, #dce9ff 80%, #2f68e8 88%) border-box; font-size: 0.78rem; }
+.admin-shell .modal-dialog form > button[type="submit"] { width: 100%; margin-top: 1.15rem; }
 
 @media (max-width: 1280px) {
   .admin-shell { grid-template-columns: 244px minmax(0, 1fr); }
@@ -528,8 +518,8 @@ button:disabled {
 }
 
 /* Modelo de botão do produto (LoadingButton): neutro, 36px, raio 9px, sombra
-   interna. Escopado em .ax-model-buttons (shell do app e onboarding) para não
-   alterar login, painel admin nem a landing pública, que têm identidade própria. */
+   interna. Escopado em .ax-model-buttons (shell do app, onboarding e painel admin) para não
+   alterar login nem a landing pública, que têm identidade própria. */
 .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply) {
   gap: 0.375rem;
   min-height: 36px;
@@ -575,6 +565,12 @@ button:disabled {
    superior de CTA de formulário (1.5rem). */
 .ax-model-buttons .page-header .button-link:not(.modal-dialog .button-link),
 .ax-model-buttons :is(td, th) :is(.button-link, button[type="submit"], button.secondary):not(.modal-dialog *) {
+  margin-top: 0;
+}
+
+/* Painel admin segue o mesmo modelo de botão do produto; só a margem de CTA sai nos controles em linha. */
+.ax-model-buttons .admin-filter-fields button[type="submit"],
+.ax-model-buttons .admin-page-actions .button-link {
   margin-top: 0;
 }
 
