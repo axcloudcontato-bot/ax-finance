@@ -1,3 +1,4 @@
+import { CREDIT_CARD_ISSUERS } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 export const BRAND_LABEL: Record<string, string> = {
@@ -12,6 +13,7 @@ export const BRAND_LABEL: Record<string, string> = {
 interface CardDefaults {
   name: string;
   brand: string;
+  issuer: string | null;
   lastDigits: string | null;
   limitCents: bigint;
   closingDay: number;
@@ -44,6 +46,14 @@ export function CardForm({
         <div className="span-2">
           <label htmlFor={`${idPrefix}-name`}>Apelido do cartão</label>
           <input id={`${idPrefix}-name`} name="name" type="text" required maxLength={100} placeholder="Ex.: Nubank, Itaú Platinum" defaultValue={defaults?.name} />
+        </div>
+
+        <div className="span-2">
+          <label htmlFor={`${idPrefix}-issuer`}>Banco emissor (opcional)</label>
+          <select id={`${idPrefix}-issuer`} name="issuer" defaultValue={defaults?.issuer ?? ""}>
+            <option value="">Não informar</option>
+            {CREDIT_CARD_ISSUERS.map((issuer) => <option key={issuer.key} value={issuer.key}>{issuer.name}</option>)}
+          </select>
         </div>
 
         <div>

@@ -19,6 +19,7 @@ import { CardForm, BRAND_LABEL } from "@/components/credit-cards/card-form";
 import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
 import { LimitBar } from "@/components/credit-cards/limit-bar";
+import { IssuerBadge } from "@/components/credit-cards/issuer-badge";
 import { createCardAction, createPurchaseAction } from "./actions";
 
 export default async function CartoesPage(props: {
@@ -111,7 +112,8 @@ export default async function CartoesPage(props: {
             return (
               <article key={card.id} className={`card card-tile${card.status === "ARCHIVED" ? " is-archived" : ""}`}>
                 <header className="card-tile-header">
-                  <div>
+                  <IssuerBadge issuer={card.issuer} />
+                  <div className="card-tile-title">
                     <h2><Link href={`/cartoes/${card.id}`}>{card.name}</Link></h2>
                     <span className="muted">
                       {BRAND_LABEL[card.brand] ?? card.brand}{card.lastDigits ? ` · final ${card.lastDigits}` : ""}

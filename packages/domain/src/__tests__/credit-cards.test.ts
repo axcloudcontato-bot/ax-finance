@@ -18,6 +18,8 @@ import { getManagerialIncomeStatement } from "../reports/managerial-income-state
 import { listAuditEvents } from "../audit/list-audit-events";
 import {
   archiveCreditCard,
+  CREDIT_CARD_ISSUERS,
+  findCreditCardIssuer,
   cancelCreditCardPurchase,
   createCreditCard,
   createCreditCardPurchase,
@@ -97,6 +99,19 @@ describe("cadastro do cartão", () => {
 
     const events = await listAuditEvents(user.id, company.id, {});
     expect(events.some((event) => event.eventType === "CREDIT_CARD_CREATED")).toBe(true);
+  });
+
+  it("guarda o banco emissor do catálogo e recusa chave desconhecida; editar pode limpar", async () => {
+    const { user, company } = await setup("emissor");
+    const withIssuer = await createCreditCard(user.id, company.id, { ...CARD, name: "Roxinho", issuer: "NUBANK" });
+    expect(withIssuer.issuer).toBe("NUBANK");
+    await expect(createCreditCard(user.id, company.id, { ...CARD, issuer: "BANCO_INEXISTENTE" })).rejects.toThrow();
+
+    const cleared = await updateCreditCard(user.id, company.id, withIssuer.id, { ...CARD, name: "Roxinho" });
+    expect(cleared.issuer).toBeNull();
+    expect(findCreditCardIssuer("ITAU")).toMatchObject({ name: "Itaú", initials: "It" });
+    expect(findCreditCardIssuer(null)).toBeNull();
+    expect(new Set(CREDIT_CARD_ISSUERS.map((issuer) => issuer.key)).size).toBe(CREDIT_CARD_ISSUERS.length);
   });
 
   it("só aceita como conta padrão de pagamento uma conta ativa da própria empresa", async () => {

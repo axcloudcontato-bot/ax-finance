@@ -4,10 +4,13 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { CreditCardHasOpenInvoicesError, CreditCardNotFoundError, FinancialAccountNotFoundError } from "../errors";
 import { assertCardAccess, invoiceDescription } from "./invoices";
+import { CREDIT_CARD_ISSUER_KEYS } from "./issuers";
 
 export const creditCardInput = z.object({
   name: z.string().trim().min(1).max(100),
   brand: z.enum(["VISA", "MASTERCARD", "ELO", "AMEX", "HIPERCARD", "OTHER"]).default("OTHER"),
+  /** Banco/fintech emissor (chave de `CREDIT_CARD_ISSUERS`); vazio = não informado. */
+  issuer: z.enum(CREDIT_CARD_ISSUER_KEYS).optional(),
   // Só os 4 últimos dígitos, nunca o número completo: serve para distinguir cartões parecidos.
   lastDigits: z.string().regex(/^\d{4}$/, "Informe só os 4 últimos dígitos.").optional(),
   // Centavos inteiros — nunca float (Seção 18, regra 1).
@@ -38,6 +41,7 @@ export async function createCreditCard(userId: string, companyId: string, input:
         companyId,
         name: data.name,
         brand: data.brand,
+        issuer: data.issuer,
         lastDigits: data.lastDigits,
         limitCents: BigInt(data.limitCents),
         closingDay: data.closingDay,
@@ -73,6 +77,7 @@ export async function updateCreditCard(userId: string, companyId: string, cardId
       data: {
         name: data.name,
         brand: data.brand,
+        issuer: data.issuer ?? null,
         lastDigits: data.lastDigits ?? null,
         limitCents: BigInt(data.limitCents),
         closingDay: data.closingDay,

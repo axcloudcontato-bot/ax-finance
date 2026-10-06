@@ -22,6 +22,7 @@ import { CardForm, BRAND_LABEL } from "@/components/credit-cards/card-form";
 import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
 import { LimitBar } from "@/components/credit-cards/limit-bar";
+import { IssuerBadge } from "@/components/credit-cards/issuer-badge";
 import { createPurchaseAction, setCardArchivedAction, updateCardAction } from "../actions";
 
 export default async function CartaoPage(props: {
@@ -64,12 +65,15 @@ export default async function CartaoPage(props: {
     <main className="wide">
       <p className="breadcrumb"><Link href="/cartoes">← Cartões de crédito</Link></p>
       <div className="page-header">
-        <div>
+        <div className="card-page-heading">
+          <IssuerBadge issuer={card.issuer} size={48} />
+          <div>
           <h1>{card.name}</h1>
           <p className="subtitle">
             {BRAND_LABEL[card.brand] ?? card.brand}{card.lastDigits ? ` · final ${card.lastDigits}` : ""} · fecha dia {card.closingDay} · vence dia {card.dueDay}
             {card.defaultPaymentAccount ? ` · paga pela conta ${card.defaultPaymentAccount.name}` : ""}
           </p>
+          </div>
         </div>
         {archived ? (
           <span className="workspace-status">Arquivado</span>

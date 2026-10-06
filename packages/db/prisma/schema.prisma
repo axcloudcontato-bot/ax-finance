@@ -1134,6 +1134,7 @@ model CreditCard {
   company                 Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
   name                    String
   brand                   CreditCardBrand   @default(OTHER)
+  issuer                  String?
   lastDigits              String?           @map("last_digits")
   limitCents              BigInt            @map("limit_cents")
   closingDay              Int               @map("closing_day")

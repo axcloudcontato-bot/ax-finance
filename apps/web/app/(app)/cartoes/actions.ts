@@ -42,6 +42,7 @@ function cardInput(formData: FormData) {
   return {
     name: text(formData, "name"),
     brand: text(formData, "brand") || "OTHER",
+    issuer: optional(formData, "issuer"),
     lastDigits: optional(formData, "lastDigits"),
     limitCents: parseAmountToCents(text(formData, "limit")),
     closingDay: Number(text(formData, "closingDay")),
