@@ -171,10 +171,10 @@ export default async function DashboardPage(
         actions={(
           <div className="quick-actions">
             <Modal triggerLabel={<><span className="quick-action-icon"><ArrowDownCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova receita</>} triggerClassName="quick-action-card revenue" title="Nova entrada" icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
-              <TitleForm action={createEntradaAction} actionAndContinue={createEntradaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))} parties={clients} costCenters={costCenters} partyLabel="Cliente" />
+              <TitleForm action={createEntradaAction} actionAndContinue={createEntradaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))} parties={clients} costCenters={costCenters} partyLabel="Cliente" kind="RECEIVABLE" />
             </Modal>
             <Modal triggerLabel={<><span className="quick-action-icon"><ArrowUpCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova despesa</>} triggerClassName="quick-action-card expense" title="Nova saída" icon={<ArrowUpCircle className="size-5" strokeWidth={1.5} />} maxWidth="720px">
-              <TitleForm action={createSaidaAction} actionAndContinue={createSaidaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" />
+              <TitleForm action={createSaidaAction} actionAndContinue={createSaidaAndContinueAction} categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" kind="PAYABLE" />
             </Modal>
           </div>
         )} />

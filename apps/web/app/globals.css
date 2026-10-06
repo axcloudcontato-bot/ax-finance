@@ -4087,3 +4087,31 @@ main.settings-page {
 @media (max-width: 640px) {
   .card-tile-facts { grid-template-columns: 1fr; }
 }
+
+/* Paginação das listas (entradas, saídas): links com a faixa exibida e o total. */
+.workspace-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.workspace-pagination-links { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.1rem; }
+.workspace-pagination a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.workspace-pagination a:hover { text-decoration: underline; }
+.workspace-pagination [aria-disabled="true"] { opacity: 0.45; }
+
+/* Orçamento: campo de valor na tabela e medidor de uso por categoria. Tokens do tema (claro/escuro). */
+.budget-input { width: 8.5rem; min-height: 34px; text-align: right; }
+.budget-negative { color: #c23d68; font-weight: 650; }
+:root[data-ax-theme="dark"] .budget-negative { color: #ff7aa8; }
+.budget-meter { display: grid; gap: 0.3rem; min-width: 9rem; }
+.budget-meter small { color: var(--muted); font-size: 0.74rem; }
+.budget-meter-track { height: 7px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 12%, transparent); }
+.budget-meter-track > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.budget-meter[data-status="WARNING"] .budget-meter-track > span { background: #d58a25; }
+.budget-meter[data-status="OVER"] .budget-meter-track > span { background: #c23d68; }
+.budget-meter[data-status="OVER"] small { color: #c23d68; font-weight: 650; }
+:root[data-ax-theme="dark"] .budget-meter[data-status="WARNING"] .budget-meter-track > span { background: #ffc266; }
+:root[data-ax-theme="dark"] .budget-meter[data-status="OVER"] .budget-meter-track > span { background: #ff7aa8; }
+:root[data-ax-theme="dark"] .budget-meter[data-status="OVER"] small { color: #ff7aa8; }
+
+/* Dica de categoria sob o seletor (histórico ou IA): só aparece quando há sugestão. */
+.category-suggestion:empty { display: none; }
+.category-suggestion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; margin-top: 0.4rem; padding: 0.45rem 0.65rem; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 6%, var(--card)); font-size: 0.82rem; }
+.category-suggestion small { color: var(--muted); font-size: 0.74rem; }
+.ax-model-buttons main .category-suggestion > button { min-height: 30px; margin-top: 0; }

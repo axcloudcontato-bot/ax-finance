@@ -70,6 +70,15 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_PERSONAL: ${STRIPE_PRICE_PERSONAL:-}
       STRIPE_PRICE_ESSENTIAL: ${STRIPE_PRICE_ESSENTIAL:-}
+      # Alerta de erro não tratado do web (mesmo canal do worker). Sem webhook, só log.
+      DEPLOY_ENVIRONMENT: ${DEPLOY_ENVIRONMENT:-production}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+      ALERT_COOLDOWN_MINUTES: ${ALERT_COOLDOWN_MINUTES:-30}
+      # Sugestão de categoria por IA. Desligada por padrão: ligar manda a descrição do lançamento
+      # (sem valores nem dados pessoais) ao provedor. Ver docs/sugestao-de-categoria-ia.md.
+      AI_SUGGESTIONS_ENABLED: ${AI_SUGGESTIONS_ENABLED:-false}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_CATEGORY_MODEL: ${AI_CATEGORY_MODEL:-}
       ATTACHMENTS_DIR: /data/attachments
       ATTACHMENT_STORAGE_BACKEND: ${ATTACHMENT_STORAGE_BACKEND:-local}
       ATTACHMENT_SCAN_REQUIRED: ${ATTACHMENT_SCAN_REQUIRED:-false}

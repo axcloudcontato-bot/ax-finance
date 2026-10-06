@@ -82,6 +82,7 @@ const NAV_GROUPS: NavGroup[] = [
           { id: "cad-pessoas", title: "Clientes e fornecedores", icon: BookUser, href: "/cadastros/pessoas" },
         ],
       },
+      { id: "orcamento", title: "Orçamento", icon: ListChecks, href: "/orcamento" },
       { id: "auditoria", title: "Auditoria", icon: History, href: "/auditoria" },
       { id: "fechamento", title: "Fechamento", icon: Lock, href: "/fechamento" },
     ],

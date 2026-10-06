@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { CategorySuggestion } from "@/components/category-suggestion";
 import { todayDateOnlyString } from "@/lib/dates";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
@@ -14,6 +15,7 @@ export function TitleForm({
   parties,
   costCenters,
   partyLabel,
+  kind,
   error,
 }: {
   action: (formData: FormData) => void | Promise<void>;
@@ -25,6 +27,8 @@ export function TitleForm({
   parties?: PartyOption[];
   costCenters?: CostCenterOption[];
   partyLabel?: string;
+  /** Tipo do lançamento; com ele o formulário sugere a categoria a partir da descrição. */
+  kind?: "RECEIVABLE" | "PAYABLE";
   error?: string;
 }) {
   const today = todayDateOnlyString();
@@ -59,6 +63,7 @@ export function TitleForm({
                   </option>
                 ))}
               </select>
+              {kind ? <CategorySuggestion type={kind} /> : null}
             </div>
 
             {parties && parties.length > 0 ? (

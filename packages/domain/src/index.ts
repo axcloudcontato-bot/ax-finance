@@ -16,6 +16,8 @@ export * from "./cost-centers/index";
 export * from "./parties/index";
 export * from "./titles/index";
 export * from "./credit-cards/index";
+export * from "./budgets/index";
+export * from "./ai/index";
 export * from "./shared/today";
 export * from "./recurrences/index";
 export * from "./transfers/index";

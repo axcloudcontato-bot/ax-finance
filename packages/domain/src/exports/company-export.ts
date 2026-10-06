@@ -6,9 +6,10 @@ export async function buildCompanyFinalExport(userId: string, companyId: string,
   await assertCompanyPermission(userId, companyId, "MEMBERS_MANAGE");
   return withCompanyContext(userId, companyId, async (tx) => {
     const company = await tx.company.findUniqueOrThrow({ where: { id: companyId }, select: { id: true, name: true, document: true, currency: true, timezone: true, status: true, createdAt: true, updatedAt: true } });
-    const [memberships, accounts, creditCards, creditCardInvoices, creditCardPurchases, costCenters, categories, parties, recurrences, titles, settlements, refunds, allocations, transfers, adjustments, importBatches, bankLines, closures, attachments, audits, subscription, supportCases] = await Promise.all([
+    const [memberships, accounts, budgets, creditCards, creditCardInvoices, creditCardPurchases, costCenters, categories, parties, recurrences, titles, settlements, refunds, allocations, transfers, adjustments, importBatches, bankLines, closures, attachments, audits, subscription, supportCases] = await Promise.all([
       tx.membership.findMany({ where: { companyId }, select: { id: true, role: true, status: true, accessScope: true, createdAt: true, updatedAt: true, user: { select: { name: true, email: true } } } }),
       tx.financialAccount.findMany({ where: { companyId } }),
+      tx.budget.findMany({ where: { companyId } }),
       tx.creditCard.findMany({ where: { companyId } }),
       tx.creditCardInvoice.findMany({ where: { companyId } }),
       tx.creditCardPurchase.findMany({ where: { companyId } }),
@@ -41,6 +42,7 @@ export async function buildCompanyFinalExport(userId: string, companyId: string,
       company,
       memberships,
       financialAccounts: accounts,
+      budgets,
       creditCards,
       creditCardInvoices,
       creditCardPurchases,

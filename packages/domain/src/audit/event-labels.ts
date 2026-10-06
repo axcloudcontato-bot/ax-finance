@@ -37,6 +37,8 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   FINANCIAL_ACCOUNT_ARCHIVED: "Conta arquivada",
   FINANCIAL_ACCOUNT_REACTIVATED: "Conta reativada",
   COMPANY_LEDGER_RESET: "Lançamentos zerados (reset da conta)",
+  BUDGET_SET: "Orçamento definido",
+  BUDGET_COPIED: "Orçamentos copiados de outro mês",
   CREDIT_CARD_CREATED: "Cartão de crédito criado",
   CREDIT_CARD_UPDATED: "Cartão de crédito atualizado",
   CREDIT_CARD_ARCHIVED: "Cartão de crédito arquivado",

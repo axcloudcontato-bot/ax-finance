@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { CARD_INVOICE_CATEGORY_NAME } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { CategorySuggestion } from "@/components/category-suggestion";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { todayDateOnlyString } from "@/lib/dates";
 
@@ -77,6 +78,7 @@ export function PurchaseForm({
               <option key={category.id} value={category.id}>{category.parentId ? `  ↳ ${category.name}` : category.name}</option>
             ))}
           </select>
+          {editing ? null : <CategorySuggestion type="PAYABLE" />}
         </div>
 
         {parties.length > 0 ? (

@@ -377,6 +377,8 @@ model Company {
   creditCards             CreditCard[]
   creditCardInvoices      CreditCardInvoice[]
   creditCardPurchases     CreditCardPurchase[]
+  budgets                 Budget[]
+  aiUsage                 AiUsage[]
   invitations             CompanyInvitation[]
   idempotencyRecords      IdempotencyRecord[]
   notifications           Notification[]
@@ -707,6 +709,7 @@ model Category {
   titleAllocations TitleAllocation[]
   recurrenceRules RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
+  budgets Budget[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -1216,4 +1219,36 @@ model CreditCardPurchase {
   @@index([companyId, competenceDate])
   @@index([companyId, installmentGroupId])
   @@map("credit_card_purchases")
+}
+
+/// Orçamento: quanto se pretende gastar numa categoria num mês ("YYYY-MM"). É um parâmetro
+/// declarado pelo usuário, nunca bloqueia pagamento; o realizado vem dos títulos e das compras no cartão.
+model Budget {
+  id              String   @id @default(uuid())
+  companyId       String   @map("company_id")
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  categoryId      String   @map("category_id")
+  category        Category @relation(fields: [categoryId, companyId], references: [id, companyId], onDelete: Restrict)
+  period          String
+  amountCents     BigInt   @map("amount_cents")
+  createdByUserId String   @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, categoryId, period])
+  @@index([companyId, period])
+  @@map("budgets")
+}
+
+/// Consumo mensal das sugestões por IA (para limitar custo por empresa e plano).
+model AiUsage {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  period    String
+  requests  Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, period])
+  @@map("ai_usage")
 }
