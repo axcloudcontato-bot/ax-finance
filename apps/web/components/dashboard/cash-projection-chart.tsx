@@ -20,12 +20,14 @@ const chartConfig = {
 const shortDate = (value: string) => `${value.slice(8, 10)}/${value.slice(5, 7)}`;
 
 /**
- * Projeção diária do saldo no modelo shadcn "chart-area": áreas com degradê, grade só
- * horizontal e tooltip do componente. Diferenças deliberadas do modelo, por serem saldos:
- * - `stepAfter` em vez de `natural`: o saldo muda no dia do vencimento e fica constante até o
- *   próximo; a curva suavizada inventaria valores entre dois dias e passaria do real.
+ * Projeção diária do saldo no modelo shadcn "chart-area": curvas suaves, áreas com degradê,
+ * grade só horizontal e tooltip do componente. Diferenças deliberadas, por serem saldos:
+ * - `monotone` em vez de `natural`: mesma curva suave, mas sem ultrapassar os valores reais
+ *   (a spline natural faria o saldo "afundar" abaixo de zero ou passar do máximo num degrau).
  * - sem `stackId`: as duas séries são o MESMO saldo com premissas diferentes, não partes de um
  *   total; empilhar somaria os dois e mostraria um valor que não existe.
+ * - só a série "todos os recebíveis" tem degradê; "sem vencidos" é um subconjunto dela, e duas
+ *   áreas coloridas sobrepostas misturam as cores (azul + âmbar = cinza).
  */
 export function CashProjectionChart({ data }: { data: CashProjectionPoint[] }) {
   return (
@@ -53,16 +55,12 @@ export function CashProjectionChart({ data }: { data: CashProjectionPoint[] }) {
         />
         <defs>
           <linearGradient id="fillProjected" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="var(--color-projected)" stopOpacity={0.6} />
-            <stop offset="95%" stopColor="var(--color-projected)" stopOpacity={0.05} />
-          </linearGradient>
-          <linearGradient id="fillWithoutOverdue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="var(--color-withoutOverdue)" stopOpacity={0.35} />
-            <stop offset="95%" stopColor="var(--color-withoutOverdue)" stopOpacity={0.03} />
+            <stop offset="5%" stopColor="var(--color-projected)" stopOpacity={0.8} />
+            <stop offset="95%" stopColor="var(--color-projected)" stopOpacity={0.1} />
           </linearGradient>
         </defs>
-        <Area dataKey="projected" type="stepAfter" fill="url(#fillProjected)" fillOpacity={0.4} stroke="var(--color-projected)" strokeWidth={2.25} />
-        <Area dataKey="withoutOverdue" type="stepAfter" fill="url(#fillWithoutOverdue)" fillOpacity={0.4} stroke="var(--color-withoutOverdue)" strokeWidth={2.25} strokeDasharray="6 4" />
+        <Area dataKey="projected" type="monotone" fill="url(#fillProjected)" fillOpacity={0.4} stroke="var(--color-projected)" strokeWidth={2} />
+        <Area dataKey="withoutOverdue" type="monotone" fill="none" stroke="var(--color-withoutOverdue)" strokeWidth={2} />
       </AreaChart>
     </ChartContainer>
   );

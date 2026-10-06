@@ -1989,7 +1989,7 @@ main.settings-page {
 .dashboard-projection-legend { display: flex; flex-wrap: wrap; gap: 0.7rem 1.3rem; margin-top: 0.5rem; color: var(--muted); font-size: 0.75rem; }
 .dashboard-projection-legend > span { display: inline-flex; align-items: center; gap: 0.45rem; }
 .dashboard-projection-legend i { display: block; width: 1.5rem; border-top: 3px solid var(--chart-1); }
-.dashboard-projection-legend i.is-without-overdue { border-color: var(--chart-2); border-top-style: dashed; }
+.dashboard-projection-legend i.is-without-overdue { border-color: var(--chart-2); }
 .dashboard-projection-note { margin: 0.75rem 0 0; color: var(--muted); font-size: 0.74rem; }
 
 .dashboard-filter-card {
