@@ -3286,6 +3286,56 @@ main.settings-page {
   transform: none;
 }
 
+/* Novidades: pontinho no botão e lista do painel. */
+.bottom-menu-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ed3d72;
+  box-shadow: 0 0 0 2px rgba(63, 120, 245, 0.9);
+}
+
+.bottom-menu-news a { gap: 0.25rem; }
+.bottom-menu-news strong { white-space: normal; font-size: 0.8rem; }
+.bottom-menu-news small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; }
+.bottom-menu-news-meta { display: flex; align-items: center; gap: 0.4rem; color: var(--muted); font-size: 0.66rem; font-weight: 600; text-transform: uppercase; }
+.bottom-menu-news-meta em {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--card));
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* Página /novidades: linha do tempo de entregas. */
+.changelog { display: grid; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.changelog-entry { display: grid; gap: 0.9rem; scroll-margin-top: 1rem; }
+.changelog-entry header time { color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.changelog-entry header h2 { margin: 0.2rem 0 0.25rem; font-size: 1.05rem; font-weight: 650; }
+.changelog-entry header p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+.changelog-entry > ul { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+.changelog-entry > ul > li { display: grid; grid-template-columns: 5.5rem 1fr; align-items: start; gap: 0.75rem; font-size: 0.88rem; line-height: 1.45; }
+.changelog-kind {
+  justify-self: start;
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.changelog-kind.is-new { background: color-mix(in srgb, var(--accent) 14%, var(--card)); color: var(--accent); }
+.changelog-kind.is-improved { background: color-mix(in srgb, #0f7a4f 14%, var(--card)); color: #0f7a4f; }
+.changelog-kind.is-fixed { background: color-mix(in srgb, #9a5b00 14%, var(--card)); color: #9a5b00; }
+:root[data-ax-theme="dark"] .changelog-kind.is-improved { background: color-mix(in srgb, #5fd6a6 16%, var(--card)); color: #5fd6a6; }
+:root[data-ax-theme="dark"] .changelog-kind.is-fixed { background: color-mix(in srgb, #ffc266 16%, var(--card)); color: #ffc266; }
+@media (max-width: 520px) {
+  .changelog-entry > ul > li { grid-template-columns: 1fr; gap: 0.25rem; }
+}
+
 @media (max-width: 520px) {
   .bottom-menu-shell { bottom: max(0.65rem, env(safe-area-inset-bottom)); }
   .bottom-menu-toolbar { gap: 0.05rem; padding: 0.24rem; }

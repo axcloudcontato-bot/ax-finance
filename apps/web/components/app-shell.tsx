@@ -66,6 +66,7 @@ export function AppShell({
           placement="top"
           userName={userName}
           canManageMembers={canManageMembers}
+          isPlatformAdmin={isPlatformAdmin}
           notifications={notifications}
           logoutAction={logoutAction}
         />
@@ -76,8 +77,6 @@ export function AppShell({
           userName={userName}
           userEmail={userEmail}
           membershipRole={membershipRole}
-          canManageMembers={canManageMembers}
-          isPlatformAdmin={isPlatformAdmin}
           planCode={planCode}
           canUseCreditCards={canUseCreditCards}
           logoutAction={logoutAction}

@@ -4,17 +4,21 @@ import {
   ArrowDown01Icon,
   ArrowUp01Icon,
   ComputerIcon,
+  CustomerSupportIcon,
   DashboardSquare01Icon,
   Exchange01Icon,
   Logout03Icon,
+  Megaphone01Icon,
   Moon02Icon,
   Notification03Icon,
   PlusSignIcon,
   Search01Icon,
   SecurityCheckIcon,
   Settings01Icon,
+  Shield01Icon,
   Sun03Icon,
   UserEdit01Icon,
+  UserGroupIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
@@ -23,9 +27,10 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import useMeasure from "react-use-measure";
 import type { AppNotification } from "@/components/app-topbar";
+import { CHANGELOG, LATEST_CHANGELOG_ID, unreadChangelogCount } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 
-type MenuView = "default" | "actions" | "search" | "notifications" | "profile" | "theme";
+type MenuView = "default" | "actions" | "search" | "whatsnew" | "notifications" | "profile" | "theme";
 type ThemePreference = "light" | "dark" | "system";
 
 interface SearchResults {
@@ -39,16 +44,19 @@ interface BottomMenuProps {
   placement?: "bottom" | "top";
   userName: string;
   canManageMembers: boolean;
+  isPlatformAdmin?: boolean;
   notifications: AppNotification[];
   logoutAction: () => void | Promise<void>;
 }
 
 const EMPTY_RESULTS: SearchResults = { titles: [], parties: [], categories: [] };
 const THEME_KEY = "ax-finance:theme:v1";
+const CHANGELOG_SEEN_KEY = "ax-finance:changelog-seen:v1";
 
 const MENU_ITEMS = [
   { icon: PlusSignIcon, name: "actions", label: "Criar" },
   { icon: Search01Icon, name: "search", label: "Pesquisar" },
+  { icon: Megaphone01Icon, name: "whatsnew", label: "Novidades" },
   { icon: Notification03Icon, name: "notifications", label: "Notificações" },
   { icon: UserEdit01Icon, name: "profile", label: "Perfil" },
   { icon: Sun03Icon, name: "theme", label: "Aparência" },
@@ -77,7 +85,7 @@ function MenuRow({ href, icon, children, onClick }: { href: string; icon: typeof
   );
 }
 
-export function BottomMenu({ placement = "bottom", userName, canManageMembers, notifications: initialNotifications, logoutAction }: BottomMenuProps) {
+export function BottomMenu({ placement = "bottom", userName, canManageMembers, isPlatformAdmin = false, notifications: initialNotifications, logoutAction }: BottomMenuProps) {
   const top = placement === "top";
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -91,12 +99,36 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, n
   const [searching, setSearching] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [theme, setTheme] = useState<ThemePreference>("system");
+  // Novidades ainda não vistas neste navegador; ao abrir o painel viram "lidas", mas as que eram novas seguem destacadas até fechar.
+  const [unreadNews, setUnreadNews] = useState(0);
+  const [highlightedNews, setHighlightedNews] = useState(0);
 
   const closeMenu = useCallback(() => setView("default"), []);
   const unreadCount = notifications.filter((notification) => !notification.readAt).length;
   const hasResults = results.titles.length > 0 || results.parties.length > 0 || results.categories.length > 0;
 
   useEffect(() => closeMenu(), [pathname, closeMenu]);
+
+  useEffect(() => {
+    try {
+      setUnreadNews(unreadChangelogCount(localStorage.getItem(CHANGELOG_SEEN_KEY)));
+    } catch {
+      // Sem storage o botão só fica sem o aviso de novidade.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (view !== "whatsnew") return;
+    setHighlightedNews(unreadNews);
+    setUnreadNews(0);
+    try {
+      localStorage.setItem(CHANGELOG_SEEN_KEY, LATEST_CHANGELOG_ID);
+    } catch {
+      // Preferência não persistida; o painel continua funcionando.
+    }
+    // Só reage à abertura do painel: unreadNews zera aqui mesmo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   useEffect(() => setNotifications(initialNotifications), [initialNotifications]);
 
@@ -235,6 +267,27 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, n
       );
     }
 
+    if (view === "whatsnew") {
+      return (
+        <div className="w-[min(360px,calc(100vw-24px))] p-2">
+          <div className="bottom-menu-heading"><strong>Novidades</strong></div>
+          <div className="bottom-menu-results bottom-menu-news">
+            {CHANGELOG.slice(0, 3).map((entry, index) => (
+              <Link key={entry.id} href={`/novidades#${entry.id}`} onClick={closeMenu}>
+                <span className="bottom-menu-news-meta">
+                  {index < highlightedNews ? <em>Novo</em> : null}
+                  <time dateTime={entry.date}>{new Date(`${entry.date}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</time>
+                </span>
+                <strong>{entry.title}</strong>
+                <small>{entry.summary}</small>
+              </Link>
+            ))}
+          </div>
+          <Link className="bottom-menu-footer-link" href="/novidades" onClick={closeMenu}>Ver todas as novidades</Link>
+        </div>
+      );
+    }
+
     if (view === "notifications") {
       return (
         <div className="w-[min(340px,calc(100vw-24px))] p-2">
@@ -259,7 +312,14 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, n
           <div className="bottom-menu-user"><span>{userName.slice(0, 1).toUpperCase()}</span><div><strong>{userName}</strong><small>Minha conta</small></div></div>
           <MenuRow href="/dashboard" icon={DashboardSquare01Icon} onClick={closeMenu}>Dashboard</MenuRow>
           <MenuRow href="/configuracoes/seguranca" icon={SecurityCheckIcon} onClick={closeMenu}>Segurança</MenuRow>
-          {canManageMembers ? <MenuRow href="/configuracoes/assinatura" icon={Settings01Icon} onClick={closeMenu}>Assinatura</MenuRow> : null}
+          <MenuRow href="/configuracoes/suporte" icon={CustomerSupportIcon} onClick={closeMenu}>Suporte</MenuRow>
+          {canManageMembers ? (
+            <>
+              <MenuRow href="/configuracoes/assinatura" icon={Settings01Icon} onClick={closeMenu}>Assinatura</MenuRow>
+              <MenuRow href="/configuracoes/usuarios" icon={UserGroupIcon} onClick={closeMenu}>Usuários e acessos</MenuRow>
+            </>
+          ) : null}
+          {isPlatformAdmin ? <MenuRow href="/admin" icon={Shield01Icon} onClick={closeMenu}>Administração interna</MenuRow> : null}
           <form action={logoutAction} className="border-t border-border pt-1">
             <button type="submit" className="bottom-menu-row bottom-menu-logout" onClick={() => {
               sessionStorage.removeItem("ax-finance:period-filter:v1");
@@ -317,8 +377,9 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, n
         {MENU_ITEMS.map((item) => {
           const active = view === item.name;
           return (
-            <button key={item.name} type="button" aria-label={item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active")}>
+            <button key={item.name} type="button" aria-label={item.name === "whatsnew" && unreadNews > 0 ? "Novidades (há novidades não vistas)" : item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active")}>
               <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.8} />
+              {item.name === "whatsnew" && unreadNews > 0 ? <span className="bottom-menu-dot" aria-hidden="true" /> : null}
               {item.name === "notifications" && unreadCount > 0 ? <span className="bottom-menu-badge">{Math.min(unreadCount, 9)}{unreadCount > 9 ? "+" : ""}</span> : null}
             </button>
           );

@@ -4,7 +4,6 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   BarChart3,
-  Bell,
   CreditCard,
   BookUser,
   History,
@@ -12,13 +11,9 @@ import {
   LayoutDashboard,
   ListChecks,
   Lock,
-  LifeBuoy,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Settings,
-  ShieldCheck,
-  Users,
 } from "@/components/ui/animated-icons";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -102,8 +97,6 @@ export function AppSidebar({
   userName,
   userEmail,
   membershipRole,
-  canManageMembers,
-  isPlatformAdmin,
   planCode,
   canUseCreditCards,
   logoutAction,
@@ -113,8 +106,6 @@ export function AppSidebar({
   userName: string;
   userEmail: string;
   membershipRole: MembershipRole;
-  canManageMembers: boolean;
-  isPlatformAdmin: boolean;
   planCode: "PERSONAL" | "ESSENTIAL";
   /** Falso para quem tem acesso restrito a centros de custo: a fatura mistura vários centros. */
   canUseCreditCards: boolean;
@@ -265,19 +256,8 @@ export function AppSidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">
-          {isPlatformAdmin ? <NavItem collapsed={collapsed} item={{ id: "admin-interno", title: "Administração interna", icon: ShieldCheck, href: "/admin" }} /> : null}
-          <NavItem collapsed={collapsed} item={{ id: "notificacoes", title: "Notificações", icon: Bell, href: "/configuracoes/notificacoes" }} />
-          <NavItem collapsed={collapsed} item={{ id: "seguranca", title: "Segurança", icon: Settings, href: "/configuracoes/seguranca" }} />
-          <NavItem collapsed={collapsed} item={{ id: "suporte", title: "Suporte", icon: LifeBuoy, href: "/configuracoes/suporte" }} />
-          {canManageMembers ? (
-            <>
-              <NavItem collapsed={collapsed} item={{ id: "assinatura", title: "Assinatura", icon: CreditCard, href: "/configuracoes/assinatura" }} />
-              <NavItem collapsed={collapsed} item={{ id: "usuarios", title: "Usuários e acessos", icon: Users, href: "/configuracoes/usuarios" }} />
-            </>
-          ) : null}
-
           <div
-            className={`mt-2 flex items-center overflow-hidden rounded-xl py-1 transition-[gap,padding] duration-300 ${collapsed ? "justify-center px-0" : "gap-3 px-1"}`}
+            className={`flex items-center overflow-hidden rounded-xl py-1 transition-[gap,padding] duration-300 ${collapsed ? "justify-center px-0" : "gap-3 px-1"}`}
             title={collapsed ? `${userName} — ${roleLabel[membershipRole]}` : undefined}
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs font-semibold text-background">
