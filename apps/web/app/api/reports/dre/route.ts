@@ -21,10 +21,14 @@ export async function GET(request: NextRequest) {
     const report = await getManagerialIncomeStatement(user.id, company.id, { from, to });
 
     const csv = toCsv(
-      ["Grupo gerencial", "Valor (centavos)"],
+      ["Seção", "Grupo gerencial", "Valor (centavos)"],
       [
-        ...report.groups.map((group) => [group.label, group.cents.toString()]),
-        ["Resultado gerencial", report.totalCents.toString()],
+        ...report.groups.map((group) => ["Resultado operacional", group.label, group.cents.toString()]),
+        ["Resultado operacional", "Total", report.operatingResultCents.toString()],
+        ...report.financialLines.map((line) => ["Resultado financeiro", line.label, line.cents.toString()]),
+        ["Resultado financeiro", "Total", report.financialResultCents.toString()],
+        ["Resultado do período", "Total", report.totalCents.toString()],
+        ...report.outsideResult.map((line) => ["Fora do resultado (informativo)", line.label, line.cents.toString()]),
       ]
     );
 

@@ -11,15 +11,41 @@ export const managerialIncomeStatementInput = z.object({
 
 export type ManagerialIncomeStatementInput = z.infer<typeof managerialIncomeStatementInput>;
 
+/** Naturezas que formam o resultado operacional. As demais são movimentação de capital, não lucro. */
+const OPERATING_NATURES = new Set(["OPERATING_REVENUE", "COST", "EXPENSE"]);
+
+export interface IncomeStatementLine {
+  label: string;
+  cents: bigint;
+}
+
+function add(map: Map<string, bigint>, label: string, cents: bigint) {
+  map.set(label, (map.get(label) ?? BigInt(0)) + cents);
+}
+
+function sortedLines(map: Map<string, bigint>): IncomeStatementLine[] {
+  return Array.from(map.entries())
+    .map(([label, cents]) => ({ label, cents }))
+    .sort((a, b) => (b.cents > a.cents ? 1 : b.cents < a.cents ? -1 : 0));
+}
+
+const sum = (lines: IncomeStatementLine[]) => lines.reduce((total, line) => total + line.cents, BigInt(0));
+
 /**
- * DRE gerencial básica (Seção 13): regime de competência, não caixa — usa
- * competenceDate e o valor ORIGINAL do título (não a baixa), incluindo
- * títulos ainda em aberto. Só título cancelado fica de fora (o saldo
- * remanescente cancelado deixou de ser uma obrigação/receita real).
- * Agrupa por managerialGroup da categoria; quando a categoria não tem grupo
- * definido, cai no rótulo da natureza — nenhuma categoria fica de fora do
- * relatório por falta de configuração (versionamento de grupo ao longo do
- * tempo é uma feature maior, fora do escopo do "básica").
+ * DRE gerencial (Seção 13), por competência:
+ *
+ * 1. Resultado OPERACIONAL: usa competenceDate e o valor ORIGINAL do título (não a baixa), incluindo
+ *    os ainda em aberto; título cancelado fica de fora. Só natureza de receita, custo e despesa.
+ *    Compras no cartão entram pela própria categoria, e o título da fatura é ignorado.
+ * 2. Resultado FINANCEIRO: o que só existe na baixa e o título original não mostra. Juros e multas
+ *    pagos e recebidos, tarifas e taxas retidas, descontos obtidos e concedidos, pela data efetiva
+ *    da baixa (não estornada). É onde aparece o juro de uma fatura de cartão ou de um boleto atrasado.
+ * 3. FORA do resultado: investimento, financiamento, patrimônio e transferência técnica. Aporte,
+ *    retirada de sócio, amortização de empréstimo e compra de equipamento mexem no caixa, não no lucro;
+ *    ficam listados à parte, só para conferência, e não entram no total.
+ *
+ * Agrupa por managerialGroup da categoria; sem grupo, cai no rótulo da natureza — nenhuma categoria
+ * fica de fora por falta de configuração.
  */
 export async function getManagerialIncomeStatement(userId: string, companyId: string, input: unknown) {
   const data = managerialIncomeStatementInput.parse(input);
@@ -27,7 +53,7 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   await assertCompanyPlanFeature(userId, companyId, "MANAGERIAL_DRE");
 
   const range = { gte: new Date(data.from), lte: new Date(data.to) };
-  const { titles, cardPurchases } = await withCompanyContext(userId, companyId, async (tx) => ({
+  const { titles, cardPurchases, settlements } = await withCompanyContext(userId, companyId, async (tx) => ({
     // O título da fatura de cartão fica de fora: o gasto entra pelas compras (abaixo), cada uma na
     // sua categoria e competência. Contar os dois somaria o mesmo dinheiro duas vezes.
     titles: await tx.title.findMany({
@@ -44,31 +70,62 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
       where: { companyId, canceledAt: null, competenceDate: range },
       include: { category: true },
     }),
+    settlements: await tx.settlement.findMany({
+      where: {
+        companyId,
+        reversedAt: null,
+        effectiveDate: range,
+        OR: [{ interestPenaltyCents: { gt: 0 } }, { feesCents: { gt: 0 } }, { discountCents: { gt: 0 } }],
+      },
+      select: { interestPenaltyCents: true, feesCents: true, discountCents: true, title: { select: { type: true } } },
+    }),
   }));
 
-  const totalsByGroup = new Map<string, bigint>();
+  const operating = new Map<string, bigint>();
+  const outside = new Map<string, bigint>();
+  const record = (category: { managerialGroup: string | null; nature: string }, cents: bigint) => {
+    const label = category.managerialGroup?.trim() || NATURE_LABEL[category.nature] || category.nature;
+    add(OPERATING_NATURES.has(category.nature) ? operating : outside, label, cents);
+  };
+
   for (const title of titles) {
     const lines = title.allocations.length > 0
       ? title.allocations.map((allocation) => ({ category: allocation.category, amountCents: allocation.amountCents }))
       : [{ category: title.category, amountCents: title.originalAmountCents }];
     for (const line of lines) {
-      const label = line.category.managerialGroup?.trim() || NATURE_LABEL[line.category.nature] || line.category.nature;
-      const signedCents = title.type === "RECEIVABLE" ? line.amountCents : -line.amountCents;
-      totalsByGroup.set(label, (totalsByGroup.get(label) ?? BigInt(0)) + signedCents);
+      record(line.category, title.type === "RECEIVABLE" ? line.amountCents : -line.amountCents);
+    }
+  }
+  for (const purchase of cardPurchases) record(purchase.category, -purchase.amountCents);
+
+  const financial = new Map<string, bigint>();
+  for (const settlement of settlements) {
+    const receivable = settlement.title.type === "RECEIVABLE";
+    if (settlement.interestPenaltyCents > BigInt(0)) {
+      add(financial, receivable ? "Juros e multas recebidos" : "Juros e multas pagos", receivable ? settlement.interestPenaltyCents : -settlement.interestPenaltyCents);
+    }
+    if (settlement.feesCents > BigInt(0)) {
+      add(financial, receivable ? "Taxas retidas (maquininha, gateway)" : "Tarifas pagas", -settlement.feesCents);
+    }
+    if (settlement.discountCents > BigInt(0)) {
+      add(financial, receivable ? "Descontos concedidos" : "Descontos obtidos", receivable ? -settlement.discountCents : settlement.discountCents);
     }
   }
 
-  for (const purchase of cardPurchases) {
-    const label = purchase.category.managerialGroup?.trim() || NATURE_LABEL[purchase.category.nature] || purchase.category.nature;
-    totalsByGroup.set(label, (totalsByGroup.get(label) ?? BigInt(0)) - purchase.amountCents);
-  }
-
-  const groups = Array.from(totalsByGroup.entries())
-    .map(([label, cents]) => ({ label, cents }))
-    .sort((a, b) => (b.cents > a.cents ? 1 : b.cents < a.cents ? -1 : 0));
+  const groups = sortedLines(operating);
+  const financialLines = sortedLines(financial);
+  const operatingResultCents = sum(groups);
+  const financialResultCents = sum(financialLines);
 
   return {
+    /** Grupos do resultado operacional (receita, custo e despesa). */
     groups,
-    totalCents: groups.reduce((sum, group) => sum + group.cents, BigInt(0)),
+    operatingResultCents,
+    financialLines,
+    financialResultCents,
+    /** Resultado do período = operacional + financeiro. */
+    totalCents: operatingResultCents + financialResultCents,
+    /** Movimentação de capital listada para conferência; não entra no total. */
+    outsideResult: sortedLines(outside),
   };
 }
