@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowDownCircle } from "@/components/ui/animated-icons";
-import { listActiveCategories, listCostCenters, listParties, listTitles } from "@ax-finance/domain";
+import { listActiveCategories, listCostCenters, listParties, listTitlesPage } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { TitleListTable } from "@/components/titles/title-list-table";
+import { Pagination } from "@/components/ui/pagination";
 import { TitleListSummary } from "@/components/titles/title-list-summary";
 import { TitleForm } from "@/components/titles/title-form";
 import { Modal } from "@/components/ui/modal";
-import { toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
+import { todayDateOnlyString } from "@/lib/dates";
 import { isComparisonMode, periodQuery, resolvePeriodRange } from "@/lib/month";
 import { createEntradaAction, createEntradaAndContinueAction } from "./actions";
 
@@ -25,7 +26,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 
 export default async function EntradasPage(
   props: {
-    searchParams: Promise<{ filtro?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string; loteConcluido?: string }>;
+    searchParams: Promise<{ filtro?: string; pagina?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string; loteConcluido?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -35,31 +36,26 @@ export default async function EntradasPage(
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const [allTitles, categories, clients, costCenters] = await Promise.all([
-    listTitles(user.id, company.id, { type: "RECEIVABLE" }),
+  const [categories, clients, costCenters] = await Promise.all([
     listActiveCategories(user.id, company.id),
     listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" }),
     listCostCenters(user.id, company.id),
   ]);
 
-  const filter = (searchParams.filtro as Filter) ?? "todas";
+  const filter: Filter = (["todas", "vencidas", "hoje", "proximas", "quitadas"] as const).includes(searchParams.filtro as Filter) ? (searchParams.filtro as Filter) : "todas";
   const period = resolvePeriodRange(searchParams);
   const { from: monthFrom, to: monthTo } = period;
   const today = todayDateOnlyString();
-
-  const titles = allTitles.filter((title) => {
-    const due = toDateOnlyString(title.dueDate);
-    if (filter === "vencidas" || filter === "hoje") {
-      if (title.status === "SETTLED" || title.status === "CANCELLED") return false;
-      return filter === "vencidas" ? due < today : due === today;
-    }
-    if (due < monthFrom || due > monthTo) return false;
-    if (filter === "todas") return true;
-    if (filter === "quitadas") return title.status === "SETTLED";
-    if (title.status === "SETTLED" || title.status === "CANCELLED") return false;
-    if (filter === "proximas") return due > today;
-    return true;
+  const requestedPage = Number.parseInt(searchParams.pagina ?? "1", 10);
+  const listing = await listTitlesPage(user.id, company.id, {
+    type: "RECEIVABLE",
+    view: filter,
+    from: monthFrom,
+    to: monthTo,
+    today,
+    page: Number.isFinite(requestedPage) ? requestedPage : 1,
   });
+  const titles = listing.titles;
 
   const filterHref = (key: Filter) => {
     const params = new URLSearchParams(periodQuery(period, isComparisonMode(searchParams.comparar) ? searchParams.comparar : null));
@@ -94,6 +90,7 @@ export default async function EntradasPage(
               parties={clients}
               costCenters={costCenters}
               partyLabel="Cliente"
+              kind="RECEIVABLE"
               error={searchParams.erro}
             />
           </Modal>
@@ -109,11 +106,12 @@ export default async function EntradasPage(
       </div>
       {filter === "vencidas" || filter === "hoje" ? <p className="workspace-filter-note">{filter === "vencidas" ? "Vencidas de todos os meses." : "Vencimentos de hoje em qualquer período."} O seletor de período acima não limita esta lista.</p> : null}
 
-      <TitleListSummary titles={titles} kind="entradas" overdueView={filter === "vencidas"} scopeNote={filter === "vencidas" || filter === "hoje" ? "Todas as datas" : "Conforme período e filtro acima"} />
+      <TitleListSummary summary={listing.summary} total={listing.total} kind="entradas" overdueView={filter === "vencidas"} scopeNote={filter === "vencidas" || filter === "hoje" ? "Todas as datas" : "Conforme período e filtro acima"} />
 
       <div className="card">
         {searchParams.loteConcluido ? <p className="success-box">Operação concluída em {searchParams.loteConcluido} entrada(s).</p> : null}
         <TitleListTable titles={titles} basePath="/entradas" userId={user.id} companyId={company.id} />
+        <Pagination basePath="/entradas" params={searchParams} page={listing.page} pageCount={listing.pageCount} total={listing.total} pageSize={listing.pageSize} />
       </div>
     </main>
   );

@@ -1,34 +1,26 @@
-import type { listTitles } from "@ax-finance/domain";
+import type { listTitlesPage } from "@ax-finance/domain";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly, toDateOnlyString, todayDateOnlyString } from "@/lib/dates";
+import { formatDateOnly } from "@/lib/dates";
 
-type Title = Awaited<ReturnType<typeof listTitles>>[number];
+type Summary = Awaited<ReturnType<typeof listTitlesPage>>["summary"];
 
-export function TitleListSummary({ titles, kind, scopeNote = "Conforme período e filtro acima", overdueView = false }: { titles: Title[]; kind: "entradas" | "saídas"; scopeNote?: string; overdueView?: boolean }) {
-  const today = todayDateOnlyString();
-  const open = titles.filter((title) => title.status !== "SETTLED" && title.status !== "CANCELLED");
-  const overdue = open.filter((title) => toDateOnlyString(title.dueDate) < today);
-  const openCents = open.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
-  const overdueCents = overdue.reduce((sum, title) => sum + title.remainingCents, BigInt(0));
-  const oldestOverdue = overdue.length > 0
-    ? overdue.reduce((oldest, title) => toDateOnlyString(title.dueDate) < toDateOnlyString(oldest.dueDate) ? title : oldest).dueDate
-    : null;
-
+/** Resumo do conjunto INTEIRO da seleção (calculado no banco), não só da página que está na tela. */
+export function TitleListSummary({ summary, total, kind, scopeNote = "Conforme período e filtro acima", overdueView = false }: { summary: Summary; total: number; kind: "entradas" | "saídas"; scopeNote?: string; overdueView?: boolean }) {
   return (
     <section className="workspace-metrics" aria-label={`Resumo das ${kind} exibidas`}>
       <div className="workspace-metric">
         <span className="workspace-metric-label">{overdueView ? "Saldo vencido" : "Saldo em aberto"}</span>
-        <strong>{formatCents(openCents)}</strong>
-        <span className="workspace-metric-detail">{open.length} {open.length === 1 ? "lançamento pendente" : "lançamentos pendentes"}</span>
+        <strong>{formatCents(summary.openCents)}</strong>
+        <span className="workspace-metric-detail">{summary.openCount} {summary.openCount === 1 ? "lançamento pendente" : "lançamentos pendentes"}</span>
       </div>
       <div className="workspace-metric workspace-metric-alert">
         <span className="workspace-metric-label">{overdueView ? "Vencimento mais antigo" : "Vencido na seleção"}</span>
-        <strong>{overdueView ? oldestOverdue ? formatDateOnly(oldestOverdue) : "—" : formatCents(overdueCents)}</strong>
-        <span className="workspace-metric-detail">{overdue.length} {overdue.length === 1 ? "título vencido" : "títulos vencidos"}</span>
+        <strong>{overdueView ? summary.oldestOverdueDate ? formatDateOnly(summary.oldestOverdueDate) : "—" : formatCents(summary.overdueCents)}</strong>
+        <span className="workspace-metric-detail">{summary.overdueCount} {summary.overdueCount === 1 ? "título vencido" : "títulos vencidos"}</span>
       </div>
       <div className="workspace-metric">
         <span className="workspace-metric-label">Na seleção</span>
-        <strong>{titles.length}</strong>
+        <strong>{total}</strong>
         <span className="workspace-metric-detail">{scopeNote}</span>
       </div>
     </section>
