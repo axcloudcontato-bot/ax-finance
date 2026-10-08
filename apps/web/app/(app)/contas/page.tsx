@@ -8,6 +8,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
+import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { Modal } from "@/components/ui/modal";
 import { createAccountAction, createBalanceAdjustmentAction, reverseBalanceAdjustmentAction, setAccountArchivedAction, updateAccountAction } from "./actions";
 import { resolvePeriodRange } from "@/lib/month";
@@ -151,9 +152,7 @@ export default async function ContasPage(
                     <td>{account.includedInAvailableTotal && account.status === "ACTIVE" ? "Incluída" : "Fora do total"}</td>
                     <td><span className={`workspace-status ${account.status === "ACTIVE" ? "is-active" : ""}`}>{account.status === "ACTIVE" ? "Ativa" : "Arquivada"}</span></td>
                     <td>
-                      <details className="workspace-row-actions">
-                        <summary>Gerenciar</summary>
-                        <div>
+                      <RowActionsMenu>
                       <ActionModal triggerLabel="Editar" title={`Editar conta — ${account.name}`}>
                         <form action={updateAccountAction.bind(null, account.id)}>
                           <label htmlFor={`name-${account.id}`}>Nome</label>
@@ -210,8 +209,7 @@ export default async function ContasPage(
                       <form action={setAccountArchivedAction.bind(null, account.id, account.status === "ACTIVE")} className="inline">
                         <SubmitButton className="secondary">{account.status === "ACTIVE" ? "Arquivar" : "Reativar"}</SubmitButton>
                       </form>
-                        </div>
-                      </details>
+                      </RowActionsMenu>
                     </td>
                   </tr>
                 ))}

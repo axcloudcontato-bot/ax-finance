@@ -7,6 +7,7 @@ import { sortCategoriesTree } from "@/lib/categories";
 import { NATURE_LABEL } from "@/lib/category-labels";
 import { Modal } from "@/components/ui/modal";
 import { ActionModal } from "@/components/ui/action-modal";
+import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { archiveCategoryAction, createCategoryAction, reactivateCategoryAction, updateCategoryAction } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
 
@@ -116,7 +117,7 @@ export default async function CategoriasPage(
                   <td>{category.managerialGroup ?? "—"}</td>
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                   <td>
-                    <details className="workspace-row-actions"><summary>Gerenciar</summary><div>
+                    <RowActionsMenu>
                     <ActionModal triggerLabel="Editar" title={`Editar categoria — ${category.name}`}>
                       <form action={updateCategoryAction.bind(null, category.id)}>
                         <label htmlFor={`name-${category.id}`}>Nome</label><input id={`name-${category.id}`} name="name" defaultValue={category.name} required maxLength={200} />
@@ -134,7 +135,7 @@ export default async function CategoriasPage(
                         </SubmitButton>
                       </form>
                     ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
-                    </div></details>
+                    </RowActionsMenu>
                   </td>
                 </tr>
               ))}

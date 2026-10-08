@@ -4421,3 +4421,38 @@ main.settings-page {
 /* Caixas de marcar e botões de opção não esticam como os campos de texto: ficam ao lado do texto. */
 input[type="checkbox"], input[type="radio"] { width: auto; padding: 0; }
 label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) { display: flex; align-items: center; gap: 0.55rem; font-weight: 500; }
+
+/* Menu suspenso "Gerenciar" das linhas de lista (RowActionsMenu). Painel opaco, sem sombra. */
+.row-menu { position: relative; display: inline-block; }
+.ax-model-buttons .row-menu > .row-menu-trigger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: 32px; margin: 0; padding: 0 0.7rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); color: var(--text); font-size: 0.78rem; font-weight: 630; line-height: 1; cursor: pointer;
+}
+.ax-model-buttons .row-menu > .row-menu-trigger:hover,
+.ax-model-buttons .row-menu > .row-menu-trigger[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.row-menu-trigger > span { display: block; line-height: 1; }
+.row-menu-chevron { display: block; flex: none; color: var(--muted); transition: transform 0.15s ease; }
+.row-menu-trigger[aria-expanded="true"] .row-menu-chevron { color: var(--accent); transform: rotate(180deg); }
+.row-menu-panel {
+  position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 2px; min-width: 190px; padding: 0.3rem;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: none; white-space: normal;
+  visibility: hidden;
+}
+.row-menu-panel[data-open="true"] { visibility: visible; }
+.row-menu-panel .modal-overlay { visibility: visible; }
+.row-menu-panel > form { margin: 0; display: block; }
+.ax-model-buttons .row-menu-panel > :is(button, .button-link),
+.ax-model-buttons .row-menu-panel > form > button {
+  display: flex !important; align-items: center; justify-content: flex-start !important; width: 100% !important; min-height: 34px !important;
+  margin: 0 !important; padding: 0 0.7rem !important; border: 0 !important; border-radius: 7px !important;
+  background: transparent !important; box-shadow: none !important; color: var(--text) !important;
+  font-size: 0.82rem !important; font-weight: 580 !important; text-align: left; cursor: pointer;
+}
+.ax-model-buttons .row-menu-panel > :is(button, .button-link):hover:not(:disabled),
+.ax-model-buttons .row-menu-panel > form > button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 9%, transparent) !important; color: var(--accent) !important;
+}
+/* O SubmitButton empilha o texto e o indicador de envio numa grade centralizada: no menu o texto alinha à esquerda, como os demais itens. */
+.ax-model-buttons .row-menu-panel > form > button > span { justify-items: start; width: 100%; }
+.ax-model-buttons .row-menu-panel > form > button > span > span { justify-content: flex-start; }

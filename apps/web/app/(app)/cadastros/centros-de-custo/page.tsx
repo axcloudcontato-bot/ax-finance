@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { archiveCostCenterAction, createCostCenterAction } from "./actions";
 import { reactivateCostCenterAction, updateCostCenterAction } from "./actions";
 import { ActionModal } from "@/components/ui/action-modal";
+import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function CostCentersPage(
@@ -34,10 +35,10 @@ export default async function CostCentersPage(
           <thead><tr><th>Nome</th><th>Código</th><th>Status</th><th><span className="sr-only">Ações</span></th></tr></thead>
           <tbody>{visibleCenters.map((center) => <tr key={center.id}>
             <td>{center.name}</td><td>{center.code || "—"}</td><td><span className={`workspace-status ${center.status === "ACTIVE" ? "is-active" : ""}`}>{center.status === "ACTIVE" ? "Ativo" : "Arquivado"}</span></td>
-            <td><details className="workspace-row-actions"><summary>Gerenciar</summary><div>
+            <td><RowActionsMenu>
               <ActionModal triggerLabel="Editar" title={`Editar centro — ${center.name}`}><form action={updateCostCenterAction.bind(null, center.id)}><label htmlFor={`center-name-${center.id}`}>Nome</label><input id={`center-name-${center.id}`} name="name" defaultValue={center.name} required maxLength={200}/><label htmlFor={`center-code-${center.id}`}>Código</label><input id={`center-code-${center.id}`} name="code" defaultValue={center.code ?? ""} maxLength={50}/><SubmitButton>Salvar alterações</SubmitButton></form></ActionModal>
               {center.status === "ACTIVE" ? <form action={archiveCostCenterAction.bind(null, center.id)} className="inline"><SubmitButton className="secondary">Arquivar</SubmitButton></form> : <form action={reactivateCostCenterAction.bind(null, center.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
-            </div></details></td>
+            </RowActionsMenu></td>
           </tr>)}</tbody>
         </table></div>}
       </div>

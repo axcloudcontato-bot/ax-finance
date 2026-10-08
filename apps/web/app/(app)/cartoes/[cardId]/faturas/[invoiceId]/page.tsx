@@ -18,6 +18,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
+import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { PaymentImpact } from "@/components/credit-cards/payment-impact";
@@ -180,9 +181,7 @@ export default async function FaturaPage(props: {
                       <td className="money">{formatCents(purchase.amountCents)}</td>
                       <td>
                         {locked ? null : (
-                          <details className="workspace-row-actions" open={editFailed || cancelFailed}>
-                            <summary>Gerenciar</summary>
-                            <div>
+                          <RowActionsMenu>
                               <ActionModal key={`editar-${purchase.id}-${refreshKey}`} triggerLabel="Editar" title={`Editar compra — ${purchase.description}`} size="wide" initiallyOpen={editFailed}>
                                 {editFailed ? <p className="error">{searchParams.erroEdicao}</p> : null}
                                 <PurchaseForm
@@ -208,8 +207,7 @@ export default async function FaturaPage(props: {
                                   <SubmitButton className="secondary">Cancelar compra</SubmitButton>
                                 </form>
                               </ActionModal>
-                            </div>
-                          </details>
+                          </RowActionsMenu>
                         )}
                       </td>
                     </tr>
