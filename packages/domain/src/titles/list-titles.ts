@@ -58,7 +58,21 @@ export interface ListTitlesPageFilter {
   today: string;
   page?: number;
   pageSize?: number;
+  /** Texto livre: descrição, número do documento, observações ou nome do cliente/fornecedor. */
+  search?: string;
+  categoryId?: string;
+  partyId?: string;
+  costCenterId?: string;
+  expectedAccountId?: string;
+  /** Faixa do valor original, em centavos. */
+  minCents?: bigint;
+  maxCents?: bigint;
+  sort?: TitleListSort;
+  dir?: "asc" | "desc";
 }
+
+export const TITLE_LIST_SORTS = ["vencimento", "valor", "descricao", "pessoa"] as const;
+export type TitleListSort = (typeof TITLE_LIST_SORTS)[number];
 
 const OPEN_STATUSES = ["OPEN", "PARTIALLY_SETTLED"] as const;
 export const TITLE_LIST_PAGE_SIZE = 50;
@@ -74,6 +88,41 @@ function viewWhere(filter: ListTitlesPageFilter): Prisma.TitleWhereInput {
   return inPeriod;
 }
 
+/** Filtros avançados da lista (busca, categoria, pessoa, centro de custo, conta prevista e faixa de valor). */
+function advancedWhere(filter: ListTitlesPageFilter): Prisma.TitleWhereInput {
+  const and: Prisma.TitleWhereInput[] = [];
+  const search = filter.search?.trim();
+  if (search) {
+    and.push({
+      OR: [
+        { description: { contains: search, mode: "insensitive" } },
+        { documentNumber: { contains: search, mode: "insensitive" } },
+        { notes: { contains: search, mode: "insensitive" } },
+        { party: { name: { contains: search, mode: "insensitive" } } },
+      ],
+    });
+  }
+  if (filter.categoryId) and.push({ OR: [{ categoryId: filter.categoryId }, { allocations: { some: { categoryId: filter.categoryId } } }] });
+  if (filter.partyId) and.push({ partyId: filter.partyId });
+  if (filter.costCenterId) and.push({ costCenterId: filter.costCenterId });
+  if (filter.expectedAccountId) and.push({ expectedAccountId: filter.expectedAccountId });
+  if (filter.minCents !== undefined) and.push({ originalAmountCents: { gte: filter.minCents } });
+  if (filter.maxCents !== undefined) and.push({ originalAmountCents: { lte: filter.maxCents } });
+  return and.length > 0 ? { AND: and } : {};
+}
+
+function orderByFor(filter: ListTitlesPageFilter): Prisma.TitleOrderByWithRelationInput[] {
+  const dir = filter.dir === "desc" ? "desc" : "asc";
+  const tie: Prisma.TitleOrderByWithRelationInput[] = [{ dueDate: "asc" }, { createdAt: "asc" }, { id: "asc" }];
+  switch (filter.sort) {
+    case "valor": return [{ originalAmountCents: dir }, ...tie];
+    case "descricao": return [{ description: dir }, ...tie];
+    case "pessoa": return [{ party: { name: dir } }, ...tie];
+    case "vencimento": return [{ dueDate: dir }, { createdAt: "asc" }, { id: "asc" }];
+    default: return tie;
+  }
+}
+
 /**
  * Uma página da lista de entradas/saídas, já filtrada no banco, com o resumo do conjunto INTEIRO
  * (não só da página): saldo em aberto, vencido e o vencimento mais antigo. Antes a tela carregava
@@ -85,7 +134,7 @@ export async function listTitlesPage(userId: string, companyId: string, filter: 
   const pageSize = Math.max(1, Math.min(filter.pageSize ?? TITLE_LIST_PAGE_SIZE, 200));
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const base: Prisma.TitleWhereInput = { companyId, deletedAt: null, type: filter.type, ...viewWhere(filter) };
+    const base: Prisma.TitleWhereInput = { companyId, deletedAt: null, type: filter.type, ...viewWhere(filter), ...advancedWhere(filter) };
     const open: Prisma.TitleWhereInput = { AND: [base, { status: { in: [...OPEN_STATUSES] } }] };
     const overdue: Prisma.TitleWhereInput = { AND: [open, { dueDate: { lt: new Date(filter.today) } }] };
 
@@ -106,8 +155,8 @@ export async function listTitlesPage(userId: string, companyId: string, filter: 
 
     const rows = await tx.title.findMany({
       where: base,
-      include: { category: true, party: true, costCenter: true, settlements: { where: { reversedAt: null } } },
-      orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      include: { category: true, party: true, costCenter: true, expectedAccount: { select: { id: true, name: true } }, creditCardInvoice: { select: { id: true } }, settlements: { where: { reversedAt: null } } },
+      orderBy: orderByFor(filter),
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
@@ -128,6 +177,32 @@ export async function listTitlesPage(userId: string, companyId: string, filter: 
         overdueCents: overdueSummary.cents,
         oldestOverdueDate: overdueSummary.oldest,
       },
+    };
+  });
+}
+
+export const TITLE_EXPORT_LIMIT = 10_000;
+
+/**
+ * Todos os lançamentos que a lista mostraria com os mesmos filtros (sem paginar), para exportar.
+ * Limitado a `TITLE_EXPORT_LIMIT` linhas; `truncated` avisa quando havia mais.
+ */
+export async function listTitlesForExport(userId: string, companyId: string, filter: ListTitlesPageFilter) {
+  await assertActiveMembership(userId, companyId);
+  return withCompanyContext(userId, companyId, async (tx) => {
+    const where: Prisma.TitleWhereInput = { companyId, deletedAt: null, type: filter.type, ...viewWhere(filter), ...advancedWhere(filter) };
+    const rows = await tx.title.findMany({
+      where,
+      include: { category: true, party: true, costCenter: true, expectedAccount: { select: { name: true } }, settlements: { where: { reversedAt: null } } },
+      orderBy: orderByFor(filter),
+      take: TITLE_EXPORT_LIMIT + 1,
+    });
+    return {
+      truncated: rows.length > TITLE_EXPORT_LIMIT,
+      titles: rows.slice(0, TITLE_EXPORT_LIMIT).map(({ settlements, ...title }) => ({
+        ...title,
+        remainingCents: title.originalAmountCents - settlements.reduce((sum, item) => sum + item.principalAmountCents + item.discountCents, BigInt(0)),
+      })),
     };
   });
 }

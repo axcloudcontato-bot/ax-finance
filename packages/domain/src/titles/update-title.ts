@@ -12,6 +12,7 @@ import {
   TitleNotFoundError,
 } from "../errors";
 import { assertTitleNotCardInvoice } from "../credit-cards/invoices";
+import { assertExpectedAccount, titleDetailsShape } from "./title-details";
 
 export const updateTitleInput = z.object({
   description: z.string().trim().min(1).max(500),
@@ -22,6 +23,7 @@ export const updateTitleInput = z.object({
   competenceDate: z.coerce.date(),
   dueDate: z.coerce.date(),
   notes: z.string().trim().max(2000).optional(),
+  ...titleDetailsShape,
 });
 
 export async function updateTitle(userId: string, companyId: string, titleId: string, input: unknown) {
@@ -38,6 +40,7 @@ export async function updateTitle(userId: string, companyId: string, titleId: st
 
     const category = await tx.category.findFirst({ where: { id: data.categoryId, companyId, status: "ACTIVE" } });
     if (!category) throw new CategoryNotFoundError();
+    await assertExpectedAccount(tx, companyId, data.expectedAccountId);
     if (data.partyId && !(await tx.party.findFirst({ where: { id: data.partyId, companyId, status: "ACTIVE" } }))) {
       throw new PartyNotFoundError();
     }
@@ -65,6 +68,11 @@ export async function updateTitle(userId: string, companyId: string, titleId: st
         competenceDate: data.competenceDate,
         dueDate: data.dueDate,
         notes: data.notes ?? null,
+        // Nos campos operacionais, undefined deixa como está e null (ou texto vazio) limpa.
+        expectedAccountId: data.expectedAccountId === undefined ? undefined : data.expectedAccountId || null,
+        documentNumber: data.documentNumber === undefined ? undefined : data.documentNumber || null,
+        expectedPaymentMethod: data.expectedPaymentMethod === undefined ? undefined : data.expectedPaymentMethod || null,
+        paymentCode: data.paymentCode === undefined ? undefined : data.paymentCode || null,
         status: title.status === "CANCELLED" ? "CANCELLED" : settled === BigInt(0) ? "OPEN" : settled >= BigInt(data.originalAmountCents) ? "SETTLED" : "PARTIALLY_SETTLED",
       },
     });

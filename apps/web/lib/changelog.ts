@@ -25,6 +25,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-08-entradas-saidas",
+    date: "2026-10-08",
+    title: "Entradas e saídas mais rápidas e completas",
+    summary: "Achar, pagar, cobrar e conferir lançamentos ficou bem mais simples.",
+    changes: [
+      { kind: "NEW", text: "Busca por descrição, documento, observação ou nome da pessoa, com filtros de categoria, cliente/fornecedor, centro de custo e faixa de valor." },
+      { kind: "NEW", text: "Coluna de cliente/fornecedor e ordenação por vencimento, valor, descrição ou pessoa, clicando no cabeçalho." },
+      { kind: "NEW", text: "Botão Pagar ou Receber direto na linha, já com valor, conta e forma de pagamento preenchidos." },
+      { kind: "NEW", text: "Ao marcar várias linhas, a barra mostra quantas são e quanto somam, com as operações em lote ali mesmo." },
+      { kind: "NEW", text: "Exportar a lista em CSV com os mesmos filtros da tela." },
+      { kind: "NEW", text: "Conta prevista, número do documento, forma de pagamento prevista e dados de pagamento (linha digitável ou chave PIX, com botão copiar) em cada lançamento." },
+      { kind: "NEW", text: "Saídas podem ser marcadas como agendadas no banco, para não pagar duas vezes." },
+      { kind: "NEW", text: "Aviso de possível duplicidade ao lançar algo parecido com um lançamento existente." },
+      { kind: "NEW", text: "Multa e juros por atraso configuráveis: ao receber um título vencido, o sistema sugere os valores." },
+      { kind: "NEW", text: "Cobrança de recebíveis: mensagem pronta para copiar ou abrir no e-mail, com registro de quantas vezes e quando cobrou." },
+      { kind: "NEW", text: "Relatório de entradas e saídas por forma de pagamento (PIX, boleto, cartão...), com o realizado e o previsto." },
+      { kind: "IMPROVED", text: "No dashboard, escolher uma conta agora mostra a projeção de caixa dela, com os títulos que têm essa conta como conta prevista." },
+      { kind: "IMPROVED", text: "A multa e os juros sugeridos na baixa são recalculados ao mudar a data ou o valor recebido." },
+    ],
+  },
+  {
     id: "2026-10-07-dashboard-gestao",
     date: "2026-10-07",
     title: "Dashboard com indicadores de gestão",

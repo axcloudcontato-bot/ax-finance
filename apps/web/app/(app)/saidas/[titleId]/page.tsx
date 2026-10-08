@@ -6,6 +6,9 @@ import {
   EVENT_TYPE_LABEL,
   TitleNotFoundError,
   getTitle,
+  getLateFeeSettings,
+  paymentMethodLabel,
+  suggestLateCharges,
   listAuditEvents,
   listFinancialAccounts,
   listActiveCategories,
@@ -20,6 +23,9 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
+import { CopyButton } from "@/components/titles/copy-button";
+import { SchedulePaymentModal } from "@/components/titles/schedule-payment-modal";
+
 import { ActionModal } from "@/components/ui/action-modal";
 import { TitleAttachments } from "@/components/titles/title-attachments";
 import { TitleEditForm } from "@/components/titles/title-edit-form";
@@ -44,7 +50,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 export default async function SaidaDetailPage(
   props: {
     params: Promise<{ titleId: string }>;
-    searchParams: Promise<{ erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; duplicado?: string; rateado?: string }>;
+    searchParams: Promise<{ erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; agendado?: string; duplicado?: string; rateado?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -87,6 +93,13 @@ export default async function SaidaDetailPage(
     ? deleteSaidaInstallmentPlanAction.bind(null, title.installmentGroupId, title.id)
     : null;
   const cardInvoice = title.creditCardInvoice;
+  const today = todayDateOnlyString();
+  const dueDay = toDateOnlyString(title.dueDate);
+  const isOpen = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
+  const daysLate = Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${dueDay}T00:00:00Z`)) / 86_400_000));
+  const returnTo = `/saidas/${title.id}`;
+  const expectedAccount = accounts.find((account) => account.id === title.expectedAccountId) ?? null;
+  const moneyField = (cents: bigint) => (Number(cents) / 100).toFixed(2).replace(".", ",");
   const showSettlementForm = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
   const openBalanceCents = title.status === "CANCELLED" ? BigInt(0) : title.remainingCents;
 
@@ -116,7 +129,7 @@ export default async function SaidaDetailPage(
             ) : (
               <>
             <ActionModal triggerLabel="Editar" title="Editar saída" initiallyOpen={Boolean(searchParams.erroEdicao)}>
-              <TitleEditForm action={updateSaidaAction.bind(null, title.id)} title={title} categories={categories} parties={suppliers} costCenters={costCenters} partyLabel="Fornecedor" error={searchParams.erroEdicao}/>
+              <TitleEditForm action={updateSaidaAction.bind(null, title.id)} title={title} categories={categories} parties={suppliers} costCenters={costCenters} accounts={accounts} partyLabel="Fornecedor" error={searchParams.erroEdicao}/>
             </ActionModal>
             <ActionModal triggerLabel="Duplicar" title="Duplicar saída">
               <p className="subtitle">A cópia nasce em aberto, sem pagamentos nem anexos. Ajuste as datas se necessário.</p>
@@ -124,6 +137,7 @@ export default async function SaidaDetailPage(
             </ActionModal>
               </>
             )}
+            {isOpen && !cardInvoice ? <SchedulePaymentModal titleId={title.id} returnTo={returnTo} dueDate={title.dueDate} scheduledDate={title.scheduledPaymentDate} /> : null}
             {showSettlementForm ? (
               <ActionModal
                 triggerLabel="Registrar pagamento"
@@ -135,6 +149,7 @@ export default async function SaidaDetailPage(
                 <SettlementForm
                   action={registerSettlementAction}
                   accounts={accounts}
+                  defaults={{ financialAccountId: title.expectedAccountId, principal: moneyField(title.remainingCents), paymentMethod: title.expectedPaymentMethod }}
                   error={searchParams.erroBaixa}
                   submitLabel="Registrar pagamento"
                 />
@@ -162,6 +177,7 @@ export default async function SaidaDetailPage(
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
         {searchParams.atualizado ? <p className="success-box">Título atualizado.</p> : null}
         {searchParams.duplicado ? <p className="success-box">Cópia criada.</p> : null}
+        {searchParams.agendado ? <p className="success-box">{searchParams.agendado === "1" ? "Pagamento agendado." : "Agendamento removido."}</p> : null}
 
         <div className="record-detail-metrics">
           <div className="record-detail-metric is-primary"><span>Saldo a pagar</span><strong>{formatCents(openBalanceCents, title.currency)}</strong><small>{title.status === "CANCELLED" ? "Título cancelado" : "Valor ainda pendente"}</small></div>
@@ -171,6 +187,11 @@ export default async function SaidaDetailPage(
 
         <dl className="record-detail-facts">
           {title.party ? <div><dt>Fornecedor</dt><dd><Link href={`/cadastros/pessoas/${title.party.id}`}>{title.party.name}</Link></dd></div> : null}
+          {expectedAccount ? <div><dt>Conta prevista</dt><dd>{expectedAccount.name}</dd></div> : null}
+          {title.expectedPaymentMethod ? <div><dt>Forma de pagamento</dt><dd>{paymentMethodLabel(title.expectedPaymentMethod)}</dd></div> : null}
+          {title.documentNumber ? <div><dt>Documento</dt><dd>{title.documentNumber}</dd></div> : null}
+          {title.paymentCode ? <div><dt>Dados de pagamento</dt><dd className="fact-copy"><code>{title.paymentCode}</code><CopyButton text={title.paymentCode} /></dd></div> : null}
+          {title.scheduledPaymentDate && isOpen ? <div><dt>Agendado no banco</dt><dd>{formatDateOnly(title.scheduledPaymentDate)} <span className="muted">· continua em aberto até o pagamento ser registrado</span></dd></div> : null}
           {title.notes ? <div><dt>Observações</dt><dd>{title.notes}</dd></div> : null}
           {title.status === "CANCELLED" && title.cancelReason ? <div><dt>Motivo do cancelamento</dt><dd>{title.cancelReason}</dd></div> : null}
         </dl>

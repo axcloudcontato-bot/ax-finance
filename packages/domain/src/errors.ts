@@ -608,3 +608,35 @@ export class CreditCardInvoiceNotPayableError extends DomainError {
     );
   }
 }
+
+export interface PossibleDuplicate {
+  id: string;
+  description: string;
+  dueDate: Date;
+  originalAmountCents: bigint;
+}
+
+/** Lançamento parecido com um já existente: a pessoa confirma que é outro antes de gravar. */
+export class PossibleDuplicateTitleError extends DomainError {
+  constructor(public readonly matches: PossibleDuplicate[]) {
+    const first = matches[0]!;
+    const amount = (Number(first.originalAmountCents) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const due = first.dueDate.toISOString().slice(0, 10).split("-").reverse().join("/");
+    super(
+      `Possível lançamento em duplicidade: já existe "${first.description}" de ${amount} com vencimento próximo (${due}). Se é outro lançamento, confirme para lançar mesmo assim.`,
+      "POSSIBLE_DUPLICATE_TITLE"
+    );
+  }
+}
+
+export class TitleScheduleInvalidError extends DomainError {
+  constructor() {
+    super("Só é possível agendar o pagamento de uma saída ainda em aberto.", "TITLE_SCHEDULE_INVALID");
+  }
+}
+
+export class TitleCollectionInvalidError extends DomainError {
+  constructor() {
+    super("A cobrança só se aplica a uma entrada ainda em aberto.", "TITLE_COLLECTION_INVALID");
+  }
+}

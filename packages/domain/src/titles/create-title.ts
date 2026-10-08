@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
-import { CategoryNotFoundError, CompanyAccessScopeInvalidError, CostCenterNotFoundError, IdempotencyResultUnavailableError, PartyNotFoundError } from "../errors";
+import { CategoryNotFoundError, CompanyAccessScopeInvalidError, CostCenterNotFoundError, IdempotencyResultUnavailableError, PartyNotFoundError, PossibleDuplicateTitleError } from "../errors";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { assertExpectedAccount, titleDetailsShape } from "./title-details";
 
 export const createTitleInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]),
@@ -16,10 +17,19 @@ export const createTitleInput = z.object({
   competenceDate: z.coerce.date(),
   dueDate: z.coerce.date(),
   notes: z.string().trim().max(2000).optional(),
+  ...titleDetailsShape,
+  /**
+   * Avisa antes de gravar um lançamento parecido com um existente (mesmo valor, vencimento até 7 dias de
+   * diferença e mesma pessoa ou mesma descrição). Desligado por padrão: quem lança em série (lote,
+   * recorrência) não quer ser interrompido; as telas ligam e deixam a pessoa confirmar.
+   */
+  checkDuplicates: z.boolean().optional(),
   idempotencyKey: idempotencyKeySchema,
 });
 
 export type CreateTitleInput = z.infer<typeof createTitleInput>;
+
+const DUPLICATE_WINDOW_DAYS = 7;
 
 /**
  * Sem rascunho nesta etapa: todo título já nasce OPEN com os campos
@@ -31,7 +41,7 @@ export async function createTitle(userId: string, companyId: string, input: unkn
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const { idempotencyKey, ...request } = data;
+    const { idempotencyKey, checkDuplicates, ...request } = data;
     const idempotency = await beginIdempotentOperation(tx, {
       companyId,
       operation: "CREATE_TITLE",
@@ -68,10 +78,36 @@ export async function createTitle(userId: string, companyId: string, input: unkn
       if (!costCenter) throw new CostCenterNotFoundError();
     }
 
+    await assertExpectedAccount(tx, companyId, data.expectedAccountId);
+
+    if (checkDuplicates) {
+      const windowMs = DUPLICATE_WINDOW_DAYS * 86_400_000;
+      const matches = await tx.title.findMany({
+        where: {
+          companyId,
+          type: data.type,
+          deletedAt: null,
+          status: { not: "CANCELLED" },
+          creditCardInvoice: null,
+          originalAmountCents: BigInt(data.originalAmountCents),
+          dueDate: { gte: new Date(data.dueDate.getTime() - windowMs), lte: new Date(data.dueDate.getTime() + windowMs) },
+          ...(data.partyId ? { partyId: data.partyId } : { description: { equals: data.description, mode: "insensitive" } }),
+        },
+        select: { id: true, description: true, dueDate: true, originalAmountCents: true },
+        orderBy: { dueDate: "asc" },
+        take: 3,
+      });
+      if (matches.length > 0) throw new PossibleDuplicateTitleError(matches);
+    }
+
     const title = await tx.title.create({
       data: {
         companyId,
         type: data.type,
+        expectedAccountId: data.expectedAccountId || null,
+        documentNumber: data.documentNumber || null,
+        expectedPaymentMethod: data.expectedPaymentMethod || null,
+        paymentCode: data.paymentCode || null,
         description: data.description,
         categoryId: data.categoryId,
         partyId: data.partyId,

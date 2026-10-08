@@ -16,3 +16,7 @@ export * from "./duplicate-title";
 export * from "./settlement-refunds";
 export * from "./title-allocations";
 export * from "./title-batch";
+export * from "./title-details";
+export * from "./late-charges";
+export * from "./title-operations";
+export * from "./payment-method-report";

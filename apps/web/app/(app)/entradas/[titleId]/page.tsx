@@ -6,6 +6,8 @@ import {
   EVENT_TYPE_LABEL,
   TitleNotFoundError,
   getTitle,
+  getLateFeeSettings,
+  paymentMethodLabel,
   listAuditEvents,
   listFinancialAccounts,
   listActiveCategories,
@@ -20,6 +22,10 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly, todayDateOnlyString } from "@/lib/dates";
 import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
+import { CopyButton } from "@/components/titles/copy-button";
+import { CollectionModal } from "@/components/titles/collection-modal";
+import { buildCollectionMessage, mailtoHref } from "@/lib/collection-message";
+
 import { ActionModal } from "@/components/ui/action-modal";
 import { TitleAttachments } from "@/components/titles/title-attachments";
 import { TitleEditForm } from "@/components/titles/title-edit-form";
@@ -44,7 +50,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 export default async function EntradaDetailPage(
   props: {
     params: Promise<{ titleId: string }>;
-    searchParams: Promise<{ erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; duplicado?: string; rateado?: string }>;
+    searchParams: Promise<{ erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; cobrado?: string; duplicado?: string; rateado?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -86,6 +92,16 @@ export default async function EntradaDetailPage(
   const deleteInstallmentPlanAction = title.installmentGroupId
     ? deleteEntradaInstallmentPlanAction.bind(null, title.installmentGroupId, title.id)
     : null;
+  const today = todayDateOnlyString();
+  const dueDay = toDateOnlyString(title.dueDate);
+  const isOpen = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
+  const daysLate = Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${dueDay}T00:00:00Z`)) / 86_400_000));
+  const returnTo = `/entradas/${title.id}`;
+  const expectedAccount = accounts.find((account) => account.id === title.expectedAccountId) ?? null;
+  const moneyField = (cents: bigint) => (Number(cents) / 100).toFixed(2).replace(".", ",");
+  const lateFee = await getLateFeeSettings(user.id, company.id);
+  const collectionMessage = isOpen ? buildCollectionMessage({ companyName: company.name, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode }) : null;
+  const collectionMail = collectionMessage ? mailtoHref(title.party?.email, collectionMessage) : null;
   const showSettlementForm = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
   const openBalanceCents = title.status === "CANCELLED" ? BigInt(0) : title.remainingCents;
 
@@ -111,12 +127,15 @@ export default async function EntradaDetailPage(
           <div className="record-detail-actions">
             <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
             <ActionModal triggerLabel="Editar" title="Editar entrada" initiallyOpen={Boolean(searchParams.erroEdicao)}>
-              <TitleEditForm action={updateEntradaAction.bind(null, title.id)} title={title} categories={categories} parties={clients} costCenters={costCenters} partyLabel="Cliente" error={searchParams.erroEdicao}/>
+              <TitleEditForm action={updateEntradaAction.bind(null, title.id)} title={title} categories={categories} parties={clients} costCenters={costCenters} accounts={accounts} partyLabel="Cliente" error={searchParams.erroEdicao}/>
             </ActionModal>
             <ActionModal triggerLabel="Duplicar" title="Duplicar entrada">
               <p className="subtitle">A cópia nasce em aberto, sem baixas nem anexos. Ajuste as datas se necessário.</p>
               <form action={duplicateEntradaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><SubmitButton>Criar cópia</SubmitButton></form>
             </ActionModal>
+            {collectionMessage ? (
+              <CollectionModal titleId={title.id} returnTo={returnTo} triggerLabel={daysLate > 0 ? "Cobrar" : "Lembrar"} title={`${daysLate > 0 ? "Cobrar" : "Lembrar"}${title.party ? ` — ${title.party.name}` : ""}`} message={collectionMessage} mailHref={collectionMail} />
+            ) : null}
             {showSettlementForm ? (
               <ActionModal
                 triggerLabel="Registrar baixa"
@@ -128,6 +147,12 @@ export default async function EntradaDetailPage(
                 <SettlementForm
                   action={registerSettlementAction}
                   accounts={accounts}
+                  defaults={{
+                    financialAccountId: title.expectedAccountId,
+                    principal: moneyField(title.remainingCents),
+                    paymentMethod: title.expectedPaymentMethod,
+                    lateCharge: { dueDate: dueDay, ...lateFee },
+                  }}
                   error={searchParams.erroBaixa}
                 />
               </ActionModal>
@@ -147,6 +172,7 @@ export default async function EntradaDetailPage(
         {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
         {searchParams.atualizado ? <p className="success-box">Título atualizado.</p> : null}
         {searchParams.duplicado ? <p className="success-box">Cópia criada.</p> : null}
+        {searchParams.cobrado ? <p className="success-box">Cobrança registrada.</p> : null}
 
         <div className="record-detail-metrics">
           <div className="record-detail-metric is-primary"><span>Saldo a receber</span><strong>{formatCents(openBalanceCents, title.currency)}</strong><small>{title.status === "CANCELLED" ? "Título cancelado" : "Valor ainda pendente"}</small></div>
@@ -156,6 +182,11 @@ export default async function EntradaDetailPage(
 
         <dl className="record-detail-facts">
           {title.party ? <div><dt>Cliente</dt><dd><Link href={`/cadastros/pessoas/${title.party.id}`}>{title.party.name}</Link></dd></div> : null}
+          {expectedAccount ? <div><dt>Conta prevista</dt><dd>{expectedAccount.name}</dd></div> : null}
+          {title.expectedPaymentMethod ? <div><dt>Forma de pagamento</dt><dd>{paymentMethodLabel(title.expectedPaymentMethod)}</dd></div> : null}
+          {title.documentNumber ? <div><dt>Documento</dt><dd>{title.documentNumber}</dd></div> : null}
+          {title.paymentCode ? <div><dt>Dados de pagamento</dt><dd className="fact-copy"><code>{title.paymentCode}</code><CopyButton text={title.paymentCode} /></dd></div> : null}
+          {title.lastCollectionAt ? <div><dt>Cobrança</dt><dd>Cobrado {title.collectionCount} {title.collectionCount === 1 ? "vez" : "vezes"} · última em {formatDateOnly(title.lastCollectionAt)}</dd></div> : null}
           {title.notes ? <div><dt>Observações</dt><dd>{title.notes}</dd></div> : null}
           {title.status === "CANCELLED" && title.cancelReason ? <div><dt>Motivo do cancelamento</dt><dd>{title.cancelReason}</dd></div> : null}
         </dl>

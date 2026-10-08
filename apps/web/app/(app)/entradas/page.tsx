@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowDownCircle } from "@/components/ui/animated-icons";
-import { listActiveCategories, listCostCenters, listParties, listTitlesPage } from "@ax-finance/domain";
+import { getLateFeeSettings, listActiveCategories, listCostCenters, listFinancialAccounts, listParties, listTitlesPage } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { TitleListTable } from "@/components/titles/title-list-table";
 import { Pagination } from "@/components/ui/pagination";
 import { TitleListSummary } from "@/components/titles/title-list-summary";
-import { TitleForm } from "@/components/titles/title-form";
-import { Modal } from "@/components/ui/modal";
+import { TitleFilters } from "@/components/titles/title-filters";
+import { ActionModal } from "@/components/ui/action-modal";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { QuickCreateButton, QuickCreateOnParam } from "@/components/quick-create";
 import { todayDateOnlyString } from "@/lib/dates";
 import { isComparisonMode, periodQuery, resolvePeriodRange } from "@/lib/month";
-import { createEntradaAction, createEntradaAndContinueAction } from "./actions";
+import { parseTitleListQuery, type TitleListQuery } from "@/lib/title-list-params";
+import { updateLateFeeAction } from "../titulos-actions";
 
 type Filter = "vencidas" | "hoje" | "proximas" | "quitadas" | "todas";
 
@@ -24,11 +26,14 @@ const FILTER_LABEL: Record<Filter, string> = {
   quitadas: "Quitadas",
 };
 
-export default async function EntradasPage(
-  props: {
-    searchParams: Promise<{ filtro?: string; pagina?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string; erro?: string; continuar?: string; criado?: string; loteConcluido?: string }>;
-  }
-) {
+type SearchParams = TitleListQuery & {
+  filtro?: string; pagina?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string;
+  erro?: string; erroBaixa?: string; titulo?: string; baixado?: string; cobrado?: string; multaSalva?: string; loteConcluido?: string; novo?: string;
+};
+
+const percent = (bps: number) => (bps / 100).toFixed(2).replace(".", ",");
+
+export default async function EntradasPage(props: { searchParams: Promise<SearchParams> }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) {
@@ -36,10 +41,12 @@ export default async function EntradasPage(
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const [categories, clients, costCenters] = await Promise.all([
+  const [categories, clients, costCenters, allAccounts, lateFee] = await Promise.all([
     listActiveCategories(user.id, company.id),
     listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" }),
     listCostCenters(user.id, company.id),
+    listFinancialAccounts(user.id, company.id),
+    getLateFeeSettings(user.id, company.id),
   ]);
 
   const filter: Filter = (["todas", "vencidas", "hoje", "proximas", "quitadas"] as const).includes(searchParams.filtro as Filter) ? (searchParams.filtro as Filter) : "todas";
@@ -54,48 +61,58 @@ export default async function EntradasPage(
     to: monthTo,
     today,
     page: Number.isFinite(requestedPage) ? requestedPage : 1,
+    ...parseTitleListQuery(searchParams),
   });
   const titles = listing.titles;
+  const params = Object.fromEntries(Object.entries(searchParams).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
 
   const filterHref = (key: Filter) => {
-    const params = new URLSearchParams(periodQuery(period, isComparisonMode(searchParams.comparar) ? searchParams.comparar : null));
-    if (key !== "todas") params.set("filtro", key);
-    const query = params.toString();
+    const next = new URLSearchParams(periodQuery(period, isComparisonMode(searchParams.comparar) ? searchParams.comparar : null));
+    for (const keep of ["q", "categoria", "pessoa", "centro", "min", "max", "ordem", "dir"] as const) if (searchParams[keep]) next.set(keep, searchParams[keep]!);
+    if (key !== "todas") next.set("filtro", key);
+    const query = next.toString();
     return query ? `/entradas?${query}` : "/entradas";
   };
+  const exportQuery = new URLSearchParams({ tipo: "RECEIVABLE" });
+  for (const [key, value] of Object.entries(params)) if (!["pagina", "erro", "erroBaixa", "titulo", "baixado", "cobrado", "multaSalva", "loteConcluido", "novo"].includes(key)) exportQuery.set(key, value);
+  const resultParams = ["pagina", "erro", "erroBaixa", "titulo", "baixado", "cobrado", "multaSalva", "loteConcluido", "novo"];
+  const returnQuery = new URLSearchParams(Object.entries(params).filter(([key]) => !resultParams.includes(key))).toString();
+  const returnTo = returnQuery ? `/entradas?${returnQuery}` : "/entradas";
+
   return (
     <main className="wide">
       <div className="page-header">
         <h1>Entradas</h1>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+        <div className="page-header-actions">
           <Link href="/entradas/recorrencias" className="button-link">
             Recorrências
           </Link>
           <Link href="/entradas/parcelado" className="button-link">
             Parcelar
           </Link>
-          <Modal
-            key={searchParams.continuar ?? "novo"}
-            triggerLabel="+ Novo lançamento"
-            triggerClassName="button-link workspace-primary-action"
-            title="Nova entrada"
-            icon={<ArrowDownCircle className="size-5" strokeWidth={1.5} />}
-            maxWidth="720px"
-            openWhen="novo"
-          >
-            <TitleForm
-              action={createEntradaAction}
-              actionAndContinue={createEntradaAndContinueAction}
-              categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
-              parties={clients}
-              costCenters={costCenters}
-              partyLabel="Cliente"
-              kind="RECEIVABLE"
-              error={searchParams.erro}
-            />
-          </Modal>
+          <a href={`/api/titles/export?${exportQuery.toString()}`} className="button-link" download>
+            Exportar CSV
+          </a>
+          <ActionModal triggerLabel="Multa e juros" title="Multa e juros por atraso">
+            <p className="subtitle">Ao receber um título vencido, o sistema sugere multa e juros com estes percentuais. É só sugestão: você confere e pode alterar na hora.</p>
+            <form action={updateLateFeeAction.bind(null, returnTo)}>
+              <label htmlFor="lateFee">Multa por atraso (%, uma vez)</label>
+              <input id="lateFee" name="lateFee" type="text" inputMode="decimal" defaultValue={percent(lateFee.lateFeeBps)} placeholder="2,00" />
+              <label htmlFor="lateInterest">Juros ao mês (%)</label>
+              <input id="lateInterest" name="lateInterest" type="text" inputMode="decimal" defaultValue={percent(lateFee.lateInterestMonthlyBps)} placeholder="1,00" />
+              <p className="muted">Os juros são proporcionais aos dias de atraso (mês de 30 dias). Máximo de 20% em cada campo; zero desliga a sugestão.</p>
+              <SubmitButton>Salvar</SubmitButton>
+            </form>
+          </ActionModal>
+          <QuickCreateButton kind="RECEIVABLE" className="button-link workspace-primary-action">+ Novo lançamento</QuickCreateButton>
         </div>
       </div>
+      <QuickCreateOnParam kind="RECEIVABLE" />
+
+      {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+      {searchParams.baixado ? <p className="success-box">Recebimento registrado.</p> : null}
+      {searchParams.cobrado ? <p className="success-box">Cobrança registrada.</p> : null}
+      {searchParams.multaSalva ? <p className="success-box">Multa e juros salvos.</p> : null}
 
       <div className="filters">
         {(Object.keys(FILTER_LABEL) as Filter[]).map((key) => (
@@ -106,12 +123,31 @@ export default async function EntradasPage(
       </div>
       {filter === "vencidas" || filter === "hoje" ? <p className="workspace-filter-note">{filter === "vencidas" ? "Vencidas de todos os meses." : "Vencimentos de hoje em qualquer período."} O seletor de período acima não limita esta lista.</p> : null}
 
-      <TitleListSummary summary={listing.summary} total={listing.total} kind="entradas" overdueView={filter === "vencidas"} scopeNote={filter === "vencidas" || filter === "hoje" ? "Todas as datas" : "Conforme período e filtro acima"} />
+      <TitleFilters
+        basePath="/entradas"
+        params={params}
+        categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}
+        parties={clients}
+        costCenters={costCenters}
+        partyLabel="Cliente"
+      />
+
+      <TitleListSummary summary={listing.summary} total={listing.total} kind="entradas" overdueView={filter === "vencidas"} scopeNote={filter === "vencidas" || filter === "hoje" ? "Todas as datas" : "Conforme período e filtros acima"} />
 
       <div className="card">
         {searchParams.loteConcluido ? <p className="success-box">Operação concluída em {searchParams.loteConcluido} entrada(s).</p> : null}
-        <TitleListTable titles={titles} basePath="/entradas" userId={user.id} companyId={company.id} />
-        <Pagination basePath="/entradas" params={searchParams} page={listing.page} pageCount={listing.pageCount} total={listing.total} pageSize={listing.pageSize} />
+        <TitleListTable
+          titles={titles}
+          basePath="/entradas"
+          userId={user.id}
+          companyId={company.id}
+          params={params}
+          accounts={allAccounts.filter((account) => account.status === "ACTIVE")}
+          today={today}
+          lateFee={lateFee}
+          companyName={company.name}
+        />
+        <Pagination basePath="/entradas" params={params} page={listing.page} pageCount={listing.pageCount} total={listing.total} pageSize={listing.pageSize} />
       </div>
     </main>
   );

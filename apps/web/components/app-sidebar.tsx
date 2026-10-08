@@ -65,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
             href: "/relatorios/em-aberto",
           },
           { id: "rel-dre", title: "DRE gerencial", icon: BarChart3, href: "/relatorios/dre" },
+          { id: "rel-forma", title: "Forma de pagamento", icon: BarChart3, href: "/relatorios/forma-de-pagamento" },
         ],
       },
       {

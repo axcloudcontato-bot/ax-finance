@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animated-icons";
 import { CategorySuggestion } from "@/components/category-suggestion";
 import { TransferForm } from "@/components/transfers/transfer-form";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { todayDateOnlyString } from "@/lib/dates";
 import {
@@ -138,6 +137,10 @@ export function QuickCreateModal() {
 
 function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onDone: (message: string, keepOpen: boolean) => void }) {
   const [error, setError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState(false);
+  const confirmDuplicate = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const [pending, startTransition] = useTransition();
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const today = todayDateOnlyString();
   const keepOpen = useRef(false);
@@ -145,9 +148,30 @@ function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE";
 
   async function submit(formData: FormData) {
     setError(null);
+    setDuplicate(false);
+    if (confirmDuplicate.current) formData.set("confirmDuplicate", "1");
     const result = await quickCreateTitleAction(kind, formData);
     if (result.ok) onDone(result.message, keepOpen.current);
+    else if (result.duplicate) setDuplicate(true);
     else setError(result.error);
+    confirmDuplicate.current = false;
+  }
+
+  // Envio por onSubmit (e não por action): o React limpa os campos de um <form action> quando a ação termina,
+  // e aqui a pessoa precisa manter o que digitou se houver erro ou aviso de duplicidade.
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    startTransition(async () => {
+      await submit(formData);
+    });
+  }
+
+  // Aviso de duplicidade: se a pessoa confirmar que é outro lançamento, reenvia o mesmo formulário.
+  function submitAnyway() {
+    confirmDuplicate.current = true;
+    keepOpen.current = false;
+    formRef.current?.requestSubmit();
   }
 
   if (options.categories.length === 0) {
@@ -160,8 +184,15 @@ function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE";
   }
 
   return (
-    <form action={submit}>
+    <form ref={formRef} onSubmit={onSubmit} onChange={() => { if (duplicate) setDuplicate(false); }}>
       {error ? <p className="error">{error}</p> : null}
+      {duplicate ? (
+        <div className="duplicate-warning" role="alert">
+          <strong>Possível lançamento em duplicidade</strong>
+          <p>Já existe um {kind === "RECEIVABLE" ? "recebimento" : "pagamento"} com o mesmo valor, vencimento próximo e {options.parties.length > 0 ? "a mesma pessoa ou descrição" : "a mesma descrição"}. Confira a lista antes de lançar de novo.</p>
+          <button type="button" className="secondary" disabled={pending} onClick={submitAnyway}>É outro lançamento, lançar mesmo assim</button>
+        </div>
+      ) : null}
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <div className="form-grid">
         <div className="span-2">
@@ -221,9 +252,37 @@ function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE";
         </div>
       </div>
 
+      <details className="quick-more">
+        <summary>Mais detalhes (opcional)</summary>
+        <div className="form-grid">
+          <div>
+            <label htmlFor="qc-account">{kind === "RECEIVABLE" ? "Conta prevista para receber" : "Conta prevista para pagar"}</label>
+            <select id="qc-account" name="expectedAccountId" defaultValue="">
+              <option value="">Não informar</option>
+              {options.accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="qc-method">Forma de pagamento prevista</label>
+            <select id="qc-method" name="expectedPaymentMethod" defaultValue="">
+              <option value="">Não informar</option>
+              {options.paymentMethods.map((method) => <option key={method.key} value={method.key}>{method.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="qc-document">Nº do documento (nota, boleto, pedido)</label>
+            <input id="qc-document" name="documentNumber" type="text" maxLength={60} />
+          </div>
+          <div>
+            <label htmlFor="qc-code">{kind === "PAYABLE" ? "Linha digitável ou chave PIX" : "Chave PIX ou dados para receber"}</label>
+            <input id="qc-code" name="paymentCode" type="text" maxLength={200} />
+          </div>
+        </div>
+      </details>
+
       <div style={{ display: "flex", gap: "0.75rem" }}>
-        <SubmitButton onClick={() => { keepOpen.current = false; }}>Salvar</SubmitButton>
-        <SubmitButton className="secondary" onClick={() => { keepOpen.current = true; }}>Salvar e nova</SubmitButton>
+        <button type="submit" disabled={pending} onClick={() => { keepOpen.current = false; }}>{pending ? "Salvando…" : "Salvar"}</button>
+        <button type="submit" className="secondary" disabled={pending} onClick={() => { keepOpen.current = true; }}>Salvar e nova</button>
       </div>
     </form>
   );
@@ -261,4 +320,21 @@ function QuickTransfer({ accounts, onDone, onCancel }: { accounts: { id: string;
       />
     </>
   );
+}
+
+/** Compatibilidade com endereços antigos (`?novo=1`): abre a criação rápida e tira o parâmetro da URL. */
+export function QuickCreateOnParam({ kind, param = "novo" }: { kind: QuickCreateKind; param?: string }) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  useEffect(() => {
+    if (!searchParams.has(param)) return;
+    openQuickCreate(kind);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete(param);
+    router.replace(next.size > 0 ? `${pathname}?${next.toString()}` : pathname);
+    // Só na chegada à página com o parâmetro.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
 }

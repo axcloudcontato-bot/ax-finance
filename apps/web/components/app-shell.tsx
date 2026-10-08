@@ -41,7 +41,7 @@ export function AppShell({
   const dashboardOwnsToolbar = pathname === "/dashboard";
   const showsPeriod = new Set([
     "/entradas", "/saidas", "/contas", "/transferencias", "/conciliacao",
-    "/auditoria", "/relatorios/fluxo-de-caixa", "/relatorios/dre", "/orcamento",
+    "/auditoria", "/relatorios/fluxo-de-caixa", "/relatorios/dre", "/relatorios/forma-de-pagamento", "/orcamento",
   ]).has(pathname);
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = useCallback(() => setNavOpen(false), []);

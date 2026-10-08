@@ -36,6 +36,7 @@ export const dashboardOverviewInput = z.object({
 export type DashboardOverviewInput = z.infer<typeof dashboardOverviewInput>;
 
 const DAY_MS = 86_400_000;
+const OPEN_STATUSES_FOR_COUNT = ["OPEN", "PARTIALLY_SETTLED"] as const;
 const OPERATING_PAYMENT_NATURES = new Set<CategoryNature>(["COST", "EXPENSE"]);
 
 function atUtc(value: string): Date {
@@ -192,6 +193,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
   await assertActiveMembership(userId, companyId);
 
   const today = data.today ?? (await getCompanyToday(userId, companyId));
+  const accountScoped = Boolean(data.financialAccountId) && !data.categoryId && !data.partyId && !data.costCenterId;
   const projectionEnd = addDays(today, data.projectionDays);
   const comparisonRanges = data.comparisonFrom && data.comparisonTo
     ? [{ effectiveDate: { gte: atUtc(data.comparisonFrom), lte: atUtc(data.comparisonTo) } }]
@@ -246,6 +248,9 @@ export async function getDashboardOverview(userId: string, companyId: string, in
           deletedAt: null,
           status: { not: "CANCELLED" },
           ...titleFilter(data),
+          // Só uma conta escolhida (sem outro filtro): os títulos em aberto são os que têm essa conta como conta prevista,
+          // para a projeção ter o mesmo escopo do saldo. Com outros filtros juntos, os títulos seguem sem olhar a conta.
+          ...(accountScoped ? { expectedAccountId: data.financialAccountId } : {}),
         },
         include: {
           category: { select: { id: true, name: true, nature: true } },
@@ -307,6 +312,10 @@ export async function getDashboardOverview(userId: string, companyId: string, in
       // no primeiro dia da projeção, em vez de desaparecerem do caixa futuro.
       return due <= projectionEnd;
     });
+
+    const unassignedOpen = accountScoped
+      ? await tx.title.count({ where: { companyId, deletedAt: null, status: { in: [...OPEN_STATUSES_FOR_COUNT] }, expectedAccountId: null, creditCardInvoice: null } })
+      : null;
 
     const availableBalanceCents = accounts
       .filter((account) => account.includedInAvailableTotal)
@@ -425,6 +434,8 @@ export async function getDashboardOverview(userId: string, companyId: string, in
       overdueTitles,
       projectionTitles,
       categoryRanking,
+      /** Só com uma conta escolhida (e nenhum outro filtro): títulos em aberto sem conta prevista, que ficam fora da projeção dessa conta. */
+      unassignedOpen,
       flowSeries: [...buckets.values()],
       reconciliation: {
         available: reconciliationAvailable,

@@ -128,6 +128,8 @@ export default async function DashboardPage(
     centroCusto: costCenters.some((item) => item.id === searchParams.centroCusto) ? searchParams.centroCusto : undefined,
   };
   const segmentedView = Boolean(selected.conta || selected.categoria || selected.pessoa || selected.centroCusto);
+  // Só uma conta escolhida: o saldo é o dela e os títulos são os que têm essa conta como conta prevista, então a projeção vale.
+  const accountOnly = Boolean(selected.conta) && !selected.categoria && !selected.pessoa && !selected.centroCusto;
   const projectionDays = ([30, 60, 90] as const).find((days) => String(days) === searchParams.horizonte) ?? 30;
   const overview = await getDashboardOverview(user.id, activeCompanyId, {
     projectionDays,
@@ -182,8 +184,8 @@ export default async function DashboardPage(
   const baseAlerts = [
     overduePayables.items.length > 0 ? { tone: "danger", title: "Contas a pagar vencidas", body: `${overduePayables.items.length} ${overduePayables.items.length === 1 ? "obrigação vencida soma" : "obrigações vencidas somam"} ${formatCents(overduePayables.totalCents)}.`, href: "/relatorios/em-aberto", action: "Ver contas" } : null,
     overdueReceivables.items.length > 0 ? { tone: "warning", title: "Recebíveis vencidos", body: `${overdueReceivables.items.length} ${overdueReceivables.items.length === 1 ? "recebível vencido soma" : "recebíveis vencidos somam"} ${formatCents(overdueReceivables.totalCents)}.${segmentedView ? "" : " A projeção depende da cobrança desses valores."}`, href: "/relatorios/em-aberto", action: "Ver cobranças" } : null,
-    !segmentedView && overview.firstNegativeDate ? { tone: "danger", title: "Risco de caixa negativo", body: `Mesmo recebendo os vencidos, a projeção cruza zero em ${formatDateOnly(overview.firstNegativeDate)}.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" } : null,
-    !segmentedView && !overview.firstNegativeDate && overview.firstNegativeWithoutOverdueDate ? { tone: "warning", title: "Risco sem receber atrasados", body: `Sem receber os títulos vencidos, o caixa cruza zero em ${formatDateOnly(overview.firstNegativeWithoutOverdueDate)}.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" } : null,
+    (!segmentedView || accountOnly) && overview.firstNegativeDate ? { tone: "danger", title: "Risco de caixa negativo", body: `Mesmo recebendo os vencidos, a projeção cruza zero em ${formatDateOnly(overview.firstNegativeDate)}.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" } : null,
+    (!segmentedView || accountOnly) && !overview.firstNegativeDate && overview.firstNegativeWithoutOverdueDate ? { tone: "warning", title: "Risco sem receber atrasados", body: `Sem receber os títulos vencidos, o caixa cruza zero em ${formatDateOnly(overview.firstNegativeWithoutOverdueDate)}.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" } : null,
     overview.reconciliation.available && overview.reconciliation.pendingCount > 0 ? { tone: "warning", title: "Conciliação pendente", body: `${overview.reconciliation.pendingCount} ${overview.reconciliation.pendingCount === 1 ? "linha aguarda" : "linhas aguardam"} conferência, somando ${formatCents(overview.reconciliation.pendingAmountCents)}${overview.reconciliation.oldestPendingDate ? `, desde ${formatDateOnly(overview.reconciliation.oldestPendingDate)}` : ""}.`, href: selected.conta ? `/conciliacao?conta=${selected.conta}` : "/conciliacao", action: "Conciliar" } : null,
     overview.reconciliation.available && overview.reconciliation.failedImportCount > 0 ? { tone: "danger", title: "Importação com falha", body: `${overview.reconciliation.failedImportCount} ${overview.reconciliation.failedImportCount === 1 ? "importação precisa" : "importações precisam"} de atenção.`, href: "/conciliacao", action: "Diagnosticar" } : null,
   ].filter((alert): alert is NonNullable<typeof alert> => Boolean(alert));
@@ -203,6 +205,23 @@ export default async function DashboardPage(
     if (!personal && topClient && topClient.shareBps >= 4_000) alerts.push({ tone: "warning", title: "Receita concentrada", body: `${topClient.name} responde por ${percentOf(topClient.shareBps)} da receita do período.`, href: "/relatorios/dre", action: "Ver DRE" });
   }
 
+  const projectionSection = (
+    <section className="card dashboard-projection-section">
+      <div className="dashboard-section-heading">
+        <div><h2>Caminho do caixa · próximos {projectionDays} dias</h2><p>Saldo acumulado após os compromissos de cada dia. A linha tracejada exclui recebíveis já vencidos.</p></div>
+        <nav className="horizon-switch" aria-label="Horizonte da projeção">
+          {([30, 60, 90] as const).map((days) => (
+            <Link key={days} href={horizonHref(days)} className={days === projectionDays ? "is-active" : undefined} aria-current={days === projectionDays ? "true" : undefined}>{days} dias</Link>
+          ))}
+        </nav>
+      </div>
+      <CashProjectionChart data={cashProjectionSeries} />
+      <div className="dashboard-projection-legend"><span><i className="is-full" />Todos os recebíveis</span><span><i className="is-without-overdue" />Sem receber vencidos</span></div>
+      <p className="dashboard-projection-note">As duas linhas consideram pagamentos e recebimentos futuros nas datas cadastradas. Confira os vencidos antes de usar a projeção para decidir pagamentos.</p>
+      {accountOnly && overview.unassignedOpen ? <p className="dashboard-projection-note">Considera só os títulos com esta conta como conta prevista. {overview.unassignedOpen} {overview.unassignedOpen === 1 ? "título em aberto não tem" : "títulos em aberto não têm"} conta prevista e {overview.unassignedOpen === 1 ? "fica" : "ficam"} fora desta projeção.</p> : null}
+    </section>
+  );
+
   return (
     <main className="wide dashboard-page">
       <h1 className="sr-only">Dashboard financeiro</h1>
@@ -219,25 +238,27 @@ export default async function DashboardPage(
         <StatCard prominent icon={<Wallet className="size-5" />} label={selected.conta ? "Saldo da conta" : "Disponível na empresa"} value={formatCents(selectedAccount?.currentBalanceCents ?? overview.availableBalanceCents)} footerLabel={selected.conta ? "Incluída no total" : "Contas incluídas"} footerValue={selected.conta ? (selectedAccount?.includedInAvailableTotal ? "Sim" : "Não") : String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
           {overview.accounts.length === 0 ? <p className="muted">Nenhuma conta disponível.</p> : <table className="dashboard-detail-table"><thead><tr><th>Conta</th><th>Tipo</th><th>Saldo</th></tr></thead><tbody>{overview.accounts.map((account) => <tr key={account.id}><td data-label="Conta">{account.name}</td><td data-label="Tipo">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td><td data-label="Saldo">{formatCents(account.currentBalanceCents, account.currency)}</td></tr>)}</tbody></table>}
         </StatCard>
-        {segmentedView ? (
-          <div className="dashboard-projection-unavailable"><Landmark className="size-5" /><strong>Projeção no consolidado</strong><p>{selected.conta ? "Os títulos em aberto não têm conta de destino definida." : "O saldo inicial é da empresa inteira, enquanto os títulos foram filtrados."} Limpe os filtros para ver uma projeção com o mesmo escopo.</p></div>
+        {segmentedView && !accountOnly ? (
+          <div className="dashboard-projection-unavailable"><Landmark className="size-5" /><strong>Projeção no consolidado</strong><p>O saldo inicial é da empresa inteira, enquanto os títulos foram filtrados. Limpe os filtros ou escolha só uma conta para ver uma projeção com o mesmo escopo.</p></div>
         ) : (
           <StatCard icon={<Landmark className="size-5" />} label={`Projetado em ${projectionDays} dias`} value={formatCents(overview.projectedBalanceCents)} footerLabel="Sem receber vencidos" footerValue={formatCents(overview.balanceWithoutOverdueReceivablesCents)} gradient={overview.projectedBalanceCents < BigInt(0) ? "pink" : "blue"} modalTitle={`Cenários para os próximos ${projectionDays} dias`}>
             <p className="muted">O valor principal supõe que todos os títulos em aberto sejam pagos na data de vencimento. Recebíveis já vencidos entram hoje; o cenário alternativo os exclui. Nenhum dos dois é garantia de recebimento.</p>
             <TitleDetailList titles={overview.projectionTitles} />
           </StatCard>
         )}
-        {selected.conta ? <div className="dashboard-projection-unavailable dashboard-open-titles-unavailable"><strong>Títulos sem conta atribuída</strong><p>Os valores a pagar e a receber são da empresa e não podem ser atribuídos à conta selecionada.</p></div> : <>
+        {segmentedView && !accountOnly ? <div className="dashboard-projection-unavailable dashboard-open-titles-unavailable"><strong>Títulos em aberto</strong><p>Com mais de um filtro, os valores a pagar e a receber não ficam comparáveis ao saldo. Limpe os filtros para vê-los.</p></div> : <>
           <StatCard icon={<ArrowUpCircle className="size-5" />} label={`A pagar até ${formatDateOnly(overview.projectionEnd)}`} value={formatCents(projectionPayables.totalCents)} footerLabel="Vencidos" footerValue={String(overduePayables.items.length)} gradient="orange" modalTitle="Obrigações até o fim da projeção"><TitleDetailList titles={projectionPayables.items} /></StatCard>
           <StatCard icon={<ArrowDownCircle className="size-5" />} label={`A receber até ${formatDateOnly(overview.projectionEnd)}`} value={formatCents(projectionReceivables.totalCents)} footerLabel="Vencidos" footerValue={String(overdueReceivables.items.length)} gradient="teal" modalTitle="Recebíveis até o fim da projeção"><TitleDetailList titles={projectionReceivables.items} /></StatCard>
         </>}
       </Reveal>
 
       <section className="card dashboard-alerts">
-        <div className="dashboard-section-heading"><div><h2>O que precisa de atenção</h2><p>{selected.conta ? "Pendências da empresa; títulos ainda não podem ser atribuídos à conta selecionada." : "Prioridades da empresa, com valores a pagar e a receber separados."}</p></div><span>{alerts.length} {alerts.length === 1 ? "pendência" : "pendências"}</span></div>
+        <div className="dashboard-section-heading"><div><h2>O que precisa de atenção</h2><p>{selected.conta ? "Pendências dos títulos que têm a conta selecionada como conta prevista." : "Prioridades da empresa, com valores a pagar e a receber separados."}</p></div><span>{alerts.length} {alerts.length === 1 ? "pendência" : "pendências"}</span></div>
         {alerts.length === 0 ? <div className="dashboard-alert success"><CircleCheck className="size-5" /><div><strong>Nenhuma pendência detectada</strong><p>Não há atrasos, importações com falha ou conciliações pendentes neste escopo.</p></div></div>
           : <div className="dashboard-alert-list">{alerts.map((alert) => <div key={alert.title} className={`dashboard-alert ${alert.tone}`}><AlertTriangle className="size-5" /><div><strong>{alert.title}</strong><p>{alert.body}</p></div><Link href={alert.href}>{alert.action}</Link></div>)}</div>}
       </section>
+
+      {accountOnly ? projectionSection : null}
 
       {!segmentedView && insights && budget ? (
         <>
@@ -249,19 +270,7 @@ export default async function DashboardPage(
             <div className="dashboard-projection-legend"><span><i className="is-revenue" />Receitas</span><span><i className="is-expense" />Despesas</span><span><i className="is-full" />Resultado</span></div>
           </section>
 
-          <section className="card dashboard-projection-section">
-            <div className="dashboard-section-heading">
-              <div><h2>Caminho do caixa · próximos {projectionDays} dias</h2><p>Saldo acumulado após os compromissos de cada dia. A linha tracejada exclui recebíveis já vencidos.</p></div>
-              <nav className="horizon-switch" aria-label="Horizonte da projeção">
-                {([30, 60, 90] as const).map((days) => (
-                  <Link key={days} href={horizonHref(days)} className={days === projectionDays ? "is-active" : undefined} aria-current={days === projectionDays ? "true" : undefined}>{days} dias</Link>
-                ))}
-              </nav>
-            </div>
-            <CashProjectionChart data={cashProjectionSeries} />
-            <div className="dashboard-projection-legend"><span><i className="is-full" />Todos os recebíveis</span><span><i className="is-without-overdue" />Sem receber vencidos</span></div>
-            <p className="dashboard-projection-note">As duas linhas consideram pagamentos e recebimentos futuros nas datas cadastradas. Confira os vencidos antes de usar a projeção para decidir pagamentos.</p>
-          </section>
+          {projectionSection}
 
           <div className="dashboard-insight-grid">
             <AgendaPanel overview={overview} />
@@ -275,12 +284,12 @@ export default async function DashboardPage(
       ) : null}
 
       <section className="dashboard-period-section">
-        <div className="dashboard-section-heading"><div><h2>No período selecionado</h2><p>{selected.conta ? "Movimentos realizados na conta selecionada. Títulos em aberto não têm conta atribuída." : "Movimentos realizados e títulos abertos com vencimento no período."}</p></div></div>
+        <div className="dashboard-section-heading"><div><h2>No período selecionado</h2><p>{selected.conta ? "Movimentos realizados na conta selecionada e títulos em aberto que têm essa conta como conta prevista." : "Movimentos realizados e títulos abertos com vencimento no período."}</p></div></div>
         <Reveal className="stat-grid dashboard-secondary-grid">
         <StatCard icon={<ArrowDownCircle className="size-5" />} label="Recebimentos realizados" value={formatCents(overview.current.receivedCents)} footerLabel="Baixas no período" footerValue={String(realizedReceipts.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.receivedCents, overview.comparison.receivedCents) : undefined} gradient="teal" modalTitle="Recebimentos realizados"><SettlementList entries={realizedReceipts} /></StatCard>
         <StatCard icon={<ArrowUpCircle className="size-5" />} label="Pagamentos realizados" value={formatCents(overview.current.paidCents)} footerLabel="Baixas no período" footerValue={String(realizedPayments.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.paidCents, overview.comparison.paidCents) : undefined} gradient="pink" modalTitle="Pagamentos realizados"><SettlementList entries={realizedPayments} /></StatCard>
         <StatCard icon={<TrendingUp className="size-5" />} label="Geração líquida operacional" value={formatCents(overview.current.operatingNetCents)} footerLabel="Recebido − pago" footerValue={`${formatCents(overview.current.operatingReceivedCents)} − ${formatCents(overview.current.operatingPaidCents)}`} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.operatingNetCents, overview.comparison.operatingNetCents) : undefined} gradient="blue" modalTitle="Geração operacional"><p>Recebimentos operacionais: <strong>{formatCents(overview.current.operatingReceivedCents)}</strong></p><p>Pagamentos operacionais: <strong>{formatCents(overview.current.operatingPaidCents)}</strong></p><p className="muted">Financiamentos, patrimônio, investimentos e transferências técnicas não inflam este indicador.</p></StatCard>
-        {!selected.conta ? <>
+        {!selected.conta || accountOnly ? <>
           <StatCard icon={<ArrowDownCircle className="size-5" />} label="A receber no período" value={formatCents(currentReceivables.totalCents)} footerLabel="Títulos abertos" footerValue={String(currentReceivables.items.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(currentReceivables.totalCents, previousReceivables.totalCents) : undefined} gradient="teal" modalTitle="A receber no período"><TitleDetailList titles={currentReceivables.items} /></StatCard>
           <StatCard icon={<ArrowUpCircle className="size-5" />} label="A pagar no período" value={formatCents(currentPayables.totalCents)} footerLabel="Títulos abertos" footerValue={String(currentPayables.items.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(currentPayables.totalCents, previousPayables.totalCents) : undefined} gradient="orange" modalTitle="A pagar no período"><TitleDetailList titles={currentPayables.items} /></StatCard>
         </> : null}

@@ -23,6 +23,7 @@ export async function duplicateTitle(userId: string, companyId: string, titleId:
         partyId: source.partyId, costCenterId: source.costCenterId, originalAmountCents: source.originalAmountCents,
         currency: source.currency, competenceDate: data.competenceDate ?? source.competenceDate,
         dueDate: data.dueDate ?? source.dueDate, notes: source.notes,
+        expectedAccountId: source.expectedAccountId, expectedPaymentMethod: source.expectedPaymentMethod,
       },
     });
     const allocations = await tx.titleAllocation.findMany({ where: { companyId, titleId: source.id } });

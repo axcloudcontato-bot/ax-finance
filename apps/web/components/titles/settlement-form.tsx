@@ -1,22 +1,44 @@
 import { randomUUID } from "node:crypto";
-import type { listFinancialAccounts } from "@ax-finance/domain";
+import { PAYMENT_METHOD_LABEL, paymentMethodLabel, type listFinancialAccounts } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { todayDateOnlyString } from "@/lib/dates";
+import { LateChargeSuggester } from "./late-charge-suggester";
 
 type AccountOption = Awaited<ReturnType<typeof listFinancialAccounts>>[number];
+
+export interface SettlementDefaults {
+  /** Conta prevista no lançamento (ou a única conta ativa). */
+  financialAccountId?: string | null;
+  /** Valor sugerido do principal, no formato do campo ("1.234,56"): normalmente o saldo em aberto. */
+  principal?: string;
+  /** Forma de pagamento prevista no lançamento. */
+  paymentMethod?: string | null;
+  /** Multa e juros sugeridos para recebível atrasado ("25,00") e a explicação mostrada ao lado. */
+  interestPenalty?: string;
+  suggestionNote?: string;
+  /** Recebível: sugere multa e juros e recalcula ao mudar a data ou o valor. Substitui a sugestão fixa acima. */
+  lateCharge?: { dueDate: string; lateFeeBps: number; lateInterestMonthlyBps: number };
+}
 
 export function SettlementForm({
   action,
   accounts,
   error,
   submitLabel = "Registrar baixa",
+  defaults = {},
 }: {
   action: (formData: FormData) => void | Promise<void>;
   accounts: AccountOption[];
   error?: string;
   submitLabel?: string;
+  defaults?: SettlementDefaults;
 }) {
   const today = todayDateOnlyString();
+  const initialAccount = defaults.financialAccountId && accounts.some((account) => account.id === defaults.financialAccountId)
+    ? defaults.financialAccountId
+    : accounts.length === 1 ? accounts[0]!.id : "";
+  const methodLabel = paymentMethodLabel(defaults.paymentMethod) ?? "";
+  const knownMethods = Object.values(PAYMENT_METHOD_LABEL);
 
   return (
     <>
@@ -28,7 +50,7 @@ export function SettlementForm({
         <form action={action}>
           <input type="hidden" name="idempotencyKey" value={randomUUID()} />
           <label htmlFor="financialAccountId">Conta</label>
-          <select id="financialAccountId" name="financialAccountId" required defaultValue="">
+          <select id="financialAccountId" name="financialAccountId" required defaultValue={initialAccount}>
             <option value="" disabled>
               Selecione
             </option>
@@ -46,6 +68,7 @@ export function SettlementForm({
             type="text"
             inputMode="decimal"
             placeholder="0,00"
+            defaultValue={defaults.principal}
             required
           />
 
@@ -66,8 +89,9 @@ export function SettlementForm({
             type="text"
             inputMode="decimal"
             placeholder="0,00"
-            defaultValue="0,00"
+            defaultValue={defaults.interestPenalty ?? "0,00"}
           />
+          {defaults.lateCharge ? <LateChargeSuggester {...defaults.lateCharge} /> : defaults.suggestionNote ? <p className="field-note">{defaults.suggestionNote}</p> : null}
 
           <label htmlFor="feesAmount">Taxas retidas (R$)</label>
           <input
@@ -83,7 +107,11 @@ export function SettlementForm({
           <input id="effectiveDate" name="effectiveDate" type="date" defaultValue={today} required />
 
           <label htmlFor="paymentMethod">Meio de pagamento</label>
-          <input id="paymentMethod" name="paymentMethod" type="text" maxLength={100} />
+          <select id="paymentMethod" name="paymentMethod" defaultValue={methodLabel}>
+            <option value="">Não informar</option>
+            {methodLabel && !knownMethods.includes(methodLabel) ? <option value={methodLabel}>{methodLabel}</option> : null}
+            {knownMethods.map((label) => <option key={label} value={label}>{label}</option>)}
+          </select>
 
           <SubmitButton>{submitLabel}</SubmitButton>
         </form>

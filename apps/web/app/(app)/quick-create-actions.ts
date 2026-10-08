@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createTitle, createTransfer, listActiveCategories, listCostCenters, listFinancialAccounts, listParties } from "@ax-finance/domain";
+import { PAYMENT_METHOD_LABEL, PossibleDuplicateTitleError, createTitle, createTransfer, listActiveCategories, listCostCenters, listFinancialAccounts, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -15,13 +15,15 @@ import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categorie
  */
 
 export type QuickCreateKind = "RECEIVABLE" | "PAYABLE" | "TRANSFER";
-export type QuickCreateResult = { ok: true; message: string } | { ok: false; error: string };
+/** `duplicate`: o lançamento é parecido com um existente; a tela pergunta e reenvia confirmando. */
+export type QuickCreateResult = { ok: true; message: string } | { ok: false; error: string; duplicate?: boolean };
 
 export interface QuickCreateOptions {
   categories: { id: string; name: string; parentId: string | null }[];
   parties: { id: string; name: string }[];
   costCenters: { id: string; name: string }[];
   accounts: { id: string; name: string }[];
+  paymentMethods: { key: string; label: string }[];
 }
 
 async function requireContext() {
@@ -37,20 +39,22 @@ export async function loadQuickCreateOptionsAction(kind: QuickCreateKind): Promi
   try {
     if (kind === "TRANSFER") {
       const accounts = await listFinancialAccounts(userId, companyId);
-      return { ok: true, options: { categories: [], parties: [], costCenters: [], accounts: accounts.map(({ id, name }) => ({ id, name })) } };
+      return { ok: true, options: { categories: [], parties: [], costCenters: [], paymentMethods: [], accounts: accounts.map(({ id, name }) => ({ id, name })) } };
     }
-    const [categories, parties, costCenters] = await Promise.all([
+    const [categories, parties, costCenters, accounts] = await Promise.all([
       listActiveCategories(userId, companyId),
       listParties(userId, companyId, { role: kind === "RECEIVABLE" ? "CLIENT" : "SUPPLIER", status: "ACTIVE" }),
       listCostCenters(userId, companyId),
+      listFinancialAccounts(userId, companyId),
     ]);
     return {
       ok: true,
       options: {
+        paymentMethods: Object.entries(PAYMENT_METHOD_LABEL).map(([key, label]) => ({ key, label })),
         categories: sortCategoriesTree(filterCategoriesByTitleType(categories, kind)).map(({ id, name, parentId }) => ({ id, name, parentId })),
         parties: parties.map(({ id, name }) => ({ id, name })),
         costCenters: costCenters.map(({ id, name }) => ({ id, name })),
-        accounts: [],
+        accounts: accounts.filter((account) => account.status === "ACTIVE").map(({ id, name }) => ({ id, name })),
       },
     };
   } catch (error) {
@@ -71,10 +75,17 @@ export async function quickCreateTitleAction(kind: "RECEIVABLE" | "PAYABLE", for
       competenceDate: String(formData.get("competenceDate") ?? ""),
       dueDate: String(formData.get("dueDate") ?? ""),
       notes: String(formData.get("notes") ?? "") || undefined,
+      expectedAccountId: String(formData.get("expectedAccountId") ?? "") || undefined,
+      expectedPaymentMethod: String(formData.get("expectedPaymentMethod") ?? "") || undefined,
+      documentNumber: String(formData.get("documentNumber") ?? "") || undefined,
+      paymentCode: String(formData.get("paymentCode") ?? "") || undefined,
+      // Avisa de lançamento parecido, a não ser que a pessoa já tenha confirmado que é outro.
+      checkDuplicates: formData.get("confirmDuplicate") !== "1",
       idempotencyKey: String(formData.get("idempotencyKey") ?? "") || undefined,
     });
     return { ok: true, message: kind === "RECEIVABLE" ? "Entrada criada." : "Saída criada." };
   } catch (error) {
+    if (error instanceof PossibleDuplicateTitleError) return { ok: false, error: error.message, duplicate: true };
     return { ok: false, error: actionErrorMessage(error, "Não foi possível criar o lançamento.") };
   }
 }

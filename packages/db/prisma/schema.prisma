@@ -354,6 +354,9 @@ model Company {
   document  String?
   currency  String        @default("BRL")
   timezone  String        @default("America/Sao_Paulo")
+  /// Multa por atraso (uma vez) e juros ao mês, em pontos-base (200 = 2%): só sugerem valores na baixa.
+  lateFeeBps             Int @default(0) @map("late_fee_bps")
+  lateInterestMonthlyBps Int @default(0) @map("late_interest_monthly_bps")
   status    CompanyStatus @default(ACTIVE)
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
@@ -590,6 +593,7 @@ model FinancialAccount {
   balanceAdjustments BalanceAdjustment[]
   membershipAccess   MembershipFinancialAccount[]
   creditCards        CreditCard[]
+  expectedTitles     Title[]                      @relation("TitleExpectedAccount")
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -827,6 +831,19 @@ model Title {
   deletedByUserId          String?         @map("deleted_by_user_id")
   deleteReason             String?         @map("delete_reason")
 
+  /// Conta por onde o valor deve entrar/sair: preenche a baixa e permite projetar o caixa por conta.
+  expectedAccountId       String?          @map("expected_account_id")
+  expectedAccount         FinancialAccount? @relation("TitleExpectedAccount", fields: [expectedAccountId, companyId], references: [id, companyId], onDelete: Restrict)
+  /// Nota fiscal, boleto ou pedido: serve para conferência e busca.
+  documentNumber          String?          @map("document_number")
+  expectedPaymentMethod   String?          @map("expected_payment_method")
+  /// Linha digitável do boleto ou chave PIX (saídas).
+  paymentCode             String?          @map("payment_code")
+  /// Saída já agendada no banco para esta data; não é baixa (o dinheiro só sai na baixa).
+  scheduledPaymentDate    DateTime?        @map("scheduled_payment_date") @db.Date
+  lastCollectionAt        DateTime?        @map("last_collection_at")
+  collectionCount         Int              @default(0) @map("collection_count")
+
   settlements Settlement[]
   allocations TitleAllocation[]
   attachments Attachment[]
@@ -840,6 +857,8 @@ model Title {
   @@index([partyId])
   @@index([companyId, installmentGroupId])
   @@index([companyId, recurrenceRuleId])
+  @@index([companyId, expectedAccountId])
+  @@index([companyId, documentNumber])
   @@map("titles")
 }
 

@@ -268,6 +268,10 @@ export async function updateEntradaAction(titleId: string, formData: FormData) {
     partyId: String(formData.get("partyId") ?? "") || undefined, costCenterId: String(formData.get("costCenterId") ?? "") || undefined,
     originalAmountCents: parseAmountToCents(String(formData.get("amount") ?? "0")), competenceDate: String(formData.get("competenceDate") ?? ""),
     dueDate: String(formData.get("dueDate") ?? ""), notes: String(formData.get("notes") ?? "") || undefined,
+    expectedAccountId: String(formData.get("expectedAccountId") ?? "") || null,
+    expectedPaymentMethod: String(formData.get("expectedPaymentMethod") ?? "") || null,
+    documentNumber: String(formData.get("documentNumber") ?? "") || null,
+    paymentCode: String(formData.get("paymentCode") ?? "") || null,
   }); } catch (error) { redirect(`/entradas/${titleId}?erroEdicao=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar o título."))}`); }
   redirect(`/entradas/${titleId}?atualizado=1`);
 }

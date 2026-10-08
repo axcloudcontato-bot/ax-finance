@@ -4,6 +4,7 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { Settings } from "@/components/ui/animated-icons";
 
 const OPTIONAL_COLUMNS = [
+  { id: "party", label: "Cliente/fornecedor" },
   { id: "category", label: "Categoria" },
   { id: "costCenter", label: "Centro de custo" },
   { id: "dueDate", label: "Vencimento" },

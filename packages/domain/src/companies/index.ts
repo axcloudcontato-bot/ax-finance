@@ -5,3 +5,4 @@ export * from "./assert-membership";
 export * from "./permissions";
 export * from "./members";
 export * from "./reset-company-ledger";
+export * from "./late-fee-settings";
