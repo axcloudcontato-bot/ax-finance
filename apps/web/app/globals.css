@@ -4195,3 +4195,85 @@ main.settings-page {
 .category-suggestion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; margin-top: 0.4rem; padding: 0.45rem 0.65rem; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 6%, var(--card)); font-size: 0.82rem; }
 .category-suggestion small { color: var(--muted); font-size: 0.74rem; }
 .ax-model-buttons main .category-suggestion > button { min-height: 30px; margin-top: 0; }
+
+/* ===== Dashboard: indicadores de gestão (resultado, evolução, agenda, cartões, orçamento, saúde) ===== */
+.dashboard-insight-section { margin-bottom: 1.5rem; }
+.dashboard-insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; align-items: stretch; }
+.dashboard-insight-grid > .dashboard-insight-section { margin-bottom: 0; }
+.dashboard-insight-section :is(.positive) { color: var(--chart-3); }
+.dashboard-insight-section :is(.negative) { color: var(--chart-4); }
+.dashboard-insight-section .is-soon { color: var(--chart-2); font-weight: 650; }
+.dashboard-insight-section h3 { margin: 0 0 0.5rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.insight-link { color: var(--accent); font-size: 0.78rem; font-weight: 650; text-decoration: none; white-space: nowrap; }
+.insight-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.insight-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.9rem; }
+.insight-metric { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--card) 94%, var(--bg)); }
+.insight-metric-label { color: var(--muted); font-size: 0.74rem; font-weight: 650; }
+.insight-metric strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.insight-metric.is-positive strong { color: var(--chart-3); }
+.insight-metric.is-negative strong { color: var(--chart-4); }
+.insight-metric small { color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+.insight-metric-compare { padding-top: 0.25rem; border-top: 1px dashed var(--border); margin-top: 0.15rem; }
+
+.dashboard-monthly-chart { width: 100%; height: 260px; }
+.dashboard-projection-legend i.is-revenue { border-color: var(--chart-3); }
+.dashboard-projection-legend i.is-expense { border-color: var(--chart-4); }
+
+.horizon-switch { display: inline-flex; gap: 0.2rem; padding: 0.2rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--card) 94%, var(--bg)); }
+.horizon-switch a { padding: 0.28rem 0.65rem; border-radius: 8px; color: var(--muted); font-size: 0.76rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.horizon-switch a:hover { color: var(--text); }
+.horizon-switch a.is-active { background: color-mix(in srgb, var(--accent) 16%, var(--card)); color: var(--accent); }
+
+.dashboard-category-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; margin-top: 1rem; }
+.dashboard-category-columns .category-ranking { margin-top: 0.4rem; }
+.category-ranking-row strong small { color: var(--muted); font-weight: 500; }
+
+.agenda-totals { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0 0 0.8rem; font-size: 0.82rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.agenda { display: grid; gap: 0.9rem; max-height: 420px; padding-right: 0.5rem; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; }
+.agenda-day, .agenda-day ul { min-width: 0; }
+.agenda-day h3.is-late { color: var(--chart-4); }
+.agenda-day ul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.1rem; margin: 0; padding: 0; list-style: none; }
+.agenda-day li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.45rem 0.3rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); font-size: 0.85rem; }
+.agenda-day li a { min-width: 0; flex: 1; overflow: hidden; color: var(--text); text-overflow: ellipsis; text-decoration: none; white-space: nowrap; }
+.agenda-day li a:hover { color: var(--accent); }
+.agenda-day li span { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.agenda-more { margin: 0.7rem 0 0; font-size: 0.78rem; }
+
+.dashboard-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.1rem; margin: 0; padding: 0; list-style: none; }
+.dashboard-card-head { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.55rem; color: var(--text); text-decoration: none; }
+.dashboard-card-head strong { display: block; font-size: 0.88rem; }
+.dashboard-card-head small { color: var(--muted); font-size: 0.72rem; }
+.dashboard-card-invoice { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem; margin: 0.45rem 0 0; color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.dashboard-card-invoice strong { color: var(--text); }
+
+.budget-summary p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem; margin: 0.55rem 0 1rem; color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.budget-summary p strong { color: var(--text); }
+.budget-summary p strong.negative { color: var(--chart-4); }
+.budget-attention { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.1rem; margin: 0; padding: 0; list-style: none; }
+.budget-attention li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0.3rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); font-size: 0.84rem; }
+.budget-attention li span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+
+.health-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0; padding: 0; list-style: none; }
+.health-list li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.7rem 0.3rem; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+.health-list li:last-child { border-bottom: 0; }
+.health-list li > div { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.health-list li span { font-size: 0.85rem; font-weight: 600; }
+.health-list li small { color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+.health-list li strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.health-list li.is-good strong { color: var(--chart-3); }
+.health-list li.is-warn strong { color: var(--chart-2); }
+.health-list li.is-bad strong { color: var(--chart-4); }
+
+@media (max-width: 1100px) {
+  .insight-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .dashboard-insight-grid, .dashboard-category-columns { grid-template-columns: 1fr; }
+  .dashboard-insight-grid { gap: 1rem; margin-bottom: 1rem; }
+}
+@media (max-width: 520px) {
+  .insight-metrics { grid-template-columns: 1fr; }
+  .dashboard-monthly-chart { height: 220px; }
+  .horizon-switch { align-self: flex-start; }
+}

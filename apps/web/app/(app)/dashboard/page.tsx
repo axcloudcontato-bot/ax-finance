@@ -3,8 +3,13 @@ import { redirect } from "next/navigation";
 import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, CircleCheck, Landmark, TrendingUp, Wallet } from "@/components/ui/animated-icons";
 import {
   CompanyAccessDeniedError,
+  CreditCardAccessRestrictedError,
   assertActiveMembership,
+  getBudgetReport,
+  getCompanyPlanAccess,
+  getDashboardInsights,
   getDashboardOverview,
+  listCreditCards,
   listActiveCategories,
   listCompaniesForUser,
   listCostCenters,
@@ -22,6 +27,8 @@ import { TitleDetailList } from "@/components/dashboard/title-detail-list";
 import { CashProjectionChart } from "@/components/dashboard/cash-projection-chart";
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { QuickCreateButton } from "@/components/quick-create";
+import { MonthlyChart } from "@/components/dashboard/monthly-chart";
+import { AgendaPanel, BudgetPanel, CardsPanel, CategoryBreakdown, HealthPanel, ResultPanel, cashRunwayDays, percentOf, type CardSummary } from "@/components/dashboard/insights";
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardOverview>>;
 type OpenTitle = DashboardData["periodOpenTitles"][number];
@@ -87,7 +94,7 @@ export default async function DashboardPage(
   props: {
     searchParams: Promise<{
       empresa?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string;
-      conta?: string; categoria?: string; pessoa?: string; centroCusto?: string;
+      conta?: string; categoria?: string; pessoa?: string; centroCusto?: string; horizonte?: string;
     }>;
   }
 ) {
@@ -121,7 +128,9 @@ export default async function DashboardPage(
     centroCusto: costCenters.some((item) => item.id === searchParams.centroCusto) ? searchParams.centroCusto : undefined,
   };
   const segmentedView = Boolean(selected.conta || selected.categoria || selected.pessoa || selected.centroCusto);
+  const projectionDays = ([30, 60, 90] as const).find((days) => String(days) === searchParams.horizonte) ?? 30;
   const overview = await getDashboardOverview(user.id, activeCompanyId, {
+    projectionDays,
     from: period.from,
     to: period.to,
     comparisonFrom: comparison?.from,
@@ -131,6 +140,28 @@ export default async function DashboardPage(
     partyId: selected.pessoa,
     costCenterId: selected.centroCusto,
   });
+
+  // Indicadores de gestão: sempre da empresa toda, por isso só aparecem sem filtro de conta, categoria etc.
+  const budgetMonth = period.to.slice(0, 7);
+  const [insights, budget, cards, planAccess] = segmentedView
+    ? [null, null, null, null]
+    : await Promise.all([
+        getDashboardInsights(user.id, activeCompanyId, { from: period.from, to: period.to, comparisonFrom: comparison?.from, comparisonTo: comparison?.to, today: undefined }),
+        getBudgetReport(user.id, activeCompanyId, budgetMonth),
+        listCreditCards(user.id, activeCompanyId).then((list): CardSummary[] | null => list).catch((error) => {
+          if (error instanceof CreditCardAccessRestrictedError) return null;
+          throw error;
+        }),
+        getCompanyPlanAccess(user.id, activeCompanyId),
+      ]);
+  const personal = planAccess?.code === "PERSONAL";
+  const horizonHref = (days: number) => {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(searchParams)) if (value && key !== "horizonte") params.set(key, value);
+    if (days !== 30) params.set("horizonte", String(days));
+    const query = params.toString();
+    return query ? `/dashboard?${query}` : "/dashboard";
+  };
 
   const currentReceivables = summarizeOpenTitles(overview.periodOpenTitles, "RECEIVABLE");
   const currentPayables = summarizeOpenTitles(overview.periodOpenTitles, "PAYABLE");
@@ -148,7 +179,7 @@ export default async function DashboardPage(
     withoutOverdue: Number(point.withoutOverdueReceivablesCents) / 100,
   }));
   const selectedAccount = selected.conta ? overview.accounts.find((account) => account.id === selected.conta) : undefined;
-  const alerts = [
+  const baseAlerts = [
     overduePayables.items.length > 0 ? { tone: "danger", title: "Contas a pagar vencidas", body: `${overduePayables.items.length} ${overduePayables.items.length === 1 ? "obrigação vencida soma" : "obrigações vencidas somam"} ${formatCents(overduePayables.totalCents)}.`, href: "/relatorios/em-aberto", action: "Ver contas" } : null,
     overdueReceivables.items.length > 0 ? { tone: "warning", title: "Recebíveis vencidos", body: `${overdueReceivables.items.length} ${overdueReceivables.items.length === 1 ? "recebível vencido soma" : "recebíveis vencidos somam"} ${formatCents(overdueReceivables.totalCents)}.${segmentedView ? "" : " A projeção depende da cobrança desses valores."}`, href: "/relatorios/em-aberto", action: "Ver cobranças" } : null,
     !segmentedView && overview.firstNegativeDate ? { tone: "danger", title: "Risco de caixa negativo", body: `Mesmo recebendo os vencidos, a projeção cruza zero em ${formatDateOnly(overview.firstNegativeDate)}.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" } : null,
@@ -156,6 +187,21 @@ export default async function DashboardPage(
     overview.reconciliation.available && overview.reconciliation.pendingCount > 0 ? { tone: "warning", title: "Conciliação pendente", body: `${overview.reconciliation.pendingCount} ${overview.reconciliation.pendingCount === 1 ? "linha aguarda" : "linhas aguardam"} conferência, somando ${formatCents(overview.reconciliation.pendingAmountCents)}${overview.reconciliation.oldestPendingDate ? `, desde ${formatDateOnly(overview.reconciliation.oldestPendingDate)}` : ""}.`, href: selected.conta ? `/conciliacao?conta=${selected.conta}` : "/conciliacao", action: "Conciliar" } : null,
     overview.reconciliation.available && overview.reconciliation.failedImportCount > 0 ? { tone: "danger", title: "Importação com falha", body: `${overview.reconciliation.failedImportCount} ${overview.reconciliation.failedImportCount === 1 ? "importação precisa" : "importações precisam"} de atenção.`, href: "/conciliacao", action: "Diagnosticar" } : null,
   ].filter((alert): alert is NonNullable<typeof alert> => Boolean(alert));
+  const alerts: Array<{ tone: string; title: string; body: string; href: string; action: string }> = [...baseAlerts];
+  if (insights && budget && !segmentedView) {
+    const today = overview.today;
+    const dueLimit = new Date(new Date(`${today}T00:00:00Z`).getTime() + 3 * 86_400_000).toISOString().slice(0, 10);
+    const cashDays = cashRunwayDays(overview.availableBalanceCents, insights.health.outflow90Cents);
+    if (cashDays !== null && cashDays < 30) alerts.push({ tone: "danger", title: "Pouco fôlego de caixa", body: `O saldo disponível cobre cerca de ${cashDays} ${cashDays === 1 ? "dia" : "dias"} no ritmo de saídas dos últimos 90 dias.`, href: "/relatorios/fluxo-de-caixa", action: "Ver fluxo" });
+    if (budget.totals.overCount > 0) alerts.push({ tone: "warning", title: "Orçamento estourado", body: `${budget.totals.overCount} ${budget.totals.overCount === 1 ? "categoria passou" : "categorias passaram"} do limite planejado neste mês.`, href: `/orcamento?mes=${budget.period}`, action: "Ver orçamento" });
+    for (const card of cards ?? []) {
+      const next = card.nextPayable;
+      if (next && next.dueDate <= dueLimit) alerts.push({ tone: next.stage === "OVERDUE" ? "danger" : "warning", title: `Fatura ${next.stage === "OVERDUE" ? "vencida" : "vencendo"}: ${card.name}`, body: `${formatCents(next.remainingCents)} ${next.stage === "OVERDUE" ? "venceu" : "vence"} em ${formatDateOnly(next.dueDate)}.`, href: `/cartoes/${card.id}`, action: "Pagar fatura" });
+      if (card.limitCents > BigInt(0) && card.usedLimitCents * BigInt(100) >= card.limitCents * BigInt(80)) alerts.push({ tone: "warning", title: `Limite do cartão ${card.name}`, body: `${Math.round(Number((card.usedLimitCents * BigInt(1000)) / card.limitCents) / 10)}% do limite já está comprometido.`, href: `/cartoes/${card.id}`, action: "Ver cartão" });
+    }
+    const topClient = insights.health.topClient;
+    if (!personal && topClient && topClient.shareBps >= 4_000) alerts.push({ tone: "warning", title: "Receita concentrada", body: `${topClient.name} responde por ${percentOf(topClient.shareBps)} da receita do período.`, href: "/relatorios/dre", action: "Ver DRE" });
+  }
 
   return (
     <main className="wide dashboard-page">
@@ -176,7 +222,7 @@ export default async function DashboardPage(
         {segmentedView ? (
           <div className="dashboard-projection-unavailable"><Landmark className="size-5" /><strong>Projeção no consolidado</strong><p>{selected.conta ? "Os títulos em aberto não têm conta de destino definida." : "O saldo inicial é da empresa inteira, enquanto os títulos foram filtrados."} Limpe os filtros para ver uma projeção com o mesmo escopo.</p></div>
         ) : (
-          <StatCard icon={<Landmark className="size-5" />} label="Projetado em 30 dias" value={formatCents(overview.projectedBalanceCents)} footerLabel="Sem receber vencidos" footerValue={formatCents(overview.balanceWithoutOverdueReceivablesCents)} gradient={overview.projectedBalanceCents < BigInt(0) ? "pink" : "blue"} modalTitle="Cenários para os próximos 30 dias">
+          <StatCard icon={<Landmark className="size-5" />} label={`Projetado em ${projectionDays} dias`} value={formatCents(overview.projectedBalanceCents)} footerLabel="Sem receber vencidos" footerValue={formatCents(overview.balanceWithoutOverdueReceivablesCents)} gradient={overview.projectedBalanceCents < BigInt(0) ? "pink" : "blue"} modalTitle={`Cenários para os próximos ${projectionDays} dias`}>
             <p className="muted">O valor principal supõe que todos os títulos em aberto sejam pagos na data de vencimento. Recebíveis já vencidos entram hoje; o cenário alternativo os exclui. Nenhum dos dois é garantia de recebimento.</p>
             <TitleDetailList titles={overview.projectionTitles} />
           </StatCard>
@@ -193,13 +239,39 @@ export default async function DashboardPage(
           : <div className="dashboard-alert-list">{alerts.map((alert) => <div key={alert.title} className={`dashboard-alert ${alert.tone}`}><AlertTriangle className="size-5" /><div><strong>{alert.title}</strong><p>{alert.body}</p></div><Link href={alert.href}>{alert.action}</Link></div>)}</div>}
       </section>
 
-      {!segmentedView ? (
-        <section className="card dashboard-projection-section">
-          <div className="dashboard-section-heading"><div><h2>Caminho do caixa · próximos 30 dias</h2><p>Saldo acumulado após os compromissos de cada dia. A linha tracejada exclui recebíveis já vencidos.</p></div></div>
-          <CashProjectionChart data={cashProjectionSeries} />
-          <div className="dashboard-projection-legend"><span><i className="is-full" />Todos os recebíveis</span><span><i className="is-without-overdue" />Sem receber vencidos</span></div>
-          <p className="dashboard-projection-note">As duas linhas consideram pagamentos e recebimentos futuros nas datas cadastradas. Confira os vencidos antes de usar a projeção para decidir pagamentos.</p>
-        </section>
+      {!segmentedView && insights && budget ? (
+        <>
+          <ResultPanel insights={insights} personal={personal} compareLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} />
+
+          <section className="card dashboard-insight-section">
+            <div className="dashboard-section-heading"><div><h2>Evolução · últimos 6 meses</h2><p>Receitas, despesas e resultado de cada mês, por competência. A linha é o resultado.</p></div></div>
+            <MonthlyChart data={insights.monthly.map((month) => ({ month: month.month, revenue: Number(month.revenueCents) / 100, expense: Number(month.expenseCents) / 100, result: Number(month.resultCents) / 100 }))} />
+            <div className="dashboard-projection-legend"><span><i className="is-revenue" />Receitas</span><span><i className="is-expense" />Despesas</span><span><i className="is-full" />Resultado</span></div>
+          </section>
+
+          <section className="card dashboard-projection-section">
+            <div className="dashboard-section-heading">
+              <div><h2>Caminho do caixa · próximos {projectionDays} dias</h2><p>Saldo acumulado após os compromissos de cada dia. A linha tracejada exclui recebíveis já vencidos.</p></div>
+              <nav className="horizon-switch" aria-label="Horizonte da projeção">
+                {([30, 60, 90] as const).map((days) => (
+                  <Link key={days} href={horizonHref(days)} className={days === projectionDays ? "is-active" : undefined} aria-current={days === projectionDays ? "true" : undefined}>{days} dias</Link>
+                ))}
+              </nav>
+            </div>
+            <CashProjectionChart data={cashProjectionSeries} />
+            <div className="dashboard-projection-legend"><span><i className="is-full" />Todos os recebíveis</span><span><i className="is-without-overdue" />Sem receber vencidos</span></div>
+            <p className="dashboard-projection-note">As duas linhas consideram pagamentos e recebimentos futuros nas datas cadastradas. Confira os vencidos antes de usar a projeção para decidir pagamentos.</p>
+          </section>
+
+          <div className="dashboard-insight-grid">
+            <AgendaPanel overview={overview} />
+            <CardsPanel cards={cards} today={overview.today} />
+          </div>
+          <div className="dashboard-insight-grid">
+            <BudgetPanel budget={budget} personal={personal} />
+            <HealthPanel insights={insights} availableCents={overview.availableBalanceCents} personal={personal} />
+          </div>
+        </>
       ) : null}
 
       <section className="dashboard-period-section">
@@ -215,7 +287,9 @@ export default async function DashboardPage(
         </Reveal>
       </section>
 
-      <section className="card dashboard-category-section"><h2>Movimento por categoria</h2><p className="subtitle">Entradas e saídas realizadas no período, ordenadas pelo valor absoluto.</p><CategoryRanking ranking={overview.categoryRanking} /></section>
+      {!segmentedView && insights ? <CategoryBreakdown insights={insights} /> : (
+        <section className="card dashboard-category-section"><h2>Movimento por categoria</h2><p className="subtitle">Entradas e saídas realizadas no período (caixa), ordenadas pelo valor absoluto.</p><CategoryRanking ranking={overview.categoryRanking} /></section>
+      )}
     </main>
   );
 }

@@ -25,6 +25,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-07-dashboard-gestao",
+    date: "2026-10-07",
+    title: "Dashboard com indicadores de gestão",
+    summary: "Além do caixa, o dashboard agora mostra se você está tendo resultado, para onde o dinheiro vai e o que exige atenção.",
+    changes: [
+      { kind: "NEW", text: "Resultado do período por competência (receitas, despesas, resultado e margem), com comparação ao período anterior. No plano pessoal aparece como Entrou, Saiu, Sobrou e taxa de poupança." },
+      { kind: "NEW", text: "Evolução dos últimos 6 meses: receitas, despesas e resultado de cada mês." },
+      { kind: "NEW", text: "Agenda dos próximos 7 dias, com atrasados e a vencer, e atalho para cada lançamento." },
+      { kind: "NEW", text: "Cartões de crédito no dashboard: limite usado e a próxima fatura de cada cartão." },
+      { kind: "NEW", text: "Orçamento do mês: quanto já foi gasto, quanto resta e as categorias perto de estourar." },
+      { kind: "NEW", text: "Saúde financeira: dias de caixa, inadimplência, prazos médios de recebimento e pagamento e concentração da receita no maior cliente." },
+      { kind: "NEW", text: "Novos avisos em \"O que precisa de atenção\": orçamento estourado, fatura de cartão vencendo, limite do cartão acima de 80%, pouco fôlego de caixa e receita concentrada." },
+      { kind: "NEW", text: "Projeção do caixa em 30, 60 ou 90 dias." },
+      { kind: "IMPROVED", text: "A lista de categorias agora usa a competência e abre o cartão pela categoria de cada compra. Antes, o gasto no cartão aparecia como uma única linha \"Fatura\"." },
+    ],
+  },
+  {
     id: "2026-10-07-excluir-cartao",
     date: "2026-10-07",
     title: "Excluir cartão de crédito",

@@ -19,6 +19,8 @@ export const dashboardOverviewInput = z.object({
   categoryId: z.string().uuid().optional(),
   partyId: z.string().uuid().optional(),
   costCenterId: z.string().uuid().optional(),
+  /** Horizonte da projeção de caixa, em dias. */
+  projectionDays: z.union([z.literal(30), z.literal(60), z.literal(90)]).default(30),
 }).superRefine((value, context) => {
   if (value.from > value.to) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["to"], message: "Período inválido" });
@@ -190,7 +192,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
   await assertActiveMembership(userId, companyId);
 
   const today = data.today ?? (await getCompanyToday(userId, companyId));
-  const projectionEnd = addDays(today, 30);
+  const projectionEnd = addDays(today, data.projectionDays);
   const comparisonRanges = data.comparisonFrom && data.comparisonTo
     ? [{ effectiveDate: { gte: atUtc(data.comparisonFrom), lte: atUtc(data.comparisonTo) } }]
     : [];

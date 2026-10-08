@@ -35,7 +35,7 @@ export function CashProjectionChart({ data }: { data: CashProjectionPoint[] }) {
       config={chartConfig}
       className="dashboard-cash-chart aspect-auto"
       role="img"
-      aria-label="Projeção diária do saldo nos próximos 30 dias, com uma área incluindo todos os recebíveis e outra sem os recebíveis já vencidos"
+      aria-label="Projeção diária do saldo nos próximos dias, com uma área incluindo todos os recebíveis e outra sem os recebíveis já vencidos"
     >
       <AreaChart accessibilityLayer data={data} margin={{ top: 12, left: 4, right: 14, bottom: 0 }}>
         <CartesianGrid vertical={false} />
