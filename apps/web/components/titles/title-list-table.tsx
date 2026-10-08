@@ -114,6 +114,7 @@ export function TitleListTable({
                     <td data-column="remaining">{formatCents(title.remainingCents, title.currency)}</td>
                     <td data-column="status"><TitleStatusBadge status={title.status} dueDate={title.dueDate} /></td>
                     <td className="title-row-actions">
+                      <div className="title-row-actions-inner">
                       {open && !isInvoice ? (
                         <>
                           <ActionModal triggerLabel={receivable ? "Receber" : "Pagar"} triggerClassName="secondary" title={`${receivable ? "Receber" : "Pagar"} — ${title.description}`} initiallyOpen={params.titulo === title.id && Boolean(params.erroBaixa)}>
@@ -143,6 +144,7 @@ export function TitleListTable({
                           ) : null}
                         </>
                       ) : null}
+                      </div>
                     </td>
                   </tr>
                 );

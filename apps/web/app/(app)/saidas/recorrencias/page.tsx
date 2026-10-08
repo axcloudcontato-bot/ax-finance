@@ -52,7 +52,7 @@ export default async function SaidasRecorrenciasPage(
           triggerClassName="button-link workspace-primary-action"
           title="Nova recorrência"
           icon={<Repeat className="size-5" strokeWidth={1.5} />}
-          maxWidth="600px"
+          maxWidth="760px"
         >
           <RecurrenceForm
             action={createSaidaRecurrenceAction}

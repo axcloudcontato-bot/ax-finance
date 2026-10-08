@@ -49,71 +49,60 @@ export function SettlementForm({
       ) : (
         <form action={action}>
           <input type="hidden" name="idempotencyKey" value={randomUUID()} />
-          <label htmlFor="financialAccountId">Conta</label>
-          <select id="financialAccountId" name="financialAccountId" required defaultValue={initialAccount}>
-            <option value="" disabled>
-              Selecione
-            </option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
+          <div className="form-grid">
+            <div className="span-2">
+              <label htmlFor="financialAccountId">Conta</label>
+              <select id="financialAccountId" name="financialAccountId" required defaultValue={initialAccount}>
+                <option value="" disabled>
+                  Selecione
+                </option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <label htmlFor="principalAmount">Valor recebido/pago (R$)</label>
-          <input
-            id="principalAmount"
-            name="principalAmount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            defaultValue={defaults.principal}
-            required
-          />
+            <div>
+              <label htmlFor="principalAmount">Valor recebido/pago (R$)</label>
+              <input id="principalAmount" name="principalAmount" type="text" inputMode="decimal" placeholder="0,00" defaultValue={defaults.principal} required />
+            </div>
 
-          <label htmlFor="discountAmount">Desconto concedido (R$)</label>
-          <input
-            id="discountAmount"
-            name="discountAmount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            defaultValue="0,00"
-          />
+            <div>
+              <label htmlFor="effectiveDate">Data efetiva</label>
+              <input id="effectiveDate" name="effectiveDate" type="date" defaultValue={today} required />
+            </div>
 
-          <label htmlFor="interestPenaltyAmount">Juros/multa (R$)</label>
-          <input
-            id="interestPenaltyAmount"
-            name="interestPenaltyAmount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            defaultValue={defaults.interestPenalty ?? "0,00"}
-          />
-          {defaults.lateCharge ? <LateChargeSuggester {...defaults.lateCharge} /> : defaults.suggestionNote ? <p className="field-note">{defaults.suggestionNote}</p> : null}
+            <div>
+              <label htmlFor="interestPenaltyAmount">Juros/multa (R$)</label>
+              <input id="interestPenaltyAmount" name="interestPenaltyAmount" type="text" inputMode="decimal" placeholder="0,00" defaultValue={defaults.interestPenalty ?? "0,00"} />
+              {defaults.lateCharge ? <LateChargeSuggester {...defaults.lateCharge} /> : defaults.suggestionNote ? <p className="field-note">{defaults.suggestionNote}</p> : null}
+            </div>
 
-          <label htmlFor="feesAmount">Taxas retidas (R$)</label>
-          <input
-            id="feesAmount"
-            name="feesAmount"
-            type="text"
-            inputMode="decimal"
-            placeholder="0,00"
-            defaultValue="0,00"
-          />
+            <div>
+              <label htmlFor="discountAmount">Desconto concedido (R$)</label>
+              <input id="discountAmount" name="discountAmount" type="text" inputMode="decimal" placeholder="0,00" defaultValue="0,00" />
+            </div>
 
-          <label htmlFor="effectiveDate">Data efetiva</label>
-          <input id="effectiveDate" name="effectiveDate" type="date" defaultValue={today} required />
+            <div>
+              <label htmlFor="feesAmount">Taxas retidas (R$)</label>
+              <input id="feesAmount" name="feesAmount" type="text" inputMode="decimal" placeholder="0,00" defaultValue="0,00" />
+            </div>
 
-          <label htmlFor="paymentMethod">Meio de pagamento</label>
-          <select id="paymentMethod" name="paymentMethod" defaultValue={methodLabel}>
-            <option value="">Não informar</option>
-            {methodLabel && !knownMethods.includes(methodLabel) ? <option value={methodLabel}>{methodLabel}</option> : null}
-            {knownMethods.map((label) => <option key={label} value={label}>{label}</option>)}
-          </select>
+            <div>
+              <label htmlFor="paymentMethod">Meio de pagamento</label>
+              <select id="paymentMethod" name="paymentMethod" defaultValue={methodLabel}>
+                <option value="">Não informar</option>
+                {methodLabel && !knownMethods.includes(methodLabel) ? <option value={methodLabel}>{methodLabel}</option> : null}
+                {knownMethods.map((label) => <option key={label} value={label}>{label}</option>)}
+              </select>
+            </div>
+          </div>
 
-          <SubmitButton>{submitLabel}</SubmitButton>
+          <div className="form-actions">
+            <SubmitButton>{submitLabel}</SubmitButton>
+          </div>
         </form>
       )}
     </>

@@ -443,12 +443,19 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 1rem;
+}
+
+textarea {
+  min-height: 5rem;
+  font-family: inherit;
+  resize: vertical;
 }
 
 /* A lista nativa do select não herda o fundo transparente do campo: sem cor própria, o texto claro
@@ -1060,8 +1067,9 @@ form.inline {
   border-radius: 10px;
   padding: 1.75rem;
   width: 100%;
-  max-width: 440px;
+  max-width: 520px;
   max-height: calc(100vh - 4rem);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -4352,7 +4360,9 @@ main.settings-page {
 .title-row-meta { display: flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; margin-top: 0.2rem; color: var(--muted); font-size: 0.72rem; }
 .title-row-meta .is-scheduled { color: var(--chart-1); font-weight: 600; }
 .title-row-meta .is-collected { color: var(--chart-2); font-weight: 600; }
-.title-row-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: flex-end; min-width: 150px; white-space: nowrap; }
+/* A célula continua sendo célula de tabela (senão a borda da linha desalinha); o flex fica num div por dentro. */
+.title-row-actions { min-width: 150px; white-space: nowrap; }
+.title-row-actions-inner { display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: flex-end; }
 .ax-model-buttons .title-list-table .title-row-actions button.secondary { min-height: 28px; margin: 0; padding: 0 0.6rem; font-size: 0.75rem; }
 
 .selection-bar { position: sticky; bottom: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; margin-top: 1rem; padding: 0.6rem 0.9rem; border: 1px solid var(--border); border-radius: 12px; background: var(--card); color: var(--muted); font-size: 0.82rem; }
@@ -4371,3 +4381,43 @@ main.settings-page {
 .fact-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .fact-copy code { padding: 0.15rem 0.4rem; border-radius: 6px; background: color-mix(in srgb, var(--text) 8%, transparent); font-size: 0.8rem; word-break: break-all; }
 .fact-copy button { margin-top: 0; min-height: 28px; padding: 0 0.6rem; font-size: 0.75rem; }
+
+/* ===== Janelas (modais): largura e organização dos formulários ===== */
+/* Formulário com campos em grade, ou com 4 campos ou mais empilhados, ganha a janela larga (as telas que
+   passam largura própria, como o cadastro de pessoa, continuam mandando nela). */
+.modal-dialog:has(.form-grid),
+.modal-dialog:has(> form > label:nth-of-type(4)) { max-width: 760px; }
+.admin-shell .modal-dialog:has(> form > label:nth-of-type(4)) { max-width: 720px; }
+
+/* Formulários que empilham rótulo e campo (4 ou mais campos) passam a usar duas colunas, na ordem de leitura:
+   o rótulo fica sempre junto do seu campo; botão, avisos e erros ocupam a largura toda. */
+.modal-dialog form:has(> label:nth-of-type(4)) { column-count: 2; column-gap: 2rem; }
+.modal-dialog form:has(> label:nth-of-type(4)) > label { break-after: avoid; margin-top: 0; padding-top: 1rem; }
+.modal-dialog form:has(> label:nth-of-type(4)) > :is(input, select, textarea) { break-inside: avoid; }
+.modal-dialog form:has(> label:nth-of-type(4)) > :is(.form-actions, p, .error, .success-box, .transfer-preview) { column-span: all; }
+/* Só elemento de bloco atravessa as colunas: o botão (inline-flex) vira flex, com a largura do próprio texto. */
+.modal-dialog.modal-dialog form:has(> label:nth-of-type(4)) > button[type] { display: flex; width: fit-content; column-span: all; margin-top: 1.25rem; }
+@media (max-width: 640px) {
+  .modal-dialog form:has(> label:nth-of-type(4)) { column-count: 1; }
+}
+
+/* Linha dos botões do formulário: alinhada à direita, sem a margem de botão solto e sem ficar ao lado de um campo. */
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+.ax-model-buttons .form-actions > button[type="submit"],
+.ax-model-buttons .form-actions > button.secondary,
+.ax-model-buttons .form-actions > .button-link { margin-top: 0; }
+@media (max-width: 560px) {
+  .form-actions { justify-content: stretch; }
+  .form-actions > * { flex: 1; }
+}
+/* As janelas "wide" (cartões) continuam com a largura própria, mesmo tendo grade. */
+.modal-dialog.modal-dialog-wide,
+.modal-dialog.modal-dialog-wide:has(.form-grid),
+.modal-dialog.modal-dialog-wide:has(> form > label:nth-of-type(4)) { max-width: 1120px; }
+
+/* Textos de apoio e erros dentro das janelas ficam perto do que explicam, sem o respiro de página. */
+.modal-dialog .subtitle { margin: 0.25rem 0 0.75rem; }
+
+/* Caixas de marcar e botões de opção não esticam como os campos de texto: ficam ao lado do texto. */
+input[type="checkbox"], input[type="radio"] { width: auto; padding: 0; }
+label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) { display: flex; align-items: center; gap: 0.55rem; font-weight: 500; }
