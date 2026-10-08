@@ -18,6 +18,7 @@ import {
 } from "../errors";
 import { verifyPassword } from "./password";
 import { createSessionWithClient, type CreatedSession } from "./session";
+import { createTrustedDevice, type CreatedTrustedDevice } from "./trusted-devices";
 
 const TOTP_STEP_SECONDS = 30;
 const TOTP_DIGITS = 6;
@@ -204,6 +205,7 @@ export async function confirmMfaSetup(userId: string, code: string) {
       where: { userId, consumedAt: null },
       data: { consumedAt: enabledAt },
     }),
+    prisma.trustedDevice.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: enabledAt } }),
   ]);
   return { enabledAt, recoveryCodes: recovery.codes };
 }
@@ -231,11 +233,12 @@ export async function createMfaChallenge(userId: string, rememberSession: boolea
 }
 
 type ChallengeResult =
-  | { kind: "success"; session: CreatedSession; rememberSession: boolean }
+  | { kind: "success"; session: CreatedSession; rememberSession: boolean; trustedDevice?: CreatedTrustedDevice }
   | { kind: "invalid-code" }
   | { kind: "invalid-challenge" };
 
-export async function completeMfaChallenge(rawToken: string, code: string) {
+/** `trustDevice.label`: se vier, o dispositivo passa a dispensar o código nos próximos logins (até expirar ou ser revogado). */
+export async function completeMfaChallenge(rawToken: string, code: string, options: { trustDevice?: { label: string } } = {}) {
   const result: ChallengeResult = await prisma.$transaction(async (tx) => {
     const challenge = await tx.mfaChallenge.findUnique({
       where: { tokenHash: tokenHash(rawToken) },
@@ -284,7 +287,8 @@ export async function completeMfaChallenge(rawToken: string, code: string) {
         : { mfaRecoveryCodeHashes: storedRecoveryHashes.filter((_, index) => index !== recoveryIndex) },
     });
     const session = await createSessionWithClient(tx, challenge.userId);
-    return { kind: "success", session, rememberSession: challenge.rememberSession };
+    const trustedDevice = options.trustDevice ? await createTrustedDevice(tx, challenge.userId, options.trustDevice.label) : undefined;
+    return { kind: "success", session, rememberSession: challenge.rememberSession, trustedDevice };
   });
 
   if (result.kind === "invalid-challenge") throw new MfaChallengeInvalidError();
@@ -317,5 +321,6 @@ export async function disableMfa(userId: string, password: string, code: string)
     }),
     prisma.mfaSetup.deleteMany({ where: { userId } }),
     prisma.mfaChallenge.updateMany({ where: { userId, consumedAt: null }, data: { consumedAt: now } }),
+    prisma.trustedDevice.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: now } }),
   ]);
 }

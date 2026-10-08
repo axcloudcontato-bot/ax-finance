@@ -4456,3 +4456,14 @@ label:has(> input[type="checkbox"]), label:has(> input[type="radio"]) { display:
 /* O SubmitButton empilha o texto e o indicador de envio numa grade centralizada: no menu o texto alinha à esquerda, como os demais itens. */
 .ax-model-buttons .row-menu-panel > form > button > span { justify-items: start; width: 100%; }
 .ax-model-buttons .row-menu-panel > form > button > span > span { justify-content: flex-start; }
+
+/* Dispositivos confiáveis (Segurança da conta). */
+.trusted-devices { display: grid; gap: 0.6rem; margin-top: 1.1rem; }
+.trusted-devices h3 { margin: 0; font-size: 0.95rem; }
+.trusted-devices ul { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.trusted-devices li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: 10px; }
+.trusted-devices li > div { display: grid; gap: 0.1rem; min-width: 0; }
+.trusted-devices li strong { font-size: 0.86rem; }
+.trusted-devices li span { color: var(--muted); font-size: 0.76rem; }
+.trusted-devices form { margin: 0; }
+.ax-model-buttons .trusted-devices form button { margin-top: 0; }

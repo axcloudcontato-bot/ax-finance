@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { login } from "@ax-finance/domain";
 import { json, errorResponse } from "@/lib/api";
-import { setMfaChallengeCookie, setSessionCookie } from "@/lib/session";
+import { getTrustedDeviceToken, setMfaChallengeCookie, setSessionCookie } from "@/lib/session";
 import { clientIpFromHeaders } from "@/lib/request";
 
 export async function POST(request: NextRequest) {
@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
     const result = await login(body, {
       ipAddress: clientIpFromHeaders(request.headers),
       rememberSession: body?.remember === true,
+      trustedDeviceToken: await getTrustedDeviceToken(),
     });
     if (result.mfaRequired) {
       await setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);

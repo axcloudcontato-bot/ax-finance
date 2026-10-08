@@ -49,6 +49,10 @@ export function MfaForm({
                   <input id="code" name="code" autoComplete="one-time-code" autoCapitalize="characters" spellCheck={false} autoFocus required placeholder="000000 ou código de recuperação" />
                 </div>
               </div>
+              <label className={styles.checkbox}>
+                <input type="checkbox" name="trustDevice" />
+                <span>Confiar neste dispositivo por 30 dias</span>
+              </label>
               <SubmitButton />
             </form>
             <div className={styles.tagline}><span>O código expira em poucos minutos.</span></div>

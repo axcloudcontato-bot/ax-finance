@@ -4,6 +4,7 @@ import { EmailNotVerifiedError, InvalidCredentialsError, TooManyLoginAttemptsErr
 import { verifyPassword } from "./password";
 import { createSession } from "./session";
 import { createMfaChallenge } from "./mfa";
+import { isTrustedDevice } from "./trusted-devices";
 import { assertLoginAllowed, clearLoginFailures, recordLoginFailure } from "./login-rate-limit";
 
 export const loginInput = z.object({
@@ -15,7 +16,7 @@ export type LoginInput = z.infer<typeof loginInput>;
 
 export async function login(
   input: LoginInput,
-  context: { ipAddress?: string; rememberSession?: boolean } = {}
+  context: { ipAddress?: string; rememberSession?: boolean; trustedDeviceToken?: string } = {}
 ) {
   const data = loginInput.parse(input);
   await assertLoginAllowed(data.email, context.ipAddress);
@@ -44,7 +45,8 @@ export async function login(
 
   await clearLoginFailures(data.email, context.ipAddress);
 
-  if (user.mfaEnabledAt) {
+  // Dispositivo em que o código já foi confirmado e marcado como confiável: entra só com a senha.
+  if (user.mfaEnabledAt && !(await isTrustedDevice(user.id, context.trustedDeviceToken))) {
     const challenge = await createMfaChallenge(user.id, context.rememberSession ?? false);
     return { user, mfaRequired: true as const, challenge };
   }

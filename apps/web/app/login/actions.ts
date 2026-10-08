@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { EmailNotVerifiedError, login, TooManyLoginAttemptsError } from "@ax-finance/domain";
-import { setMfaChallengeCookie, setSessionCookie } from "@/lib/session";
+import { getTrustedDeviceToken, setMfaChallengeCookie, setSessionCookie } from "@/lib/session";
 import { clientIpFromHeaders } from "@/lib/request";
 import { safeAuthReturnTo } from "@/lib/auth-return";
 
@@ -19,7 +19,7 @@ export async function loginAction(formData: FormData) {
     const requestHeaders = await headers();
     const result = await login(
       { email, password },
-      { ipAddress: clientIpFromHeaders(requestHeaders), rememberSession: remember }
+      { ipAddress: clientIpFromHeaders(requestHeaders), rememberSession: remember, trustedDeviceToken: await getTrustedDeviceToken() }
     );
     if (result.mfaRequired) {
       await setMfaChallengeCookie(result.challenge.rawToken, result.challenge.expiresAt);

@@ -1,9 +1,9 @@
 import QRCode from "qrcode";
 import { redirect } from "next/navigation";
 import { KeyRound, ShieldCheck, Smartphone, TriangleAlert } from "@/components/ui/animated-icons";
-import { getMfaStatus, getPendingMfaSetup } from "@ax-finance/domain";
+import { getMfaStatus, getPendingMfaSetup, listTrustedDevices } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
-import { beginMfaSetupAction, confirmMfaSetupAction, disableMfaAction } from "./actions";
+import { beginMfaSetupAction, confirmMfaSetupAction, disableMfaAction, revokeAllTrustedDevicesAction, revokeTrustedDeviceAction } from "./actions";
 import { ConfirmMfaForm } from "./confirm-mfa-form";
 import { SubmitButton } from "@/components/ui/submit-button";
 
@@ -16,6 +16,7 @@ export default async function SecurityPage(
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const status = await getMfaStatus(user.id);
+  const trustedDevices = status.enabled ? await listTrustedDevices(user.id) : [];
   const pending = !status.enabled ? await getPendingMfaSetup(user.id) : null;
   const qrCode = pending ? await QRCode.toDataURL(pending.otpauthUri, { width: 220, margin: 1 }) : null;
 
@@ -39,6 +40,30 @@ export default async function SecurityPage(
                 <p className="security-status"><span className="security-status-dot" /> Proteção ativa</p>
                 <span>Desde {status.enabledAt?.toLocaleDateString("pt-BR")}</span>
                 <span>{status.recoveryCodesRemaining} código(s) de recuperação disponível(is)</span>
+              </div>
+              <div className="trusted-devices">
+                <h3>Dispositivos confiáveis</h3>
+                {trustedDevices.length === 0 ? (
+                  <p className="muted">Nenhum. Ao entrar, marque &ldquo;Confiar neste dispositivo&rdquo; para não digitar o código a cada acesso.</p>
+                ) : (
+                  <>
+                    <ul>
+                      {trustedDevices.map((device) => (
+                        <li key={device.id}>
+                          <div>
+                            <strong>{device.label}</strong>
+                            <span>Último acesso em {(device.lastUsedAt ?? device.createdAt).toLocaleDateString("pt-BR")} · vale até {device.expiresAt.toLocaleDateString("pt-BR")}</span>
+                          </div>
+                          <form action={revokeTrustedDeviceAction}>
+                            <input type="hidden" name="deviceId" value={device.id} />
+                            <SubmitButton className="secondary">Remover</SubmitButton>
+                          </form>
+                        </li>
+                      ))}
+                    </ul>
+                    {trustedDevices.length > 1 ? <form action={revokeAllTrustedDevicesAction}><SubmitButton className="secondary">Remover todos</SubmitButton></form> : null}
+                  </>
+                )}
               </div>
               <details className="security-danger-zone">
                 <summary><TriangleAlert className="size-4" /> Desativar autenticação em duas etapas</summary>

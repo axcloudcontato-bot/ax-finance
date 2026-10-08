@@ -23,6 +23,7 @@ export async function runOperationalRetention(now = new Date()) {
     sessions,
     accountTokens,
     mfaChallenges,
+    trustedDevices,
     loginRateLimits,
   ] = await prisma.$transaction([
     prisma.outboxEvent.deleteMany({
@@ -52,6 +53,7 @@ export async function runOperationalRetention(now = new Date()) {
     prisma.session.deleteMany({ where: { expiresAt: { lt: identityCutoff } } }),
     prisma.accountToken.deleteMany({ where: { expiresAt: { lt: identityCutoff } } }),
     prisma.mfaChallenge.deleteMany({ where: { expiresAt: { lt: identityCutoff } } }),
+    prisma.trustedDevice.deleteMany({ where: { expiresAt: { lt: identityCutoff } } }),
     prisma.loginRateLimit.deleteMany({ where: { updatedAt: { lt: identityCutoff } } }),
   ]);
 
@@ -63,6 +65,7 @@ export async function runOperationalRetention(now = new Date()) {
     sessions: sessions.count,
     accountTokens: accountTokens.count,
     mfaChallenges: mfaChallenges.count,
+    trustedDevices: trustedDevices.count,
     loginRateLimits: loginRateLimits.count,
   };
 }

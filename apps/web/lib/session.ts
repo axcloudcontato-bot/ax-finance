@@ -3,6 +3,7 @@ import { NotAuthenticatedError, resolveSession } from "@ax-finance/domain";
 
 export const SESSION_COOKIE_NAME = "ax_session";
 export const MFA_CHALLENGE_COOKIE_NAME = "ax_mfa_challenge";
+export const TRUSTED_DEVICE_COOKIE_NAME = "ax_trusted_device";
 
 /**
  * Só pode ser chamada em Server Components (leitura) — para gravar o cookie,
@@ -58,6 +59,28 @@ export async function getMfaChallengeToken(): Promise<string | undefined> {
 export async function clearMfaChallengeCookie() {
   const cookieStore = await cookies();
   cookieStore.delete(MFA_CHALLENGE_COOKIE_NAME);
+}
+
+/** Dispositivo confiável: o cookie dura mais que a sessão e só dispensa o código em duas etapas no login. */
+export async function setTrustedDeviceCookie(rawToken: string, expiresAt: Date) {
+  const cookieStore = await cookies();
+  cookieStore.set(TRUSTED_DEVICE_COOKIE_NAME, rawToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production" && process.env.COOKIE_SECURE !== "false",
+    sameSite: "lax",
+    expires: expiresAt,
+    path: "/",
+  });
+}
+
+export async function getTrustedDeviceToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(TRUSTED_DEVICE_COOKIE_NAME)?.value;
+}
+
+export async function clearTrustedDeviceCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(TRUSTED_DEVICE_COOKIE_NAME);
 }
 
 export async function getSessionToken(): Promise<string | undefined> {

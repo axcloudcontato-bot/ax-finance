@@ -1,12 +1,15 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { completeMfaChallenge, MfaChallengeInvalidError } from "@ax-finance/domain";
 import {
   clearMfaChallengeCookie,
   getMfaChallengeToken,
   setSessionCookie,
+  setTrustedDeviceCookie,
 } from "@/lib/session";
+import { deviceLabelFromUserAgent } from "@/lib/request";
 import { safeAuthReturnTo } from "@/lib/auth-return";
 import { actionErrorMessage } from "@/lib/action-errors";
 
@@ -26,12 +29,16 @@ export async function completeMfaAction(
   try {
     const result = await completeMfaChallenge(
       challengeToken,
-      String(formData.get("code") ?? "")
+      String(formData.get("code") ?? ""),
+      formData.get("trustDevice") === "on"
+        ? { trustDevice: { label: deviceLabelFromUserAgent((await headers()).get("user-agent")) } }
+        : {}
     );
     await setSessionCookie(
       result.session.rawToken,
       result.rememberSession ? result.session.expiresAt : undefined
     );
+    if (result.trustedDevice) await setTrustedDeviceCookie(result.trustedDevice.rawToken, result.trustedDevice.expiresAt);
     await clearMfaChallengeCookie();
   } catch (error) {
     if (error instanceof MfaChallengeInvalidError) await clearMfaChallengeCookie();

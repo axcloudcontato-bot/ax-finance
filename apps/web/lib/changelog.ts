@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-08-dispositivo-confiavel",
+    date: "2026-10-08",
+    title: "Confiar neste dispositivo no login",
+    summary: "Quem usa a confirmação em duas etapas não precisa digitar o código a cada acesso.",
+    changes: [
+      { kind: "NEW", text: "Na tela de verificação, marque \"Confiar neste dispositivo por 30 dias\": nos próximos acessos desse aparelho basta a senha." },
+      { kind: "NEW", text: "Em Configurações > Segurança você vê os dispositivos confiáveis e pode remover um ou todos. Redefinir a senha ou refazer a proteção também os remove." },
+    ],
+  },
+  {
     id: "2026-10-08-entradas-saidas",
     date: "2026-10-08",
     title: "Entradas e saídas mais rápidas e completas",

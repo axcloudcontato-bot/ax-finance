@@ -137,6 +137,8 @@ export async function resetPassword(rawToken: string, newPassword: string) {
       where: { userId: token.userId, revokedAt: null },
       data: { revokedAt: now },
     });
+    // Senha redefinida: os dispositivos confiáveis voltam a pedir o código.
+    await tx.trustedDevice.updateMany({ where: { userId: token.userId, revokedAt: null }, data: { revokedAt: now } });
     return user;
   });
 }
