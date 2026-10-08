@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { withCompanyContext } from "@ax-finance/db";
+import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
@@ -58,7 +58,11 @@ export async function registerSettlement(
   const data = registerSettlementInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
-  return withCompanyContext(userId, companyId, async (tx) => {
+  return withCompanyContext(userId, companyId, (tx) => registerSettlementInTx(tx, userId, companyId, titleId, data));
+}
+
+/** Permite que a fatura e sua baixa usem a mesma transação e a mesma chave de repetição. */
+export async function registerSettlementInTx(tx: TenantScopedClient, userId: string, companyId: string, titleId: string, data: RegisterSettlementInput) {
     const { idempotencyKey, ...request } = data;
     const idempotency = await beginIdempotentOperation(tx, {
       companyId,
@@ -148,5 +152,4 @@ export async function registerSettlement(
 
     await completeIdempotentOperation(tx, idempotency, settlement.id);
     return settlement;
-  });
 }

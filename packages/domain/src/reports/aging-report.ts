@@ -2,13 +2,15 @@ import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { getCompanyToday } from "../shared/today";
+import { addReportDays, reportDate } from "./report-period";
 
 export const AGING_BUCKETS = ["A_VENCER", "D1_7", "D8_15", "D16_30", "D31_60", "D60_PLUS"] as const;
 export type AgingBucket = (typeof AGING_BUCKETS)[number];
 
 export const agingReportInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]).optional(),
-  asOfDate: z.coerce.date().optional(),
+  asOfDate: reportDate.optional(),
+  bucket: z.enum(AGING_BUCKETS).optional(),
 });
 
 export type AgingReportInput = z.infer<typeof agingReportInput>;
@@ -39,6 +41,9 @@ export interface AgingEntry {
   type: "RECEIVABLE" | "PAYABLE";
   description: string;
   categoryName: string;
+  partyName: string | null;
+  costCenterName: string | null;
+  daysLate: number;
   dueDate: Date;
   remainingCents: bigint;
   bucket: AgingBucket;
@@ -48,19 +53,22 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
   const data = agingReportInput.parse(input);
   await assertActiveMembership(userId, companyId);
 
-  const asOf = data.asOfDate ? toDateOnlyString(data.asOfDate) : await getCompanyToday(userId, companyId);
+  const balanceAsOf = await getCompanyToday(userId, companyId);
+  const asOf = data.asOfDate ?? balanceAsOf;
 
   const titles = await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
       where: {
         companyId,
         deletedAt: null,
-        status: { in: ["OPEN", "PARTIALLY_SETTLED"] },
+        status: { not: "CANCELLED" },
         ...(data.type ? { type: data.type } : {}),
       },
       include: {
         category: true,
-        settlements: { where: { reversedAt: null } },
+        party: { select: { name: true } },
+        costCenter: { select: { name: true } },
+        settlements: { where: { reversedAt: null, effectiveDate: { lte: new Date(balanceAsOf) } } },
       },
       orderBy: { dueDate: "asc" },
     })
@@ -76,11 +84,22 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
       type: title.type,
       description: title.description,
       categoryName: title.category.name,
+      partyName: title.party?.name ?? null,
+      costCenterName: title.costCenter?.name ?? null,
+      daysLate: Math.max(0, Math.floor((Date.parse(asOf) - title.dueDate.getTime()) / 86_400_000)),
       dueDate: title.dueDate,
       remainingCents: title.originalAmountCents - settledPrincipalEquivalent,
       bucket: bucketFor(title.dueDate, asOf),
     };
+  }).filter((entry) => entry.remainingCents > BigInt(0));
+
+  const schedule = [0, 7, 30].map((days) => {
+    const through = addReportDays(asOf, days);
+    const due = entries.filter((entry) => toDateOnlyString(entry.dueDate) >= asOf && toDateOnlyString(entry.dueDate) <= through);
+    const sumType = (type: "RECEIVABLE" | "PAYABLE") => due.filter((e) => e.type === type).reduce((sum, e) => sum + e.remainingCents, BigInt(0));
+    return { days, through, receivableCents: sumType("RECEIVABLE"), payableCents: sumType("PAYABLE") };
   });
+  const filteredEntries = data.bucket ? entries.filter((entry) => entry.bucket === data.bucket) : entries;
 
   const totalsByBucket = new Map<AgingBucket, bigint>();
   for (const entry of entries) {
@@ -89,7 +108,11 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
 
   return {
     asOfDate: new Date(`${asOf}T00:00:00Z`),
-    entries,
+    balanceAsOfDate: new Date(balanceAsOf),
+    schedule,
+    entries: filteredEntries,
+    allEntries: entries,
+    selectedTotalCents: filteredEntries.reduce((sum, e) => sum + e.remainingCents, BigInt(0)),
     totalsByBucket: AGING_BUCKETS.map((bucket) => ({
       bucket,
       cents: totalsByBucket.get(bucket) ?? BigInt(0),

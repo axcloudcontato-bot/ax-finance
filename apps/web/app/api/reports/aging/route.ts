@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { assertCompanyPermission, getOpenTitlesAgingReport } from "@ax-finance/domain";
+import { AGING_BUCKETS, type AgingBucket, assertCompanyPermission, getOpenTitlesAgingReport } from "@ax-finance/domain";
 import { requireUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { errorResponse } from "@/lib/api";
@@ -19,18 +19,23 @@ export async function GET(request: NextRequest) {
     const typeParam = searchParams.get("tipo");
     const type = typeParam === "RECEIVABLE" || typeParam === "PAYABLE" ? typeParam : undefined;
     const asOfDate = searchParams.get("data") || todayDateOnlyString();
+    const bucketParam = searchParams.get("faixa") as AgingBucket;
+    const bucket = AGING_BUCKETS.includes(bucketParam) ? bucketParam : undefined;
 
-    const report = await getOpenTitlesAgingReport(user.id, company.id, { type, asOfDate });
+    const report = await getOpenTitlesAgingReport(user.id, company.id, { type, asOfDate, bucket });
 
     const csv = toCsv(
-      ["Vencimento", "Tipo", "Descrição", "Categoria", "Saldo aberto (centavos)", "Faixa"],
+      ["Saldos atuais em", "Referência dos atrasos", "Vencimento", "Tipo", "Descrição", "Categoria", "Cliente/fornecedor", "Centro de custo", "Saldo aberto (centavos)", "Faixa", "Dias de atraso"],
       report.entries.map((entry) => [
+        formatDateOnly(report.balanceAsOfDate), formatDateOnly(report.asOfDate),
         formatDateOnly(entry.dueDate),
-        entry.type === "RECEIVABLE" ? "Entrada" : "Saída",
+        entry.type === "RECEIVABLE" ? "A receber" : "A pagar",
         entry.description,
         entry.categoryName,
+        entry.partyName ?? "Não informado", entry.costCenterName ?? "Não informado",
         entry.remainingCents.toString(),
         BUCKET_LABEL[entry.bucket] ?? entry.bucket,
+        entry.daysLate,
       ])
     );
 

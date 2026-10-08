@@ -2,6 +2,7 @@ import { z } from "zod";
 import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
+import { assertPeriodOpen } from "../closures/assert-period-open";
 import { CreditCardHasOpenInvoicesError, CreditCardHasPaymentsError, CreditCardNotFoundError, FinancialAccountNotFoundError } from "../errors";
 import { assertCardAccess, invoiceDescription } from "./invoices";
 import { CREDIT_CARD_ISSUER_KEYS } from "./issuers";
@@ -154,7 +155,10 @@ export async function deleteCreditCard(userId: string, companyId: string, cardId
     const card = await tx.creditCard.findFirst({ where: { id: cardId, companyId } });
     if (!card) throw new CreditCardNotFoundError();
 
-    const invoices = await tx.creditCardInvoice.findMany({ where: { companyId, cardId: card.id }, select: { titleId: true } });
+    const invoices = await tx.creditCardInvoice.findMany({ where: { companyId, cardId: card.id }, select: { titleId: true, closingDate: true } });
+    const purchasesToDelete = await tx.creditCardPurchase.findMany({ where: { companyId, cardId: card.id }, select: { competenceDate: true } });
+    for (const invoice of invoices) await assertPeriodOpen(tx, companyId, invoice.closingDate);
+    for (const purchase of purchasesToDelete) await assertPeriodOpen(tx, companyId, purchase.competenceDate);
     const titleIds = invoices.map((invoice) => invoice.titleId);
     if (titleIds.length > 0) {
       const payments = await tx.settlement.count({ where: { companyId, titleId: { in: titleIds } } });

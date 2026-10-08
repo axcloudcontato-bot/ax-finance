@@ -83,6 +83,7 @@ export default async function CartaoPage(props: {
             triggerLabel="+ Nova compra"
             triggerClassName="button-link workspace-primary-action"
             title={`Nova compra — ${card.name}`}
+            size="wide"
             icon={<CreditCard className="size-5" strokeWidth={1.5} />}
             initiallyOpen={Boolean(searchParams.erro)}
           >
@@ -94,6 +95,7 @@ export default async function CartaoPage(props: {
               costCenters={costCenters}
               idPrefix="compra"
               today={todayInTimeZone(company.timezone)}
+              card={{ ...card, availableLimitCents, pendingInvoices: invoices }}
             />
           </ActionModal>
         )}
@@ -176,6 +178,7 @@ export default async function CartaoPage(props: {
             key={`editar-${refreshKey}`}
             triggerLabel="Editar cartão"
             title={`Editar — ${card.name}`}
+            size="wide"
             icon={<CreditCard className="size-5" strokeWidth={1.5} />}
             initiallyOpen={Boolean(searchParams.erroCartao)}
           >

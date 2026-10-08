@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
-import { CreditCardInvoiceNotFoundError, CreditCardInvoiceNotPayableError, CreditCardInvoicePaidError } from "../errors";
-import { idempotencyKeySchema } from "../idempotency/operations";
-import { registerSettlement } from "../titles/register-settlement";
+import { CreditCardInvoiceNotFoundError, CreditCardInvoiceNotPayableError, CreditCardInvoicePaidError, IdempotencyResultUnavailableError } from "../errors";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { registerSettlementInTx } from "../titles/register-settlement";
 import { companyToday } from "../shared/today";
 import { assertCardAccess } from "./invoices";
 import { invoiceStage } from "./invoice-cycle";
@@ -29,8 +29,18 @@ export async function payCreditCardInvoice(userId: string, companyId: string, in
   const data = payCreditCardInvoiceInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
-  const target = await withCompanyContext(userId, companyId, async (tx) => {
+  return withCompanyContext(userId, companyId, async (tx) => {
     await assertCardAccess(tx, userId, companyId);
+    const { idempotencyKey, ...request } = data;
+    const operation = await beginIdempotentOperation(tx, {
+      companyId, operation: `PAY_CARD_INVOICE:${invoiceId}`, key: idempotencyKey,
+      request, resourceType: "Settlement",
+    });
+    if (operation.kind === "replay") {
+      const existing = await tx.settlement.findFirst({ where: { id: operation.resourceId, companyId } });
+      if (!existing) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
     const invoice = await tx.creditCardInvoice.findFirst({
       where: { id: invoiceId, companyId },
       include: { card: true, title: { include: { settlements: { where: { reversedAt: null } } } } },
@@ -48,13 +58,17 @@ export async function payCreditCardInvoice(userId: string, companyId: string, in
       invoice.title.originalAmountCents,
     );
     if (stage === "OPEN" || stage === "FUTURE") throw new CreditCardInvoiceNotPayableError(closingDate);
-    return { titleId: invoice.titleId, remainingCents };
-  });
-
-  const { amountCents, ...rest } = data;
-  return registerSettlement(userId, companyId, target.titleId, {
-    ...rest,
-    principalAmountCents: amountCents ?? Number(target.remainingCents),
-    paymentMethod: "Fatura de cartão de crédito",
+    const payment = await registerSettlementInTx(tx, userId, companyId, invoice.titleId, {
+      financialAccountId: data.financialAccountId,
+      principalAmountCents: data.amountCents ?? Number(remainingCents),
+      discountCents: 0,
+      interestPenaltyCents: data.interestPenaltyCents,
+      feesCents: data.feesCents,
+      effectiveDate: data.effectiveDate,
+      notes: data.notes,
+      paymentMethod: "Fatura de cartão de crédito",
+    });
+    await completeIdempotentOperation(tx, operation, payment.id);
+    return payment;
   });
 }

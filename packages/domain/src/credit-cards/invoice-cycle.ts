@@ -107,7 +107,7 @@ export type InvoiceStage = "OPEN" | "FUTURE" | "CLOSED" | "OVERDUE" | "PAID" | "
  * - FUTURE: ciclos seguintes ao em andamento (parcelas já lançadas).
  */
 export function invoiceStage(
-  card: CardDays,
+  _card: CardDays,
   invoice: { referenceMonth: string; closingDate: string; dueDate: string },
   remainingCents: bigint,
   today: string,
@@ -116,8 +116,13 @@ export function invoiceStage(
   if (totalCents !== undefined && totalCents === BigInt(0)) return "EMPTY";
   if (remainingCents <= BigInt(0)) return "PAID";
   if (today >= invoice.closingDate) return today > invoice.dueDate ? "OVERDUE" : "CLOSED";
-  const currentOpen = cycleForPurchaseDate(card, today);
-  return invoice.referenceMonth === currentOpen.referenceMonth ? "OPEN" : "FUTURE";
+  // O ciclo gravado é a fonte das datas: editar os dias do cartão não pode
+  // transformar uma fatura ainda em andamento em futura.
+  const currentOpen = cycleForPurchaseDate({
+    closingDay: Number(invoice.closingDate.slice(-2)),
+    dueDay: Number(invoice.dueDate.slice(-2)),
+  }, today);
+  return invoice.closingDate === currentOpen.closingDate ? "OPEN" : "FUTURE";
 }
 
 /** "2026-11" -> "11/2026". */

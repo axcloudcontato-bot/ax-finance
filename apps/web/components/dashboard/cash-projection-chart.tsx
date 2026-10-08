@@ -29,7 +29,7 @@ const shortDate = (value: string) => `${value.slice(8, 10)}/${value.slice(5, 7)}
  * - só a série "todos os recebíveis" tem degradê; "sem vencidos" é um subconjunto dela, e duas
  *   áreas coloridas sobrepostas misturam as cores (azul + âmbar = cinza).
  */
-export function CashProjectionChart({ data }: { data: CashProjectionPoint[] }) {
+export function CashProjectionChart({ data, distinguishScenarios = false }: { data: CashProjectionPoint[]; distinguishScenarios?: boolean }) {
   return (
     <ChartContainer
       config={chartConfig}
@@ -60,7 +60,7 @@ export function CashProjectionChart({ data }: { data: CashProjectionPoint[] }) {
           </linearGradient>
         </defs>
         <Area dataKey="projected" type="monotone" fill="url(#fillProjected)" fillOpacity={0.4} stroke="var(--color-projected)" strokeWidth={2} />
-        <Area dataKey="withoutOverdue" type="monotone" fill="none" stroke="var(--color-withoutOverdue)" strokeWidth={2} />
+        <Area dataKey="withoutOverdue" type="monotone" fill="none" stroke="var(--color-withoutOverdue)" strokeWidth={2} strokeDasharray={distinguishScenarios ? "5 3" : undefined} />
       </AreaChart>
     </ChartContainer>
   );

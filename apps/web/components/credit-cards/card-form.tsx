@@ -48,7 +48,7 @@ export function CardForm({
           <input id={`${idPrefix}-name`} name="name" type="text" required maxLength={100} placeholder="Ex.: Nubank, Itaú Platinum" defaultValue={defaults?.name} />
         </div>
 
-        <div className="span-2">
+        <div>
           <label htmlFor={`${idPrefix}-issuer`}>Banco emissor (opcional)</label>
           <select id={`${idPrefix}-issuer`} name="issuer" defaultValue={defaults?.issuer ?? ""}>
             <option value="">Não informar</option>
@@ -68,7 +68,7 @@ export function CardForm({
           <input id={`${idPrefix}-lastDigits`} name="lastDigits" type="text" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} placeholder="1234" defaultValue={defaults?.lastDigits ?? ""} />
         </div>
 
-        <div className="span-2">
+        <div>
           <label htmlFor={`${idPrefix}-limit`}>Limite total (R$)</label>
           <input id={`${idPrefix}-limit`} name="limit" type="text" inputMode="decimal" placeholder="0,00" required defaultValue={defaults ? toInputAmount(defaults.limitCents) : undefined} />
         </div>

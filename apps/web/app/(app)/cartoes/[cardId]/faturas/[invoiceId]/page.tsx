@@ -20,6 +20,7 @@ import { formatDateOnly } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { PurchaseForm } from "@/components/credit-cards/purchase-form";
+import { PaymentImpact } from "@/components/credit-cards/payment-impact";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
 import { cancelPurchaseAction, payInvoiceAction, updatePurchaseAction } from "../../../actions";
 
@@ -74,9 +75,9 @@ export default async function FaturaPage(props: {
         {payable ? (
           <ActionModal
             key={`pagar-${refreshKey}`}
-            triggerLabel="Pagar fatura"
+            triggerLabel="Registrar pagamento"
             triggerClassName="button-link workspace-primary-action"
-            title={`Pagar fatura ${monthLabel} — ${card.name}`}
+            title={`Registrar pagamento ${monthLabel} — ${card.name}`}
             icon={<CreditCard className="size-5" strokeWidth={1.5} />}
             initiallyOpen={Boolean(searchParams.erroPagamento)}
           >
@@ -96,7 +97,7 @@ export default async function FaturaPage(props: {
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="pay-amount">Valor pago (R$)</label>
+                    <label htmlFor="pay-amount">Principal pago da fatura (R$)</label>
                     <input id="pay-amount" name="amount" type="text" inputMode="decimal" defaultValue={toInputAmount(invoice.remainingCents)} required />
                   </div>
                   <div>
@@ -115,6 +116,7 @@ export default async function FaturaPage(props: {
                     <label htmlFor="pay-notes">Observações</label>
                     <input id="pay-notes" name="notes" type="text" maxLength={2000} />
                   </div>
+                  <PaymentImpact remainingCents={invoice.remainingCents} />
                 </div>
                 <SubmitButton>Registrar pagamento</SubmitButton>
               </form>
@@ -134,9 +136,9 @@ export default async function FaturaPage(props: {
           <span className="workspace-metric-detail">{purchases.length} {purchases.length === 1 ? "lançamento" : "lançamentos"}</span>
         </div>
         <div className="workspace-metric">
-          <span className="workspace-metric-label">Já pago</span>
+          <span className="workspace-metric-label">Principal liquidado</span>
           <strong>{formatCents(invoice.paidCents)}</strong>
-          <span className="workspace-metric-detail">{activePayments.length} {activePayments.length === 1 ? "pagamento" : "pagamentos"}</span>
+          <span className="workspace-metric-detail">{activePayments.length} {activePayments.length === 1 ? "pagamento" : "pagamentos"} · sem juros e tarifas</span>
         </div>
         <div className="workspace-metric">
           <span className="workspace-metric-label">Falta pagar</span>
@@ -147,7 +149,7 @@ export default async function FaturaPage(props: {
 
       <div className="card">
         <div className="workspace-card-heading"><div><h2>Compras desta fatura</h2>
-          <p>{locked ? "Fatura paga: para alterar as compras, estorne o pagamento antes." : "Valor e data definem a fatura; para corrigi-los, cancele a compra e lance de novo."}</p></div></div>
+          <p>{locked ? "Fatura paga. Uma devolução posterior deve ser registrada como crédito do banco; o módulo ainda não oferece esse lançamento. Estorne pagamentos apenas para corrigir um pagamento registrado incorretamente." : "Valor e data definem a fatura; para corrigi-los, cancele a compra e lance de novo."}</p></div></div>
         {purchases.length === 0 ? (
           <div className="workspace-empty"><strong>Nenhuma compra ativa</strong><p>As compras canceladas ficam no histórico abaixo.</p></div>
         ) : (
@@ -181,7 +183,7 @@ export default async function FaturaPage(props: {
                           <details className="workspace-row-actions" open={editFailed || cancelFailed}>
                             <summary>Gerenciar</summary>
                             <div>
-                              <ActionModal key={`editar-${purchase.id}-${refreshKey}`} triggerLabel="Editar" title={`Editar compra — ${purchase.description}`} initiallyOpen={editFailed}>
+                              <ActionModal key={`editar-${purchase.id}-${refreshKey}`} triggerLabel="Editar" title={`Editar compra — ${purchase.description}`} size="wide" initiallyOpen={editFailed}>
                                 {editFailed ? <p className="error">{searchParams.erroEdicao}</p> : null}
                                 <PurchaseForm
                                   action={updatePurchaseAction.bind(null, card.id, invoice.id, purchase.id)}
@@ -240,11 +242,11 @@ export default async function FaturaPage(props: {
         <div className="workspace-card-heading"><div><h2>Pagamentos</h2>
           <p>O pagamento é uma baixa comum da fatura: pode ser estornado e conciliado com o extrato pela <Link href={`/saidas/${invoice.titleId}`}>página do título</Link>.</p></div></div>
         {payments.length === 0 ? (
-          <div className="workspace-empty"><strong>Nenhum pagamento</strong><p>{payable ? "Use “Pagar fatura” quando for pagar." : "A fatura ainda não fechou; o pagamento fica disponível depois do fechamento."}</p></div>
+          <div className="workspace-empty"><strong>Nenhum pagamento</strong><p>{payable ? "Use “Registrar pagamento” para registrar um pagamento feito ao banco." : invoice.stage === "EMPTY" ? "Esta fatura não tem saldo a pagar." : "A fatura ainda não fechou; o registro de pagamento fica disponível depois do fechamento."}</p></div>
         ) : (
           <div className="table-scroll">
             <table className="workspace-table">
-              <thead><tr><th>Data</th><th>Conta</th><th className="money">Valor</th><th className="money">Juros/multa</th><th>Situação</th></tr></thead>
+              <thead><tr><th>Data</th><th>Conta</th><th className="money">Principal</th><th className="money">Juros/multa</th><th className="money">Tarifas</th><th className="money">Saída total</th><th>Situação</th></tr></thead>
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.id} style={payment.reversedAt ? { opacity: 0.55 } : undefined}>
@@ -252,6 +254,8 @@ export default async function FaturaPage(props: {
                     <td>{payment.financialAccount.name}</td>
                     <td className="money">{formatCents(payment.principalAmountCents)}</td>
                     <td className="money">{formatCents(payment.interestPenaltyCents)}</td>
+                    <td className="money">{formatCents(payment.feesCents)}</td>
+                    <td className="money">{formatCents(payment.principalAmountCents + payment.interestPenaltyCents + payment.feesCents)}</td>
                     <td>{payment.reversedAt ? `Estornado${payment.reversalReason ? `: ${payment.reversalReason}` : ""}` : "Efetivado"}</td>
                   </tr>
                 ))}

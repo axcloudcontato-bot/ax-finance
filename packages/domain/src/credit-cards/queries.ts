@@ -70,8 +70,8 @@ export async function listCreditCards(userId: string, companyId: string, options
           };
         });
       const usedLimitCents = invoices.reduce((sum, invoice) => sum + invoice.remainingCents, ZERO);
-      const openCycle = cycleForPurchaseDate(card, todayValue);
       const openInvoice = invoices.find((invoice) => invoice.stage === "OPEN") ?? null;
+      const openCycle = openInvoice ?? cycleForPurchaseDate(card, todayValue);
       const nextPayable = invoices.find((invoice) => invoice.stage === "CLOSED" || invoice.stage === "OVERDUE") ?? null;
       return {
         ...card,
@@ -80,6 +80,10 @@ export async function listCreditCards(userId: string, companyId: string, options
         /** Ciclo em andamento (existe mesmo antes da 1ª compra) e o que já foi lançado nele. */
         openCycle: { ...openCycle, invoiceId: openInvoice?.id ?? null, totalCents: openInvoice?.totalCents ?? ZERO },
         nextPayable,
+        pendingInvoices: invoices,
+        payableCents: invoices.filter((invoice) => invoice.stage === "CLOSED" || invoice.stage === "OVERDUE").reduce((sum, invoice) => sum + invoice.remainingCents, ZERO),
+        overdueCents: invoices.filter((invoice) => invoice.stage === "OVERDUE").reduce((sum, invoice) => sum + invoice.remainingCents, ZERO),
+        futureCents: invoices.filter((invoice) => invoice.stage === "FUTURE").reduce((sum, invoice) => sum + invoice.remainingCents, ZERO),
         overdueCount: invoices.filter((invoice) => invoice.stage === "OVERDUE").length,
       };
     });
@@ -132,7 +136,7 @@ export async function getCreditCard(userId: string, companyId: string, cardId: s
       invoices,
       usedLimitCents,
       availableLimitCents: card.limitCents - usedLimitCents,
-      openCycle: cycleForPurchaseDate(card, todayValue),
+      openCycle: invoices.find((invoice) => invoice.stage === "OPEN") ?? cycleForPurchaseDate(card, todayValue),
     };
   });
 }

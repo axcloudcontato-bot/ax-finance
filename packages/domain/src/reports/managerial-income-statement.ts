@@ -3,11 +3,9 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { NATURE_LABEL } from "../categories/nature-label";
 import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
+import { reportPeriod } from "./report-period";
 
-export const managerialIncomeStatementInput = z.object({
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-});
+export const managerialIncomeStatementInput = reportPeriod;
 
 export type ManagerialIncomeStatementInput = z.infer<typeof managerialIncomeStatementInput>;
 
@@ -53,7 +51,7 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   await assertCompanyPlanFeature(userId, companyId, "MANAGERIAL_DRE");
 
   const range = { gte: new Date(data.from), lte: new Date(data.to) };
-  const { titles, cardPurchases, settlements } = await withCompanyContext(userId, companyId, async (tx) => ({
+  const { titles, cardPurchases, settlements, refunds } = await withCompanyContext(userId, companyId, async (tx) => ({
     // O título da fatura de cartão fica de fora: o gasto entra pelas compras (abaixo), cada uma na
     // sua categoria e competência. Contar os dois somaria o mesmo dinheiro duas vezes.
     titles: await tx.title.findMany({
@@ -70,6 +68,7 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
       where: { companyId, canceledAt: null, competenceDate: range },
       include: { category: true },
     }),
+    refunds: await tx.settlementRefund.findMany({ where: { companyId, reversedAt: null, effectiveDate: range }, select: { amountCents: true } }),
     settlements: await tx.settlement.findMany({
       where: {
         companyId,
@@ -83,9 +82,21 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
 
   const operating = new Map<string, bigint>();
   const outside = new Map<string, bigint>();
-  const record = (category: { managerialGroup: string | null; nature: string }, cents: bigint) => {
+  const byNature = new Map<string, bigint>();
+  const natureGroups = new Map<string, { id: string; label: string; nature: string; cents: bigint }>();
+  const categoryDetails = new Map<string, { categoryId: string; categoryName: string; nature: string; group: string; cents: bigint; count: number }>();
+  const ungrouped = new Set<string>();
+  let unusualSignCount = 0;
+  const record = (category: { id: string; name: string; managerialGroup: string | null; nature: string }, cents: bigint) => {
     const label = category.managerialGroup?.trim() || NATURE_LABEL[category.nature] || category.nature;
     add(OPERATING_NATURES.has(category.nature) ? operating : outside, label, cents);
+    add(byNature, category.nature, cents);
+    const groupId = JSON.stringify([category.nature, label]);
+    natureGroups.set(groupId, { id: groupId, label, nature: category.nature, cents: (natureGroups.get(groupId)?.cents ?? BigInt(0)) + cents });
+    const existing = categoryDetails.get(category.id);
+    categoryDetails.set(category.id, { categoryId: category.id, categoryName: category.name, nature: category.nature, group: label, cents: (existing?.cents ?? BigInt(0)) + cents, count: (existing?.count ?? 0) + 1 });
+    if (OPERATING_NATURES.has(category.nature) && !category.managerialGroup?.trim()) ungrouped.add(category.id);
+    if ((category.nature === "OPERATING_REVENUE" && cents < BigInt(0)) || (["COST", "EXPENSE"].includes(category.nature) && cents > BigInt(0))) unusualSignCount++;
   };
 
   for (const title of titles) {
@@ -116,6 +127,9 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   const financialLines = sortedLines(financial);
   const operatingResultCents = sum(groups);
   const financialResultCents = sum(financialLines);
+  const revenueCents = byNature.get("OPERATING_REVENUE") ?? BigInt(0);
+  const costCents = byNature.get("COST") ?? BigInt(0);
+  const expenseCents = byNature.get("EXPENSE") ?? BigInt(0);
 
   return {
     /** Grupos do resultado operacional (receita, custo e despesa). */
@@ -127,5 +141,14 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
     totalCents: operatingResultCents + financialResultCents,
     /** Movimentação de capital listada para conferência; não entra no total. */
     outsideResult: sortedLines(outside),
+    revenueCents,
+    costCents,
+    expenseCents,
+    grossResultCents: revenueCents + costCents,
+    categoryDetails: [...categoryDetails.values()].sort((a, b) => a.nature.localeCompare(b.nature) || a.group.localeCompare(b.group) || a.categoryName.localeCompare(b.categoryName)),
+    natureGroups: [...natureGroups.values()],
+    ungroupedCategoryCount: ungrouped.size,
+    unusualSignCount,
+    unclassifiedRefundCents: refunds.reduce((sum, r) => sum + r.amountCents, BigInt(0)),
   };
 }

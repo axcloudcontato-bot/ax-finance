@@ -17,6 +17,7 @@ export function ActionModal({
   title,
   icon,
   initiallyOpen = false,
+  size = "default",
   children,
 }: {
   triggerLabel: ReactNode;
@@ -27,6 +28,8 @@ export function ActionModal({
   /** Mesma família animada de ícones do sidebar, ex.: <Landmark className="size-5" />. */
   icon?: ReactNode;
   initiallyOpen?: boolean;
+  /** Formulários extensos aproveitam a largura disponível no desktop. */
+  size?: "default" | "wide";
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(initiallyOpen);
@@ -51,7 +54,7 @@ export function ActionModal({
 
       {open ? (
         <div className="modal-overlay" onClick={() => setOpen(false)}>
-          <div ref={dialogRef} className="modal-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(event) => event.stopPropagation()}>
+          <div ref={dialogRef} className={`modal-dialog${size === "wide" ? " modal-dialog-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 {icon}

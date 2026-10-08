@@ -5,6 +5,7 @@ import { requirePrimaryCompany } from "@/lib/company";
 import { errorResponse } from "@/lib/api";
 import { todayDateOnlyString } from "@/lib/dates";
 import { toCsv } from "@/lib/csv";
+import { NATURE_LABEL } from "@/lib/category-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +22,18 @@ export async function GET(request: NextRequest) {
     const report = await getManagerialIncomeStatement(user.id, company.id, { from, to });
 
     const csv = toCsv(
-      ["Seção", "Grupo gerencial", "Valor (centavos)"],
+      ["Seção", "Grupo gerencial ou linha", "Categoria", "Valor (centavos)"],
       [
-        ...report.groups.map((group) => ["Resultado operacional", group.label, group.cents.toString()]),
-        ["Resultado operacional", "Total", report.operatingResultCents.toString()],
-        ...report.financialLines.map((line) => ["Resultado financeiro", line.label, line.cents.toString()]),
-        ["Resultado financeiro", "Total", report.financialResultCents.toString()],
-        ["Resultado do período", "Total", report.totalCents.toString()],
-        ...report.outsideResult.map((line) => ["Fora do resultado (informativo)", line.label, line.cents.toString()]),
+        ["Formação do resultado", "Receita operacional", "", report.revenueCents.toString()],
+        ["Formação do resultado", "Custos", "", report.costCents.toString()],
+        ["Formação do resultado", "Resultado bruto", "", report.grossResultCents.toString()],
+        ["Formação do resultado", "Despesas", "", report.expenseCents.toString()],
+        ["Formação do resultado", "Resultado operacional", "", report.operatingResultCents.toString()],
+        ...report.financialLines.map((line) => ["Resultado financeiro", line.label, "", line.cents.toString()]),
+        ["Resultado financeiro", "Total", "", report.financialResultCents.toString()],
+        ["Resultado do período", "Total", "", report.totalCents.toString()],
+        ...report.categoryDetails.map((line) => [`Categoria: ${NATURE_LABEL[line.nature]}`, line.group, line.categoryName, line.cents.toString()]),
+        ["Aviso", "Devoluções sem classificação automática na DRE", "", report.unclassifiedRefundCents.toString()],
       ]
     );
 

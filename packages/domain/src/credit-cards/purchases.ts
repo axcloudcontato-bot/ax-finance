@@ -3,6 +3,7 @@ import { z } from "zod";
 import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
+import { assertPeriodOpen } from "../closures/assert-period-open";
 import {
   CategoryNotFoundError,
   CostCenterNotFoundError,
@@ -19,7 +20,7 @@ import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySc
 import { assertCardAccess, CARD_INVOICE_CATEGORY_NAME, ensureInvoice, syncInvoiceTitle } from "./invoices";
 import { cyclesForInstallments, installmentCompetenceDate, splitInstallments } from "./invoice-cycle";
 
-const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const dateOnly = z.string().date("Informe uma data de compra válida.");
 
 export const createCreditCardPurchaseInput = z.object({
   cardId: z.string().uuid(),
@@ -88,6 +89,10 @@ export async function createCreditCardPurchase(userId: string, companyId: string
     await assertClassification(tx, companyId, data);
 
     const cycles = cyclesForInstallments(card, data.purchaseDate, data.installmentCount);
+    for (const [index, cycle] of cycles.entries()) {
+      await assertPeriodOpen(tx, companyId, new Date(installmentCompetenceDate(data.purchaseDate, index)));
+      await assertPeriodOpen(tx, companyId, new Date(cycle.closingDate));
+    }
     const amounts = splitInstallments(data.totalAmountCents, data.installmentCount);
     const groupId = data.installmentCount > 1 ? randomUUID() : null;
 
@@ -95,6 +100,7 @@ export async function createCreditCardPurchase(userId: string, companyId: string
     for (const cycle of cycles) {
       if (invoiceByMonth.has(cycle.referenceMonth)) continue;
       const invoice = await ensureInvoice(tx, companyId, card, cycle);
+      await assertPeriodOpen(tx, companyId, invoice.closingDate);
       if (invoice.title.status === "SETTLED") throw new CreditCardInvoicePaidError(invoice.referenceMonth);
       invoiceByMonth.set(cycle.referenceMonth, invoice);
     }
@@ -159,6 +165,7 @@ export async function updateCreditCardPurchase(userId: string, companyId: string
     const purchase = await tx.creditCardPurchase.findFirst({ where: { id: purchaseId, companyId } });
     if (!purchase) throw new CreditCardPurchaseNotFoundError();
     if (purchase.canceledAt) throw new CreditCardPurchaseAlreadyCanceledError();
+    await assertPeriodOpen(tx, companyId, purchase.competenceDate);
     await assertClassification(tx, companyId, data);
 
     const updated = await tx.creditCardPurchase.update({
@@ -214,6 +221,8 @@ export async function cancelCreditCardPurchase(userId: string, companyId: string
           });
 
     for (const target of targets) {
+      await assertPeriodOpen(tx, companyId, target.competenceDate);
+      await assertPeriodOpen(tx, companyId, target.invoice.closingDate);
       if (target.invoice.title.status === "SETTLED") throw new CreditCardInvoicePaidError(target.invoice.referenceMonth);
     }
 

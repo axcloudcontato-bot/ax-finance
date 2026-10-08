@@ -34,6 +34,18 @@ Consequências boas de a fatura ser um título comum:
 - **Acesso:** só proprietário ou usuário com acesso total (`accessScope = ALL`). Quem está restrito a centros de custo não vê cartões, porque a fatura mistura centros. Imposto na RLS (`app_can_access_cost_center(company, NULL)`) e no domínio.
 - **Zerar a conta** apaga compras e faturas (e seus títulos); o cadastro do cartão fica, como as contas financeiras.
 
+## Gestão e planejamento
+
+- A tela de cartões apresenta dívida total, vencimentos entre hoje e os próximos 30 dias, faturas vencidas e limite disponível dos cartões ativos. Todas as faturas pendentes entram nos totais, inclusive se um pagamento estornado reabrir a dívida de um cartão arquivado.
+- O compromisso por mês usa o vencimento real das faturas nos próximos seis meses. Valores posteriores ao horizonte aparecem em nota. É a previsão das compras já registradas: novas compras e encargos ainda não lançados não estão incluídos. Limite disponível não é dinheiro em caixa.
+- A agenda reúne todas as faturas vencidas e as que vencem nos próximos 30 dias, com acesso direto ao detalhe. Os cartões com atrasos aparecem primeiro e mostram o saldo total vencido, além da próxima fatura.
+- Antes de lançar uma compra, a prévia usa as mesmas regras de ciclo e divisão de centavos do domínio. Mostra primeiro/último vencimento, valor de cada parcela e limite restante. Faturas existentes mantêm as datas gravadas mesmo após editar o cartão.
+- Os formulários de cadastro/edição de cartão e de compra usam modais de até 1.120 px no desktop, com campos em duas colunas. No celular, os campos se empilham e o modal respeita a largura disponível.
+- Antes de registrar um pagamento, a prévia distingue principal, juros/multa e tarifas, mostra a saída total da conta e o principal ainda pendente. O histórico também mostra as tarifas e a saída total.
+- Criar, reclassificar, cancelar ou excluir compras não pode modificar competências fechadas. Criação/cancelamento/exclusão também conferem os períodos dos fechamentos das faturas afetadas. Um parcelamento que afete qualquer período fechado é recusado inteiro, na mesma transação.
+- Datas inexistentes, como 31 de fevereiro, são recusadas. Alterar os dias do cartão não muda a classificação nem as datas de uma fatura já criada.
+- Registrar pagamento da fatura é uma operação idempotente em uma única transação: repetir a chave com o mesmo conteúdo retorna a baixa original, mesmo depois de quitada; conteúdo diferente é recusado.
+
 ## Fora do escopo desta versão
 
-Estorno/crédito de compra como lançamento próprio na fatura, compras em moeda estrangeira, importação de fatura (OFX/PDF), cartão adicional por portador, anuidade e rotativo calculado automaticamente (juros se informam no pagamento), e o resumo de cartões no dashboard.
+Estorno/crédito de compra como lançamento próprio na fatura, antecipação de pagamento de fatura ainda aberta, compras em moeda estrangeira, importação de fatura (OFX/PDF), cartão adicional por portador, anuidade e rotativo calculado automaticamente (juros se informam no pagamento). O dashboard já apresenta um resumo dos cartões.

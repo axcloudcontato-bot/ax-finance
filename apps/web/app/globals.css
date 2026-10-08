@@ -1073,6 +1073,15 @@ form.inline {
 }
 .modal-header h2 { margin: 0; font-size: 1.15rem; }
 
+.modal-dialog.modal-dialog-wide {
+  max-width: 1120px;
+  padding: 2rem;
+}
+.modal-dialog-wide .form-grid { column-gap: 2rem; }
+@media (max-width: 560px) {
+  .modal-dialog.modal-dialog-wide { padding: 1.25rem; }
+}
+
 /* Formulários com muitos campos (ex.: cadastro de pessoa) ficam menos
    compridos em dois campos por linha — usa a largura extra do modal em vez
    de empilhar tudo numa coluna só. */
@@ -4036,6 +4045,33 @@ main.settings-page {
 .workspace-method-note { margin: -0.3rem 0 1.2rem; padding: 0.8rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--muted); font-size: 0.81rem; }
 .workspace-method-note summary { width: fit-content; color: var(--text); font-weight: 650; cursor: pointer; }
 .workspace-method-note p { margin: 0.55rem 0 0; line-height: 1.5; }
+
+.report-navigation { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; }
+.report-navigation a { padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 9px; background: var(--card); color: var(--text); text-decoration: none; font-size: 0.82rem; }
+.report-navigation a[aria-current="page"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--card)); font-weight: 700; }
+.report-navigation a:focus-visible, .report-details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.report-horizon { margin: 0; flex-shrink: 0; }
+.report-section-heading { flex-wrap: wrap; }
+.report-metrics-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.report-balance-bridge { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.report-balance-bridge div { display: flex; flex-direction: column; gap: 0.4rem; }
+.report-balance-bridge span { color: var(--muted); font-size: 0.79rem; }
+.report-balance-bridge strong { font-variant-numeric: tabular-nums; font-size: 1.25rem; }
+.report-caption { color: var(--muted); font-size: 0.82rem; line-height: 1.6; margin: 0.85rem 0; }
+.report-notice { padding: 0.85rem 1rem; margin: 0 0 1.1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--accent) 5%, var(--card)); font-size: 0.85rem; line-height: 1.6; }
+.report-notice p { margin: 0.35rem 0; }
+.report-notice-alert { border-color: color-mix(in srgb, #d97706 45%, var(--border)); background: color-mix(in srgb, #d97706 6%, var(--card)); }
+.report-negative { color: var(--danger); font-weight: 700; }
+.report-details summary { padding: 0.7rem 0; cursor: pointer; font-size: 0.85rem; font-weight: 650; }
+.report-chart-legend { display: flex; flex-wrap: wrap; gap: 0.65rem 1.2rem; margin: 0.8rem 0; color: var(--muted); font-size: 0.8rem; }
+.report-chart-legend span:first-child { border-bottom: 2px solid var(--chart-1); padding-bottom: 0.3rem; }
+.report-chart-legend span:last-child { border-bottom: 2px dashed var(--chart-2); padding-bottom: 0.3rem; }
+.ax-model-buttons main.reports-page .workspace-table { min-width: 0; width: 100%; }
+.ax-model-buttons main.reports-page .workspace-table th:not(.money) { white-space: normal; }
+.workspace-table tr.report-subtotal { background: color-mix(in srgb, var(--accent) 5%, var(--card)); font-weight: 700; }
+.workspace-table tbody th[scope="row"] { text-transform: none !important; letter-spacing: normal !important; text-align: left; font-size: 0.84rem !important; font-weight: inherit; }
+@media (max-width: 1050px) { .report-metrics-four, .report-balance-bridge { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .report-metrics-four, .report-balance-bridge { grid-template-columns: 1fr; } .report-navigation a { flex: 1 1 auto; text-align: center; } .workspace-report-filters > div { max-width: 100%; } .workspace-report-filters :is(input, select) { min-width: 0; width: 100%; } }
 .workspace-list-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
 .workspace-list-toolbar p { margin: 0; color: var(--muted); font-size: 0.8rem; }
 .workspace-list-toolbar form { display: flex; align-items: center; gap: 0.4rem; }
@@ -4131,6 +4167,25 @@ main.settings-page {
 .breadcrumb a { color: var(--muted); text-decoration: none; }
 .breadcrumb a:hover { color: var(--accent); }
 
+.credit-management-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.credit-attention { padding: 1rem 1.2rem; margin-bottom: 1.2rem; border: 1px solid color-mix(in srgb, #c23d68 35%, var(--border)); border-radius: 13px; background: color-mix(in srgb, var(--card) 96%, #c23d68); }
+.credit-attention p { margin: 0.35rem 0 0.6rem; color: var(--muted); font-size: 0.85rem; }
+.credit-months { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.65rem; margin: 1rem 0; }
+.credit-month { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.85rem; border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
+.credit-month > span, .credit-month small { color: var(--muted); font-size: 0.76rem; }
+.credit-month strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.credit-summary-note { color: var(--muted); font-size: 0.8rem; line-height: 1.55; margin: 0; }
+.credit-card-warning { color: #a62950; font-size: 0.82rem; font-weight: 600; margin: 0; }
+:root[data-ax-theme="dark"] .credit-card-warning { color: #ff9bb8; }
+.credit-impact { border: 1px solid var(--border); background: color-mix(in srgb, var(--card) 95%, var(--accent)); border-radius: 10px; padding: 1rem; }
+.credit-impact p { font-size: 0.82rem; line-height: 1.5; margin: 0.45rem 0 0; }
+.credit-impact dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7rem; margin: 0.8rem 0; }
+.credit-impact dt { font-size: 0.72rem; color: var(--muted); }
+.credit-impact dd { margin: 0.25rem 0 0; font-size: 0.86rem; font-weight: 650; }
+.credit-impact details { margin-top: 0.75rem; }
+#agenda-cartoes { scroll-margin-top: 90px; }
+@media (max-width: 1100px) { .credit-management-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .credit-months { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .credit-management-metrics { grid-template-columns: 1fr; } .credit-months { grid-template-columns: repeat(2, minmax(0, 1fr)); } .credit-impact dl { grid-template-columns: 1fr; } }
 .card-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 1rem; align-items: start; }
 .card-tile { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 0; }
 .card-tile.is-archived { opacity: 0.7; }

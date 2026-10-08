@@ -4,6 +4,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { CategorySuggestion } from "@/components/category-suggestion";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { todayDateOnlyString } from "@/lib/dates";
+import { PurchaseImpact, type PurchaseImpactCard } from "./purchase-impact";
 
 interface Option {
   id: string;
@@ -42,6 +43,7 @@ export function PurchaseForm({
   idPrefix = "purchase",
   submitLabel,
   today,
+  card,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   categories: CategoryOption[];
@@ -52,6 +54,7 @@ export function PurchaseForm({
   submitLabel?: string;
   /** "Hoje" no fuso da empresa (YYYY-MM-DD), para a data padrão da compra. */
   today?: string;
+  card?: PurchaseImpactCard;
 }) {
   const editing = Boolean(defaults);
   const defaultDate = today ?? todayDateOnlyString();
@@ -118,11 +121,13 @@ export function PurchaseForm({
               <input id={`${idPrefix}-installments`} name="installmentCount" type="number" min={1} max={48} defaultValue={1} required />
             </div>
 
-            <p className="subtitle" style={{ margin: 0, alignSelf: "end" }}>
+            {card ? null : <p className="subtitle" style={{ margin: 0, alignSelf: "end" }}>
               Compra parcelada vira uma parcela em cada fatura seguinte; o valor informado é o total.
-            </p>
+            </p>}
           </>
         )}
+
+        {!editing && card ? <PurchaseImpact card={card} /> : null}
 
         <div className="span-2">
           <label htmlFor={`${idPrefix}-notes`}>Observações</label>

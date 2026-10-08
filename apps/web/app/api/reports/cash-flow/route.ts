@@ -21,14 +21,22 @@ export async function GET(request: NextRequest) {
     const report = await getCashFlowReport(user.id, company.id, { from, to });
 
     const csv = toCsv(
-      ["Data", "Tipo", "Descrição", "Categoria", "Valor (centavos)"],
-      report.entries.map((entry) => [
+      ["Registro", "Data", "Direção de caixa", "Descrição", "Categoria", "Conta", "Valor (centavos)"],
+      [...report.entries.map((entry) => [
+        entry.kind === "REFUND" ? "Devolução/reembolso" : "Baixa",
         formatDateOnly(entry.effectiveDate),
-        entry.titleType === "RECEIVABLE" ? "Entrada" : "Saída",
+        entry.cashDeltaCents >= BigInt(0) ? "Entrada" : "Saída",
         entry.titleDescription,
         entry.categoryName,
+        entry.accountName,
         entry.cashDeltaCents.toString(),
-      ])
+      ]),
+      ["Conferência", formatDateOnly(report.openingBalanceDate), "", "Saldo inicial", "", "Todas as contas", report.openingBalanceCents.toString()],
+      ["Conferência", "", "", "Baixas e devoluções", "", "", report.totalCents.toString()],
+      ["Conferência", "", "", "Outras alterações de saldo", "", "", report.otherBalanceChangesCents.toString()],
+      ["Conferência", formatDateOnly(report.closingBalanceDate), "", "Saldo final", "", "Todas as contas", report.closingBalanceCents.toString()],
+      ["Conferência", "", "", "Diferença a conferir (esperado zero)", "", "", report.balanceDifferenceCents.toString()],
+      ]
     );
 
     return new Response(csv, {
