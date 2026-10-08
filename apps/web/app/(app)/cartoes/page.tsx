@@ -23,7 +23,7 @@ import { IssuerBadge } from "@/components/credit-cards/issuer-badge";
 import { createCardAction, createPurchaseAction } from "./actions";
 
 export default async function CartoesPage(props: {
-  searchParams: Promise<{ erro?: string; cartao?: string; comprado?: string; arquivado?: string; reativado?: string }>;
+  searchParams: Promise<{ erro?: string; cartao?: string; comprado?: string; arquivado?: string; reativado?: string; excluido?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
@@ -57,7 +57,7 @@ export default async function CartoesPage(props: {
   const totalUsed = activeCards.reduce((sum, card) => sum + card.usedLimitCents, BigInt(0));
   const toPay = activeCards.reduce((sum, card) => sum + (card.nextPayable?.remainingCents ?? BigInt(0)), BigInt(0));
   const createFailed = Boolean(searchParams.erro) && !searchParams.cartao;
-  const refreshKey = [searchParams.erro, searchParams.comprado, searchParams.arquivado, searchParams.reativado].join("|");
+  const refreshKey = [searchParams.erro, searchParams.comprado, searchParams.arquivado, searchParams.reativado, searchParams.excluido].join("|");
 
   return (
     <main className="wide">
@@ -78,6 +78,7 @@ export default async function CartoesPage(props: {
 
       {searchParams.arquivado ? <p className="success-box">Cartão arquivado. O histórico de compras e faturas continua disponível.</p> : null}
       {searchParams.reativado ? <p className="success-box">Cartão reativado.</p> : null}
+      {searchParams.excluido ? <p className="success-box">Cartão excluído.</p> : null}
       {searchParams.comprado ? <p className="success-box">Compra lançada na fatura.</p> : null}
 
       <section className="workspace-metrics" aria-label="Resumo dos cartões">

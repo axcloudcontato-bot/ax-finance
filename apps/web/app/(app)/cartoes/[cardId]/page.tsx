@@ -11,7 +11,7 @@ import {
   listParties,
   todayInTimeZone,
 } from "@ax-finance/domain";
-import { CreditCard } from "@/components/ui/animated-icons";
+import { CreditCard, Trash2 } from "@/components/ui/animated-icons";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
@@ -23,7 +23,7 @@ import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
 import { LimitBar } from "@/components/credit-cards/limit-bar";
 import { IssuerBadge } from "@/components/credit-cards/issuer-badge";
-import { createPurchaseAction, setCardArchivedAction, updateCardAction } from "../actions";
+import { createPurchaseAction, deleteCardAction, setCardArchivedAction, updateCardAction } from "../actions";
 
 export default async function CartaoPage(props: {
   params: Promise<{ cardId: string }>;
@@ -185,6 +185,17 @@ export default async function CartaoPage(props: {
           <form action={setCardArchivedAction.bind(null, card.id, !archived)} className="inline">
             <SubmitButton className="secondary">{archived ? "Reativar cartão" : "Arquivar cartão"}</SubmitButton>
           </form>
+          <ActionModal triggerLabel={<Trash2 size={16} />} triggerAriaLabel="Excluir cartão" triggerClassName="concil-icon-btn is-danger" title={`Excluir — ${card.name}`}>
+            <p>
+              {invoices.length === 0
+                ? `O cartão ${card.name} será excluído.`
+                : `O cartão ${card.name}, ${invoices.length === 1 ? "a fatura" : `as ${invoices.length} faturas`} e as compras lançadas nele (${formatCents(invoices.reduce((total, invoice) => total + invoice.totalCents, BigInt(0)))} em faturas) serão apagados. As compras deixam de aparecer no DRE e no orçamento.`}
+            </p>
+            <p className="muted">Não dá para desfazer. Para guardar o histórico, arquive o cartão em vez de excluir. Se alguma fatura já tiver pagamento registrado, a exclusão é recusada.</p>
+            <form action={deleteCardAction.bind(null, card.id)}>
+              <SubmitButton>Excluir cartão</SubmitButton>
+            </form>
+          </ActionModal>
         </div>
       </div>
     </main>

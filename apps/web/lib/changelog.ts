@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-07-excluir-cartao",
+    date: "2026-10-07",
+    title: "Excluir cartão de crédito",
+    summary: "Cadastrou um cartão por engano ou não usa mais? Agora dá para excluí-lo.",
+    changes: [
+      { kind: "NEW", text: "Botão de lixeira na página do cartão. A exclusão apaga também as compras e faturas dele, com confirmação antes." },
+      { kind: "NEW", text: "Se alguma fatura já teve pagamento registrado, a exclusão é recusada. Nesse caso, arquive o cartão para manter o histórico." },
+    ],
+  },
+  {
     id: "2026-10-06-remover-importacao",
     date: "2026-10-06",
     title: "Remover importação de extrato",

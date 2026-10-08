@@ -2,7 +2,7 @@ import { z } from "zod";
 import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
-import { CreditCardHasOpenInvoicesError, CreditCardNotFoundError, FinancialAccountNotFoundError } from "../errors";
+import { CreditCardHasOpenInvoicesError, CreditCardHasPaymentsError, CreditCardNotFoundError, FinancialAccountNotFoundError } from "../errors";
 import { assertCardAccess, invoiceDescription } from "./invoices";
 import { CREDIT_CARD_ISSUER_KEYS } from "./issuers";
 
@@ -137,5 +137,51 @@ export async function reactivateCreditCard(userId: string, companyId: string, ca
     const updated = await tx.creditCard.update({ where: { id: card.id }, data: { status: "ACTIVE" } });
     await recordAuditEvent(tx, { companyId, actorUserId: userId, eventType: "CREDIT_CARD_REACTIVATED", resourceType: "CreditCard", resourceId: card.id, summary: card.name });
     return updated;
+  });
+}
+
+/**
+ * Exclusão definitiva do cartão com tudo o que ele gerou (compras, faturas e os títulos das faturas).
+ * Só é recusada quando alguma fatura já teve pagamento registrado (mesmo estornado): aí há movimento
+ * de caixa e conciliação ligados a ela, e o caminho é arquivar, que guarda o histórico. As compras
+ * deixam de entrar no DRE e no orçamento. Fica registro na auditoria, com o que foi apagado.
+ */
+export async function deleteCreditCard(userId: string, companyId: string, cardId: string) {
+  await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
+
+  return withCompanyContext(userId, companyId, async (tx) => {
+    await assertCardAccess(tx, userId, companyId);
+    const card = await tx.creditCard.findFirst({ where: { id: cardId, companyId } });
+    if (!card) throw new CreditCardNotFoundError();
+
+    const invoices = await tx.creditCardInvoice.findMany({ where: { companyId, cardId: card.id }, select: { titleId: true } });
+    const titleIds = invoices.map((invoice) => invoice.titleId);
+    if (titleIds.length > 0) {
+      const payments = await tx.settlement.count({ where: { companyId, titleId: { in: titleIds } } });
+      if (payments > 0) throw new CreditCardHasPaymentsError();
+    }
+
+    const activePurchases = await tx.creditCardPurchase.aggregate({
+      where: { companyId, cardId: card.id, canceledAt: null },
+      _count: true,
+      _sum: { amountCents: true },
+    });
+    // Ordem imposta pelas chaves estrangeiras: compras → faturas → títulos das faturas → cartão.
+    const purchases = await tx.creditCardPurchase.deleteMany({ where: { companyId, cardId: card.id } });
+    await tx.creditCardInvoice.deleteMany({ where: { companyId, cardId: card.id } });
+    if (titleIds.length > 0) await tx.title.deleteMany({ where: { companyId, id: { in: titleIds } } });
+    await tx.creditCard.delete({ where: { id: card.id } });
+
+    const summary = {
+      purchases: purchases.count,
+      activePurchases: activePurchases._count,
+      activePurchasesCents: (activePurchases._sum.amountCents ?? BigInt(0)).toString(),
+      invoices: invoices.length,
+    };
+    await recordAuditEvent(tx, {
+      companyId, actorUserId: userId, eventType: "CREDIT_CARD_DELETED", resourceType: "CreditCard", resourceId: card.id,
+      summary: card.name, metadata: summary,
+    });
+    return { name: card.name, ...summary };
   });
 }

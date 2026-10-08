@@ -563,6 +563,15 @@ export class CreditCardInvoiceBelowSettledError extends DomainError {
   }
 }
 
+export class CreditCardHasPaymentsError extends DomainError {
+  constructor() {
+    super(
+      "Este cartão tem fatura com pagamento registrado (mesmo que estornado), então não pode ser excluído. Arquive o cartão: o histórico fica guardado.",
+      "CREDIT_CARD_HAS_PAYMENTS"
+    );
+  }
+}
+
 export class CreditCardHasOpenInvoicesError extends DomainError {
   constructor() {
     super("Este cartão ainda tem fatura em aberto. Pague ou cancele as compras antes de arquivá-lo.", "CREDIT_CARD_HAS_OPEN_INVOICES");

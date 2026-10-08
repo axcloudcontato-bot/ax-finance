@@ -43,6 +43,7 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   CREDIT_CARD_CREATED: "Cartão de crédito criado",
   CREDIT_CARD_UPDATED: "Cartão de crédito atualizado",
   CREDIT_CARD_ARCHIVED: "Cartão de crédito arquivado",
+  CREDIT_CARD_DELETED: "Cartão de crédito excluído",
   CREDIT_CARD_REACTIVATED: "Cartão de crédito reativado",
   CREDIT_CARD_PURCHASE_CREATED: "Compra no cartão lançada",
   CREDIT_CARD_PURCHASE_UPDATED: "Compra no cartão atualizada",

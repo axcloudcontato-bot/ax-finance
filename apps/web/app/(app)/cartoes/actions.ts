@@ -6,6 +6,7 @@ import {
   cancelCreditCardPurchase,
   createCreditCard,
   createCreditCardPurchase,
+  deleteCreditCard,
   payCreditCardInvoice,
   reactivateCreditCard,
   updateCreditCard,
@@ -82,6 +83,17 @@ export async function setCardArchivedAction(cardId: string, archive: boolean) {
     toRedirect(`/cartoes/${cardId}`, { erroCartao: actionErrorMessage(error, "Não foi possível alterar o cartão.") });
   }
   toRedirect("/cartoes", archive ? { arquivado: "1" } : { reativado: "1" });
+}
+
+/** Exclusão definitiva do cartão (e das compras/faturas dele). Recusada se alguma fatura já teve pagamento. */
+export async function deleteCardAction(cardId: string) {
+  const { user, company } = await currentContext();
+  try {
+    await deleteCreditCard(user.id, company.id, cardId);
+  } catch (error) {
+    toRedirect(`/cartoes/${cardId}`, { erroCartao: actionErrorMessage(error, "Não foi possível excluir o cartão.") });
+  }
+  toRedirect("/cartoes", { excluido: "1" });
 }
 
 /**
