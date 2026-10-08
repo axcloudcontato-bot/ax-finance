@@ -12,6 +12,7 @@ import {
   TitleNotOpenError,
 } from "../errors";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 export const registerSettlementInput = z.object({
   financialAccountId: z.string().uuid(),
@@ -92,7 +93,7 @@ export async function registerSettlementInTx(tx: TenantScopedClient, userId: str
     }
 
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT },
     });
     if (!account) {
       throw new FinancialAccountNotFoundError();

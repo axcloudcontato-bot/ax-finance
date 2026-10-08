@@ -13,6 +13,7 @@ import {
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { enqueueAccessChangedEmail, enqueueCompanyInvitationEmail } from "../outbox/events";
 import { assertCompanyPermission } from "./permissions";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 const invitationRole = z.enum(["FINANCE_ADMIN", "OPERATOR", "ACCOUNTANT", "VIEWER"]);
 const INVITATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -91,7 +92,7 @@ export async function updateCompanyMemberAccess(
     const accountIds = [...new Set(data.financialAccountIds)];
     const costCenterIds = [...new Set(data.costCenterIds)];
     const [accountCount, costCenterCount] = await Promise.all([
-      tx.financialAccount.count({ where: { companyId, id: { in: accountIds } } }),
+      tx.financialAccount.count({ where: { companyId, id: { in: accountIds }, ...OPERATIONAL_ACCOUNT } }),
       tx.costCenter.count({ where: { companyId, id: { in: costCenterIds } } }),
     ]);
     if (accountCount !== accountIds.length || costCenterCount !== costCenterIds.length) {

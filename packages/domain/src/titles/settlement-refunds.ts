@@ -11,6 +11,7 @@ import {
   SettlementRefundNotFoundError,
 } from "../errors";
 import { settlementCashDelta } from "./settlement-cash-delta";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 const registerRefundInput = z.object({
   financialAccountId: z.string().uuid(),
@@ -32,7 +33,7 @@ export async function registerSettlementRefund(userId: string, companyId: string
     });
     if (!settlement) throw new SettlementNotFoundError();
     if (settlement.reversedAt) throw new SettlementAlreadyReversedError();
-    if (!(await tx.financialAccount.findFirst({ where: { id: data.financialAccountId, companyId, status: "ACTIVE" } }))) {
+    if (!(await tx.financialAccount.findFirst({ where: { id: data.financialAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT } }))) {
       throw new FinancialAccountNotFoundError();
     }
     await assertPeriodOpen(tx, companyId, data.effectiveDate);

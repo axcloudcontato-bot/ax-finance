@@ -28,6 +28,9 @@ const FIELD_LABEL: Record<string, string> = {
   lastDigits: "final do cartão",
   name: "nome",
   reason: "motivo",
+  targetAmountCents: "meta",
+  targetDate: "prazo",
+  accountId: "conta",
   email: "e-mail",
 };
 

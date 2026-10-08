@@ -5,8 +5,9 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 /**
  * Menu suspenso "Gerenciar" das linhas de lista (Editar, Ajustar saldo, Arquivar...).
  * O painel fica sempre montado (só escondido com `visibility`) para que os modais e formulários
- * dos itens continuem funcionando depois que o menu fecha; fecha ao clicar fora, em Esc, ao rolar
- * a página ou ao escolher um item. `defaultOpen` abre já de cara (uma ação falhou e o erro está
+ * dos itens continuem funcionando depois que o menu fecha; fecha ao clicar fora, em Esc ou ao
+ * escolher um item. Ao rolar, acompanha o botão (o foco no botão pode rolar a tabela de lado) e só
+ * fecha se o botão sair da tela. `defaultOpen` abre já de cara (uma ação falhou e o erro está
  * dentro de um dos itens).
  */
 export function RowActionsMenu({ label = "Gerenciar", defaultOpen = false, children }: { label?: string; defaultOpen?: boolean; children: ReactNode }) {
@@ -30,7 +31,11 @@ export function RowActionsMenu({ label = "Gerenciar", defaultOpen = false, child
   useEffect(() => {
     if (!open) return;
     place();
-    const close = () => setOpen(false);
+    const follow = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect || rect.bottom < 0 || rect.top > window.innerHeight) setOpen(false);
+      else place();
+    };
     const onPointer = (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (target && rootRef.current?.contains(target)) return;
@@ -41,13 +46,13 @@ export function RowActionsMenu({ label = "Gerenciar", defaultOpen = false, child
     };
     document.addEventListener("mousedown", onPointer);
     document.addEventListener("keydown", onKey);
-    window.addEventListener("resize", close);
-    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", follow);
+    window.addEventListener("scroll", follow, true);
     return () => {
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
-      window.removeEventListener("resize", close);
-      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", follow);
+      window.removeEventListener("scroll", follow, true);
     };
   }, [open]);
 

@@ -4,6 +4,7 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { FinancialAccountNotFoundError } from "../errors";
 import { parseBankStatementContent } from "./bank-statement-parser";
 import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 export const importBankStatementInput = z.object({
   financialAccountId: z.string().uuid(),
@@ -30,7 +31,7 @@ export async function importBankStatement(userId: string, companyId: string, inp
 
   const batch = await withCompanyContext(userId, companyId, async (tx) => {
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT },
       select: { id: true },
     });
     if (!account) throw new FinancialAccountNotFoundError();

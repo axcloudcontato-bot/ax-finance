@@ -6,6 +6,7 @@ import { recordAuditEvent } from "../audit/record-audit-event";
 import { BalanceAdjustmentNotNeededError, FinancialAccountNotFoundError, IdempotencyResultUnavailableError } from "../errors";
 import { computeAccountBalanceDeltas } from "./account-balances";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { OPERATIONAL_ACCOUNT } from "./operational";
 
 export const createBalanceAdjustmentInput = z.object({
   financialAccountId: z.string().uuid(),
@@ -45,7 +46,7 @@ export async function createBalanceAdjustment(userId: string, companyId: string,
     }
 
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT },
     });
     if (!account) {
       throw new FinancialAccountNotFoundError();

@@ -6,6 +6,7 @@ import { computeAccountBalanceDeltas } from "../financial-accounts/account-balan
 import { settlementCashDelta } from "../titles/settlement-cash-delta";
 import { isPlanFeatureEnabled } from "../subscriptions/plan-features";
 import { getCompanyToday } from "../shared/today";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -208,7 +209,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
     const reconciliationAvailable = isPlanFeatureEnabled(subscription?.planCode, "BANK_RECONCILIATION");
     const [accounts, balanceDeltas, settlements, refunds, titles, pendingLines, failedImports] = await Promise.all([
       tx.financialAccount.findMany({
-        where: { companyId, status: "ACTIVE", ...(data.financialAccountId ? { id: data.financialAccountId } : {}) },
+        where: { companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT, ...(data.financialAccountId ? { id: data.financialAccountId } : {}) },
         orderBy: { createdAt: "asc" },
       }),
       computeAccountBalanceDeltas(tx, companyId, atUtc(today)),

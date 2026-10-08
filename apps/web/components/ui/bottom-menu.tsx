@@ -11,6 +11,7 @@ import {
   Megaphone01Icon,
   Moon02Icon,
   Notification03Icon,
+  PiggyBankIcon,
   PlusSignIcon,
   Search01Icon,
   SecurityCheckIcon,
@@ -243,6 +244,7 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
           <ActionRow icon={ArrowDown01Icon} onClick={() => { closeMenu(); openQuickCreate("RECEIVABLE"); }}>Nova receita</ActionRow>
           <ActionRow icon={ArrowUp01Icon} onClick={() => { closeMenu(); openQuickCreate("PAYABLE"); }}>Nova despesa</ActionRow>
           <ActionRow icon={Exchange01Icon} onClick={() => { closeMenu(); openQuickCreate("TRANSFER"); }}>Nova transferência</ActionRow>
+          <MenuRow href="/cofrinhos" icon={PiggyBankIcon} onClick={closeMenu}>Guardar no cofrinho</MenuRow>
         </div>
       );
     }

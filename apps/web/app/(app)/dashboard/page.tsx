@@ -14,6 +14,7 @@ import {
   listCompaniesForUser,
   listCostCenters,
   listFinancialAccounts,
+  listSavingsGoals,
   listParties,
 } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -29,6 +30,7 @@ import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { QuickCreateButton } from "@/components/quick-create";
 import { MonthlyChart } from "@/components/dashboard/monthly-chart";
 import { AgendaPanel, BudgetPanel, CardsPanel, CategoryBreakdown, HealthPanel, ResultPanel, cashRunwayDays, percentOf, type CardSummary } from "@/components/dashboard/insights";
+import { SavingsPanel } from "@/components/dashboard/savings-panel";
 
 type DashboardData = Awaited<ReturnType<typeof getDashboardOverview>>;
 type OpenTitle = DashboardData["periodOpenTitles"][number];
@@ -145,8 +147,8 @@ export default async function DashboardPage(
 
   // Indicadores de gestão: sempre da empresa toda, por isso só aparecem sem filtro de conta, categoria etc.
   const budgetMonth = period.to.slice(0, 7);
-  const [insights, budget, cards, planAccess] = segmentedView
-    ? [null, null, null, null]
+  const [insights, budget, cards, planAccess, savings] = segmentedView
+    ? [null, null, null, null, null]
     : await Promise.all([
         getDashboardInsights(user.id, activeCompanyId, { from: period.from, to: period.to, comparisonFrom: comparison?.from, comparisonTo: comparison?.to, today: undefined }),
         getBudgetReport(user.id, activeCompanyId, budgetMonth),
@@ -155,6 +157,7 @@ export default async function DashboardPage(
           throw error;
         }),
         getCompanyPlanAccess(user.id, activeCompanyId),
+        listSavingsGoals(user.id, activeCompanyId),
       ]);
   const personal = planAccess?.code === "PERSONAL";
   const horizonHref = (days: number) => {
@@ -280,6 +283,7 @@ export default async function DashboardPage(
             <BudgetPanel budget={budget} personal={personal} />
             <HealthPanel insights={insights} availableCents={overview.availableBalanceCents} personal={personal} />
           </div>
+          {savings ? <SavingsPanel savings={savings} /> : null}
         </>
       ) : null}
 

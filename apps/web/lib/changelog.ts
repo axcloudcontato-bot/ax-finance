@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-09-cofrinhos",
+    date: "2026-10-09",
+    title: "Cofrinhos: guarde dinheiro para cada objetivo",
+    summary: "Crie cofrinhos com meta e veja a barra encher até 100%.",
+    changes: [
+      { kind: "NEW", text: "Novo menu Cofrinhos: crie quantos quiser (viagem, reserva de emergência, impostos...), cada um com meta, prazo opcional, ícone e cor." },
+      { kind: "NEW", text: "Guardar tira o valor da conta escolhida e põe no cofrinho; resgatar devolve. O saldo disponível já mostra o valor certo." },
+      { kind: "NEW", text: "Barra de progresso, quanto falta, quanto guardar por mês até o prazo e se você está no ritmo." },
+      { kind: "NEW", text: "Histórico de cada cofrinho com estorno, e um resumo dos cofrinhos no painel." },
+    ],
+  },
+  {
     id: "2026-10-08-dispositivo-confiavel",
     date: "2026-10-08",
     title: "Confiar neste dispositivo no login",

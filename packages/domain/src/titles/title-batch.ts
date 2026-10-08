@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { CategoryNotFoundError, CostCenterNotFoundError, FinancialAccountNotFoundError, TitleBatchInvalidError } from "../errors";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
 import { assertInvoiceTitlePayable, assertTitleNotCardInvoice } from "../credit-cards/invoices";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 export const titleBatchInput = z.discriminatedUnion("operation", [
   z.object({ operation: z.literal("SETTLE_FULL"), titleIds: z.array(z.string().uuid()).min(1).max(100), financialAccountId: z.string().uuid(), effectiveDate: z.coerce.date(), idempotencyKey: idempotencyKeySchema }),
@@ -100,7 +101,7 @@ export async function applyTitleBatch(userId: string, companyId: string, input: 
     if (invalid) throw new TitleBatchInvalidError();
 
     if (data.operation === "SETTLE_FULL") {
-      if (!(await tx.financialAccount.findFirst({ where: { id: data.financialAccountId, companyId, status: "ACTIVE" } }))) throw new FinancialAccountNotFoundError();
+      if (!(await tx.financialAccount.findFirst({ where: { id: data.financialAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT } }))) throw new FinancialAccountNotFoundError();
       await assertPeriodOpen(tx, companyId, data.effectiveDate);
       for (const title of titles) await assertInvoiceTitlePayable(tx, companyId, title.id);
       for (const title of titles) {

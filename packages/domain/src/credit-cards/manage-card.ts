@@ -6,6 +6,7 @@ import { assertPeriodOpen } from "../closures/assert-period-open";
 import { CreditCardHasOpenInvoicesError, CreditCardHasPaymentsError, CreditCardNotFoundError, FinancialAccountNotFoundError } from "../errors";
 import { assertCardAccess, invoiceDescription } from "./invoices";
 import { CREDIT_CARD_ISSUER_KEYS } from "./issuers";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 export const creditCardInput = z.object({
   name: z.string().trim().min(1).max(100),
@@ -25,7 +26,7 @@ export type CreditCardInput = z.infer<typeof creditCardInput>;
 
 async function assertPaymentAccount(tx: TenantScopedClient, companyId: string, accountId?: string) {
   if (!accountId) return;
-  const account = await tx.financialAccount.findFirst({ where: { id: accountId, companyId, status: "ACTIVE" } });
+  const account = await tx.financialAccount.findFirst({ where: { id: accountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT } });
   if (!account) throw new FinancialAccountNotFoundError();
 }
 

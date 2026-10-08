@@ -17,6 +17,7 @@ import {
   type ImportFileFormatValue,
 } from "./bank-statement-parser";
 import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 const LOCK_TIMEOUT_MS = 30 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
@@ -47,7 +48,7 @@ export async function createBankImportPreview(
   await assertCompanyPlanFeature(userId, companyId, "BANK_RECONCILIATION");
   return withCompanyContext(userId, companyId, async (tx) => {
     const account = await tx.financialAccount.findFirst({
-      where: { id: data.financialAccountId, companyId, status: "ACTIVE" },
+      where: { id: data.financialAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT },
       select: { id: true },
     });
     if (!account) throw new FinancialAccountNotFoundError();

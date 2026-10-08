@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { TenantScopedClient } from "@ax-finance/db";
 import { FinancialAccountNotFoundError } from "../errors";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 /** Forma de pagamento prevista no lançamento (a baixa continua aceitando texto livre). */
 export const PAYMENT_METHODS = ["PIX", "BOLETO", "TRANSFERENCIA", "CARTAO", "DINHEIRO", "DEBITO_AUTOMATICO", "CHEQUE", "OUTRO"] as const;
@@ -33,6 +34,6 @@ export const titleDetailsShape = {
 
 export async function assertExpectedAccount(tx: TenantScopedClient, companyId: string, accountId: string | null | undefined) {
   if (!accountId) return;
-  const account = await tx.financialAccount.findFirst({ where: { id: accountId, companyId, status: "ACTIVE" }, select: { id: true } });
+  const account = await tx.financialAccount.findFirst({ where: { id: accountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT }, select: { id: true } });
   if (!account) throw new FinancialAccountNotFoundError();
 }

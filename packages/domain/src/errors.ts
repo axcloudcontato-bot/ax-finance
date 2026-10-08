@@ -640,3 +640,39 @@ export class TitleCollectionInvalidError extends DomainError {
     super("A cobrança só se aplica a uma entrada ainda em aberto.", "TITLE_COLLECTION_INVALID");
   }
 }
+
+export class SavingsGoalNotFoundError extends DomainError {
+  constructor() {
+    super("Cofrinho não encontrado.", "SAVINGS_GOAL_NOT_FOUND");
+  }
+}
+
+export class SavingsGoalInsufficientBalanceError extends DomainError {
+  constructor() {
+    super("O cofrinho não tem saldo suficiente para isso.", "SAVINGS_GOAL_INSUFFICIENT_BALANCE");
+  }
+}
+
+export class SavingsGoalNotEmptyError extends DomainError {
+  constructor() {
+    super("Resgate o saldo do cofrinho antes de arquivá-lo.", "SAVINGS_GOAL_NOT_EMPTY");
+  }
+}
+
+export class SavingsGoalInUseError extends DomainError {
+  constructor() {
+    super("Este cofrinho já tem movimentos e não pode ser excluído. Arquive-o.", "SAVINGS_GOAL_IN_USE");
+  }
+}
+
+export class SavingsGoalArchivedError extends DomainError {
+  constructor() {
+    super("Este cofrinho está arquivado. Reative-o para movimentar.", "SAVINGS_GOAL_ARCHIVED");
+  }
+}
+
+export class SavingsGoalFutureDateError extends DomainError {
+  constructor() {
+    super("A data do movimento não pode ser no futuro.", "SAVINGS_GOAL_FUTURE_DATE");
+  }
+}

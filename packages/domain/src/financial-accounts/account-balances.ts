@@ -1,6 +1,7 @@
 import type { TenantScopedClient } from "@ax-finance/db";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { OPERATIONAL_ACCOUNT } from "./operational";
 
 /**
  * Saldo por conta = saldo inicial + movimentos efetivados (Seção 18). Nesta
@@ -88,7 +89,7 @@ export async function listFinancialAccountsWithBalance(userId: string, companyId
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const accounts = await tx.financialAccount.findMany({
-      where: { companyId },
+      where: { companyId, ...OPERATIONAL_ACCOUNT },
       orderBy: { createdAt: "asc" },
     });
 

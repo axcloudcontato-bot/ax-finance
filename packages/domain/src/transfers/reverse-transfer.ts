@@ -3,6 +3,7 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { TransferAlreadyReversedError, TransferNotFoundError } from "../errors";
+import { assertSavingsGoalCanReverseDeposit } from "../savings-goals/savings-goals";
 
 export const reverseTransferInput = z.object({
   reason: z.string().trim().min(1).max(500),
@@ -26,6 +27,8 @@ export async function reverseTransfer(
     if (transfer.reversedAt) {
       throw new TransferAlreadyReversedError();
     }
+    // Estornar um "guardar" tira o dinheiro do cofrinho: não pode passar do que ainda está lá.
+    await assertSavingsGoalCanReverseDeposit(tx, companyId, transfer);
 
     const reversed = await tx.transfer.update({
       where: { id: transferId },

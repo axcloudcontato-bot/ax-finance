@@ -31,6 +31,7 @@ import {
   EyeIcon,
   EyeOffIcon,
   FlameIcon,
+  HandCoinsIcon,
   GavelIcon,
   HistoryIcon,
   IdCardIcon,
@@ -138,6 +139,7 @@ const EyeAnimated = createAnimatedIcon(EyeIcon);
 const EyeOffAnimated = createAnimatedIcon(EyeOffIcon);
 const FileAnimated = createAnimatedIcon(AttachFileIcon);
 const FlameAnimated = createAnimatedIcon(FlameIcon);
+const HandCoinsAnimated = createAnimatedIcon(HandCoinsIcon);
 const HistoryAnimated = createAnimatedIcon(HistoryIcon);
 const KeyAnimated = createAnimatedIcon(KeyIcon);
 const LayoutDashboardAnimated = createAnimatedIcon(LayoutGridIcon);
@@ -199,6 +201,7 @@ export {
   EyeOffAnimated as EyeSlash,
   FileAnimated as Paperclip,
   FlameAnimated as Flame,
+  HandCoinsAnimated as PiggyBank,
   HistoryAnimated as History,
   KeyAnimated as Key,
   KeyAnimated as KeyRound,

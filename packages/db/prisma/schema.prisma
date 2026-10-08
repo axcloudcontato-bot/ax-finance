@@ -115,6 +115,13 @@ enum AccountType {
   BANK
   CASH
   WALLET
+  /// Conta interna de um cofrinho: não aparece em Contas nem nos seletores.
+  SAVINGS_GOAL
+}
+
+enum SavingsGoalStatus {
+  ACTIVE
+  ARCHIVED
 }
 
 enum AccountStatus {
@@ -397,6 +404,7 @@ model Company {
   creditCardInvoices      CreditCardInvoice[]
   creditCardPurchases     CreditCardPurchase[]
   budgets                 Budget[]
+  savingsGoals            SavingsGoal[]
   aiUsage                 AiUsage[]
   invitations             CompanyInvitation[]
   idempotencyRecords      IdempotencyRecord[]
@@ -610,6 +618,8 @@ model FinancialAccount {
   membershipAccess   MembershipFinancialAccount[]
   creditCards        CreditCard[]
   expectedTitles     Title[]                      @relation("TitleExpectedAccount")
+  savingsGoal        SavingsGoal?                 @relation("SavingsGoalAccount")
+  savingsGoalSources SavingsGoal[]                @relation("SavingsGoalDefaultSource")
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -1286,4 +1296,28 @@ model AiUsage {
 
   @@unique([companyId, period])
   @@map("ai_usage")
+}
+
+/// Cofrinho: meta de valor com conta interna própria; guardar/resgatar são transferências.
+model SavingsGoal {
+  id                     String            @id @default(uuid())
+  companyId              String            @map("company_id")
+  company                Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  financialAccountId     String            @unique @map("financial_account_id")
+  financialAccount       FinancialAccount  @relation("SavingsGoalAccount", fields: [financialAccountId], references: [id], onDelete: Restrict)
+  name                   String
+  targetAmountCents      BigInt            @map("target_amount_cents")
+  targetDate             DateTime?         @map("target_date") @db.Date
+  color                  String
+  icon                   String
+  defaultSourceAccountId String?           @map("default_source_account_id")
+  defaultSourceAccount   FinancialAccount? @relation("SavingsGoalDefaultSource", fields: [defaultSourceAccountId], references: [id], onDelete: SetNull)
+  status                 SavingsGoalStatus @default(ACTIVE)
+  goalReachedAt          DateTime?         @map("goal_reached_at")
+  createdByUserId        String            @map("created_by_user_id")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+
+  @@index([companyId, status])
+  @@map("savings_goals")
 }

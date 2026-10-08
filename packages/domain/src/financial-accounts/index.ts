@@ -5,3 +5,4 @@ export * from "./create-balance-adjustment";
 export * from "./reverse-balance-adjustment";
 export * from "./list-balance-adjustments";
 export * from "./manage-account";
+export * from "./operational";

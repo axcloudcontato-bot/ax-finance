@@ -4,6 +4,7 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { FinancialAccountNotFoundError, IdempotencyResultUnavailableError, TransferSameAccountError } from "../errors";
 import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 
 export const createTransferInput = z.object({
   fromAccountId: z.string().uuid(),
@@ -49,8 +50,8 @@ export async function createTransfer(userId: string, companyId: string, input: u
     }
 
     const [fromAccount, toAccount] = await Promise.all([
-      tx.financialAccount.findFirst({ where: { id: data.fromAccountId, companyId, status: "ACTIVE" } }),
-      tx.financialAccount.findFirst({ where: { id: data.toAccountId, companyId, status: "ACTIVE" } }),
+      tx.financialAccount.findFirst({ where: { id: data.fromAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT } }),
+      tx.financialAccount.findFirst({ where: { id: data.toAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT } }),
     ]);
     if (!fromAccount || !toAccount) {
       throw new FinancialAccountNotFoundError();
