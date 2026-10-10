@@ -676,3 +676,33 @@ export class SavingsGoalFutureDateError extends DomainError {
     super("A data do movimento não pode ser no futuro.", "SAVINGS_GOAL_FUTURE_DATE");
   }
 }
+
+export class InvalidPixKeyError extends DomainError {
+  constructor() {
+    super("Chave PIX inválida. Use CPF, CNPJ, e-mail, celular com DDD ou a chave aleatória.", "INVALID_PIX_KEY");
+  }
+}
+
+export class CategoryRuleNotFoundError extends DomainError {
+  constructor() {
+    super("Regra de categoria não encontrada.", "CATEGORY_RULE_NOT_FOUND");
+  }
+}
+
+export class DebtNotFoundError extends DomainError {
+  constructor() {
+    super("Dívida não encontrada.", "DEBT_NOT_FOUND");
+  }
+}
+
+export class DebtHasPaymentsError extends DomainError {
+  constructor() {
+    super("Esta dívida já tem parcelas pagas e não pode ser excluída. Arquive-a.", "DEBT_HAS_PAYMENTS");
+  }
+}
+
+export class AssetNotFoundError extends DomainError {
+  constructor() {
+    super("Bem ou investimento não encontrado.", "ASSET_NOT_FOUND");
+  }
+}

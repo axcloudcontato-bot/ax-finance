@@ -277,7 +277,7 @@ export default async function SaidaDetailPage(
       {cardInvoice ? null : <div className="card">
         <div className="page-header" style={{marginBottom:"0.5rem"}}><div><h2>Rateio</h2><p className="subtitle">Divida o valor entre categorias e centros de custo. A soma precisa fechar o valor original.</p></div></div>
         {searchParams.rateado ? <p className="success-box">Rateio atualizado.</p> : null}
-        <AllocationForm action={replaceSaidaAllocationsAction.bind(null,title.id)} clearAction={clearSaidaAllocationsAction.bind(null,title.id)} categories={categories} costCenters={costCenters} error={searchParams.erroRateio} initial={title.allocations.map((item)=>({categoryId:item.categoryId,costCenterId:item.costCenterId,amount:(Number(item.amountCents)/100).toFixed(2).replace(".",",")}))}/>
+        <AllocationForm totalCents={Number(title.originalAmountCents)} action={replaceSaidaAllocationsAction.bind(null,title.id)} clearAction={clearSaidaAllocationsAction.bind(null,title.id)} categories={categories} costCenters={costCenters} error={searchParams.erroRateio} initial={title.allocations.map((item)=>({categoryId:item.categoryId,costCenterId:item.costCenterId,amount:(Number(item.amountCents)/100).toFixed(2).replace(".",",")}))}/>
       </div>}
 
       <div className="card">

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { registerSettlement, registerTitleCollection, setTitleScheduledPayment, updateLateFeeSettings } from "@ax-finance/domain";
+import { registerSettlement, registerTitleCollection, setTitleScheduledPayment, updateLateFeeSettings, updatePixSettings } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -78,4 +78,19 @@ export async function updateLateFeeAction(returnTo: string, formData: FormData) 
     redirect(listReturnPath(returnTo, { erro: actionErrorMessage(error, "Não foi possível salvar a multa e os juros.") }));
   }
   redirect(listReturnPath(returnTo, { multaSalva: "1" }));
+}
+
+/** Chave, nome e cidade do PIX usados para montar o QR Code das cobranças. */
+export async function updatePixSettingsAction(returnTo: string, formData: FormData) {
+  const { user, company } = await context();
+  try {
+    await updatePixSettings(user.id, company.id, {
+      pixKey: text(formData, "pixKey") || null,
+      pixReceiverName: text(formData, "pixReceiverName") || null,
+      pixCity: text(formData, "pixCity") || null,
+    });
+  } catch (error) {
+    redirect(listReturnPath(returnTo, { erro: actionErrorMessage(error, "Não foi possível salvar o PIX.") }));
+  }
+  redirect(listReturnPath(returnTo, { pixSalvo: "1" }));
 }

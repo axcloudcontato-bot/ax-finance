@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getLateFeeSettings, listActiveCategories, listCostCenters, listFinancialAccounts, listParties, listTitlesPage } from "@ax-finance/domain";
+import { getLateFeeSettings, getPixSettings, listActiveCategories, listCostCenters, listFinancialAccounts, listParties, listTitlesPage } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
@@ -14,7 +14,7 @@ import { QuickCreateButton, QuickCreateOnParam } from "@/components/quick-create
 import { todayDateOnlyString } from "@/lib/dates";
 import { isComparisonMode, periodQuery, resolvePeriodRange } from "@/lib/month";
 import { parseTitleListQuery, type TitleListQuery } from "@/lib/title-list-params";
-import { updateLateFeeAction } from "../titulos-actions";
+import { updateLateFeeAction, updatePixSettingsAction } from "../titulos-actions";
 
 type Filter = "vencidas" | "hoje" | "proximas" | "quitadas" | "todas";
 
@@ -28,7 +28,7 @@ const FILTER_LABEL: Record<Filter, string> = {
 
 type SearchParams = TitleListQuery & {
   filtro?: string; pagina?: string; mes?: string; de?: string; ate?: string; periodo?: string; comparar?: string;
-  erro?: string; erroBaixa?: string; titulo?: string; baixado?: string; cobrado?: string; multaSalva?: string; loteConcluido?: string; novo?: string;
+  erro?: string; erroBaixa?: string; titulo?: string; baixado?: string; cobrado?: string; multaSalva?: string; pixSalvo?: string; loteConcluido?: string; novo?: string;
 };
 
 const percent = (bps: number) => (bps / 100).toFixed(2).replace(".", ",");
@@ -41,12 +41,13 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
   }
   const company = await requirePrimaryCompany(user.id);
 
-  const [categories, clients, costCenters, allAccounts, lateFee] = await Promise.all([
+  const [categories, clients, costCenters, allAccounts, lateFee, pix] = await Promise.all([
     listActiveCategories(user.id, company.id),
     listParties(user.id, company.id, { role: "CLIENT", status: "ACTIVE" }),
     listCostCenters(user.id, company.id),
     listFinancialAccounts(user.id, company.id),
     getLateFeeSettings(user.id, company.id),
+    getPixSettings(user.id, company.id),
   ]);
 
   const filter: Filter = (["todas", "vencidas", "hoje", "proximas", "quitadas"] as const).includes(searchParams.filtro as Filter) ? (searchParams.filtro as Filter) : "todas";
@@ -74,8 +75,8 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
     return query ? `/entradas?${query}` : "/entradas";
   };
   const exportQuery = new URLSearchParams({ tipo: "RECEIVABLE" });
-  for (const [key, value] of Object.entries(params)) if (!["pagina", "erro", "erroBaixa", "titulo", "baixado", "cobrado", "multaSalva", "loteConcluido", "novo"].includes(key)) exportQuery.set(key, value);
-  const resultParams = ["pagina", "erro", "erroBaixa", "titulo", "baixado", "cobrado", "multaSalva", "loteConcluido", "novo"];
+  for (const [key, value] of Object.entries(params)) if (!["pagina", "erro", "erroBaixa", "titulo", "baixado", "cobrado", "multaSalva", "pixSalvo", "loteConcluido", "novo"].includes(key)) exportQuery.set(key, value);
+  const resultParams = ["pagina", "erro", "erroBaixa", "titulo", "baixado", "cobrado", "multaSalva", "pixSalvo", "loteConcluido", "novo"];
   const returnQuery = new URLSearchParams(Object.entries(params).filter(([key]) => !resultParams.includes(key))).toString();
   const returnTo = returnQuery ? `/entradas?${returnQuery}` : "/entradas";
 
@@ -93,6 +94,19 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
           <a href={`/api/titles/export?${exportQuery.toString()}`} className="button-link" download>
             Exportar CSV
           </a>
+          <ActionModal triggerLabel={pix.configured ? "PIX ✓" : "PIX"} title="Recebimento por PIX">
+            <p className="subtitle">Com a chave configurada, a cobrança de cada entrada já traz o QR Code e o &ldquo;PIX copia e cola&rdquo; com o valor em aberto. O dinheiro cai direto na sua conta: o sistema só monta o código.</p>
+            <form action={updatePixSettingsAction.bind(null, returnTo)}>
+              <label htmlFor="pixKey">Chave PIX</label>
+              <input id="pixKey" name="pixKey" type="text" maxLength={120} defaultValue={pix.pixKey ?? ""} placeholder="CPF, CNPJ, e-mail, celular ou chave aleatória" />
+              <label htmlFor="pixReceiverName">Nome de quem recebe</label>
+              <input id="pixReceiverName" name="pixReceiverName" type="text" maxLength={60} defaultValue={pix.pixReceiverName} />
+              <label htmlFor="pixCity">Cidade</label>
+              <input id="pixCity" name="pixCity" type="text" maxLength={60} defaultValue={pix.pixCity ?? ""} placeholder="Ex.: São Paulo" />
+              <p className="muted">Nome e cidade aparecem no app do banco de quem paga (até 25 e 15 letras). Deixe a chave em branco para tirar o PIX das cobranças.</p>
+              <SubmitButton>Salvar</SubmitButton>
+            </form>
+          </ActionModal>
           <ActionModal triggerLabel="Multa e juros" title="Multa e juros por atraso">
             <p className="subtitle">Ao receber um título vencido, o sistema sugere multa e juros com estes percentuais. É só sugestão: você confere e pode alterar na hora.</p>
             <form action={updateLateFeeAction.bind(null, returnTo)}>
@@ -113,6 +127,7 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
       {searchParams.baixado ? <p className="success-box">Recebimento registrado.</p> : null}
       {searchParams.cobrado ? <p className="success-box">Cobrança registrada.</p> : null}
       {searchParams.multaSalva ? <p className="success-box">Multa e juros salvos.</p> : null}
+      {searchParams.pixSalvo ? <p className="success-box">Recebimento por PIX salvo. As cobranças já saem com o QR Code.</p> : null}
 
       <div className="filters">
         {(Object.keys(FILTER_LABEL) as Filter[]).map((key) => (
@@ -146,6 +161,7 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
           today={today}
           lateFee={lateFee}
           companyName={company.name}
+          pix={pix}
         />
         <Pagination basePath="/entradas" params={params} page={listing.page} pageCount={listing.pageCount} total={listing.total} pageSize={listing.pageSize} />
       </div>

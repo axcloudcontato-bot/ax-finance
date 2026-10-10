@@ -13,6 +13,8 @@ import {
   deleteImportSource,
   getBankImportBatch,
   ignoreBankStatementLine,
+  launchBankStatementLine,
+  launchBankStatementLinesByRules,
   importStorageKey,
   markBankImportFailed,
   MAX_IMPORT_FILE_BYTES,
@@ -190,4 +192,52 @@ export async function undoReconciliationAction(formData: FormData) {
   await undoReconciliation(user.id, company.id, lineId);
 
   redirect(`/conciliacao?conta=${financialAccountId}`);
+}
+
+/** Volta para a conciliação mantendo conta, período e situação que estavam na tela. */
+function backTo(formData: FormData, params: Record<string, string>): never {
+  const back = String(formData.get("voltar") ?? "");
+  const base = back.startsWith("/conciliacao?") ? back : `/conciliacao?conta=${encodeURIComponent(String(formData.get("financialAccountId") ?? ""))}`;
+  const url = new URL(base, "http://local");
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
+  for (const key of ["erro", "lancado", "lancadas", "falhas", "linha", "regraCriada"]) if (!(key in params)) url.searchParams.delete(key);
+  redirect(`${url.pathname}${url.search}`);
+}
+
+/** "Lançar e conciliar": cria o lançamento da linha (categoria da regra ou escolhida), dá baixa e concilia. */
+export async function launchLineAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  const text = (key: string) => String(formData.get(key) ?? "").trim();
+  try {
+    await launchBankStatementLine(user.id, company.id, text("lineId"), {
+      description: text("description") || undefined,
+      categoryId: text("categoryId"),
+      costCenterId: text("costCenterId") || null,
+      partyId: text("partyId") || null,
+    });
+  } catch (error) {
+    backTo(formData, { erro: actionErrorMessage(error, "Não foi possível lançar a linha."), linha: text("lineId") });
+  }
+  backTo(formData, { lancado: "1" });
+}
+
+/** Lança e concilia de uma vez todas as linhas pendentes da conta que casam com uma regra. */
+export async function launchByRulesAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const company = await requirePrimaryCompany(user.id);
+  const text = (key: string) => String(formData.get(key) ?? "").trim();
+  let result: { launched: number; failed: number };
+  try {
+    result = await launchBankStatementLinesByRules(user.id, company.id, {
+      financialAccountId: text("financialAccountId"),
+      from: text("from") || undefined,
+      to: text("to") || undefined,
+    });
+  } catch (error) {
+    backTo(formData, { erro: actionErrorMessage(error, "Não foi possível lançar as linhas.") });
+  }
+  backTo(formData, { lancadas: String(result.launched), falhas: String(result.failed) });
 }

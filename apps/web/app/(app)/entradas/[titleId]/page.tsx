@@ -7,6 +7,7 @@ import {
   TitleNotFoundError,
   getTitle,
   getLateFeeSettings,
+  getPixSettings,
   paymentMethodLabel,
   listAuditEvents,
   listFinancialAccounts,
@@ -24,6 +25,7 @@ import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
 import { CopyButton } from "@/components/titles/copy-button";
 import { CollectionModal } from "@/components/titles/collection-modal";
+import { pixChargeForTitle } from "@/lib/pix-charge";
 import { buildCollectionMessage, mailtoHref } from "@/lib/collection-message";
 
 import { ActionModal } from "@/components/ui/action-modal";
@@ -99,8 +101,9 @@ export default async function EntradaDetailPage(
   const returnTo = `/entradas/${title.id}`;
   const expectedAccount = accounts.find((account) => account.id === title.expectedAccountId) ?? null;
   const moneyField = (cents: bigint) => (Number(cents) / 100).toFixed(2).replace(".", ",");
-  const lateFee = await getLateFeeSettings(user.id, company.id);
-  const collectionMessage = isOpen ? buildCollectionMessage({ companyName: company.name, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode }) : null;
+  const [lateFee, pix] = await Promise.all([getLateFeeSettings(user.id, company.id), getPixSettings(user.id, company.id)]);
+  const pixCode = isOpen ? pixChargeForTitle(pix, title) : null;
+  const collectionMessage = isOpen ? buildCollectionMessage({ companyName: company.name, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode, pixCode }) : null;
   const collectionMail = collectionMessage ? mailtoHref(title.party?.email, collectionMessage) : null;
   const showSettlementForm = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
   const openBalanceCents = title.status === "CANCELLED" ? BigInt(0) : title.remainingCents;
@@ -134,7 +137,7 @@ export default async function EntradaDetailPage(
               <form action={duplicateEntradaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><SubmitButton>Criar cópia</SubmitButton></form>
             </ActionModal>
             {collectionMessage ? (
-              <CollectionModal titleId={title.id} returnTo={returnTo} triggerLabel={daysLate > 0 ? "Cobrar" : "Lembrar"} title={`${daysLate > 0 ? "Cobrar" : "Lembrar"}${title.party ? ` — ${title.party.name}` : ""}`} message={collectionMessage} mailHref={collectionMail} />
+              <CollectionModal titleId={title.id} returnTo={returnTo} pixCode={pixCode} triggerLabel={daysLate > 0 ? "Cobrar" : "Lembrar"} title={`${daysLate > 0 ? "Cobrar" : "Lembrar"}${title.party ? ` — ${title.party.name}` : ""}`} message={collectionMessage} mailHref={collectionMail} />
             ) : null}
             {showSettlementForm ? (
               <ActionModal
@@ -272,7 +275,7 @@ export default async function EntradaDetailPage(
       <div className="card">
         <div className="page-header" style={{marginBottom:"0.5rem"}}><div><h2>Rateio</h2><p className="subtitle">Divida o valor entre categorias e centros de custo. A soma precisa fechar o valor original.</p></div></div>
         {searchParams.rateado ? <p className="success-box">Rateio atualizado.</p> : null}
-        <AllocationForm action={replaceEntradaAllocationsAction.bind(null,title.id)} clearAction={clearEntradaAllocationsAction.bind(null,title.id)} categories={categories} costCenters={costCenters} error={searchParams.erroRateio} initial={title.allocations.map((item)=>({categoryId:item.categoryId,costCenterId:item.costCenterId,amount:(Number(item.amountCents)/100).toFixed(2).replace(".",",")}))}/>
+        <AllocationForm totalCents={Number(title.originalAmountCents)} action={replaceEntradaAllocationsAction.bind(null,title.id)} clearAction={clearEntradaAllocationsAction.bind(null,title.id)} categories={categories} costCenters={costCenters} error={searchParams.erroRateio} initial={title.allocations.map((item)=>({categoryId:item.categoryId,costCenterId:item.costCenterId,amount:(Number(item.amountCents)/100).toFixed(2).replace(".",",")}))}/>
       </div>
 
       <div className="card">

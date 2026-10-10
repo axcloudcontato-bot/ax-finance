@@ -118,13 +118,15 @@ describe("notificações financeiras persistentes", () => {
 describe("agendamentos do worker", () => {
   it("cria os jobs por empresa e impede dois workers de reivindicarem o mesmo job", async () => {
     await setup();
-    expect(await rootClient.scheduledJob.count()).toBe(4);
+    // recorrências, vencimentos, resumo semanal, assinatura e relatório mensal
+    expect(await rootClient.scheduledJob.count()).toBe(5);
 
     const [workerA, workerB] = await Promise.all([
       claimScheduledJobs("worker-a", 10),
       claimScheduledJobs("worker-b", 10),
     ]);
-    expect(workerA.length + workerB.length).toBe(3);
+    // todos menos o resumo semanal, que só começa na próxima segunda-feira
+    expect(workerA.length + workerB.length).toBe(4);
     const claimed = workerA[0] ?? workerB[0]!;
     const workerId = workerA.length ? "worker-a" : "worker-b";
     expect(await completeScheduledJob(claimed, workerId)).toBe(true);

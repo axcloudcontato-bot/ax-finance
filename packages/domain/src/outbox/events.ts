@@ -45,6 +45,13 @@ const weeklySummaryPayloadSchema = deliveryBaseSchema.extend({
   dueNext7Count: z.number().int().nonnegative(),
 });
 
+const monthlyReportPayloadSchema = deliveryBaseSchema.extend({
+  /** O PDF é montado na hora do envio, com os números do momento, como esta pessoa. */
+  companyId: z.string().uuid(),
+  userId: z.string().uuid(),
+  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+});
+
 const companyInvitationPayloadSchema = z.object({
   to: z.string().email(),
   companyName: z.string().min(1).max(200),
@@ -91,6 +98,7 @@ const billingNoticePayloadSchema = z.object({
 export type OutboxEmailPayload = z.infer<typeof emailPayloadSchema>;
 export type DueDateSummaryPayload = z.infer<typeof dueDateSummaryPayloadSchema>;
 export type WeeklySummaryPayload = z.infer<typeof weeklySummaryPayloadSchema>;
+export type MonthlyReportPayload = z.infer<typeof monthlyReportPayloadSchema>;
 export type CompanyInvitationPayload = z.infer<typeof companyInvitationPayloadSchema>;
 export type AccessChangedPayload = z.infer<typeof accessChangedPayloadSchema>;
 export type ImportFailedPayload = z.infer<typeof importFailedPayloadSchema>;
@@ -152,6 +160,18 @@ export function decodeDueDateSummaryPayload(event: Pick<OutboxEvent, "payloadEnc
 
 export function decodeWeeklySummaryPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
   return decodePayload(event, weeklySummaryPayloadSchema);
+}
+
+export function decodeMonthlyReportPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, monthlyReportPayloadSchema);
+}
+
+export async function enqueueMonthlyReportEmail(tx: Prisma.TransactionClient, dedupKey: string, input: MonthlyReportPayload) {
+  const payload = monthlyReportPayloadSchema.parse(input);
+  return tx.outboxEvent.createMany({
+    data: [{ type: "MONTHLY_REPORT", dedupKey, payloadEncrypted: encryptPayload(payload) }],
+    skipDuplicates: true,
+  });
 }
 
 export function decodeCompanyInvitationPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {

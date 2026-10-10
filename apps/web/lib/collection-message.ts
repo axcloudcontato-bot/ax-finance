@@ -15,6 +15,8 @@ export function buildCollectionMessage(input: {
   /** Dias de atraso, se vencido (0 ou negativo = ainda a vencer). */
   daysLate: number;
   paymentCode?: string | null;
+  /** "PIX copia e cola" com o valor já preenchido. */
+  pixCode?: string | null;
 }): { subject: string; body: string } {
   const amount = formatCents(input.remainingCents, input.currency ?? "BRL");
   const due = formatDateOnly(input.dueDate);
@@ -22,7 +24,9 @@ export function buildCollectionMessage(input: {
   const situation = input.daysLate > 0
     ? `Identificamos que o valor de ${amount}, referente a "${input.description}", venceu em ${due} (${input.daysLate} ${input.daysLate === 1 ? "dia" : "dias"} de atraso) e ainda consta em aberto.`
     : `Passando para lembrar que o valor de ${amount}, referente a "${input.description}", vence em ${due}.`;
-  const payment = input.paymentCode ? `\n\nDados para pagamento: ${input.paymentCode}` : "";
+  const payment = input.pixCode
+    ? `\n\nPara pagar por PIX, use o código copia e cola abaixo (o valor já vem preenchido):\n${input.pixCode}`
+    : input.paymentCode ? `\n\nDados para pagamento: ${input.paymentCode}` : "";
   const close = input.daysLate > 0
     ? "\n\nSe o pagamento já foi feito, por favor desconsidere esta mensagem e nos envie o comprovante. Caso precise combinar uma nova data, responda por aqui."
     : "\n\nQualquer dúvida, é só responder esta mensagem.";

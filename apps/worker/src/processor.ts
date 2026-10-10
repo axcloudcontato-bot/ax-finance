@@ -15,6 +15,7 @@ import {
   failOutboxEvent,
   generateDueNotifications,
   generateDueOccurrences,
+  generateMonthlyReports,
   generateWeeklySummary,
   generateSubscriptionNotifications,
   getBankImportBatch,
@@ -52,6 +53,10 @@ export async function handleScheduledJob(job: ScheduledJob) {
   }
   if (job.type === "WEEKLY_SUMMARY") {
     await generateWeeklySummary(job.runAsUserId, job.companyId, applicationBaseUrl());
+    return;
+  }
+  if (job.type === "MONTHLY_REPORT") {
+    await generateMonthlyReports(job.runAsUserId, job.companyId, applicationBaseUrl());
     return;
   }
   if (job.type === "SUBSCRIPTION_NOTIFICATIONS") {

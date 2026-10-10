@@ -3,6 +3,7 @@ import type { listFinancialAccounts, listTitlesPage } from "@ax-finance/domain";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly, toDateOnlyString } from "@/lib/dates";
 import { buildCollectionMessage, mailtoHref } from "@/lib/collection-message";
+import { pixChargeForTitle, type PixSettingsView } from "@/lib/pix-charge";
 import { sortHref } from "@/lib/title-list-params";
 import { quickSettleTitleAction } from "@/app/(app)/titulos-actions";
 import { ActionModal } from "@/components/ui/action-modal";
@@ -37,6 +38,7 @@ export function TitleListTable({
   today,
   lateFee,
   companyName,
+  pix = null,
 }: {
   titles: TitleRow[];
   basePath: "/entradas" | "/saidas";
@@ -48,6 +50,8 @@ export function TitleListTable({
   today: string;
   lateFee: { lateFeeBps: number; lateInterestMonthlyBps: number };
   companyName: string;
+  /** Recebimento por PIX da empresa (só para entradas). */
+  pix?: PixSettingsView | null;
 }) {
   const receivable = basePath === "/entradas";
   const noun = receivable ? "entrada" : "saída";
@@ -86,7 +90,7 @@ export function TitleListTable({
                 const daysLate = Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${due}T00:00:00Z`)) / DAY_MS));
                                 const scheduled = !receivable && open && title.scheduledPaymentDate ? formatDateOnly(title.scheduledPaymentDate) : null;
                 const message = receivable && open && daysLate >= 0
-                  ? buildCollectionMessage({ companyName, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode })
+                  ? buildCollectionMessage({ companyName, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode, pixCode: pixChargeForTitle(pix, title) })
                   : null;
                 const mail = message ? mailtoHref(title.party?.email, message) : null;
                 const lastCollection = title.lastCollectionAt
@@ -140,6 +144,7 @@ export function TitleListTable({
                               title={`${daysLate > 0 ? "Cobrar" : "Lembrar"} — ${title.party?.name ?? title.description}`}
                               message={message}
                               mailHref={mail}
+                              pixCode={pixChargeForTitle(pix, title)}
                             />
                           ) : null}
                         </>

@@ -84,6 +84,10 @@ export default async function NotificationSettingsPage(
                 <input name="emailWeekly" type="checkbox" defaultChecked={preference.emailWeekly} />
                 <span><strong>E-mail</strong><small>Totais em aberto, vencidos e próximos 7 dias.</small></span>
               </label>
+              <label className="notification-channel">
+                <input name="emailMonthlyReport" type="checkbox" defaultChecked={preference.emailMonthlyReport} />
+                <span><strong>Relatório mensal em PDF</strong><small>No início de cada mês: resultado, maiores gastos, inadimplência e projeção. Para proprietário, administrador financeiro e contador.</small></span>
+              </label>
             </div>
             <div className="settings-field">
               <label htmlFor="deliveryHour"><Mail className="size-4" /> Horário de entrega</label>

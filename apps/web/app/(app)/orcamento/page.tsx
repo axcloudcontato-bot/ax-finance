@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getBudgetReport, type BudgetStatus } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -44,11 +45,20 @@ export default async function OrcamentoPage(props: {
           <h1>Orçamento</h1>
           <p className="subtitle">{monthLabel(month)} · quanto você pretende gastar em cada categoria, comparado com o que já foi lançado. É uma referência: nada é bloqueado.</p>
         </div>
+        <div className="budget-year-actions">
         <form action={copyBudgetsAction}>
           <input type="hidden" name="period" value={month} />
           <input type="hidden" name="from" value={previousMonth} />
           <SubmitButton className="secondary">Copiar de {monthLabel(previousMonth)}</SubmitButton>
         </form>
+        </div>
+      </div>
+
+      <div className="budget-toolbar">
+        <nav className="filters" aria-label="Visão do orçamento">
+          <Link href="/orcamento" className="active" aria-current="page">Mês</Link>
+          <Link href={`/orcamento/ano?ano=${month.slice(0, 4)}`}>Ano</Link>
+        </nav>
       </div>
 
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}

@@ -4596,3 +4596,154 @@ label.goal-picker-icon, label.goal-picker-color { position: relative; display: i
   .goal-picker-row { grid-template-columns: 1fr; }
   .goal-detail-percent { text-align: left; }
 }
+
+/* Cobrança com PIX: QR Code ao lado do código copia e cola. */
+.pix-charge { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1rem; align-items: start; margin-bottom: 0.9rem; padding: 0.9rem; border: 1px solid var(--border); border-radius: 12px; }
+.pix-charge > div { display: grid; gap: 0.45rem; min-width: 0; }
+.pix-charge p { margin: 0; font-size: 0.8rem; }
+.pix-qr { display: block; border-radius: 8px; background: #fff; }
+.pix-qr.is-loading { background: color-mix(in srgb, var(--text) 8%, transparent); }
+.pix-code { display: block; max-height: 4.6rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 0.45rem 0.55rem; border-radius: 8px; background: color-mix(in srgb, var(--text) 6%, transparent); font-size: 0.7rem; word-break: break-all; }
+.ax-model-buttons .pix-charge button { width: fit-content; margin-top: 0; }
+@media (max-width: 560px) { .pix-charge { grid-template-columns: 1fr; justify-items: center; } .pix-charge > div { justify-items: stretch; width: 100%; } }
+
+/* ===== Calendário financeiro ===== */
+.calendar-page .positive { color: #0c8465; }
+.calendar-page .negative { color: #c23d68; }
+:root[data-ax-theme="dark"] .calendar-page .positive { color: #3cc79b; }
+:root[data-ax-theme="dark"] .calendar-page .negative { color: #ff7aa8; }
+.calendar-nav { display: flex; align-items: center; gap: 0.5rem; }
+.calendar-nav strong { min-width: 150px; text-align: center; font-size: 1rem; }
+.ax-model-buttons main .calendar-nav .button-link { min-width: 36px; margin-top: 0; justify-content: center; }
+.calendar-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 1rem; align-items: start; }
+.calendar-card { margin-bottom: 0; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.calendar-weekday { padding: 0.2rem 0.35rem 0.45rem; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.calendar-cell { display: flex; min-height: 92px; flex-direction: column; gap: 0.12rem; padding: 0.4rem 0.45rem; border: 1px solid var(--border); border-radius: 9px; color: var(--text); font-size: 0.72rem; text-decoration: none; overflow: hidden; }
+.calendar-cell:hover { border-color: var(--accent); }
+.calendar-cell.is-empty { border-color: transparent; }
+.calendar-cell.is-past { background: color-mix(in srgb, var(--text) 3%, transparent); }
+.calendar-cell.is-past .calendar-day-number { color: var(--muted); }
+.calendar-cell.is-today { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.calendar-cell.is-selected { background: color-mix(in srgb, var(--accent) 10%, var(--card)); }
+.calendar-cell.is-negative .calendar-balance { color: #c23d68; font-weight: 700; }
+:root[data-ax-theme="dark"] .calendar-cell.is-negative .calendar-balance { color: #ff7aa8; }
+.calendar-day-number { margin-bottom: 0.1rem; font-size: 0.8rem; font-weight: 700; }
+.calendar-amount { overflow: hidden; font-weight: 650; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-balance { margin-top: auto; color: var(--muted); font-size: 0.68rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.calendar-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.8rem 0 0; color: var(--muted); font-size: 0.74rem; }
+.calendar-detail { margin-bottom: 0; }
+.calendar-detail h3 { margin: 0 0 0.4rem; font-size: 0.85rem; }
+.calendar-detail-columns { display: grid; gap: 1rem; }
+.calendar-realized { margin: 0 0 0.8rem; font-size: 0.82rem; }
+.calendar-items { display: grid; gap: 0.35rem; margin: 0; padding: 0; list-style: none; }
+.calendar-items a { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; color: var(--text); text-decoration: none; }
+.calendar-items a:hover { border-color: var(--accent); }
+.calendar-items span { display: grid; min-width: 0; }
+.calendar-items strong { overflow: hidden; font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-items small { color: var(--muted); font-size: 0.72rem; }
+.calendar-items em { flex: none; font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+.calendar-agenda { display: none; }
+.calendar-agenda h2 { margin-top: 0; font-size: 1rem; }
+.calendar-agenda ul { display: grid; gap: 0.4rem; margin: 0; padding: 0; list-style: none; }
+.calendar-agenda a { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.75rem; padding: 0.55rem 0.65rem; border: 1px solid var(--border); border-radius: 9px; color: var(--text); text-decoration: none; }
+.calendar-agenda a span { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+.calendar-agenda em { font-style: normal; font-weight: 650; }
+.calendar-agenda small { grid-column: 2; justify-self: end; color: var(--muted); font-size: 0.72rem; }
+@media (max-width: 1100px) { .calendar-layout { grid-template-columns: 1fr; } }
+@media (max-width: 720px) {
+  .calendar-card { display: none; }
+  .calendar-agenda { display: block; }
+  .calendar-metrics { grid-template-columns: 1fr; }
+  .calendar-nav strong { min-width: 0; }
+}
+
+/* Conciliação: regras de categoria e "Lançar e conciliar". */
+.concil-rules-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; margin: 0 0 0.85rem; padding: 0.55rem 0.75rem; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--card)); font-size: 0.82rem; }
+.concil-rule-hint { color: var(--accent) !important; font-size: 0.74rem; font-weight: 600; }
+.concil-launch form { display: grid; gap: 0.15rem; }
+.concil-launch form label { margin-top: 0.45rem; }
+.concil-launch-note { margin: 0 0 0.4rem !important; font-size: 0.8rem; }
+.concil-launch > p.concil-rule-hint { margin: 0 0 0.3rem; }
+.ax-model-buttons .concil-link-button { min-height: 0 !important; margin-top: 0.6rem !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; color: var(--accent) !important; font-size: 0.8rem; font-weight: 600; }
+.ax-model-buttons .concil-link-button:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Rateio: linhas alinhadas em colunas, total conferido ao digitar. */
+.allocation-form { display: grid; gap: 0.5rem; }
+.allocation-head, .allocation-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(130px, 170px) 36px; gap: 0.75rem; align-items: start; }
+.allocation-head span { color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+.allocation-row label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.allocation-row :is(select, input) { margin: 0; }
+.allocation-amount { display: grid; gap: 0.2rem; }
+.allocation-amount small { display: flex; flex-wrap: wrap; gap: 0.4rem; min-height: 1rem; color: var(--muted); font-size: 0.72rem; }
+.ax-model-buttons .allocation-fill { min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; color: var(--accent) !important; font-size: 0.72rem; font-weight: 600; }
+.ax-model-buttons .allocation-remove { display: grid; width: 36px; min-height: 38px !important; margin: 0 !important; padding: 0 !important; place-items: center; border: 1px solid var(--border) !important; border-radius: 8px; background: transparent !important; color: var(--muted) !important; font-size: 1.15rem; line-height: 1; }
+.ax-model-buttons .allocation-remove:hover:not(:disabled) { border-color: #d64545 !important; color: #d64545 !important; }
+.allocation-remove:disabled { opacity: 0.35; }
+.allocation-total { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin-top: 0.25rem; padding: 0.6rem 0.8rem; border-radius: 9px; background: color-mix(in srgb, #b7791f 12%, var(--card)); font-size: 0.85rem; }
+.allocation-total.is-closed { background: color-mix(in srgb, #14966f 12%, var(--card)); }
+.allocation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 0.4rem; }
+.ax-model-buttons .allocation-actions :is(button, .button-link) { margin-top: 0; }
+@media (max-width: 720px) {
+  .allocation-head { display: none; }
+  .allocation-row { grid-template-columns: minmax(0, 1fr) 36px; padding: 0.7rem; border: 1px solid var(--border); border-radius: 10px; }
+  .allocation-row > div { grid-column: 1; }
+  .allocation-row > .allocation-remove { grid-column: 2; grid-row: 1; }
+  .allocation-row label { position: static; width: auto; height: auto; overflow: visible; clip: auto; margin: 0 0 0.2rem; font-size: 0.78rem; }
+}
+/* A dica de categoria também aparece no modal de criação rápida (fora do main): botão compacto e texto ocupando a linha. */
+.category-suggestion > span { flex: 1 1 12rem; min-width: 0; }
+.ax-model-buttons .category-suggestion > button { min-height: 28px !important; margin-top: 0 !important; padding: 0 0.65rem !important; font-size: 0.78rem; }
+/* Botão principal do cabeçalho não quebra em duas linhas quando o subtítulo é longo. */
+.ax-model-buttons main .page-header > :is(a, button).workspace-primary-action { flex: none; white-space: nowrap; }
+
+/* ===== Orçamento anual ===== */
+.budget-year-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.6rem; }
+.budget-year-actions .filters { margin: 0; }
+.ax-model-buttons main .budget-year-actions :is(form button, > .button-link, > button) { margin-top: 0; }
+.budget-year-page .negative { color: #c23d68; }
+.budget-year-scroll { max-width: 100%; }
+.budget-year-table { min-width: 1180px; border-collapse: separate; border-spacing: 0; }
+.ax-model-buttons main .budget-year-table :is(th, td) { padding: 0.4rem 0.3rem; vertical-align: top; }
+.budget-year-table thead th { text-align: right; }
+.budget-year-table thead th:first-child, .budget-year-table tbody th, .budget-year-table tfoot th { position: sticky; left: 0; z-index: 1; min-width: 170px; max-width: 220px; padding-right: 0.6rem; background: var(--card); text-align: left; font-weight: 600; }
+.budget-year-table tbody th { font-size: 0.82rem; }
+.budget-year-table td { min-width: 76px; }
+.budget-year-table .is-current { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.budget-year-input { width: 100%; min-width: 68px; min-height: 32px; margin: 0; padding: 0.25rem 0.4rem; font-size: 0.8rem; text-align: right; }
+.budget-year-table td small, .budget-year-total small { display: block; margin-top: 0.15rem; color: var(--muted); font-size: 0.68rem; text-align: right; white-space: nowrap; }
+.budget-year-table small.is-over { color: #c23d68; font-weight: 700; }
+:root[data-ax-theme="dark"] .budget-year-table small.is-over, :root[data-ax-theme="dark"] .budget-year-page .negative { color: #ff7aa8; }
+.budget-year-total { min-width: 140px; text-align: right; }
+.budget-year-total strong { font-size: 0.82rem; }
+.budget-year-table tfoot :is(th, td) { border-top: 2px solid var(--border); font-size: 0.8rem; }
+.budget-year-table tfoot td strong { display: block; text-align: right; }
+.budget-plan-modes { display: grid; gap: 0.5rem; margin: 0 0 0.9rem; padding: 0; border: 0; }
+.budget-plan-modes legend { margin-bottom: 0.4rem; font-weight: 600; }
+.budget-plan-modes label { display: flex; align-items: flex-start; gap: 0.6rem; margin: 0; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+.budget-plan-modes label:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, var(--card)); }
+.budget-plan-modes input { margin-top: 0.2rem; }
+.budget-plan-modes span { display: grid; gap: 0.1rem; }
+.budget-plan-modes small { color: var(--muted); font-size: 0.78rem; font-weight: 400; }
+.budget-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin: -0.4rem 0 1rem; }
+.budget-toolbar .filters { margin: 0; }
+.ax-model-buttons main .budget-year-actions .workspace-primary-action { flex: none; white-space: nowrap; }
+
+/* Relatório mensal */
+.monthly-report-page .negative { color: #c23d68; }
+:root[data-ax-theme="dark"] .monthly-report-page .negative { color: #ff7aa8; }
+.monthly-report-metrics { margin-bottom: 0; }
+.monthly-report-bars { display: grid; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+.monthly-report-bars li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(80px, 1fr) auto; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
+.monthly-report-bars li > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.monthly-report-bar { height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.monthly-report-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.monthly-report-bars strong { font-variant-numeric: tabular-nums; }
+.monthly-report-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; margin: 0; }
+.monthly-report-facts > div { padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; }
+.monthly-report-facts dt { color: var(--muted); font-size: 0.74rem; }
+.monthly-report-facts dd { margin: 0.15rem 0 0; font-weight: 650; font-variant-numeric: tabular-nums; }
+.monthly-report-send { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.monthly-report-send h2 { margin: 0 0 0.3rem; font-size: 1rem; }
+.monthly-report-send p { max-width: 640px; margin: 0; }
+.ax-model-buttons main .monthly-report-send form button { margin-top: 0; }

@@ -7,6 +7,10 @@ import {
   decodeCompanyInvitationPayload,
   decodeDueDateSummaryPayload,
   decodeImportFailedPayload,
+  decodeMonthlyReportPayload,
+  getMonthlyReportData,
+  renderMonthlyReportPdf,
+  type MonthlyReportData,
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
 } from "@ax-finance/domain";
@@ -56,7 +60,37 @@ function transport() {
   };
 }
 
-export type RenderedEmail = { recipient: string; subject: string; text: string; html: string };
+export type RenderedEmail = { recipient: string; subject: string; text: string; html: string; attachments?: { filename: string; content: Buffer; contentType: string }[] };
+
+const brl = (cents: bigint) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(cents) / 100);
+
+/** E-mail do relatório mensal: os números principais no corpo e o PDF completo em anexo. */
+export function renderMonthlyReportEmail(payload: { to: string; name: string; companyName: string; baseUrl: string; month: string }, data: MonthlyReportData, pdf: Buffer): RenderedEmail {
+  const url = `${payload.baseUrl}/relatorios/mensal?mes=${payload.month}`;
+  const lines = [
+    `Receitas: ${brl(data.result.revenueCents)}`,
+    `Despesas: ${brl(data.result.expenseCents)}`,
+    `Resultado: ${brl(data.result.resultCents)}`,
+    `Vencido a receber: ${brl(data.delinquency.overdueReceivableCents)}`,
+    `Saldo previsto em 30 dias: ${brl(data.projection.projectedCents)}`,
+  ];
+  return {
+    recipient: payload.to,
+    subject: `Relatório de ${data.monthLabel} — ${payload.companyName}`,
+    text: `Olá, ${payload.name}.\nO relatório de ${data.monthLabel} de ${payload.companyName} está em anexo (PDF).\n${lines.join("\n")}\n${url}`,
+    html: renderEmailLayout({
+      preheader: `Resultado de ${data.monthLabel}: ${brl(data.result.resultCents)}.`,
+      heading: `Relatório de ${data.monthLabel}`,
+      bodyHtml:
+        paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
+        paragraph(`O relatório completo de <strong>${escapeHtml(payload.companyName)}</strong> está em anexo, em PDF. Os principais números:`) +
+        `<ul style="margin:0;padding:0 0 0 20px;">${lines.map((line) => `<li style="margin:0 0 6px 0;">${escapeHtml(line)}</li>`).join("")}</ul>`,
+      cta: { url, label: "Ver no AX Finance" },
+      note: "Você recebe este e-mail no início de cada mês. Para parar, desligue em Configurações > Notificações.",
+    }),
+    attachments: [{ filename: `relatorio-${payload.month}.pdf`, content: pdf, contentType: "application/pdf" }],
+  };
+}
 
 export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
   if (event.type === "EMAIL_VERIFICATION") {
@@ -237,8 +271,17 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
   throw new Error(`Tipo de e-mail não suportado: ${event.type}`);
 }
 
+async function renderEmail(event: OutboxEvent): Promise<RenderedEmail> {
+  if (event.type === "MONTHLY_REPORT") {
+    const payload = decodeMonthlyReportPayload(event);
+    const data = await getMonthlyReportData(payload.userId, payload.companyId, payload.month);
+    return renderMonthlyReportEmail(payload, data, await renderMonthlyReportPdf(data));
+  }
+  return renderOutboxEmail(event);
+}
+
 export async function sendOutboxEmail(event: OutboxEvent) {
-  const { recipient, subject, text, html } = renderOutboxEmail(event);
+  const { recipient, subject, text, html, attachments } = await renderEmail(event);
 
   const smtp = transport();
   if (!smtp) {
@@ -254,6 +297,7 @@ export async function sendOutboxEmail(event: OutboxEvent) {
     subject,
     text,
     html,
+    attachments,
     // Identificador estável ajuda provedores que deduplicam mensagens repetidas.
     messageId: `<${event.id}@ax-finance-outbox>`,
   });

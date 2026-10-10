@@ -7,6 +7,7 @@ export const notificationPreferenceInput = z.object({
   emailDue: z.boolean(),
   inAppWeekly: z.boolean(),
   emailWeekly: z.boolean(),
+  emailMonthlyReport: z.boolean().default(true),
   dueDaysAhead: z.number().int().min(0).max(30),
   deliveryHour: z.number().int().min(0).max(23),
 });
@@ -16,6 +17,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCE = {
   emailDue: true,
   inAppWeekly: true,
   emailWeekly: true,
+  emailMonthlyReport: true,
   dueDaysAhead: 0,
   deliveryHour: 8,
 } as const;

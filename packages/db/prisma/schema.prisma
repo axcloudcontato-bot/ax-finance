@@ -38,6 +38,7 @@ enum OutboxEventType {
   ACCESS_CHANGED
   IMPORT_FAILED
   BILLING_NOTICE
+  MONTHLY_REPORT
 }
 
 enum OutboxEventStatus {
@@ -52,6 +53,7 @@ enum ScheduledJobType {
   DUE_NOTIFICATIONS
   WEEKLY_SUMMARY
   SUBSCRIPTION_NOTIFICATIONS
+  MONTHLY_REPORT
 }
 
 enum NotificationType {
@@ -335,6 +337,8 @@ model NotificationPreference {
   emailDue     Boolean  @default(true) @map("email_due")
   inAppWeekly  Boolean  @default(true) @map("in_app_weekly")
   emailWeekly  Boolean  @default(true) @map("email_weekly")
+  /// Relatório mensal em PDF por e-mail (só vai para quem vê a empresa inteira).
+  emailMonthlyReport Boolean @default(true) @map("email_monthly_report")
   dueDaysAhead Int      @default(0) @map("due_days_ahead")
   deliveryHour Int      @default(8) @map("delivery_hour")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -380,6 +384,10 @@ model Company {
   /// Multa por atraso (uma vez) e juros ao mês, em pontos-base (200 = 2%): só sugerem valores na baixa.
   lateFeeBps             Int @default(0) @map("late_fee_bps")
   lateInterestMonthlyBps Int @default(0) @map("late_interest_monthly_bps")
+  /// Recebimento por PIX (BR Code estático das cobranças).
+  pixKey          String? @map("pix_key")
+  pixReceiverName String? @map("pix_receiver_name")
+  pixCity         String? @map("pix_city")
   status    CompanyStatus @default(ACTIVE)
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
@@ -405,6 +413,9 @@ model Company {
   creditCardPurchases     CreditCardPurchase[]
   budgets                 Budget[]
   savingsGoals            SavingsGoal[]
+  categoryRules           CategoryRule[]
+  debts                   Debt[]
+  assets                  Asset[]
   aiUsage                 AiUsage[]
   invitations             CompanyInvitation[]
   idempotencyRecords      IdempotencyRecord[]
@@ -620,6 +631,7 @@ model FinancialAccount {
   expectedTitles     Title[]                      @relation("TitleExpectedAccount")
   savingsGoal        SavingsGoal?                 @relation("SavingsGoalAccount")
   savingsGoalSources SavingsGoal[]                @relation("SavingsGoalDefaultSource")
+  debts              Debt[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -646,6 +658,7 @@ model CostCenter {
   recurrenceRules  RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
   membershipAccess MembershipCostCenter[]
+  categoryRules    CategoryRule[]
 
   @@unique([id, companyId])
   @@unique([companyId, name])
@@ -740,6 +753,8 @@ model Category {
   recurrenceRules RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
   budgets Budget[]
+  categoryRules CategoryRule[]
+  debts   Debt[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -774,6 +789,7 @@ model Party {
   titles          Title[]
   recurrenceRules RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
+  categoryRules   CategoryRule[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -1320,4 +1336,109 @@ model SavingsGoal {
 
   @@index([companyId, status])
   @@map("savings_goals")
+}
+
+enum CategoryRuleMatch {
+  CONTAINS
+  STARTS_WITH
+  EQUALS
+}
+
+enum CategoryRuleScope {
+  RECEIVABLE
+  PAYABLE
+  BOTH
+}
+
+/// Regra de categoria: descrição que casa com `pattern` recebe categoria (e centro/pessoa) automaticamente.
+model CategoryRule {
+  id              String            @id @default(uuid())
+  companyId       String            @map("company_id")
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  pattern         String
+  matchType       CategoryRuleMatch @default(CONTAINS) @map("match_type")
+  appliesTo       CategoryRuleScope @default(BOTH) @map("applies_to")
+  categoryId      String            @map("category_id")
+  category        Category          @relation(fields: [categoryId, companyId], references: [id, companyId], onDelete: Restrict)
+  costCenterId    String?           @map("cost_center_id")
+  costCenter      CostCenter?       @relation(fields: [costCenterId, companyId], references: [id, companyId], onDelete: Restrict)
+  partyId         String?           @map("party_id")
+  party           Party?            @relation(fields: [partyId, companyId], references: [id, companyId], onDelete: Restrict)
+  timesApplied    Int               @default(0) @map("times_applied")
+  createdByUserId String            @map("created_by_user_id")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("category_rules")
+}
+
+enum DebtKind {
+  FINANCING
+  LOAN
+  OVERDRAFT
+  OTHER
+}
+
+enum AmortizationSystem {
+  PRICE
+  SAC
+}
+
+enum DebtStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AssetKind {
+  INVESTMENT
+  PROPERTY
+  VEHICLE
+  OTHER
+}
+
+/// Dívida ou financiamento: as parcelas em aberto viram saídas (grupo de parcelas); o saldo devedor sai da tabela Price/SAC.
+model Debt {
+  id                 String             @id @default(uuid())
+  companyId          String             @map("company_id")
+  company            Company            @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  name               String
+  kind               DebtKind           @default(FINANCING)
+  lender             String?
+  principalCents     BigInt             @map("principal_cents")
+  monthlyRateBps     Int                @map("monthly_rate_bps")
+  installmentCount   Int                @map("installment_count")
+  paidBeforeCount    Int                @default(0) @map("paid_before_count")
+  firstDueDate       DateTime           @map("first_due_date") @db.Date
+  amortization       AmortizationSystem @default(PRICE)
+  installmentGroupId String             @unique @map("installment_group_id")
+  categoryId         String             @map("category_id")
+  category           Category           @relation(fields: [categoryId, companyId], references: [id, companyId], onDelete: Restrict)
+  expectedAccountId  String?            @map("expected_account_id")
+  expectedAccount    FinancialAccount?  @relation(fields: [expectedAccountId], references: [id], onDelete: SetNull)
+  status             DebtStatus         @default(ACTIVE)
+  createdByUserId    String             @map("created_by_user_id")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  @@index([companyId, status])
+  @@map("debts")
+}
+
+/// Bem ou investimento com valor informado pela pessoa (entra no patrimônio).
+model Asset {
+  id              String    @id @default(uuid())
+  companyId       String    @map("company_id")
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  name            String
+  kind            AssetKind @default(INVESTMENT)
+  valueCents      BigInt    @map("value_cents")
+  valuedAt        DateTime  @map("valued_at") @db.Date
+  notes           String?
+  createdByUserId String    @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("assets")
 }

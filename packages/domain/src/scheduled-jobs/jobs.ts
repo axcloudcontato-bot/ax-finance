@@ -9,6 +9,7 @@ const JOB_TYPES = [
   "DUE_NOTIFICATIONS",
   "WEEKLY_SUMMARY",
   "SUBSCRIPTION_NOTIFICATIONS",
+  "MONTHLY_REPORT",
 ] as const satisfies readonly ScheduledJobType[];
 
 export async function scheduleCompanyJobsInTx(

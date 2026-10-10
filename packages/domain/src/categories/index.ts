@@ -4,3 +4,4 @@ export * from "./archive-category";
 export * from "./nature-label";
 export * from "./seed-default-categories";
 export * from "./update-category";
+export * from "./category-rules";

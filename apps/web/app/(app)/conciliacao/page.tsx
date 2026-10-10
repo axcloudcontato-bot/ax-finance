@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  listActiveCategories,
   listBankStatementLines,
+  listCategoryRules,
+  listCostCenters,
   listFinancialAccounts,
+  listParties,
+  matchCategoryRule,
   listImportBatches,
   listUnreconciledSettlements,
   settlementCashDelta,
@@ -16,6 +21,8 @@ import {
   deleteBankImportAction,
   ignoreLineAction,
   importBankStatementAction,
+  launchByRulesAction,
+  launchLineAction,
   reconcileLineAction,
   undoReconciliationAction,
 } from "./actions";
@@ -23,6 +30,8 @@ import { isComparisonMode, periodQuery as buildPeriodQuery, resolvePeriodRange }
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ActionModal } from "@/components/ui/action-modal";
 import { ArrowRight, Trash2 } from "@/components/ui/animated-icons";
+import { CategoryRuleForm } from "@/components/category-rule-form";
+import { createCategoryRuleAction } from "../cadastros/regras/actions";
 
 type Line = Awaited<ReturnType<typeof listBankStatementLines>>[number];
 type Candidate = Awaited<ReturnType<typeof listUnreconciledSettlements>>[number];
@@ -85,6 +94,11 @@ function Amount({ cents }: { cents: bigint }) {
   return <span className={`concil-amount ${credit ? "is-credit" : ""}`}>{credit ? "+ " : ""}{formatCents(cents)}</span>;
 }
 
+function rulePatternFrom(description: string): string {
+  const words = description.replace(/[*#].*$/, " ").split(/\s+/).filter((word) => word && !/\d/.test(word));
+  return words.slice(0, 2).join(" ").slice(0, 60) || description.slice(0, 60);
+}
+
 function Chip({ tone, children }: { tone: string; children: string }) {
   return <span className={`concil-chip ${tone}`}>{children}</span>;
 }
@@ -135,6 +149,10 @@ export default async function ConciliacaoPage(
       invalido?: string;
       enfileirado?: string;
       removida?: string;
+      lancado?: string;
+      lancadas?: string;
+      falhas?: string;
+      regraCriada?: string;
       mes?: string;
       de?: string;
       ate?: string;
@@ -169,11 +187,27 @@ export default async function ConciliacaoPage(
   const statusFilter = (["PENDING", "RECONCILED", "IGNORED"] as const).find((status) => status === searchParams.status);
   const period = resolvePeriodRange(searchParams);
 
-  const [allLines, unreconciledSettlements, importBatches] = await Promise.all([
+  const [allLines, unreconciledSettlements, importBatches, rules, categories, costCenters, parties] = await Promise.all([
     listBankStatementLines(user.id, company.id, { financialAccountId: activeAccountId, ...period }),
     listUnreconciledSettlements(user.id, company.id, activeAccountId),
     listImportBatches(user.id, company.id, activeAccountId),
+    listCategoryRules(user.id, company.id),
+    listActiveCategories(user.id, company.id),
+    listCostCenters(user.id, company.id),
+    listParties(user.id, company.id, { status: "ACTIVE" }),
   ]);
+  // Regras: só com categoria ativa e do tipo certo (crédito vira entrada, débito vira saída).
+  const usableRules = (credit: boolean) => rules.filter((rule) => rule.category.status === "ACTIVE" && (credit ? rule.category.nature === "OPERATING_REVENUE" : rule.category.nature !== "OPERATING_REVENUE"));
+  const ruleFor = (line: { description: string; amountCents: bigint }) => {
+    const credit = line.amountCents > BigInt(0);
+    return matchCategoryRule(usableRules(credit), line.description, credit ? "RECEIVABLE" : "PAYABLE");
+  };
+  const matchedPending = allLines.filter((line) => line.status === "PENDING" && ruleFor(line)).length;
+  const ruleOptions = {
+    categories: categories.map(({ id, name, nature, parentId }) => ({ id, name, nature, parentId })),
+    costCenters: costCenters.filter((center) => center.status === "ACTIVE").map(({ id, name }) => ({ id, name })),
+    parties: parties.map(({ id, name }) => ({ id, name })),
+  };
 
   const counts = {
     ALL: allLines.length,
@@ -217,6 +251,8 @@ export default async function ConciliacaoPage(
   ];
 
   const ranked = selected?.status === "PENDING" ? rankCandidates(selected, unreconciledSettlements) : [];
+  const selectedRule = selected?.status === "PENDING" ? ruleFor(selected) : null;
+  const currentHref = selected ? lineHref(selected.id) : statusHref(statusFilter);
   const selectedCredit = selected ? selected.amountCents > BigInt(0) : true;
 
   return (
@@ -224,6 +260,9 @@ export default async function ConciliacaoPage(
       <header className="concil-head">
         <h1>Conciliação</h1>
         <p className="concil-summary">{summary}</p>
+        {searchParams.lancado ? <p className="success-box">Lançamento criado, baixado e conciliado.</p> : null}
+        {searchParams.lancadas ? <p className="success-box">{searchParams.lancadas} {searchParams.lancadas === "1" ? "linha lançada e conciliada" : "linhas lançadas e conciliadas"} pelas regras.{searchParams.falhas && searchParams.falhas !== "0" ? ` ${searchParams.falhas} ficaram pendentes (período fechado ou categoria arquivada).` : ""}</p> : null}
+        {searchParams.regraCriada ? <p className="success-box">Regra criada. Ela já vale para esta linha e para as próximas.</p> : null}
       </header>
 
       <div className="filters">
@@ -315,6 +354,17 @@ export default async function ConciliacaoPage(
             ))}
           </nav>
 
+          {matchedPending > 0 ? (
+            <form action={launchByRulesAction} className="concil-rules-bar">
+              <input type="hidden" name="financialAccountId" value={activeAccountId} />
+              <input type="hidden" name="from" value={period.from} />
+              <input type="hidden" name="to" value={period.to} />
+              <input type="hidden" name="voltar" value={statusHref(statusFilter)} />
+              <span><strong>{matchedPending}</strong> {matchedPending === 1 ? "linha pendente reconhecida" : "linhas pendentes reconhecidas"} pelas <Link href="/cadastros/regras" className="concil-link">regras de categoria</Link></span>
+              <SubmitButton className="secondary" style={{ marginTop: 0 }}>Lançar e conciliar {matchedPending === 1 ? "esta" : "todas"}</SubmitButton>
+            </form>
+          ) : null}
+
           {lines.length === 0 ? (
             <div className="concil-empty">
               <strong>
@@ -345,6 +395,7 @@ export default async function ConciliacaoPage(
                         {line.description}
                       </Link>
                       {line.status === "IGNORED" && line.ignoreReason ? <span className="concil-sub">{line.ignoreReason}</span> : null}
+                      {line.status === "PENDING" && ruleFor(line) ? <span className="concil-sub concil-rule-hint">Regra → {ruleFor(line)!.category.name}</span> : null}
                       {line.status === "RECONCILED" && line.reconciledSettlement ? (
                         <span className="concil-sub">{line.reconciledSettlement.title.description}</span>
                       ) : null}
@@ -413,6 +464,49 @@ export default async function ConciliacaoPage(
                         ))}
                       </ul>
                     )}
+                  </section>
+
+                  <section className="concil-section concil-launch">
+                    <h3>Lançar e conciliar</h3>
+                    <p className="muted concil-launch-note">{ranked.some((candidate) => candidate.exact) ? "Se não for nenhuma das baixas acima, crie" : "Crie"} {selectedCredit ? "a entrada" : "a saída"} desta linha: o lançamento já nasce baixado nesta conta e conciliado.</p>
+                    {selectedRule ? <p className="concil-rule-hint">Categoria pela regra &ldquo;{selectedRule.pattern}&rdquo;.</p> : null}
+                    <form action={launchLineAction} key={`lancar-${selected.id}-${selectedRule?.id ?? "sem-regra"}`}>
+                      <input type="hidden" name="lineId" value={selected.id} />
+                      <input type="hidden" name="financialAccountId" value={activeAccountId} />
+                      <input type="hidden" name="voltar" value={statusHref(statusFilter)} />
+                      <label htmlFor="launch-description">Descrição</label>
+                      <input id="launch-description" name="description" type="text" maxLength={500} defaultValue={selected.description} />
+                      <label htmlFor="launch-category">Categoria</label>
+                      <select id="launch-category" name="categoryId" required defaultValue={selectedRule?.categoryId ?? ""}>
+                        <option value="" disabled>Selecione</option>
+                        {ruleOptions.categories.filter((category) => selectedCredit ? category.nature === "OPERATING_REVENUE" : category.nature !== "OPERATING_REVENUE").map((category) => <option key={category.id} value={category.id}>{category.parentId ? "↳ " : ""}{category.name}</option>)}
+                      </select>
+                      {ruleOptions.costCenters.length ? (
+                        <>
+                          <label htmlFor="launch-center">Centro de custo (opcional)</label>
+                          <select id="launch-center" name="costCenterId" defaultValue={selectedRule?.costCenterId ?? ""}>
+                            <option value="">Nenhum</option>
+                            {ruleOptions.costCenters.map((center) => <option key={center.id} value={center.id}>{center.name}</option>)}
+                          </select>
+                        </>
+                      ) : null}
+                      {ruleOptions.parties.length ? (
+                        <>
+                          <label htmlFor="launch-party">{selectedCredit ? "Cliente" : "Fornecedor"} (opcional)</label>
+                          <select id="launch-party" name="partyId" defaultValue={selectedRule?.partyId ?? ""}>
+                            <option value="">Nenhum</option>
+                            {ruleOptions.parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}
+                          </select>
+                        </>
+                      ) : null}
+                      <SubmitButton style={{ marginTop: "0.75rem" }}>Lançar e conciliar</SubmitButton>
+                    </form>
+                    {!selectedRule ? (
+                      <ActionModal key={`regra-${selected.id}`} triggerLabel="Criar regra para descrições assim" triggerClassName="concil-link-button" title="Nova regra de categoria" size="wide">
+                        <p className="subtitle">Da próxima vez, linhas e lançamentos com esta descrição já vêm com a categoria preenchida.</p>
+                        <CategoryRuleForm action={createCategoryRuleAction} {...ruleOptions} idPrefix={`regra-linha-${selected.id}`} submitLabel="Criar regra" back={currentHref} defaults={{ pattern: rulePatternFrom(selected.description), appliesTo: selectedCredit ? "RECEIVABLE" : "PAYABLE" }} />
+                      </ActionModal>
+                    ) : null}
                   </section>
 
                   <details className="concil-ignore">

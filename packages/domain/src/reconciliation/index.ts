@@ -9,3 +9,4 @@ export * from "./list-unreconciled-settlements";
 export * from "./reconcile-bank-statement-line";
 export * from "./ignore-bank-statement-line";
 export * from "./undo-reconciliation";
+export * from "./launch-bank-statement-line";

@@ -6,6 +6,7 @@ import {
   BarChart3,
   CreditCard,
   BookUser,
+  CalendarDays,
   History,
   Landmark,
   LayoutDashboard,
@@ -37,6 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "entradas", title: "Entradas", icon: ArrowDownCircle, href: "/entradas" },
       { id: "saidas", title: "Saídas", icon: ArrowUpCircle, href: "/saidas" },
+      { id: "calendario", title: "Calendário", icon: CalendarDays, href: "/calendario" },
       {
         id: "contas",
         title: "Contas e transferências",
@@ -68,6 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
           },
           { id: "rel-dre", title: "DRE gerencial", icon: BarChart3, href: "/relatorios/dre" },
           { id: "rel-forma", title: "Forma de pagamento", icon: BarChart3, href: "/relatorios/forma-de-pagamento" },
+          { id: "rel-mensal", title: "Relatório mensal (PDF)", icon: BarChart3, href: "/relatorios/mensal" },
         ],
       },
       {
@@ -78,6 +81,7 @@ const NAV_GROUPS: NavGroup[] = [
           { id: "cad-categorias", title: "Categorias", icon: BookUser, href: "/cadastros/categorias" },
           { id: "cad-centros-custo", title: "Centros de custo", icon: BookUser, href: "/cadastros/centros-de-custo" },
           { id: "cad-pessoas", title: "Clientes e fornecedores", icon: BookUser, href: "/cadastros/pessoas" },
+          { id: "cad-regras", title: "Regras de categoria", icon: BookUser, href: "/cadastros/regras" },
         ],
       },
       { id: "orcamento", title: "Orçamento", icon: ListChecks, href: "/orcamento" },

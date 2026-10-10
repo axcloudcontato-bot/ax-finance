@@ -5,3 +5,5 @@ export * from "./monthly-cash-flow-series";
 export * from "./managerial-income-statement";
 export * from "./dashboard-overview";
 export * from "./dashboard-insights";
+export * from "./financial-calendar";
+export * from "./monthly-report";

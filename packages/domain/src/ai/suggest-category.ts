@@ -8,6 +8,7 @@ import { assertCompanyPermission } from "../companies/permissions";
 import { logOperationalError } from "../observability/logger";
 import { resolvePlanDefinition } from "../subscriptions/plan-features";
 import { companyToday } from "../shared/today";
+import { findMatchingRuleInTx } from "../categories/category-rules";
 
 /**
  * Sugestão de categoria para um lançamento, em duas camadas:
@@ -38,7 +39,7 @@ export const suggestCategoryInput = z.object({
   type: z.enum(["RECEIVABLE", "PAYABLE"]),
 });
 
-export type CategorySuggestionSource = "HISTORY" | "AI";
+export type CategorySuggestionSource = "RULE" | "HISTORY" | "AI";
 export type CategorySuggestionConfidence = "ALTA" | "MEDIA" | "BAIXA";
 
 export interface CategorySuggestion {
@@ -46,6 +47,10 @@ export interface CategorySuggestion {
   categoryName: string;
   confidence: CategorySuggestionConfidence;
   source: CategorySuggestionSource;
+  /** Só nas regras: centro de custo e pessoa que a regra também preenche, e o texto que casou. */
+  costCenterId?: string | null;
+  partyId?: string | null;
+  rulePattern?: string;
 }
 
 export interface Candidate {
@@ -155,6 +160,16 @@ export async function suggestCategory(
     });
     const usable = categories.filter((category) => isCandidateFor(data.type, category.nature));
     const byId = new Map(usable.map((category) => [category.id, category]));
+
+    // 0) Regra da própria empresa: decisão já tomada pela pessoa, vale antes do histórico e da IA.
+    const rule = await findMatchingRuleInTx(tx, companyId, data.description, data.type);
+    if (rule) {
+      return {
+        suggestion: { categoryId: rule.categoryId, categoryName: rule.category.name, confidence: "ALTA", source: "RULE", costCenterId: rule.costCenterId, partyId: rule.partyId, rulePattern: rule.pattern },
+        aiEnabled,
+        quotaExceeded: false,
+      };
+    }
 
     // 1) Histórico: mesma descrição (sem diferenciar maiúsculas) já lançada, com a categoria mais usada.
     const history = await tx.$queryRaw<{ category_id: string; uses: bigint }[]>`

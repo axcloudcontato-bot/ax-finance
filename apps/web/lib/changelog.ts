@@ -25,6 +25,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-pacote-gestao",
+    date: "2026-10-10",
+    title: "PIX na cobrança, calendário, regras de categoria e mais",
+    summary: "Menos trabalho repetido e mais visão do mês e do ano.",
+    changes: [
+      { kind: "NEW", text: "Cobrança com QR Code PIX e \"PIX copia e cola\" com o valor em aberto. Configure a chave em Entradas > PIX." },
+      { kind: "NEW", text: "Calendário financeiro: o que vence em cada dia e o saldo previsto ao fim do dia." },
+      { kind: "NEW", text: "Regras de categoria (Cadastros > Regras): \"descrição contém UBER → Transporte\" preenche sozinho os lançamentos novos." },
+      { kind: "NEW", text: "Na Conciliação, \"Lançar e conciliar\" cria o lançamento da linha do extrato, dá baixa e concilia de uma vez, inclusive todas as linhas reconhecidas pelas regras." },
+      { kind: "NEW", text: "Orçamento do ano: os 12 meses numa grade, com \"Planejar o ano\" a partir de um mês, do ano anterior ou do gasto real, com reajuste." },
+      { kind: "NEW", text: "Relatório mensal em PDF (Relatórios > Relatório mensal), enviado por e-mail no início de cada mês." },
+      { kind: "IMPROVED", text: "Rateio do lançamento organizado em colunas, com a soma conferida enquanto você digita." },
+    ],
+  },
+  {
     id: "2026-10-09-cofrinhos",
     date: "2026-10-09",
     title: "Cofrinhos: guarde dinheiro para cada objetivo",

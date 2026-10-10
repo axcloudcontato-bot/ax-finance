@@ -17,6 +17,7 @@ export async function updateNotificationPreferenceAction(formData: FormData) {
       emailDue: formData.get("emailDue") === "on",
       inAppWeekly: formData.get("inAppWeekly") === "on",
       emailWeekly: formData.get("emailWeekly") === "on",
+      emailMonthlyReport: formData.get("emailMonthlyReport") === "on",
       dueDaysAhead: Number(formData.get("dueDaysAhead")),
       deliveryHour: Number(formData.get("deliveryHour")),
     });
