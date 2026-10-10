@@ -21,9 +21,13 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "typecheck": "pnpm --filter @ax-finance/db exec tsc --noEmit && pnpm --filter @ax-finance/domain exec tsc --noEmit && pnpm --filter worker exec tsc --noEmit && pnpm --filter web exec tsc --noEmit"
+    "typecheck": "pnpm --filter @ax-finance/db exec tsc --noEmit && pnpm --filter @ax-finance/domain exec tsc --noEmit && pnpm --filter worker exec tsc --noEmit && pnpm --filter web exec tsc --noEmit",
+    "e2e": "playwright test"
   },
   "devDependencies": {
+    "@ax-finance/db": "workspace:*",
+    "@ax-finance/domain": "workspace:*",
+    "@playwright/test": "1.56.1",
     "@types/node": "^20.14.0",
     "@typescript-eslint/eslint-plugin": "^8.71.0",
     "@typescript-eslint/parser": "^8.71.0",

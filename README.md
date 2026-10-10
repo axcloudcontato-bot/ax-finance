@@ -50,6 +50,16 @@ testes de integração (Postgres 16 como serviço, migrations aplicadas num banc
 push na `master`; `security.yml` cuida da auditoria de dependências e do build. Os testes só
 precisam de `TEST_DATABASE_URL` e `TEST_APP_DATABASE_URL`, vindos do `.env` local ou do ambiente.
 
+`pnpm e2e` roda os testes de ponta a ponta (Playwright, em `e2e/`): o app de verdade num navegador
+(login, lançar e receber, importar extrato e conciliar pela regra, cofrinho). Usam um banco próprio,
+`ax_finance_e2e`, criado, migrado, zerado e semeado a cada rodada (mesmo servidor das URLs de teste),
+e sobem o app na porta 3100. Na primeira vez: `pnpm exec playwright install chromium`.
+
+O CI também verifica o backup: gera um dump com `ops/backup-entrypoint.sh` (`BACKUP_ONCE=1`) e o
+restaura num Postgres vazio com `ops/restore-verify.sh`, os mesmos scripts do servidor. No servidor,
+`OPERATION_OPERATOR=seu-nome ./ops/run-restore-verification.sh` faz o mesmo teste com o backup real
+mais recente e guarda a evidência em `.operations/evidence/restore/`.
+
 ## Estado atual e limitações conhecidas
 
 Um levantamento (set/2026) comparando a especificação com o código encontrou os pontos abaixo.

@@ -111,7 +111,7 @@ export async function getMonthlyReportData(userId: string, companyId: string, ra
 
 const COLORS = { ink: "#1a1d23", muted: "#5b6270", line: "#d9dce1", soft: "#f3f5f9", accent: "#3675ec", positive: "#0c8465", negative: "#c23d68" };
 
-const money = (cents: bigint) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(cents) / 100).replace(/ /g, " ");
+const money = (cents: bigint) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(cents) / 100).replace(/\u00a0/g, " ");
 const percent = (bpsValue: number) => `${(bpsValue / 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 const dateBr = (value: string) => value.split("-").reverse().join("/");
 

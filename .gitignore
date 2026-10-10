@@ -15,3 +15,8 @@ Thumbs.db
 .operations/
 .secrets/
 *.tsbuildinfo
+
+# Testes de ponta a ponta (Playwright)
+e2e/.auth/
+e2e/results/
+e2e/report/

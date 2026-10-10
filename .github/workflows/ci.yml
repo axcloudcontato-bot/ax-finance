@@ -70,3 +70,90 @@ jobs:
       - name: Trocar a senha da role de aplicação (a migration cria a role com uma senha fixa)
         run: echo "ALTER ROLE ax_app PASSWORD 'ci-app-role';" | pnpm --filter @ax-finance/db exec prisma db execute --url "$TEST_DATABASE_URL" --stdin
       - run: pnpm test
+
+  backup-restore:
+    name: Backup e restauração
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-postgres
+          POSTGRES_DB: ax_finance
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Banco com todas as migrations
+        run: pnpm db:migrate:deploy
+        env:
+          DATABASE_URL: postgresql://postgres:ci-postgres@localhost:5432/ax_finance
+      # Os mesmos scripts e a mesma imagem do servidor (docker-compose: backup e restore-verify).
+      - name: Gerar um backup com o script de produção
+        run: |
+          mkdir -p "$RUNNER_TEMP/backups" "$RUNNER_TEMP/attachments"
+          docker run --rm --network host             -e PGHOST=localhost -e PGPORT=5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=ci-postgres -e POSTGRES_DB=ax_finance             -e BACKUP_DIR=/backups -e ATTACHMENTS_SOURCE=/attachments -e BACKUP_ONCE=1             -v "$PWD/ops:/ops:ro" -v "$RUNNER_TEMP/backups:/backups" -v "$RUNNER_TEMP/attachments:/attachments:ro"             postgres:16-alpine /bin/sh /ops/backup-entrypoint.sh
+      - name: Restaurar num Postgres vazio e conferir
+        run: |
+          docker run --rm -e BACKUP_DIR=/backups             -v "$PWD/ops:/ops:ro" -v "$RUNNER_TEMP/backups:/backups:ro"             postgres:16-alpine /bin/sh /ops/restore-verify.sh
+
+  e2e:
+    name: Testes de ponta a ponta (navegador)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-postgres
+          POSTGRES_DB: ax_finance_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # O banco de E2E (ax_finance_e2e) é criado e semeado pelo próprio Playwright a partir destas URLs.
+      TEST_DATABASE_URL: postgresql://postgres:ci-postgres@localhost:5432/ax_finance_test
+      TEST_APP_DATABASE_URL: postgresql://ax_app:ci-app-role@localhost:5432/ax_finance_test
+      E2E_SERVER_COMMAND: pnpm --filter web exec next start -p 3100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: corepack enable
+      - run: corepack prepare pnpm@12.6.0 --activate
+      - run: pnpm install --frozen-lockfile
+      - name: Criar a role de aplicação e definir a senha do CI
+        run: |
+          pnpm db:migrate:deploy
+          echo "ALTER ROLE ax_app PASSWORD 'ci-app-role';" | pnpm --filter @ax-finance/db exec prisma db execute --url "$TEST_DATABASE_URL" --stdin
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
+      - name: Relatório dos testes (em caso de falha)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            e2e/report
+            e2e/results
+          retention-days: 7

@@ -101,10 +101,13 @@ while true; do
   if ! create_backup; then
     trap - INT TERM HUP
     json_log error backup.failed
+    # BACKUP_ONCE=1: um único backup e sai (usado pela verificação de restauração no CI).
+    if [ "${BACKUP_ONCE:-}" = "1" ]; then exit 1; fi
     sleep 300 &
     wait $!
     continue
   fi
+  if [ "${BACKUP_ONCE:-}" = "1" ]; then exit 0; fi
   sleep "$((BACKUP_INTERVAL_HOURS * 3600))" &
   wait $!
 done
