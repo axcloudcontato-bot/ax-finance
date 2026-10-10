@@ -130,7 +130,9 @@ jobs:
       # O banco de E2E (ax_finance_e2e) é criado e semeado pelo próprio Playwright a partir destas URLs.
       TEST_DATABASE_URL: postgresql://postgres:ci-postgres@localhost:5432/ax_finance_test
       TEST_APP_DATABASE_URL: postgresql://ax_app:ci-app-role@localhost:5432/ax_finance_test
-      E2E_SERVER_COMMAND: pnpm --filter web exec next start -p 3100
+      # Mesmo servidor da imagem Docker (standalone), chamado direto pelo node: via pnpm/next start o
+      # processo não morria no fim e o job ficava parado até o tempo limite.
+      E2E_SERVER_COMMAND: PORT=3100 HOSTNAME=0.0.0.0 node apps/web/.next/standalone/apps/web/server.js
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -150,8 +152,13 @@ jobs:
         env:
           # next build importa as rotas e o client do banco exige a variável ao carregar (como no Dockerfile).
           APP_DATABASE_URL: postgresql://build:build@localhost:5432/build_placeholder
+      - name: Arquivos estáticos no servidor standalone (como no Dockerfile)
+        run: |
+          cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+          cp -r apps/web/public apps/web/.next/standalone/apps/web/public
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e
+        timeout-minutes: 10
       - name: Relatório dos testes (em caso de falha)
         if: failure()
         uses: actions/upload-artifact@v4
