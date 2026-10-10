@@ -26,7 +26,9 @@ export default async function EntradaParceladaPage(
 
   return (
     <main>
-      <h1 style={{ marginBottom: "1rem" }}>Parcelar entrada</h1>
+      <div className="page-header">
+        <div><h1>Parcelar entrada</h1><p className="subtitle">Divide um valor em parcelas mensais: cada parcela vira uma entrada com o próprio vencimento.</p></div>
+      </div>
       <InstallmentForm
         action={createEntradaInstallmentPlanAction}
         categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "RECEIVABLE"))}

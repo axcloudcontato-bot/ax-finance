@@ -3406,9 +3406,6 @@ main.settings-page {
 }
 
 .concil .filters { flex-wrap: wrap; }
-.concil-head { margin-bottom: 1rem; }
-.concil-head h1 { margin-bottom: 0.15rem; }
-.concil-summary { margin: 0; color: var(--muted); font-size: 0.95rem; }
 
 .concil-import {
   margin-bottom: 1.25rem;

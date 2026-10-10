@@ -26,7 +26,9 @@ export default async function SaidaParceladaPage(
 
   return (
     <main>
-      <h1 style={{ marginBottom: "1rem" }}>Parcelar saída</h1>
+      <div className="page-header">
+        <div><h1>Parcelar saída</h1><p className="subtitle">Divide um valor em parcelas mensais: cada parcela vira uma saída com o próprio vencimento.</p></div>
+      </div>
       <InstallmentForm
         action={createSaidaInstallmentPlanAction}
         categories={sortCategoriesTree(filterCategoriesByTitleType(categories, "PAYABLE"))}

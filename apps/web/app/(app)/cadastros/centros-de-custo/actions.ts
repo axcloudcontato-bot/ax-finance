@@ -17,7 +17,7 @@ export async function createCostCenterAction(formData: FormData) {
       code: String(formData.get("code") ?? ""),
     });
   } catch (error) {
-    redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao criar centro de custo."))}`);
+    redirect(`/cadastros/centros-de-custo?erro=${encodeURIComponent(actionErrorMessage(error, "Falha ao criar centro de custo."))}&acao=novo`);
   }
   revalidatePath("/cadastros/centros-de-custo");
   redirect("/cadastros/centros-de-custo?criado=1");

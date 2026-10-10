@@ -175,7 +175,9 @@ export default async function ConciliacaoPage(
   if (!activeAccountId) {
     return (
       <main className="wide concil">
-        <h1>Conciliação</h1>
+        <div className="page-header">
+          <div><h1>Conciliação</h1><p className="subtitle">Confira o extrato do banco com o que foi lançado.</p></div>
+        </div>
         <div className="card">
           <p className="muted">Cadastre uma conta antes de importar um extrato.</p>
           <Link href="/contas" className="button-link" style={{ marginTop: "1rem" }}>Ir para Contas</Link>
@@ -257,13 +259,12 @@ export default async function ConciliacaoPage(
 
   return (
     <main className="wide concil">
-      <header className="concil-head">
-        <h1>Conciliação</h1>
-        <p className="concil-summary">{summary}</p>
+      <div className="page-header">
+        <div><h1>Conciliação</h1><p className="subtitle">{summary}</p></div>
+      </div>
         {searchParams.lancado ? <p className="success-box">Lançamento criado, baixado e conciliado.</p> : null}
         {searchParams.lancadas ? <p className="success-box">{searchParams.lancadas} {searchParams.lancadas === "1" ? "linha lançada e conciliada" : "linhas lançadas e conciliadas"} pelas regras.{searchParams.falhas && searchParams.falhas !== "0" ? ` ${searchParams.falhas} ficaram pendentes (período fechado ou categoria arquivada).` : ""}</p> : null}
         {searchParams.regraCriada ? <p className="success-box">Regra criada. Ela já vale para esta linha e para as próximas.</p> : null}
-      </header>
 
       <div className="filters">
         {accounts.map((account) => (

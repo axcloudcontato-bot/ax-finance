@@ -9,7 +9,7 @@ import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { SubmitButton } from "@/components/ui/submit-button";
 
 export default async function CostCentersPage(
-  props: { searchParams: Promise<{ erro?: string; criado?: string; arquivado?: string; atualizado?: string; busca?: string }> }
+  props: { searchParams: Promise<{ erro?: string; acao?: string; criado?: string; arquivado?: string; atualizado?: string; busca?: string }> }
 ) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
@@ -22,16 +22,27 @@ export default async function CostCentersPage(
   const visibleCenters = query ? costCenters.filter((center) => searchable(`${center.name} ${center.code ?? ""}`).includes(query)) : costCenters;
 
   return <main className="wide">
-    <div className="page-header"><div><h1>Centros de custo</h1><p className="subtitle">Classifique títulos e limite o acesso dos usuários por área.</p></div></div>
-    {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+    <div className="page-header">
+      <div><h1>Centros de custo</h1><p className="subtitle">Classifique títulos e limite o acesso dos usuários por área.</p></div>
+      <ActionModal key={`novo-${searchParams.erro ?? ""}-${searchParams.criado ?? ""}`} triggerLabel="+ Novo centro de custo" triggerClassName="button-link workspace-primary-action" title="Novo centro de custo" initiallyOpen={Boolean(searchParams.erro) && searchParams.acao === "novo"}>
+        {searchParams.erro && searchParams.acao === "novo" ? <p className="error">{searchParams.erro}</p> : null}
+        <form action={createCostCenterAction}>
+          <label htmlFor="cost-center-name">Nome</label>
+          <input id="cost-center-name" name="name" required maxLength={200} placeholder="Ex.: Comercial, Produção, Casa" />
+          <label htmlFor="cost-center-code">Código (opcional)</label>
+          <input id="cost-center-code" name="code" maxLength={50} />
+          <SubmitButton>Criar centro de custo</SubmitButton>
+        </form>
+      </ActionModal>
+    </div>
+    {searchParams.erro && searchParams.acao !== "novo" ? <p className="error">{searchParams.erro}</p> : null}
     {searchParams.criado ? <p className="success-box">Centro de custo criado.</p> : null}
     {searchParams.arquivado ? <p className="success-box">Centro de custo arquivado.</p> : null}
     {searchParams.atualizado ? <p className="success-box">Centro de custo atualizado.</p> : null}
-    <div className="split">
-      <div className="card">
+    <div className="card">
         <h2>Centros cadastrados</h2>
         <div className="workspace-list-toolbar"><p>{visibleCenters.length} {visibleCenters.length === 1 ? "centro exibido" : "centros exibidos"}</p><form method="get" action="/cadastros/centros-de-custo"><input name="busca" type="search" defaultValue={search} placeholder="Nome ou código" aria-label="Buscar centro de custo" /><button type="submit" className="secondary">Buscar</button>{search ? <a href="/cadastros/centros-de-custo">Limpar</a> : null}</form></div>
-        {visibleCenters.length === 0 ? <div className="workspace-empty"><strong>{search ? "Nenhum centro encontrado" : "Nenhum centro de custo cadastrado"}</strong><p>{search ? "Tente outro termo ou limpe a busca." : "Use o formulário ao lado para classificar gastos por área."}</p></div> : <div className="table-scroll"><table className="workspace-table">
+        {visibleCenters.length === 0 ? <div className="workspace-empty"><strong>{search ? "Nenhum centro encontrado" : "Nenhum centro de custo cadastrado"}</strong><p>{search ? "Tente outro termo ou limpe a busca." : "Use “+ Novo centro de custo” para classificar gastos por área."}</p></div> : <div className="table-scroll"><table className="workspace-table">
           <thead><tr><th>Nome</th><th>Código</th><th>Status</th><th><span className="sr-only">Ações</span></th></tr></thead>
           <tbody>{visibleCenters.map((center) => <tr key={center.id}>
             <td>{center.name}</td><td>{center.code || "—"}</td><td><span className={`workspace-status ${center.status === "ACTIVE" ? "is-active" : ""}`}>{center.status === "ACTIVE" ? "Ativo" : "Arquivado"}</span></td>
@@ -42,16 +53,5 @@ export default async function CostCentersPage(
           </tr>)}</tbody>
         </table></div>}
       </div>
-      <div className="card">
-        <h2>Novo centro de custo</h2>
-        <form action={createCostCenterAction}>
-          <label htmlFor="cost-center-name">Nome</label>
-          <input id="cost-center-name" name="name" required maxLength={200} />
-          <label htmlFor="cost-center-code">Código (opcional)</label>
-          <input id="cost-center-code" name="code" maxLength={50} />
-          <SubmitButton>Criar centro de custo</SubmitButton>
-        </form>
-      </div>
-    </div>
   </main>;
 }

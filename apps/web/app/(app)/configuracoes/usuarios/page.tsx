@@ -47,7 +47,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
       <div className="split">
         <div>
           <div className="card">
-            <h1>Usuários</h1>
+            <h2>Usuários</h2>
             <table>
               <thead><tr><th>Usuário</th><th>Papel</th><th>Escopo</th><th>Status</th><th></th></tr></thead>
               <tbody>
@@ -100,7 +100,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
           </div>
 
           <div className="card">
-            <h1>Convites</h1>
+            <h2>Convites</h2>
             {invitations.length === 0 ? <p className="muted">Nenhum convite criado.</p> : (
               <table>
                 <thead><tr><th>E-mail</th><th>Papel</th><th>Status</th><th>Expira em</th><th></th></tr></thead>
@@ -118,7 +118,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
           </div>
 
           <div className="card">
-            <h1>Transferir propriedade</h1>
+            <h2>Transferir propriedade</h2>
             <p className="subtitle">O novo proprietário terá acesso total. Seu papel passará para Administrador financeiro.</p>
             <form action={transferOwnershipAction}>
               <label htmlFor="new-owner">Novo proprietário</label>
@@ -135,7 +135,7 @@ export default async function CompanyUsersPage(props: { searchParams: Promise<{ 
           </div>
 
           <div className="card subscription-danger-panel">
-            <h1>Zerar lançamentos</h1>
+            <h2>Zerar lançamentos</h2>
             <p className="subtitle">
               <strong>Apaga definitivamente</strong> todos os títulos, baixas, transferências, ajustes de saldo, recorrências, anexos, extratos importados e fechamentos de período.
               Os saldos voltam ao saldo de abertura de cada conta. Contas, categorias, clientes e fornecedores, centros de custo e usuários continuam.
