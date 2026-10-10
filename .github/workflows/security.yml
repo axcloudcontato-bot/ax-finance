@@ -25,4 +25,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm security:audit
       - run: pnpm typecheck
-      - run: pnpm build
+      - name: Build
+        run: pnpm build
+        env:
+          # next build importa as rotas e o client do banco exige a variável ao carregar (como no Dockerfile).
+          APP_DATABASE_URL: postgresql://build:build@localhost:5432/build_placeholder

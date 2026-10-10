@@ -145,7 +145,11 @@ jobs:
           echo "ALTER ROLE ax_app PASSWORD 'ci-app-role';" | pnpm --filter @ax-finance/db exec prisma db execute --url "$TEST_DATABASE_URL" --stdin
         env:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
-      - run: pnpm build
+      - name: Build
+        run: pnpm build
+        env:
+          # next build importa as rotas e o client do banco exige a variável ao carregar (como no Dockerfile).
+          APP_DATABASE_URL: postgresql://build:build@localhost:5432/build_placeholder
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e
       - name: Relatório dos testes (em caso de falha)

@@ -34,6 +34,9 @@ pgdata="$work_dir/pgdata"
 socket_dir="$work_dir/socket"
 attachments_dir="$work_dir/attachments"
 mkdir -p "$pgdata" "$socket_dir" "$attachments_dir"
+# O backup grava os arquivos só para o root (umask 077); o pg_restore roda como postgres, então
+# restaura de uma cópia dentro da pasta de trabalho, que pertence ao postgres.
+cp "$source_dir/database.dump" "$work_dir/database.dump"
 chown -R postgres:postgres "$work_dir"
 
 cleanup() {
@@ -55,7 +58,7 @@ su-exec postgres pg_restore \
   --dbname=restore_verify \
   --exit-on-error \
   --no-owner \
-  "$source_dir/database.dump"
+  "$work_dir/database.dump"
 
 tables="$(su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify -Atc \
   "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';")"
