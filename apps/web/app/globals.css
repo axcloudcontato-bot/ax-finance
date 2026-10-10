@@ -4747,3 +4747,25 @@ label.goal-picker-icon, label.goal-picker-color { position: relative; display: i
 .monthly-report-send h2 { margin: 0 0 0.3rem; font-size: 1rem; }
 .monthly-report-send p { max-width: 640px; margin: 0; }
 .ax-model-buttons main .monthly-report-send form button { margin-top: 0; }
+
+/* Dívidas e patrimônio */
+.wealth-page .positive { color: #0c8465; }
+.wealth-page .negative { color: #c23d68; }
+:root[data-ax-theme="dark"] .wealth-page .positive { color: #3cc79b; }
+:root[data-ax-theme="dark"] .wealth-page .negative { color: #ff7aa8; }
+.debt-progress { height: 9px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.debt-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, #14966f 70%, #fff), #14966f); }
+.debt-progress-legend { display: flex; justify-content: space-between; gap: 0.5rem; margin: -0.5rem 0 0; color: var(--muted); font-size: 0.75rem; }
+.debt-card .card-tile-facts small { color: var(--muted); font-size: 0.72rem; }
+.debt-preview { padding: 0.6rem 0.8rem; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 9px; background: color-mix(in srgb, var(--accent) 6%, var(--card)); font-size: 0.85rem; font-weight: 600; }
+.debt-table tr.is-paid td { color: var(--muted); }
+.workspace-status.is-overdue { border-color: color-mix(in srgb, #c23d68 40%, var(--border)); background: color-mix(in srgb, #c23d68 10%, var(--card)); color: #c23d68; }
+.wealth-bars { display: grid; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.wealth-bars li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(70px, 1fr) auto; align-items: center; gap: 0.75rem; font-size: 0.86rem; }
+.wealth-bars a { color: var(--text); text-decoration: none; }
+.wealth-bars a:hover { color: var(--accent); }
+.wealth-bars strong { font-variant-numeric: tabular-nums; }
+.wealth-bar { height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--text) 10%, transparent); }
+.wealth-bar i { display: block; height: 100%; border-radius: inherit; }
+.wealth-bar.is-asset i { background: #14966f; }
+.wealth-bar.is-liability i { background: #c23d68; }

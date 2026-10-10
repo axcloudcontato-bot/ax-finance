@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-dividas-patrimonio",
+    date: "2026-10-10",
+    title: "Dívidas, financiamentos e patrimônio",
+    summary: "Saiba quanto ainda deve, quanto paga de juros e quanto vale tudo o que você tem.",
+    changes: [
+      { kind: "NEW", text: "Dívidas: cadastre financiamento ou empréstimo (tabela Price ou SAC) e as parcelas que faltam viram saídas. O saldo devedor cai a cada parcela paga." },
+      { kind: "NEW", text: "Tabela de amortização com juros e amortização de cada parcela, e quanto de juros ainda falta pagar." },
+      { kind: "NEW", text: "Patrimônio: contas, cofrinhos, bens e investimentos menos dívidas e cartões, com o patrimônio líquido." },
+    ],
+  },
+  {
     id: "2026-10-10-pacote-gestao",
     date: "2026-10-10",
     title: "PIX na cobrança, calendário, regras de categoria e mais",

@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PiggyBank,
+  TrendingUp,
 } from "@/components/ui/animated-icons";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -49,6 +50,8 @@ const NAV_GROUPS: NavGroup[] = [
         ],
       },
       { id: "cofrinhos", title: "Cofrinhos", icon: PiggyBank, href: "/cofrinhos" },
+      { id: "dividas", title: "Dívidas", icon: CreditCard, href: "/dividas" },
+      { id: "patrimonio", title: "Patrimônio", icon: TrendingUp, href: "/patrimonio" },
       { id: "cartoes", title: "Cartões de crédito", icon: CreditCard, href: "/cartoes" },
       { id: "conciliacao", title: "Conciliação", icon: ListChecks, href: "/conciliacao" },
     ],
