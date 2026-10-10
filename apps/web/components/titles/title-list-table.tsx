@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { listFinancialAccounts, listTitlesPage } from "@ax-finance/domain";
 import { formatCents } from "@/lib/currency";
 import { formatDateOnly, toDateOnlyString } from "@/lib/dates";
-import { buildCollectionMessage, mailtoHref } from "@/lib/collection-message";
+import { buildCollectionMessage } from "@/lib/collection-message";
 import { pixChargeForTitle, type PixSettingsView } from "@/lib/pix-charge";
 import { sortHref } from "@/lib/title-list-params";
 import { quickSettleTitleAction } from "@/app/(app)/titulos-actions";
@@ -92,7 +92,6 @@ export function TitleListTable({
                 const message = receivable && open && daysLate >= 0
                   ? buildCollectionMessage({ companyName, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode, pixCode: pixChargeForTitle(pix, title) })
                   : null;
-                const mail = message ? mailtoHref(title.party?.email, message) : null;
                 const lastCollection = title.lastCollectionAt
                   ? `Cobrado ${title.collectionCount}x · última em ${formatDateOnly(title.lastCollectionAt)}`
                   : null;
@@ -143,7 +142,8 @@ export function TitleListTable({
                               triggerLabel={daysLate > 0 ? "Cobrar" : "Lembrar"}
                               title={`${daysLate > 0 ? "Cobrar" : "Lembrar"} — ${title.party?.name ?? title.description}`}
                               message={message}
-                              mailHref={mail}
+                              summary={{ amount: formatCents(title.remainingCents, title.currency), description: title.description, dueDate: due, today, collectionCount: title.collectionCount, lastCollectionAt: title.lastCollectionAt }}
+                              contact={{ email: title.party?.email, phone: title.party?.phone }}
                               pixCode={pixChargeForTitle(pix, title)}
                             />
                           ) : null}

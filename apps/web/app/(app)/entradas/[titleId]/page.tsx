@@ -26,7 +26,7 @@ import { SettlementForm } from "@/components/titles/settlement-form";
 import { CopyButton } from "@/components/titles/copy-button";
 import { CollectionModal } from "@/components/titles/collection-modal";
 import { pixChargeForTitle } from "@/lib/pix-charge";
-import { buildCollectionMessage, mailtoHref } from "@/lib/collection-message";
+import { buildCollectionMessage } from "@/lib/collection-message";
 
 import { ActionModal } from "@/components/ui/action-modal";
 import { TitleAttachments } from "@/components/titles/title-attachments";
@@ -104,7 +104,6 @@ export default async function EntradaDetailPage(
   const [lateFee, pix] = await Promise.all([getLateFeeSettings(user.id, company.id), getPixSettings(user.id, company.id)]);
   const pixCode = isOpen ? pixChargeForTitle(pix, title) : null;
   const collectionMessage = isOpen ? buildCollectionMessage({ companyName: company.name, partyName: title.party?.name, description: title.description, remainingCents: title.remainingCents, currency: title.currency, dueDate: title.dueDate, daysLate, paymentCode: title.paymentCode, pixCode }) : null;
-  const collectionMail = collectionMessage ? mailtoHref(title.party?.email, collectionMessage) : null;
   const showSettlementForm = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
   const openBalanceCents = title.status === "CANCELLED" ? BigInt(0) : title.remainingCents;
 
@@ -137,7 +136,7 @@ export default async function EntradaDetailPage(
               <form action={duplicateEntradaAction.bind(null, title.id)}><label htmlFor="duplicate-competence">Competência</label><input id="duplicate-competence" name="competenceDate" type="date" defaultValue={toDateOnlyString(title.competenceDate)} required/><label htmlFor="duplicate-due">Vencimento</label><input id="duplicate-due" name="dueDate" type="date" defaultValue={toDateOnlyString(title.dueDate)} required/><SubmitButton>Criar cópia</SubmitButton></form>
             </ActionModal>
             {collectionMessage ? (
-              <CollectionModal titleId={title.id} returnTo={returnTo} pixCode={pixCode} triggerLabel={daysLate > 0 ? "Cobrar" : "Lembrar"} title={`${daysLate > 0 ? "Cobrar" : "Lembrar"}${title.party ? ` — ${title.party.name}` : ""}`} message={collectionMessage} mailHref={collectionMail} />
+              <CollectionModal titleId={title.id} returnTo={returnTo} pixCode={pixCode} triggerLabel={daysLate > 0 ? "Cobrar" : "Lembrar"} title={`${daysLate > 0 ? "Cobrar" : "Lembrar"}${title.party ? ` — ${title.party.name}` : ""}`} message={collectionMessage} summary={{ amount: formatCents(title.remainingCents, title.currency), description: title.description, dueDate: dueDay, today, collectionCount: title.collectionCount, lastCollectionAt: title.lastCollectionAt }} contact={{ email: title.party?.email, phone: title.party?.phone }} />
             ) : null}
             {showSettlementForm ? (
               <ActionModal

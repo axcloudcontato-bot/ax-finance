@@ -40,3 +40,14 @@ export function mailtoHref(to: string | null | undefined, message: { subject: st
   if (!to) return null;
   return `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(message.subject)}&body=${encodeURIComponent(message.body)}`;
 }
+
+/**
+ * Link do WhatsApp com a mensagem preenchida. Com telefone, abre a conversa do cliente (números
+ * brasileiros sem DDI ganham o 55); sem telefone, o próprio WhatsApp pede para escolher o contato.
+ */
+export function whatsappHref(phone: string | null | undefined, body: string): string {
+  let digits = (phone ?? "").replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) digits = `55${digits}`;
+  const valid = digits.length >= 12 && digits.length <= 13;
+  return `https://wa.me/${valid ? digits : ""}?text=${encodeURIComponent(body)}`;
+}

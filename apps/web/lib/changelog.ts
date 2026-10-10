@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-lembrete-cobranca",
+    date: "2026-10-10",
+    title: "Lembrete de cobrança de cara nova",
+    summary: "A janela de Cobrar/Lembrar ficou mais clara no computador e no celular, com envio direto pelo WhatsApp.",
+    changes: [
+      { kind: "IMPROVED", text: "Resumo no topo com o valor em aberto, o vencimento, a situação (vence hoje, dias de atraso) e quantas vezes o cliente já foi cobrado." },
+      { kind: "NEW", text: "Botão para enviar a mensagem pelo WhatsApp: abre a conversa do cliente quando ele tem telefone cadastrado." },
+      { kind: "FIXED", text: "A mensagem agora pode ser editada de verdade antes de enviar; copiar, WhatsApp e e-mail usam o texto ajustado." },
+    ],
+  },
+  {
     id: "2026-10-10-dividas-patrimonio",
     date: "2026-10-10",
     title: "Dívidas, financiamentos e patrimônio",

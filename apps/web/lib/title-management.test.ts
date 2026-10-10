@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { activeFilterCount, listReturnPath, parseTitleListQuery, sortHref } from "./title-list-params";
-import { buildCollectionMessage, mailtoHref } from "./collection-message";
+import { buildCollectionMessage, mailtoHref, whatsappHref } from "./collection-message";
 
 describe("parâmetros da lista de lançamentos", () => {
   it("lê busca, faixa de valor e ordem; descarta o que é inválido", () => {
@@ -58,6 +58,13 @@ describe("mensagem de cobrança", () => {
     const message = buildCollectionMessage({ ...base, daysLate: 1 });
     expect(mailtoHref(null, message)).toBeNull();
     expect(mailtoHref("maria@exemplo.com", message)).toMatch(/^mailto:maria%40exemplo\.com\?subject=.+&body=.+/);
+  });
+
+  it("abre o WhatsApp do cliente com a mensagem; sem telefone válido, deixa escolher o contato", () => {
+    expect(whatsappHref("(11) 98765-4321", "Olá!")).toBe("https://wa.me/5511987654321?text=Ol%C3%A1!");
+    expect(whatsappHref("+55 11 3456-7890", "x")).toBe("https://wa.me/551134567890?text=x");
+    expect(whatsappHref(null, "x")).toBe("https://wa.me/?text=x");
+    expect(whatsappHref("123", "x")).toBe("https://wa.me/?text=x");
   });
 });
 
