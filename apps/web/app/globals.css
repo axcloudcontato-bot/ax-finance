@@ -4669,7 +4669,7 @@ td .modal-overlay { white-space: normal; text-align: left; }
 .calendar-page .negative { color: #c23d68; }
 :root[data-ax-theme="dark"] .calendar-page .positive { color: #3cc79b; }
 :root[data-ax-theme="dark"] .calendar-page .negative { color: #ff7aa8; }
-.calendar-nav { display: flex; align-items: center; gap: 0.5rem; }
+.calendar-nav { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
 .calendar-nav strong { min-width: 150px; text-align: center; font-size: 1rem; }
 .ax-model-buttons main .calendar-nav .button-link { min-width: 36px; margin-top: 0; justify-content: center; }
 .calendar-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 1rem; align-items: start; }
@@ -4757,7 +4757,9 @@ td .modal-overlay { white-space: normal; text-align: left; }
 /* ===== Orçamento anual ===== */
 .budget-year-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.6rem; }
 .budget-year-actions .filters { margin: 0; }
-.ax-model-buttons main .budget-year-actions :is(form button, > .button-link, > button) { margin-top: 0; }
+.ax-model-buttons main .budget-year-actions :is(form button, .button-link, button) { margin-top: 0; }
+/* No cabeçalho, as ações (mês + botão) ficam numa linha só: quem cede espaço é o subtítulo. */
+@media (min-width: 721px) { .page-header > .budget-year-actions { flex-shrink: 0; flex-wrap: nowrap; } }
 .budget-year-page .negative { color: #c23d68; }
 .budget-year-scroll { max-width: 100%; }
 .budget-year-table { min-width: 1180px; border-collapse: separate; border-spacing: 0; }
