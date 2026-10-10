@@ -1,4 +1,5 @@
 import { withCompanyContext } from "@ax-finance/db";
+import { lockPeriodClosure } from "../closures/assert-period-open";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { getWriteBlockReason } from "../subscriptions/write-access";
 import { computeOccurrenceDates } from "./recurrence-dates";
@@ -35,13 +36,16 @@ export async function generateDueOccurrences(userId: string, companyId: string) 
   const horizon = addDaysUTC(today, HORIZON_DAYS);
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockPeriodClosure(tx, companyId, true);
+    const closed = new Set((await tx.periodClosure.findMany({ where: { companyId, status: "CLOSED" }, select: { period: true } })).map((period) => period.period));
     const rules = await tx.recurrenceRule.findMany({ where: { companyId, status: "ACTIVE" } });
 
     let createdCount = 0;
     for (const rule of rules) {
       const startDate = toDateOnlyString(rule.startDate);
       const endDate = rule.endDate ? toDateOnlyString(rule.endDate) : null;
-      const occurrenceDates = computeOccurrenceDates(startDate, rule.dayOfMonth, endDate, horizon);
+      // O worker continua nos meses abertos, sem alterar meses fechados nem falhar o job inteiro.
+      const occurrenceDates = computeOccurrenceDates(startDate, rule.dayOfMonth, endDate, horizon).filter((date) => !closed.has(date.slice(0, 7)));
 
       const created = await tx.title.createMany({
         data: occurrenceDates.map((occurrenceDate) => {

@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { assertPeriodOpen } from "../closures/assert-period-open";
+import { assertTitleNotDebtInstallment } from "../wealth/debt-installments";
+import { lockTitles } from "./lock-titles";
 import { withCompanyContext } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertCompanyPermission } from "../companies/permissions";
@@ -14,9 +17,12 @@ export async function duplicateTitle(userId: string, companyId: string, titleId:
   const data = duplicateTitleInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockTitles(tx, companyId, [titleId]);
     const source = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!source) throw new TitleNotFoundError();
     await assertTitleNotCardInvoice(tx, companyId, source.id);
+    await assertTitleNotDebtInstallment(tx, companyId, source.installmentGroupId);
+    await assertPeriodOpen(tx, companyId, data.competenceDate ?? source.competenceDate);
     const duplicate = await tx.title.create({
       data: {
         companyId, type: source.type, description: `${source.description} (cópia)`, categoryId: source.categoryId,

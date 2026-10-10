@@ -3,7 +3,8 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { computeAccountBalanceDeltas } from "../financial-accounts/account-balances";
 import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
-import { settlementCashDelta } from "../titles/settlement-cash-delta";
+import { getCashFlowReport } from "./cash-flow-report";
+import { projectCashBalances } from "./project-cash-balances";
 import { companyToday } from "../shared/today";
 
 const input = z.object({ month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/) });
@@ -56,25 +57,22 @@ export async function getFinancialCalendar(userId: string, companyId: string, ra
   await assertActiveMembership(userId, companyId);
   const first = `${month}-01`;
   const last = lastDayOf(month);
+  const cash = await getCashFlowReport(userId, companyId, { from: first, to: last });
 
   return withCompanyContext(userId, companyId, async (tx) => {
     const today = await companyToday(tx, companyId);
-    const [accounts, deltas, openTitles, settlements] = await Promise.all([
+    const [accounts, deltas, openTitles] = await Promise.all([
       tx.financialAccount.findMany({ where: { companyId, status: "ACTIVE", includedInAvailableTotal: true, ...OPERATIONAL_ACCOUNT }, select: { id: true, openingBalanceCents: true, openingDate: true } }),
       computeAccountBalanceDeltas(tx, companyId, asDate(today)),
       // em aberto até o fim do mês: os do mês para o calendário e os anteriores para a projeção (vencidos entram hoje)
       tx.title.findMany({
-        where: { companyId, deletedAt: null, status: { in: ["OPEN", "PARTIALLY_SETTLED"] }, dueDate: { lte: asDate(last) } },
+        where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, dueDate: { lte: asDate(last) } },
         select: {
           id: true, type: true, description: true, dueDate: true, originalAmountCents: true,
           party: { select: { name: true } },
-          settlements: { where: { reversedAt: null }, select: { principalAmountCents: true, discountCents: true } },
+          settlements: { where: { reversedAt: null, effectiveDate: { lte: asDate(today) } }, select: { principalAmountCents: true, discountCents: true } },
         },
         orderBy: [{ dueDate: "asc" }, { description: "asc" }],
-      }),
-      tx.settlement.findMany({
-        where: { companyId, reversedAt: null, effectiveDate: { gte: asDate(first), lte: asDate(last) } },
-        select: { effectiveDate: true, principalAmountCents: true, interestPenaltyCents: true, feesCents: true, title: { select: { type: true } } },
       }),
     ]);
 
@@ -110,26 +108,20 @@ export async function getFinancialCalendar(userId: string, companyId: string, ra
       });
     }
     const byDate = new Map(days.map((day) => [day.date, day]));
-    for (const settlement of settlements) {
-      const day = byDate.get(dateOnly(settlement.effectiveDate));
+    for (const entry of cash.entries) {
+      const day = byDate.get(dateOnly(entry.effectiveDate));
       if (!day) continue;
-      const delta = settlementCashDelta(settlement.title.type, settlement);
-      if (delta >= ZERO) day.receivedCents += delta;
-      else day.paidCents += -delta;
+      if (entry.titleType === "RECEIVABLE") day.receivedCents += entry.cashDeltaCents;
+      else day.paidCents -= entry.cashDeltaCents;
     }
 
-    // Projeção: começa hoje com o saldo disponível e os vencidos em aberto; depois, dia a dia.
-    const signed = (item: CalendarItem) => (item.type === "RECEIVABLE" ? item.remainingCents : -item.remainingCents);
     const overdueItems = items.filter((item) => item.overdue);
-    let running = availableTodayCents + overdueItems.reduce((sum, item) => sum + signed(item), ZERO);
-    // dias entre hoje e o início do mês (mês futuro): soma o que vence nesse intervalo
-    if (first > today) running += items.filter((item) => item.dueDate >= today && item.dueDate < first).reduce((sum, item) => sum + signed(item), ZERO);
+    const projection = projectCashBalances(today, last, availableTodayCents, items);
+    const projectedByDate = new Map(projection.series.map((day) => [day.date, day.plannedBalanceCents]));
     let lowest: { date: string; balanceCents: bigint } | null = null;
     for (const day of days) {
-      if (day.date < today) continue;
-      running += day.items.filter((item) => !item.overdue).reduce((sum, item) => sum + signed(item), ZERO);
-      day.projectedBalanceCents = running;
-      if (!lowest || running < lowest.balanceCents) lowest = { date: day.date, balanceCents: running };
+      day.projectedBalanceCents = projectedByDate.get(day.date) ?? null;
+      if (day.projectedBalanceCents !== null && (!lowest || day.projectedBalanceCents < lowest.balanceCents)) lowest = { date: day.date, balanceCents: day.projectedBalanceCents };
     }
 
     const monthItems = items.filter((item) => item.dueDate >= first);

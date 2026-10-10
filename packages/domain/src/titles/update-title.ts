@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { assertPeriodOpen } from "../closures/assert-period-open";
+import { lockTitles } from "./lock-titles";
+import { assertTitleNotDebtInstallment } from "../wealth/debt-installments";
 import { withCompanyContext } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertCompanyPermission } from "../companies/permissions";
@@ -31,12 +34,16 @@ export async function updateTitle(userId: string, companyId: string, titleId: st
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockTitles(tx, companyId, [titleId]);
     const title = await tx.title.findFirst({
       where: { id: titleId, companyId, deletedAt: null },
       include: { settlements: { where: { reversedAt: null } }, allocations: true },
     });
     if (!title) throw new TitleNotFoundError();
     await assertTitleNotCardInvoice(tx, companyId, title.id);
+    await assertPeriodOpen(tx, companyId, title.competenceDate);
+    await assertPeriodOpen(tx, companyId, data.competenceDate);
+    if (BigInt(data.originalAmountCents) !== title.originalAmountCents) await assertTitleNotDebtInstallment(tx, companyId, title.installmentGroupId);
 
     const category = await tx.category.findFirst({ where: { id: data.categoryId, companyId, status: "ACTIVE" } });
     if (!category) throw new CategoryNotFoundError();

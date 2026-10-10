@@ -166,6 +166,6 @@ describe("visão analítica do dashboard", () => {
       projectedBalanceCents: BigInt(15_000),
       withoutOverdueReceivablesCents: BigInt(-5_000),
     });
-    expect(overview.cashProjectionSeries).toHaveLength(31);
+    expect(overview.cashProjectionSeries).toHaveLength(30);
   });
 });

@@ -10,11 +10,16 @@ import { addMonthsClamped } from "../titles/installment-dates";
 import { listSavingsGoals } from "../savings-goals/savings-goals";
 import { listCreditCards, summarizeCreditCardPortfolio } from "../credit-cards";
 import { companyToday } from "../shared/today";
-import { AssetNotFoundError, CategoryNotFoundError, CreditCardAccessRestrictedError, DebtHasPaymentsError, DebtNotFoundError, FinancialAccountNotFoundError } from "../errors";
-import { amortizationSchedule, balanceAfter, type ScheduleRow } from "./amortization";
+import { AssetNotFoundError, CategoryNotFoundError, CreditCardAccessRestrictedError, DebtHasPaymentsError, DebtNotFoundError, FinancialAccountNotFoundError, IdempotencyResultUnavailableError, InstallmentAmountTooSmallError } from "../errors";
+import { amortizationSchedule, type ScheduleRow } from "./amortization";
+import { remainingDebtInstallment } from "./debt-installments";
+import { assertPeriodOpen } from "../closures/assert-period-open";
+import { lockTitles } from "../titles/lock-titles";
+import { beginIdempotentOperation, completeIdempotentOperation, idempotencyKeySchema } from "../idempotency/operations";
+import { reportDate } from "../reports/report-period";
 
 const ZERO = BigInt(0);
-const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const dateOnly = reportDate;
 const asDate = (value: string) => new Date(`${value}T00:00:00Z`);
 const toDateString = (value: Date) => value.toISOString().slice(0, 10);
 
@@ -26,7 +31,7 @@ export const createDebtInput = z.object({
   name: z.string().trim().min(1).max(120),
   kind: z.enum(DEBT_KINDS).default("FINANCING"),
   lender: z.string().trim().max(120).nullish(),
-  principalCents: z.number().int().positive(),
+  principalCents: z.number().int().positive().safe(),
   /** Juros ao mês em pontos-base (189 = 1,89% a.m.), de 0 a 20%. */
   monthlyRateBps: z.number().int().min(0).max(2000),
   installmentCount: z.number().int().min(1).max(600),
@@ -37,22 +42,31 @@ export const createDebtInput = z.object({
   amortization: z.enum(["PRICE", "SAC"]).default("PRICE"),
   categoryId: z.string().uuid(),
   expectedAccountId: z.string().uuid().nullish(),
+  idempotencyKey: idempotencyKeySchema,
 }).refine((value) => value.paidBeforeCount < value.installmentCount, { message: "As parcelas já pagas precisam ser menos que o total.", path: ["paidBeforeCount"] });
 
 /**
  * Cadastra a dívida e gera as parcelas que faltam pagar como saídas (um grupo de parcelas), com o
  * valor de cada uma pela tabela Price ou SAC. Pagar uma parcela é registrar a baixa da saída, como
- * qualquer conta; o saldo devedor acompanha as parcelas quitadas.
+ * qualquer conta; o saldo devedor acompanha as amortizações efetivadas por parcela.
  */
 export async function createDebt(userId: string, companyId: string, rawInput: unknown) {
   const data = createDebtInput.parse(rawInput);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    const { idempotencyKey, ...request } = data;
+    const idempotency = await beginIdempotentOperation(tx, { companyId, operation: "CREATE_DEBT", key: idempotencyKey, request, resourceType: "Debt" });
+    if (idempotency.kind === "replay") {
+      const existing = await tx.debt.findFirst({ where: { id: idempotency.resourceId, companyId } });
+      if (!existing) throw new IdempotencyResultUnavailableError();
+      return existing;
+    }
     const category = await tx.category.findFirst({ where: { id: data.categoryId, companyId, status: "ACTIVE", nature: { not: "OPERATING_REVENUE" } } });
     if (!category) throw new CategoryNotFoundError();
     if (data.expectedAccountId && !(await tx.financialAccount.findFirst({ where: { id: data.expectedAccountId, companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT } }))) throw new FinancialAccountNotFoundError();
 
     const schedule = amortizationSchedule({ principalCents: BigInt(data.principalCents), monthlyRateBps: data.monthlyRateBps, count: data.installmentCount, system: data.amortization });
+    if (schedule.some((row) => row.paymentCents <= ZERO)) throw new InstallmentAmountTooSmallError();
     const installmentGroupId = randomUUID();
     const debt = await tx.debt.create({
       data: {
@@ -75,6 +89,7 @@ export async function createDebt(userId: string, companyId: string, rawInput: un
     for (const row of schedule) {
       if (row.number <= data.paidBeforeCount) continue;
       const dueDate = asDate(addMonthsClamped(data.firstDueDate, row.number - 1));
+      await assertPeriodOpen(tx, companyId, dueDate);
       await tx.title.create({
         data: {
           companyId,
@@ -97,43 +112,58 @@ export async function createDebt(userId: string, companyId: string, rawInput: un
       summary: `Dívida "${debt.name}" cadastrada (${data.installmentCount - data.paidBeforeCount} parcelas lançadas)`,
       metadata: { principalCents: data.principalCents, installments: data.installmentCount },
     });
+    await completeIdempotentOperation(tx, idempotency, debt.id);
     return debt;
   });
 }
 
 type DebtRecord = NonNullable<Awaited<ReturnType<TenantScopedClient["debt"]["findFirst"]>>>;
 
-async function debtView(tx: TenantScopedClient, companyId: string, debt: DebtRecord, today: string) {
-  const titles = await tx.title.findMany({
-    where: { companyId, installmentGroupId: debt.installmentGroupId, deletedAt: null },
-    select: { id: true, installmentNumber: true, dueDate: true, status: true, originalAmountCents: true },
+async function loadDebtTitles(tx: TenantScopedClient, companyId: string, groupIds: string[]) {
+  return tx.title.findMany({
+    where: { companyId, installmentGroupId: { in: groupIds } },
+    select: { id: true, installmentNumber: true, dueDate: true, status: true, originalAmountCents: true, deletedAt: true,
+      installmentGroupId: true,
+      settlements: { select: { reversedAt: true, effectiveDate: true, principalAmountCents: true, discountCents: true } } },
     orderBy: { installmentNumber: "asc" },
   });
+}
+
+type DebtTitle = Awaited<ReturnType<typeof loadDebtTitles>>[number];
+
+async function debtView(tx: TenantScopedClient, companyId: string, debt: DebtRecord, today: string, loadedTitles?: DebtTitle[]) {
+  const titles = loadedTitles ?? await loadDebtTitles(tx, companyId, [debt.installmentGroupId]);
   const schedule = amortizationSchedule({ principalCents: debt.principalCents, monthlyRateBps: debt.monthlyRateBps, count: debt.installmentCount, system: debt.amortization });
   const byNumber = new Map(titles.map((title) => [title.installmentNumber, title]));
-  const settled = titles.filter((title) => title.status === "SETTLED").length;
-  const paid = Math.min(debt.installmentCount, debt.paidBeforeCount + settled);
-  const balanceCents = balanceAfter(schedule, debt.principalCents, paid);
-  const remainingRows = schedule.slice(paid);
-  const next = titles.find((title) => title.status !== "SETTLED" && title.status !== "CANCELLED");
   const rows = schedule.map((row: ScheduleRow) => {
     const title = byNumber.get(row.number);
+    const settledCents = row.number <= debt.paidBeforeCount ? row.paymentCents : (title?.settlements ?? [])
+      .filter((payment) => !payment.reversedAt && payment.effectiveDate <= asDate(today))
+      .reduce((sum, payment) => sum + payment.principalAmountCents + payment.discountCents, ZERO);
+    const remaining = remainingDebtInstallment(row, settledCents);
     return {
       ...row,
-      dueDate: addMonthsClamped(toDateString(debt.firstDueDate), row.number - 1),
-      titleId: title?.id ?? null,
-      state: row.number <= debt.paidBeforeCount ? ("PAID_BEFORE" as const) : title?.status === "SETTLED" ? ("PAID" as const) : !title ? ("REMOVED" as const) : title.dueDate < asDate(today) ? ("OVERDUE" as const) : ("OPEN" as const),
+      ...remaining,
+      dueDate: title ? toDateString(title.dueDate) : addMonthsClamped(toDateString(debt.firstDueDate), row.number - 1),
+      titleId: title && !title.deletedAt ? title.id : null,
+      contractMismatch: row.number > debt.paidBeforeCount && (!title || Boolean(title.deletedAt) || title.status === "CANCELLED" || title.originalAmountCents !== row.paymentCents),
+      state: row.number <= debt.paidBeforeCount ? ("PAID_BEFORE" as const) : remaining.remainingPaymentCents === ZERO ? ("PAID" as const) : !title || title.deletedAt ? ("REMOVED" as const) : title.status === "CANCELLED" ? ("CANCELLED" as const) : title.dueDate < asDate(today) ? ("OVERDUE" as const) : settledCents > ZERO ? ("PARTIAL" as const) : ("OPEN" as const),
     };
   });
+  const paid = rows.filter((row) => row.remainingPaymentCents === ZERO).length;
+  const balanceCents = rows.reduce((sum, row) => sum + row.remainingPrincipalCents, ZERO);
+  const next = rows.find((row) => row.titleId && row.remainingPaymentCents > ZERO && row.state !== "CANCELLED");
   return {
     ...debt,
     paidCount: paid,
     balanceCents,
-    remainingInterestCents: remainingRows.reduce((sum, row) => sum + row.interestCents, ZERO),
-    remainingPaymentsCents: remainingRows.reduce((sum, row) => sum + row.paymentCents, ZERO),
+    remainingInterestCents: rows.reduce((sum, row) => sum + row.remainingInterestCents, ZERO),
+    remainingPaymentsCents: rows.reduce((sum, row) => sum + row.remainingPaymentCents, ZERO),
     totalInterestCents: schedule.reduce((sum, row) => sum + row.interestCents, ZERO),
     paidPercent: debt.principalCents > ZERO ? Number(((debt.principalCents - balanceCents) * BigInt(1000)) / debt.principalCents) / 10 : 0,
-    nextInstallment: next ? { titleId: next.id, number: next.installmentNumber, dueDate: next.dueDate, amountCents: next.originalAmountCents, overdue: next.dueDate < asDate(today) } : null,
+    nextInstallment: next ? { titleId: next.titleId!, number: next.number, dueDate: asDate(next.dueDate), amountCents: next.remainingPaymentCents, overdue: next.dueDate < today } : null,
+    hasPaymentHistory: titles.some((title) => title.settlements.length > 0),
+    contractWarningsCount: rows.filter((row) => row.contractMismatch).length,
     overdueCount: rows.filter((row) => row.state === "OVERDUE").length,
     rows,
   };
@@ -144,15 +174,25 @@ export async function listDebts(userId: string, companyId: string, options: { in
   return withCompanyContext(userId, companyId, async (tx) => {
     const today = await companyToday(tx, companyId);
     const debts = await tx.debt.findMany({ where: { companyId, ...(options.includeArchived ? {} : { status: "ACTIVE" }) }, orderBy: { createdAt: "asc" } });
+    const titlesByGroup = new Map<string, DebtTitle[]>();
+    if (debts.length) {
+      const titles = await loadDebtTitles(tx, companyId, debts.map((debt) => debt.installmentGroupId));
+      for (const title of titles) {
+        const groupId = title.installmentGroupId!;
+        const group = titlesByGroup.get(groupId) ?? [];
+        group.push(title);
+        titlesByGroup.set(groupId, group);
+      }
+    }
     const views = [];
-    for (const debt of debts) views.push(await debtView(tx, companyId, debt, today));
+    for (const debt of debts) views.push(await debtView(tx, companyId, debt, today, titlesByGroup.get(debt.installmentGroupId) ?? []));
     return {
       today,
       debts: views,
       totals: {
-        balanceCents: views.filter((view) => view.status === "ACTIVE").reduce((sum, view) => sum + view.balanceCents, ZERO),
-        remainingInterestCents: views.filter((view) => view.status === "ACTIVE").reduce((sum, view) => sum + view.remainingInterestCents, ZERO),
-        monthlyCents: views.filter((view) => view.status === "ACTIVE" && view.nextInstallment).reduce((sum, view) => sum + view.nextInstallment!.amountCents, ZERO),
+        balanceCents: views.reduce((sum, view) => sum + view.balanceCents, ZERO),
+        remainingInterestCents: views.reduce((sum, view) => sum + view.remainingInterestCents, ZERO),
+        monthlyCents: views.filter((view) => view.nextInstallment).reduce((sum, view) => sum + view.nextInstallment!.amountCents, ZERO),
       },
     };
   });
@@ -168,10 +208,11 @@ export async function getDebt(userId: string, companyId: string, debtId: string)
   });
 }
 
-/** Arquivar tira a dívida do patrimônio e da lista; as parcelas lançadas continuam nas saídas. */
+/** Arquivar oculta da lista ativa; a obrigação continua no patrimônio enquanto houver saldo. */
 export async function setDebtArchived(userId: string, companyId: string, debtId: string, archived: boolean) {
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "debts" WHERE id = ${debtId} AND company_id = ${companyId} FOR UPDATE`;
     const debt = await tx.debt.findFirst({ where: { id: debtId, companyId } });
     if (!debt) throw new DebtNotFoundError();
     await tx.debt.update({ where: { id: debtId }, data: { status: archived ? "ARCHIVED" : "ACTIVE" } });
@@ -183,9 +224,13 @@ export async function setDebtArchived(userId: string, companyId: string, debtId:
 export async function deleteDebt(userId: string, companyId: string, debtId: string) {
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "debts" WHERE id = ${debtId} AND company_id = ${companyId} FOR UPDATE`;
     const debt = await tx.debt.findFirst({ where: { id: debtId, companyId } });
     if (!debt) throw new DebtNotFoundError();
-    const titles = await tx.title.findMany({ where: { companyId, installmentGroupId: debt.installmentGroupId, deletedAt: null }, select: { id: true } });
+    const titleIds = (await tx.title.findMany({ where: { companyId, installmentGroupId: debt.installmentGroupId }, select: { id: true } })).map((title) => title.id);
+    await lockTitles(tx, companyId, titleIds);
+    const titles = await tx.title.findMany({ where: { companyId, installmentGroupId: debt.installmentGroupId }, select: { id: true, competenceDate: true } });
+    for (const title of titles) await assertPeriodOpen(tx, companyId, title.competenceDate);
     const payments = await tx.settlement.count({ where: { companyId, titleId: { in: titles.map((title) => title.id) } } });
     if (payments > 0) throw new DebtHasPaymentsError();
     await tx.title.updateMany({ where: { id: { in: titles.map((title) => title.id) } }, data: { deletedAt: new Date(), deletedByUserId: userId, deleteReason: `Dívida "${debt.name}" excluída` } });
@@ -248,8 +293,8 @@ export async function deleteAsset(userId: string, companyId: string, assetId: st
 /**
  * Patrimônio líquido = o que se tem (saldo das contas, cofrinhos, bens e investimentos) menos o que se
  * deve (saldo devedor das dívidas e o que falta pagar nos cartões, incluindo parcelas futuras).
- * Contas a pagar comuns não entram: são gastos do dia a dia, não dívida (as parcelas das dívidas
- * cadastradas já estão no saldo devedor).
+ * Visão parcial: recebíveis e obrigações comuns não entram. As parcelas das dívidas cadastradas
+ * já estão no saldo devedor e não devem ser somadas novamente.
  */
 export async function getNetWorth(userId: string, companyId: string) {
   await assertActiveMembership(userId, companyId);
@@ -268,7 +313,7 @@ export async function getNetWorth(userId: string, companyId: string) {
       };
     }),
     listSavingsGoals(userId, companyId),
-    listDebts(userId, companyId),
+    listDebts(userId, companyId, { includeArchived: true }),
     listAssets(userId, companyId),
     listCreditCards(userId, companyId, { includeArchived: true }).catch((error) => {
       if (error instanceof CreditCardAccessRestrictedError) return null;
@@ -279,7 +324,8 @@ export async function getNetWorth(userId: string, companyId: string) {
   const assetsCents = assets.reduce((sum, asset) => sum + asset.valueCents, ZERO);
   const cardDebtCents = cards ? summarizeCreditCardPortfolio(cards, base.today).totalDebtCents : ZERO;
   const totalAssets = accountsCents + savings.totals.savedCents + assetsCents;
-  const totalLiabilities = debts.totals.balanceCents + cardDebtCents;
+  const debtsCents = debts.debts.reduce((sum, debt) => sum + debt.balanceCents, ZERO);
+  const totalLiabilities = debtsCents + cardDebtCents;
   return {
     today: base.today,
     accounts: base.accounts,
@@ -287,8 +333,8 @@ export async function getNetWorth(userId: string, companyId: string) {
     savingsCents: savings.totals.savedCents,
     assets,
     assetsCents,
-    debts: debts.debts.map((debt) => ({ id: debt.id, name: debt.name, balanceCents: debt.balanceCents })),
-    debtsCents: debts.totals.balanceCents,
+    debts: debts.debts.filter((debt) => debt.balanceCents > ZERO).map((debt) => ({ id: debt.id, name: debt.name, balanceCents: debt.balanceCents, archived: debt.status === "ARCHIVED" })),
+    debtsCents,
     cardDebtCents,
     cardsAvailable: cards !== null,
     totalAssetsCents: totalAssets,

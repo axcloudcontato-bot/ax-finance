@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { loadDebtSchedules } from "../wealth/debt-installments";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { settlementCashDelta } from "../titles/settlement-cash-delta";
@@ -128,7 +129,7 @@ export async function getDashboardInsights(userId: string, companyId: string, in
       tx.title.findMany({
         where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, competenceDate: competence, creditCardInvoice: null },
         select: {
-          type: true, competenceDate: true, originalAmountCents: true,
+          type: true, competenceDate: true, originalAmountCents: true, installmentGroupId: true,
           party: { select: { id: true, name: true } },
           category: categorySelect,
           allocations: { select: { amountCents: true, category: categorySelect } },
@@ -152,11 +153,13 @@ export async function getDashboardInsights(userId: string, companyId: string, in
     ]);
 
     const lines: Line[] = [];
+    const debtSchedules = await loadDebtSchedules(tx, companyId, titles.map((title) => title.installmentGroupId));
     const push = (date: Date, type: "RECEIVABLE" | "PAYABLE", category: { id: string; name: string; nature: string }, cents: bigint, party: { id: string; name: string } | null) => {
       if (!OPERATING_NATURES.has(category.nature)) return;
       lines.push({ date: asDate(date), kind: type === "RECEIVABLE" ? "R" : "E", cents, category: { id: category.id, name: category.name }, partyId: party?.id ?? null, partyName: party?.name ?? null });
     };
     for (const title of titles) {
+      if (title.installmentGroupId && debtSchedules.has(title.installmentGroupId)) continue;
       if (title.allocations.length > 0) for (const line of title.allocations) push(title.competenceDate, title.type, line.category, line.amountCents, title.party);
       else push(title.competenceDate, title.type, title.category, title.originalAmountCents, title.party);
     }

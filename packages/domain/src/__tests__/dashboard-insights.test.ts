@@ -114,10 +114,13 @@ describe("horizonte da projeção de caixa", () => {
     const base = { from: "2026-09-01", to: "2026-09-30", today: "2026-09-30" };
     const d30 = await getDashboardOverview(ctx.user.id, ctx.company.id, base);
     const d90 = await getDashboardOverview(ctx.user.id, ctx.company.id, { ...base, projectionDays: 90 });
-    expect(d30.projectionEnd).toBe("2026-10-30");
-    expect(d30.cashProjectionSeries).toHaveLength(31);
-    expect(d90.projectionEnd).toBe("2026-12-29");
-    expect(d90.cashProjectionSeries).toHaveLength(91);
+    expect(d30.projectionEnd).toBe("2026-10-29");
+    expect(d30.cashProjectionSeries).toHaveLength(30);
+    const d60 = await getDashboardOverview(ctx.user.id, ctx.company.id, { ...base, projectionDays: 60 });
+    expect(d60.projectionEnd).toBe("2026-11-28");
+    expect(d60.cashProjectionSeries).toHaveLength(60);
+    expect(d90.projectionEnd).toBe("2026-12-28");
+    expect(d90.cashProjectionSeries).toHaveLength(90);
     await expect(getDashboardOverview(ctx.user.id, ctx.company.id, { ...base, projectionDays: 45 })).rejects.toThrow();
   });
 });

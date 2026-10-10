@@ -1,3 +1,5 @@
+import { projectCashBalances } from "./project-cash-balances";
+import { OPERATIONAL_ACCOUNT } from "../financial-accounts/operational";
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
@@ -18,7 +20,7 @@ export async function getCashProjection(userId: string, companyId: string, input
   const through = addReportDays(today, data.days - 1);
   return withCompanyContext(userId, companyId, async (tx) => {
     const [accounts, deltas, titles] = await Promise.all([
-      tx.financialAccount.findMany({ where: { companyId, status: "ACTIVE", includedInAvailableTotal: true, openingDate: { lte: new Date(today) } } }),
+      tx.financialAccount.findMany({ where: { companyId, status: "ACTIVE", includedInAvailableTotal: true, ...OPERATIONAL_ACCOUNT, openingDate: { lte: new Date(today) } } }),
       computeAccountBalanceDeltas(tx, companyId, new Date(today)),
       tx.title.findMany({
         where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, dueDate: { lte: new Date(through) } },
@@ -33,41 +35,6 @@ export async function getCashProjection(userId: string, companyId: string, input
       isCardInvoice: Boolean(title.creditCardInvoice),
       remainingCents: title.originalAmountCents - title.settlements.reduce((sum, s) => sum + s.principalAmountCents + s.discountCents, BigInt(0)),
     })).filter((item) => item.remainingCents > BigInt(0));
-    const daily = new Map<string, { receiptsCents: bigint; paymentsCents: bigint; overdueReceiptsCents: bigint }>();
-    let overdueReceivableCents = BigInt(0);
-    let overduePayableCents = BigInt(0);
-    for (const item of items) {
-      const date = item.dueDate < today ? today : item.dueDate;
-      const bucket = daily.get(date) ?? { receiptsCents: BigInt(0), paymentsCents: BigInt(0), overdueReceiptsCents: BigInt(0) };
-      if (item.type === "RECEIVABLE") {
-        bucket.receiptsCents += item.remainingCents;
-        if (item.dueDate < today) { bucket.overdueReceiptsCents += item.remainingCents; overdueReceivableCents += item.remainingCents; }
-      } else {
-        bucket.paymentsCents += item.remainingCents;
-        if (item.dueDate < today) overduePayableCents += item.remainingCents;
-      }
-      daily.set(date, bucket);
-    }
-    let planned = availableBalanceCents;
-    let cautious = availableBalanceCents;
-    let minimumCents = cautious;
-    let firstNegativeDate: string | null = cautious < BigInt(0) ? today : null;
-    let receiptsCents = BigInt(0);
-    let paymentsCents = BigInt(0);
-    const series = [];
-    for (let date = today; date <= through; date = addReportDays(date, 1)) {
-      const bucket = daily.get(date) ?? { receiptsCents: BigInt(0), paymentsCents: BigInt(0), overdueReceiptsCents: BigInt(0) };
-      receiptsCents += bucket.receiptsCents;
-      paymentsCents += bucket.paymentsCents;
-      planned += bucket.receiptsCents - bucket.paymentsCents;
-      cautious += bucket.receiptsCents - bucket.overdueReceiptsCents - bucket.paymentsCents;
-      if (cautious < minimumCents) minimumCents = cautious;
-      if (!firstNegativeDate && cautious < BigInt(0)) firstNegativeDate = date;
-      series.push({ date, ...bucket, plannedBalanceCents: planned, cautiousBalanceCents: cautious });
-    }
-    return { today, through, days: data.days, availableBalanceCents, receiptsCents, paymentsCents, overdueReceivableCents, overduePayableCents,
-      projectedBalanceCents: planned, cautiousBalanceCents: cautious, minimumCents, firstNegativeDate,
-      cashNeededCents: minimumCents < BigInt(0) ? -minimumCents : BigInt(0), items, series,
-    };
+    return { today, through, days: data.days, availableBalanceCents, items, ...projectCashBalances(today, through, availableBalanceCents, items) };
   });
 }

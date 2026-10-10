@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { lockTitles } from "./lock-titles";
+import { assertTitleNotDebtInstallment } from "../wealth/debt-installments";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
@@ -19,6 +21,7 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
   await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockTitles(tx, companyId, [titleId]);
     const title = await tx.title.findFirst({
       where: { id: titleId, companyId, deletedAt: null },
     });
@@ -26,6 +29,7 @@ export async function deleteTitle(userId: string, companyId: string, titleId: st
       throw new TitleNotFoundError();
     }
     await assertTitleNotCardInvoice(tx, companyId, title.id);
+    await assertTitleNotDebtInstallment(tx, companyId, title.installmentGroupId);
 
     await assertPeriodOpen(tx, companyId, title.competenceDate);
 

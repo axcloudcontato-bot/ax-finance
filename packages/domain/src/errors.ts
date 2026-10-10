@@ -8,6 +8,18 @@ export class DomainError extends Error {
   }
 }
 
+export class PeriodClosureBusyError extends DomainError {
+  constructor() {
+    super("Há operações financeiras em andamento. Aguarde a conclusão e tente fechar ou reabrir o mês novamente.", "PERIOD_CLOSURE_BUSY");
+  }
+}
+
+export class DebtInstallmentManagedError extends DomainError {
+  constructor() {
+    super("Esta parcela pertence a uma dívida. Registre a baixa ou o estorno em Saídas; para excluir o contrato sem pagamentos, use Dívidas.", "DEBT_INSTALLMENT_MANAGED");
+  }
+}
+
 export class EmailAlreadyRegisteredError extends DomainError {
   constructor() {
     super("Este e-mail já está cadastrado.", "EMAIL_ALREADY_REGISTERED");
@@ -408,7 +420,7 @@ export class SettlementAlreadyReconciledError extends DomainError {
 /** Seção 18 regra 8: período fechado bloqueia baixa/estorno cuja data efetiva cai nele. */
 export class PeriodClosedError extends DomainError {
   constructor(period: string) {
-    super(`O período ${period} está fechado e não aceita novas baixas ou estornos.`, "PERIOD_CLOSED");
+    super(`O período ${period} está fechado e não aceita alterações financeiras. Reabra o mês com um motivo para fazer o ajuste.`, "PERIOD_CLOSED");
   }
 }
 

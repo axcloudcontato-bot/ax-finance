@@ -4,7 +4,7 @@ import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { CompanyAccessScopeInvalidError } from "../errors";
-import { settlementCashDelta } from "../titles/settlement-cash-delta";
+import { getCashFlowReport } from "./cash-flow-report";
 import { getDashboardInsights, type CategoryShare } from "./dashboard-insights";
 import { getDashboardOverview } from "./dashboard-overview";
 import { getBudgetReport } from "../budgets/budgets";
@@ -57,26 +57,16 @@ export async function getMonthlyReportData(userId: string, companyId: string, ra
   const { from, to } = monthBounds(month);
   const previous = monthBounds(previousMonth(month));
 
-  const [base, insights, overview, budget, savings] = await Promise.all([
+  const [base, insights, overview, budget, savings, cash] = await Promise.all([
     withCompanyContext(userId, companyId, async (tx) => {
       const company = await tx.company.findUniqueOrThrow({ where: { id: companyId }, select: { name: true, timezone: true } });
-      const settlements = await tx.settlement.findMany({
-        where: { companyId, reversedAt: null, effectiveDate: { gte: new Date(`${from}T00:00:00Z`), lte: new Date(`${to}T00:00:00Z`) } },
-        select: { principalAmountCents: true, interestPenaltyCents: true, feesCents: true, title: { select: { type: true } } },
-      });
-      let receivedCents = ZERO;
-      let paidCents = ZERO;
-      for (const settlement of settlements) {
-        const delta = settlementCashDelta(settlement.title.type, settlement);
-        if (delta >= ZERO) receivedCents += delta;
-        else paidCents += -delta;
-      }
-      return { company, receivedCents, paidCents };
+      return { company };
     }),
     getDashboardInsights(userId, companyId, { from, to, comparisonFrom: previous.from, comparisonTo: previous.to }),
     getDashboardOverview(userId, companyId, { from, to, projectionDays: 30 }),
     getBudgetReport(userId, companyId, month),
     listSavingsGoals(userId, companyId),
+    getCashFlowReport(userId, companyId, { from, to }),
   ]);
 
   return {
@@ -86,7 +76,7 @@ export async function getMonthlyReportData(userId: string, companyId: string, ra
     generatedOn: insights.today,
     result: insights.period,
     previousResult: insights.comparison,
-    cash: { receivedCents: base.receivedCents, paidCents: base.paidCents },
+    cash: { receivedCents: cash.entries.filter((entry) => entry.titleType === "RECEIVABLE").reduce((sum, entry) => sum + entry.cashDeltaCents, ZERO), paidCents: cash.entries.filter((entry) => entry.titleType === "PAYABLE").reduce((sum, entry) => sum - entry.cashDeltaCents, ZERO) },
     topExpenses: insights.expenseByCategory.slice(0, 6),
     delinquency: {
       openReceivableCents: insights.health.openReceivableCents,
@@ -171,7 +161,7 @@ export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer>
     };
 
     // Resultado
-    section("Resultado do mês (por competência)");
+    section("Resultado operacional do mês (por competência)");
     const { result, previousResult } = data;
     boxes([
       { label: "Receitas", value: money(result.revenueCents), note: variation(result.revenueCents, previousResult?.revenueCents) },
@@ -229,7 +219,7 @@ export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer>
       boxes(items);
     }
 
-    paragraph(`Resultado por competência (receitas e despesas do mês, pagas ou não). Caixa pelas baixas registradas no mês. Contas a receber e projeção na posição de ${dateBr(data.generatedOn)}: a projeção soma o saldo disponível de hoje e os títulos em aberto até 30 dias, como no painel.`);
+    paragraph(`Resultado operacional por competência (receitas, custos e despesas do mês, pagos ou não; juros e movimentações de capital ficam na DRE). Caixa pelas baixas e devoluções efetivadas até a data de geração. Contas a receber e projeção na posição de ${dateBr(data.generatedOn)}: a projeção soma o saldo disponível de hoje e os títulos em aberto até 30 dias, como no painel.`);
 
     doc.page.margins.bottom = 0;
     doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(`Gerado pelo AX Finance em ${dateBr(data.generatedOn)}.`, left, doc.page.height - doc.page.margins.bottom - 12, { width, align: "center", lineBreak: false });

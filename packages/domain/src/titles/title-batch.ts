@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertTitleNotDebtInstallment } from "../wealth/debt-installments";
 import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertPeriodOpen } from "../closures/assert-period-open";
@@ -91,7 +92,11 @@ export async function applyTitleBatch(userId: string, companyId: string, input: 
     await lockBatchTitles(tx, companyId, data.titleIds);
     const titles = await loadBatch(tx, companyId, data.titleIds);
     if (data.operation !== "SETTLE_FULL") {
-      for (const title of titles) await assertTitleNotCardInvoice(tx, companyId, title.id);
+      for (const title of titles) {
+        await assertTitleNotCardInvoice(tx, companyId, title.id);
+        await assertPeriodOpen(tx, companyId, title.competenceDate);
+        if (data.operation === "CANCEL") await assertTitleNotDebtInstallment(tx, companyId, title.installmentGroupId);
+      }
     }
     const invalid = titles.some((title) =>
       data.operation === "SETTLE_FULL" ? title.status === "CANCELLED" || title.remainingCents <= BigInt(0)

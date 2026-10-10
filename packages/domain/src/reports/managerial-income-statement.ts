@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { loadDebtSchedules } from "../wealth/debt-installments";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { NATURE_LABEL } from "../categories/nature-label";
@@ -35,7 +36,8 @@ const sum = (lines: IncomeStatementLine[]) => lines.reduce((total, line) => tota
  * 1. Resultado OPERACIONAL: usa competenceDate e o valor ORIGINAL do título (não a baixa), incluindo
  *    os ainda em aberto; título cancelado fica de fora. Só natureza de receita, custo e despesa.
  *    Compras no cartão entram pela própria categoria, e o título da fatura é ignorado.
- * 2. Resultado FINANCEIRO: o que só existe na baixa e o título original não mostra. Juros e multas
+ * 2. Resultado FINANCEIRO: juros contratuais das dívidas pela competência da parcela, calculados
+ *    pelos dados estruturados do contrato (sem depender das notas). Demais juros e multas
  *    pagos e recebidos, tarifas e taxas retidas, descontos obtidos e concedidos, pela data efetiva
  *    da baixa (não estornada). É onde aparece o juro de uma fatura de cartão ou de um boleto atrasado.
  * 3. FORA do resultado: investimento, financiamento, patrimônio e transferência técnica. Aporte,
@@ -51,34 +53,37 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   await assertCompanyPlanFeature(userId, companyId, "MANAGERIAL_DRE");
 
   const range = { gte: new Date(data.from), lte: new Date(data.to) };
-  const { titles, cardPurchases, settlements, refunds } = await withCompanyContext(userId, companyId, async (tx) => ({
-    // O título da fatura de cartão fica de fora: o gasto entra pelas compras (abaixo), cada uma na
-    // sua categoria e competência. Contar os dois somaria o mesmo dinheiro duas vezes.
-    titles: await tx.title.findMany({
-      where: {
-        companyId,
-        deletedAt: null,
-        status: { not: "CANCELLED" },
-        competenceDate: range,
-        creditCardInvoice: null,
-      },
-      include: { category: true, allocations: { include: { category: true } } },
-    }),
-    cardPurchases: await tx.creditCardPurchase.findMany({
-      where: { companyId, canceledAt: null, competenceDate: range },
-      include: { category: true },
-    }),
-    refunds: await tx.settlementRefund.findMany({ where: { companyId, reversedAt: null, effectiveDate: range }, select: { amountCents: true } }),
-    settlements: await tx.settlement.findMany({
-      where: {
-        companyId,
-        reversedAt: null,
-        effectiveDate: range,
-        OR: [{ interestPenaltyCents: { gt: 0 } }, { feesCents: { gt: 0 } }, { discountCents: { gt: 0 } }],
-      },
-      select: { interestPenaltyCents: true, feesCents: true, discountCents: true, title: { select: { type: true } } },
-    }),
-  }));
+  const { titles, cardPurchases, settlements, refunds, debtSchedules } = await withCompanyContext(userId, companyId, async (tx) => {
+    const result = {
+      // O título da fatura de cartão fica de fora: o gasto entra pelas compras (abaixo), cada uma na
+      // sua categoria e competência. Contar os dois somaria o mesmo dinheiro duas vezes.
+      titles: await tx.title.findMany({
+        where: {
+          companyId,
+          deletedAt: null,
+          status: { not: "CANCELLED" },
+          competenceDate: range,
+          creditCardInvoice: null,
+        },
+        include: { category: true, allocations: { include: { category: true } } },
+      }),
+      cardPurchases: await tx.creditCardPurchase.findMany({
+        where: { companyId, canceledAt: null, competenceDate: range },
+        include: { category: true },
+      }),
+      refunds: await tx.settlementRefund.findMany({ where: { companyId, reversedAt: null, effectiveDate: range }, select: { amountCents: true } }),
+      settlements: await tx.settlement.findMany({
+        where: {
+          companyId,
+          reversedAt: null,
+          effectiveDate: range,
+          OR: [{ interestPenaltyCents: { gt: 0 } }, { feesCents: { gt: 0 } }, { discountCents: { gt: 0 } }],
+        },
+        select: { interestPenaltyCents: true, feesCents: true, discountCents: true, title: { select: { type: true } } },
+      }),
+    };
+    return { ...result, debtSchedules: await loadDebtSchedules(tx, companyId, result.titles.map((title) => title.installmentGroupId)) };
+  });
 
   const operating = new Map<string, bigint>();
   const outside = new Map<string, bigint>();
@@ -99,7 +104,15 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
     if ((category.nature === "OPERATING_REVENUE" && cents < BigInt(0)) || (["COST", "EXPENSE"].includes(category.nature) && cents > BigInt(0))) unusualSignCount++;
   };
 
+  const financial = new Map<string, bigint>();
   for (const title of titles) {
+    const installment = title.installmentGroupId && title.installmentNumber
+      ? debtSchedules.get(title.installmentGroupId)?.get(title.installmentNumber) : undefined;
+    if (installment) {
+      add(outside, "Amortização de dívidas", -installment.amortizationCents);
+      if (installment.interestCents > BigInt(0)) add(financial, "Juros contratuais de dívidas", -installment.interestCents);
+      continue;
+    }
     const lines = title.allocations.length > 0
       ? title.allocations.map((allocation) => ({ category: allocation.category, amountCents: allocation.amountCents }))
       : [{ category: title.category, amountCents: title.originalAmountCents }];
@@ -109,7 +122,6 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   }
   for (const purchase of cardPurchases) record(purchase.category, -purchase.amountCents);
 
-  const financial = new Map<string, bigint>();
   for (const settlement of settlements) {
     const receivable = settlement.title.type === "RECEIVABLE";
     if (settlement.interestPenaltyCents > BigInt(0)) {

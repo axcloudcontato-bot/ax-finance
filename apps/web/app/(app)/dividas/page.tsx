@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { listActiveCategories, listDebts, listFinancialAccounts } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -13,14 +14,14 @@ import { DEBT_KIND_LABEL } from "@/lib/wealth-labels";
 
 const ZERO = BigInt(0);
 
-export default async function DebtsPage(props: { searchParams: Promise<{ erro?: string; acao?: string; arquivada?: string; excluida?: string }> }) {
+export default async function DebtsPage(props: { searchParams: Promise<{ erro?: string; acao?: string; arquivada?: string; excluida?: string; arquivadas?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
 
   const [{ debts, totals }, categories, accounts] = await Promise.all([
-    listDebts(user.id, company.id),
+    listDebts(user.id, company.id, { includeArchived: searchParams.arquivadas === "1" }),
     listActiveCategories(user.id, company.id),
     listFinancialAccounts(user.id, company.id),
   ]);
@@ -40,6 +41,7 @@ export default async function DebtsPage(props: { searchParams: Promise<{ erro?: 
           {failed ? <p className="error">{searchParams.erro}</p> : null}
           {spending.length === 0 ? <p className="muted">Cadastre uma categoria de despesa ou de financiamento antes, para classificar as parcelas.</p> : (
             <form action={createDebtAction}>
+              <input type="hidden" name="idempotencyKey" value={randomUUID()} />
               <div className="form-grid">
                 <div className="span-2"><label htmlFor="debt-name">Nome</label><input id="debt-name" name="name" type="text" required maxLength={120} placeholder="Ex.: Financiamento do carro, Empréstimo pessoal" /></div>
                 <div><label htmlFor="debt-kind">Tipo</label><select id="debt-kind" name="kind" defaultValue="FINANCING">{Object.entries(DEBT_KIND_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
@@ -61,9 +63,10 @@ export default async function DebtsPage(props: { searchParams: Promise<{ erro?: 
       </div>
 
       {searchParams.erro && !failed ? <p className="error">{searchParams.erro}</p> : null}
-      {searchParams.arquivada ? <p className="success-box">Dívida arquivada. As parcelas lançadas continuam em Saídas.</p> : null}
+      {searchParams.arquivada ? <p className="success-box">Dívida arquivada. O saldo continua no patrimônio e as parcelas continuam em Saídas.</p> : null}
       {searchParams.excluida ? <p className="success-box">Dívida excluída, junto com as parcelas em aberto.</p> : null}
 
+      <p className="field-note"><Link href={searchParams.arquivadas === "1" ? "/dividas" : "/dividas?arquivadas=1"}>{searchParams.arquivadas === "1" ? "Mostrar só ativas" : "Incluir dívidas arquivadas"}</Link> · Os totais abaixo correspondem às dívidas exibidas. Arquivar não perdoa nem quita o saldo.</p>
       <section className="workspace-metrics" aria-label="Resumo das dívidas">
         <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Saldo devedor</span><strong>{formatCents(totals.balanceCents)}</strong><span className="workspace-metric-detail">Quanto falta amortizar, sem os juros futuros</span></div>
         <div className="workspace-metric"><span className="workspace-metric-label">Próximas parcelas</span><strong>{formatCents(totals.monthlyCents)}</strong><span className="workspace-metric-detail">Soma da próxima parcela de cada dívida</span></div>
@@ -79,6 +82,7 @@ export default async function DebtsPage(props: { searchParams: Promise<{ erro?: 
               <header className="card-tile-header">
                 <div className="card-tile-title">
                   <h2><Link href={`/dividas/${debt.id}`}>{debt.name}</Link></h2>
+                  {debt.status === "ARCHIVED" ? <span className="workspace-status">Arquivada</span> : null}
                   <span className="muted">{DEBT_KIND_LABEL[debt.kind]}{debt.lender ? ` · ${debt.lender}` : ""} · {(debt.monthlyRateBps / 100).toLocaleString("pt-BR")}% a.m.</span>
                 </div>
               </header>

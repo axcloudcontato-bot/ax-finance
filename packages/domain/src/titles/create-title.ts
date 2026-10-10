@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertPeriodOpen } from "../closures/assert-period-open";
 import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryNotFoundError, CompanyAccessScopeInvalidError, CostCenterNotFoundError, IdempotencyResultUnavailableError, PartyNotFoundError, PossibleDuplicateTitleError } from "../errors";
@@ -66,6 +67,7 @@ export async function createTitle(userId: string, companyId: string, input: unkn
  * já aberta (o lançamento a partir de uma linha de extrato cria, baixa e concilia na mesma transação).
  */
 export async function insertTitleInTx(tx: TenantScopedClient, userId: string, companyId: string, data: Omit<CreateTitleInput, "idempotencyKey">) {
+  await assertPeriodOpen(tx, companyId, data.competenceDate);
   const { checkDuplicates } = data;
   const category = await tx.category.findFirst({
     where: { id: data.categoryId, companyId, status: "ACTIVE" },

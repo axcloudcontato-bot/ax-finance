@@ -70,7 +70,7 @@ export default async function DrePage(
     },
     {
       title: "Resultado financeiro",
-      note: "Juros, multas, tarifas e descontos, pela data em que foram pagos ou recebidos.",
+      note: "Juros contratuais de dívidas por competência. Juros adicionais, multas, tarifas e descontos pela data efetiva da baixa.",
       rows: merge(report.financialLines, comparisonReport?.financialLines),
       total: { label: "Resultado financeiro", current: report.financialResultCents, previous: comparisonReport?.financialResultCents ?? zero },
       empty: "Sem juros, tarifas ou descontos neste período.",
@@ -83,7 +83,7 @@ export default async function DrePage(
       <ReportNavigation active="dre" from={from} to={to} comparison={searchParams.comparar} />
       <div className="page-header"><h1>DRE gerencial</h1><a href={exportHref} className="button-link">Exportar CSV</a></div>
       <p className="muted" style={{ marginBottom: "1rem" }}>
-        {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · operacional por competência · financeiro por data da baixa ·
+        {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · operacional e juros contratuais por competência · demais encargos por data da baixa ·
         gerado em {new Date().toLocaleString("pt-BR", { timeZone: company.timezone })}
       </p>
       {comparison ? (

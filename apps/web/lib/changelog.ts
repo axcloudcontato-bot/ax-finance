@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-integridade-financeira",
+    date: "2026-10-10",
+    title: "Fechamento, dívidas e relatórios mais consistentes",
+    summary: "Meses fechados ficam protegidos, dívidas acompanham os pagamentos efetivos e os relatórios compartilham a mesma projeção de caixa.",
+    changes: [
+      { kind: "FIXED", text: "Meses fechados bloqueiam criação, edição, cancelamento, rateio e reclassificação de títulos. Receber ou pagar em outro mês aberto continua permitido." },
+      { kind: "FIXED", text: "Saldo devedor considera a parcela realmente paga, baixas parciais, descontos e estornos. Pagamentos com data futura não reduzem a posição de hoje." },
+      { kind: "IMPROVED", text: "DRE separa amortização e juros contratuais. O resultado operacional deixa de contar parcelas de empréstimos como despesas operacionais." },
+      { kind: "FIXED", text: "Dívidas arquivadas com saldo permanecem no patrimônio e podem ser consultadas na lista. A tela informa o alcance dos valores acompanhados." },
+      { kind: "FIXED", text: "Painel, calendário e fluxo compartilham a projeção. Horizontes de 30, 60 e 90 dias incluem exatamente essa quantidade de dias. Relatório mensal e calendário consideram devoluções e excluem baixas futuras do realizado." },
+    ],
+  },
+  {
     id: "2026-10-10-emails-resumo",
     date: "2026-10-10",
     title: "E-mails de resumo com visual novo",

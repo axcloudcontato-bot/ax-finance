@@ -1,3 +1,4 @@
+import { projectCashBalances } from "./project-cash-balances";
 import type { CategoryNature, Prisma } from "@ax-finance/db";
 import { withCompanyContext } from "@ax-finance/db";
 import { z } from "zod";
@@ -195,7 +196,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
 
   const today = data.today ?? (await getCompanyToday(userId, companyId));
   const accountScoped = Boolean(data.financialAccountId) && !data.categoryId && !data.partyId && !data.costCenterId;
-  const projectionEnd = addDays(today, data.projectionDays);
+  const projectionEnd = addDays(today, data.projectionDays - 1);
   const comparisonRanges = data.comparisonFrom && data.comparisonTo
     ? [{ effectiveDate: { gte: atUtc(data.comparisonFrom), lte: atUtc(data.comparisonTo) } }]
     : [];
@@ -209,7 +210,7 @@ export async function getDashboardOverview(userId: string, companyId: string, in
     const reconciliationAvailable = isPlanFeatureEnabled(subscription?.planCode, "BANK_RECONCILIATION");
     const [accounts, balanceDeltas, settlements, refunds, titles, pendingLines, failedImports] = await Promise.all([
       tx.financialAccount.findMany({
-        where: { companyId, status: "ACTIVE", ...OPERATIONAL_ACCOUNT, ...(data.financialAccountId ? { id: data.financialAccountId } : {}) },
+        where: { companyId, status: "ACTIVE", openingDate: { lte: atUtc(today) }, ...OPERATIONAL_ACCOUNT, ...(data.financialAccountId ? { id: data.financialAccountId } : {}) },
         orderBy: { createdAt: "asc" },
       }),
       computeAccountBalanceDeltas(tx, companyId, atUtc(today)),
@@ -321,42 +322,12 @@ export async function getDashboardOverview(userId: string, companyId: string, in
     const availableBalanceCents = accounts
       .filter((account) => account.includedInAvailableTotal)
       .reduce((sum, account) => sum + account.openingBalanceCents + (balanceDeltas.get(account.id) ?? BigInt(0)), BigInt(0));
-    const projectionDeltaCents = projectionTitles.reduce(
-      (sum, title) => sum + (title.type === "RECEIVABLE" ? title.remainingCents : -title.remainingCents),
-      BigInt(0)
-    );
-    const projectedBalanceCents = availableBalanceCents + projectionDeltaCents;
-
-    let runningBalance = availableBalanceCents;
-    let firstNegativeDate: string | null = runningBalance < BigInt(0) ? today : null;
-    let firstNegativeWithoutOverdueDate: string | null = firstNegativeDate;
-    const projectionByDate = new Map<string, bigint>();
-    const projectionWithoutOverdueReceivablesByDate = new Map<string, bigint>();
-    for (const title of projectionTitles) {
-      const due = asDateOnly(title.dueDate);
-      const date = due < today ? today : due;
-      const delta = title.type === "RECEIVABLE" ? title.remainingCents : -title.remainingCents;
-      projectionByDate.set(date, (projectionByDate.get(date) ?? BigInt(0)) + delta);
-      if (title.type !== "RECEIVABLE" || due >= today) {
-        projectionWithoutOverdueReceivablesByDate.set(
-          date,
-          (projectionWithoutOverdueReceivablesByDate.get(date) ?? BigInt(0)) + delta
-        );
-      }
-    }
-    let balanceWithoutOverdueReceivablesCents = availableBalanceCents;
-    const cashProjectionSeries: Array<{
-      date: string;
-      projectedBalanceCents: bigint;
-      withoutOverdueReceivablesCents: bigint;
-    }> = [];
-    for (let date = today; date <= projectionEnd; date = addDays(date, 1)) {
-      runningBalance += projectionByDate.get(date) ?? BigInt(0);
-      balanceWithoutOverdueReceivablesCents += projectionWithoutOverdueReceivablesByDate.get(date) ?? BigInt(0);
-      cashProjectionSeries.push({ date, projectedBalanceCents: runningBalance, withoutOverdueReceivablesCents: balanceWithoutOverdueReceivablesCents });
-      if (!firstNegativeDate && runningBalance < BigInt(0)) firstNegativeDate = date;
-      if (!firstNegativeWithoutOverdueDate && balanceWithoutOverdueReceivablesCents < BigInt(0)) firstNegativeWithoutOverdueDate = date;
-    }
+    const projection = projectCashBalances(today, projectionEnd, availableBalanceCents, projectionTitles.map((title) => ({ ...title, dueDate: asDateOnly(title.dueDate) })));
+    const projectedBalanceCents = projection.projectedBalanceCents;
+    const balanceWithoutOverdueReceivablesCents = projection.cautiousBalanceCents;
+    const firstNegativeDate = projection.firstNegativePlannedDate;
+    const firstNegativeWithoutOverdueDate = projection.firstNegativeDate;
+    const cashProjectionSeries = projection.series.map((day) => ({ date: day.date, projectedBalanceCents: day.plannedBalanceCents, withoutOverdueReceivablesCents: day.cautiousBalanceCents }));
 
     const categoryTotals = new Map<string, { categoryId: string; categoryName: string; cents: bigint }>();
     for (const settlement of currentSettlements) {

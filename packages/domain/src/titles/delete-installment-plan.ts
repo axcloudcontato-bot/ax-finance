@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { lockTitles } from "./lock-titles";
+import { assertTitleNotDebtInstallment } from "../wealth/debt-installments";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { assertPeriodOpen } from "../closures/assert-period-open";
@@ -22,6 +24,9 @@ export async function deleteInstallmentPlan(
   await assertCompanyPermission(userId, companyId, "REVERSAL");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await assertTitleNotDebtInstallment(tx, companyId, installmentGroupId);
+    const ids = (await tx.title.findMany({ where: { companyId, installmentGroupId, deletedAt: null }, select: { id: true } })).map((title) => title.id);
+    await lockTitles(tx, companyId, ids);
     const titles = await tx.title.findMany({
       where: { companyId, installmentGroupId, deletedAt: null },
     });

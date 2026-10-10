@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { assertPeriodOpen } from "../closures/assert-period-open";
+import { lockTitles } from "./lock-titles";
 import { withCompanyContext } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertCompanyPermission } from "../companies/permissions";
@@ -17,9 +19,11 @@ export async function replaceTitleAllocations(userId: string, companyId: string,
   const data = replaceTitleAllocationsInput.parse(input);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockTitles(tx, companyId, [titleId]);
     const title = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!title) throw new TitleNotFoundError();
     await assertTitleNotCardInvoice(tx, companyId, title.id);
+    await assertPeriodOpen(tx, companyId, title.competenceDate);
     const total = data.allocations.reduce((sum, item) => sum + BigInt(item.amountCents), BigInt(0));
     if (total !== title.originalAmountCents) throw new TitleAllocationTotalInvalidError();
     for (const item of data.allocations) {
@@ -41,9 +45,11 @@ export async function replaceTitleAllocations(userId: string, companyId: string,
 export async function clearTitleAllocations(userId: string, companyId: string, titleId: string) {
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockTitles(tx, companyId, [titleId]);
     const title = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!title) throw new TitleNotFoundError();
     await assertTitleNotCardInvoice(tx, companyId, title.id);
+    await assertPeriodOpen(tx, companyId, title.competenceDate);
     await tx.titleAllocation.deleteMany({ where: { companyId, titleId } });
     await recordAuditEvent(tx, { companyId, actorUserId: userId, eventType: "TITLE_ALLOCATION_CLEARED", resourceType: "Title", resourceId: titleId, summary: "Rateio removido" });
   });

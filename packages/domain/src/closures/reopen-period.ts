@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { lockPeriodClosure } from "./assert-period-open";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
@@ -6,7 +7,7 @@ import { PeriodClosureNotFoundError } from "../errors";
 import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const reopenPeriodInput = z.object({
-  period: z.string().regex(/^\d{4}-\d{2}$/),
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   reason: z.string().trim().min(1).max(500),
 });
 
@@ -17,6 +18,7 @@ export async function reopenPeriod(userId: string, companyId: string, input: unk
   await assertCompanyPlanFeature(userId, companyId, "PERIOD_CLOSING");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockPeriodClosure(tx, companyId);
     const existing = await tx.periodClosure.findUnique({
       where: { companyId_period: { companyId, period: data.period } },
     });

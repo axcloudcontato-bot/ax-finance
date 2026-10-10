@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertPeriodOpen, lockPeriodClosure } from "../closures/assert-period-open";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryDepthExceededError, CategoryNotFoundError } from "../errors";
@@ -13,8 +14,18 @@ export async function updateCategory(userId: string, companyId: string, category
   const data = updateCategoryInput.parse(input);
   await assertCompanyPermission(userId, companyId, "CATALOG_WRITE");
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockPeriodClosure(tx, companyId, true);
     const category = await tx.category.findFirst({ where: { id: categoryId, companyId } });
     if (!category) throw new CategoryNotFoundError();
+    if (data.nature !== category.nature || (data.managerialGroup?.trim() || null) !== category.managerialGroup) {
+      // A natureza e o grupo são usados nos relatórios de títulos, rateios e compras já lançados.
+      const [titles, purchases] = await Promise.all([
+        tx.title.findMany({ where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, OR: [{ categoryId }, { allocations: { some: { categoryId } } }] }, select: { competenceDate: true } }),
+        tx.creditCardPurchase.findMany({ where: { companyId, categoryId, canceledAt: null }, select: { competenceDate: true } }),
+      ]);
+      const months = new Map([...titles, ...purchases].map((item) => [item.competenceDate.toISOString().slice(0, 7), item.competenceDate]));
+      for (const date of months.values()) await assertPeriodOpen(tx, companyId, date);
+    }
     if (data.parentId) {
       if (data.parentId === categoryId) throw new CategoryDepthExceededError();
       const parent = await tx.category.findFirst({ where: { id: data.parentId, companyId, status: "ACTIVE" } });

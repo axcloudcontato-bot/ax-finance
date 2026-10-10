@@ -320,7 +320,9 @@ describe("limite e resumo", () => {
 
     const paid = await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id, { today: "2026-01-12" });
     await payCreditCardInvoice(ctx.user.id, ctx.company.id, paid.invoices.find((invoice) => invoice.referenceMonth === "2026-01")!.id, { financialAccountId: ctx.account.id, effectiveDate: "2026-01-20" });
-    const [after] = await listCreditCards(ctx.user.id, ctx.company.id, { today: "2026-01-12" });
+    const [beforeEffectiveDate] = await listCreditCards(ctx.user.id, ctx.company.id, { today: "2026-01-12" });
+    expect(Number(beforeEffectiveDate!.usedLimitCents)).toBe(100_000);
+    const [after] = await listCreditCards(ctx.user.id, ctx.company.id, { today: "2026-01-20" });
     expect(Number(after!.usedLimitCents)).toBe(60_000);
   });
 

@@ -43,7 +43,7 @@ export default async function MonthlyReportPage(props: { searchParams: Promise<{
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 
       <section className="card">
-        <div className="workspace-card-heading"><div><h2>Resultado de {data.monthLabel}</h2><p>Por competência: receitas e despesas do mês, pagas ou não.</p></div></div>
+        <div className="workspace-card-heading"><div><h2>Resultado operacional de {data.monthLabel}</h2><p>Por competência: receitas, custos e despesas do mês, pagos ou não. Juros e movimentações de capital aparecem na DRE gerencial.</p></div></div>
         <div className="workspace-metrics monthly-report-metrics">
           <div className="workspace-metric"><span className="workspace-metric-label">Receitas</span><strong>{formatCents(result.revenueCents)}</strong>{data.previousResult ? <span className="workspace-metric-detail">mês anterior: {formatCents(data.previousResult.revenueCents)}</span> : null}</div>
           <div className="workspace-metric"><span className="workspace-metric-label">Despesas</span><strong>{formatCents(result.expenseCents)}</strong>{data.previousResult ? <span className="workspace-metric-detail">mês anterior: {formatCents(data.previousResult.expenseCents)}</span> : null}</div>

@@ -11,8 +11,8 @@ function dateOnly(date: Date): string {
 
 const ZERO = BigInt(0);
 
-function remainingOf(title: { originalAmountCents: bigint; settlements: { principalAmountCents: bigint; discountCents: bigint }[] }): bigint {
-  return title.originalAmountCents - title.settlements.reduce((sum, item) => sum + item.principalAmountCents + item.discountCents, ZERO);
+function remainingOf(title: { originalAmountCents: bigint; settlements: { principalAmountCents: bigint; discountCents: bigint; effectiveDate: Date }[] }, today: string): bigint {
+  return title.originalAmountCents - title.settlements.filter((item) => dateOnly(item.effectiveDate) <= today).reduce((sum, item) => sum + item.principalAmountCents + item.discountCents, ZERO);
 }
 
 export interface CreditCardInvoiceSummary {
@@ -47,7 +47,10 @@ export async function listCreditCards(userId: string, companyId: string, options
       include: { defaultPaymentAccount: { select: { id: true, name: true } } },
     });
     const pending = await tx.creditCardInvoice.findMany({
-      where: { companyId, cardId: { in: cards.map((card) => card.id) }, title: { status: { in: ["OPEN", "PARTIALLY_SETTLED"] } } },
+      where: { companyId, cardId: { in: cards.map((card) => card.id) }, title: {
+        status: { not: "CANCELLED" }, deletedAt: null,
+        OR: [{ status: { in: ["OPEN", "PARTIALLY_SETTLED"] } }, { settlements: { some: { reversedAt: null, effectiveDate: { gt: new Date(todayValue) } } } }],
+      } },
       include: { title: { include: { settlements: { where: { reversedAt: null } } } } },
       orderBy: { dueDate: "asc" },
     });
@@ -56,7 +59,7 @@ export async function listCreditCards(userId: string, companyId: string, options
       const invoices = pending
         .filter((invoice) => invoice.cardId === card.id)
         .map((invoice) => {
-          const remainingCents = remainingOf(invoice.title);
+          const remainingCents = remainingOf(invoice.title, todayValue);
           const closingDate = dateOnly(invoice.closingDate);
           const dueDate = dateOnly(invoice.dueDate);
           return {
@@ -68,7 +71,7 @@ export async function listCreditCards(userId: string, companyId: string, options
             remainingCents,
             stage: invoiceStage(card, { referenceMonth: invoice.referenceMonth, closingDate, dueDate }, remainingCents, todayValue, invoice.title.originalAmountCents),
           };
-        });
+        }).filter((invoice) => invoice.remainingCents > ZERO);
       const usedLimitCents = invoices.reduce((sum, invoice) => sum + invoice.remainingCents, ZERO);
       const openInvoice = invoices.find((invoice) => invoice.stage === "OPEN") ?? null;
       const openCycle = openInvoice ?? cycleForPurchaseDate(card, todayValue);
@@ -113,7 +116,7 @@ export async function getCreditCard(userId: string, companyId: string, cardId: s
     });
 
     const invoices: CreditCardInvoiceSummary[] = rows.map((invoice) => {
-      const remainingCents = remainingOf(invoice.title);
+      const remainingCents = remainingOf(invoice.title, todayValue);
       const closingDate = dateOnly(invoice.closingDate);
       const dueDate = dateOnly(invoice.dueDate);
       return {
@@ -165,7 +168,7 @@ export async function getCreditCardInvoice(userId: string, companyId: string, in
     if (!invoice) throw new CreditCardInvoiceNotFoundError();
 
     const activeSettlements = invoice.title.settlements.filter((settlement) => !settlement.reversedAt);
-    const remainingCents = remainingOf({ originalAmountCents: invoice.title.originalAmountCents, settlements: activeSettlements });
+    const remainingCents = remainingOf({ originalAmountCents: invoice.title.originalAmountCents, settlements: activeSettlements }, todayValue);
     const closingDate = dateOnly(invoice.closingDate);
     const dueDate = dateOnly(invoice.dueDate);
     const purchases = invoice.purchases.filter((purchase) => !purchase.canceledAt);

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { assertPeriodOpen } from "../closures/assert-period-open";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import {
@@ -96,6 +97,7 @@ export async function createInstallmentPlan(userId: string, companyId: string, i
     for (let index = 0; index < data.installmentCount; index++) {
       const amountCents = baseCents + (index < remainderCents ? 1 : 0);
       const dueDate = new Date(addMonthsClamped(data.firstDueDate, index * data.intervalMonths));
+      await assertPeriodOpen(tx, companyId, dueDate);
 
       const title = await tx.title.create({
         data: {

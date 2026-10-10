@@ -44,6 +44,7 @@ export async function createDebtAction(formData: FormData) {
       amortization: text(formData, "amortization") || "PRICE",
       categoryId: text(formData, "categoryId"),
       expectedAccountId: text(formData, "expectedAccountId") || null,
+      idempotencyKey: text(formData, "idempotencyKey") || undefined,
     });
     debtId = debt.id;
   } catch (error) {

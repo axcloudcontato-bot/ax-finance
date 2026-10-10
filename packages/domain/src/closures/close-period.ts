@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { lockPeriodClosure } from "./assert-period-open";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 
 export const closePeriodInput = z.object({
-  period: z.string().regex(/^\d{4}-\d{2}$/),
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
 });
 
 /**
@@ -19,6 +20,7 @@ export async function closePeriod(userId: string, companyId: string, input: unkn
   await assertCompanyPlanFeature(userId, companyId, "PERIOD_CLOSING");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockPeriodClosure(tx, companyId);
     const closure = await tx.periodClosure.upsert({
       where: { companyId_period: { companyId, period: data.period } },
       create: {

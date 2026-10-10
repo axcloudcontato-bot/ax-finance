@@ -57,7 +57,7 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
       <div className="page-header">
         <div>
           <h1>Patrimônio</h1>
-          <p className="subtitle">Tudo o que você tem menos tudo o que você deve, na posição de {formatDateOnly(worth.today)}.</p>
+          <p className="subtitle">Contas, cofrinhos e bens cadastrados menos dívidas e cartões acompanhados, na posição de {formatDateOnly(worth.today)}.</p>
         </div>
         <ActionModal key={`novo-${refreshKey}`} triggerLabel="+ Bem ou investimento" triggerClassName="button-link workspace-primary-action" title="Novo bem ou investimento" size="wide" initiallyOpen={Boolean(searchParams.erro) && searchParams.acao === "novo"}>
           {searchParams.erro && searchParams.acao === "novo" ? <p className="error">{searchParams.erro}</p> : null}
@@ -70,7 +70,7 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
       {searchParams.bemExcluido ? <p className="success-box">Bem excluído.</p> : null}
 
       <section className="workspace-metrics" aria-label="Patrimônio">
-        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Patrimônio líquido</span><strong className={worth.netWorthCents < ZERO ? "negative" : undefined}>{formatCents(worth.netWorthCents)}</strong><span className="workspace-metric-detail">O que tem − o que deve</span></div>
+        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Patrimônio acompanhado</span><strong className={worth.netWorthCents < ZERO ? "negative" : undefined}>{formatCents(worth.netWorthCents)}</strong><span className="workspace-metric-detail">Ativos cadastrados − obrigações acompanhadas</span></div>
         <div className="workspace-metric"><span className="workspace-metric-label">O que você tem</span><strong className="positive">{formatCents(worth.totalAssetsCents)}</strong><span className="workspace-metric-detail">Contas, cofrinhos, bens e investimentos</span></div>
         <div className="workspace-metric"><span className="workspace-metric-label">O que você deve</span><strong className="negative">{formatCents(worth.totalLiabilitiesCents)}</strong><span className="workspace-metric-detail">Dívidas e cartões</span></div>
       </section>
@@ -99,8 +99,9 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
               </li>
             ))}
           </ul>
-          {worth.debts.length ? <p className="field-note">{worth.debts.map((debt) => `${debt.name}: ${formatCents(debt.balanceCents)}`).join(" · ")}</p> : null}
-          <p className="field-note">Contas a pagar do dia a dia não entram aqui: são gastos, não dívida. As parcelas das dívidas cadastradas já estão no saldo devedor.</p>
+          {worth.debts.length ? <p className="field-note">{worth.debts.map((debt) => `${debt.name}${debt.archived ? " (arquivada)" : ""}: ${formatCents(debt.balanceCents)}`).join(" · ")}</p> : null}
+          <p className="field-note">Esta é uma visão parcial do patrimônio: contas a receber e outras contas a pagar não estão incluídas. Dívidas arquivadas com saldo continuam aqui. As parcelas vinculadas às dívidas já compõem o saldo devedor, sem duplicação.</p>
+          {!worth.cardsAvailable ? <p className="field-note">O saldo dos cartões não está disponível neste perfil e não compõe o total exibido.</p> : null}
         </section>
       </div>
 
