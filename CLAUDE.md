@@ -62,6 +62,7 @@ Packages ship TypeScript sources (no build step); `next.config.mjs` transpiles t
 - User-visible features get an entry at the top of `lib/changelog.ts` (shown in "Novidades").
 
 ### Worker (`apps/worker`)
+- SMTP comes from `resolveSmtpConfig()` (`packages/domain/src/email/smtp-settings.ts`): the `smtp_settings` row edited in Admin > E-mail (password encrypted with the outbox key, 60 s cache) when enabled, otherwise the `SMTP_*` env vars.
 - `processor.ts` claims `ScheduledJob`s (per company: recurrences, due notifications, weekly summary, subscription notices, monthly report) and `OutboxEvent`s with locks and retries; `email.ts` renders each outbox type with `email-layout.ts` and sends via nodemailer (attachments supported). New scheduled job types must be added to `JOB_TYPES` in `packages/domain/src/scheduled-jobs/jobs.ts` and get a migration creating the job for existing companies.
 
 ## Deploy

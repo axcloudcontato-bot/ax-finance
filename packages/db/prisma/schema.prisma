@@ -195,10 +195,11 @@ model User {
   importBatchesRequested  ImportBatch[]            @relation("ImportBatchRequester")
   importJobsRun           ImportJob[]              @relation("ImportJobRunner")
   platformAdmin           PlatformAdmin?
+  smtpSettingsUpdated     SmtpSettings[]           @relation("SmtpSettingsUpdatedBy")
   adminAuditEvents        AdminAuditEvent[]
-  supportCasesCreated     SupportCase[]             @relation("SupportCaseCreator")
-  supportCasesAssigned    SupportCase[]             @relation("SupportCaseAssignee")
-  incidentsCreated        Incident[]                @relation("IncidentCreator")
+  supportCasesCreated     SupportCase[]            @relation("SupportCaseCreator")
+  supportCasesAssigned    SupportCase[]            @relation("SupportCaseAssignee")
+  incidentsCreated        Incident[]               @relation("IncidentCreator")
 
   @@map("users")
 }
@@ -328,21 +329,21 @@ model Notification {
 }
 
 model NotificationPreference {
-  id           String   @id @default(uuid())
-  companyId    String   @map("company_id")
-  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userId       String   @map("user_id")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  inAppDue     Boolean  @default(true) @map("in_app_due")
-  emailDue     Boolean  @default(true) @map("email_due")
-  inAppWeekly  Boolean  @default(true) @map("in_app_weekly")
-  emailWeekly  Boolean  @default(true) @map("email_weekly")
+  id                 String   @id @default(uuid())
+  companyId          String   @map("company_id")
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId             String   @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inAppDue           Boolean  @default(true) @map("in_app_due")
+  emailDue           Boolean  @default(true) @map("email_due")
+  inAppWeekly        Boolean  @default(true) @map("in_app_weekly")
+  emailWeekly        Boolean  @default(true) @map("email_weekly")
   /// Relatório mensal em PDF por e-mail (só vai para quem vê a empresa inteira).
-  emailMonthlyReport Boolean @default(true) @map("email_monthly_report")
-  dueDaysAhead Int      @default(0) @map("due_days_ahead")
-  deliveryHour Int      @default(8) @map("delivery_hour")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  emailMonthlyReport Boolean  @default(true) @map("email_monthly_report")
+  dueDaysAhead       Int      @default(0) @map("due_days_ahead")
+  deliveryHour       Int      @default(8) @map("delivery_hour")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   @@unique([userId, companyId])
   @@index([companyId])
@@ -374,23 +375,23 @@ model Tenant {
 }
 
 model Company {
-  id        String        @id @default(uuid())
-  tenantId  String        @map("tenant_id")
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  name      String
-  document  String?
-  currency  String        @default("BRL")
-  timezone  String        @default("America/Sao_Paulo")
+  id                     String        @id @default(uuid())
+  tenantId               String        @map("tenant_id")
+  tenant                 Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name                   String
+  document               String?
+  currency               String        @default("BRL")
+  timezone               String        @default("America/Sao_Paulo")
   /// Multa por atraso (uma vez) e juros ao mês, em pontos-base (200 = 2%): só sugerem valores na baixa.
-  lateFeeBps             Int @default(0) @map("late_fee_bps")
-  lateInterestMonthlyBps Int @default(0) @map("late_interest_monthly_bps")
+  lateFeeBps             Int           @default(0) @map("late_fee_bps")
+  lateInterestMonthlyBps Int           @default(0) @map("late_interest_monthly_bps")
   /// Recebimento por PIX (BR Code estático das cobranças).
-  pixKey          String? @map("pix_key")
-  pixReceiverName String? @map("pix_receiver_name")
-  pixCity         String? @map("pix_city")
-  status    CompanyStatus @default(ACTIVE)
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  pixKey                 String?       @map("pix_key")
+  pixReceiverName        String?       @map("pix_receiver_name")
+  pixCity                String?       @map("pix_city")
+  status                 CompanyStatus @default(ACTIVE)
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
 
   memberships             Membership[]
   financialAccounts       FinancialAccount[]
@@ -444,6 +445,24 @@ model PlatformAdmin {
   @@map("platform_admins")
 }
 
+/// Servidor de e-mail da plataforma (linha única "default"). Sem ela, o worker usa SMTP_* do .env.
+model SmtpSettings {
+  id                String   @id @default("default")
+  enabled           Boolean  @default(true)
+  host              String
+  port              Int
+  secure            Boolean  @default(false)
+  username          String?
+  passwordEncrypted String?  @map("password_encrypted")
+  fromAddress       String   @map("from_address")
+  updatedByUserId   String?  @map("updated_by_user_id")
+  updatedBy         User?    @relation("SmtpSettingsUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("smtp_settings")
+}
+
 model AdminAuditEvent {
   id          String   @id @default(uuid())
   actorUserId String   @map("actor_user_id")
@@ -461,22 +480,22 @@ model AdminAuditEvent {
 }
 
 model SupportCase {
-  id                  String              @id @default(uuid())
-  companyId           String?             @map("company_id")
-  company             Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  subject             String
-  summary             String
-  contactEmail        String?             @map("contact_email")
-  priority            SupportCasePriority @default(NORMAL)
-  status              SupportCaseStatus   @default(OPEN)
-  createdByUserId     String               @map("created_by_user_id")
-  createdBy           User                 @relation("SupportCaseCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  assignedToUserId    String?              @map("assigned_to_user_id")
-  assignedTo          User?                @relation("SupportCaseAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  resolution          String?
-  resolvedAt          DateTime?            @map("resolved_at")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
+  id               String              @id @default(uuid())
+  companyId        String?             @map("company_id")
+  company          Company?            @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  subject          String
+  summary          String
+  contactEmail     String?             @map("contact_email")
+  priority         SupportCasePriority @default(NORMAL)
+  status           SupportCaseStatus   @default(OPEN)
+  createdByUserId  String              @map("created_by_user_id")
+  createdBy        User                @relation("SupportCaseCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  assignedToUserId String?             @map("assigned_to_user_id")
+  assignedTo       User?               @relation("SupportCaseAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  resolution       String?
+  resolvedAt       DateTime?           @map("resolved_at")
+  createdAt        DateTime            @default(now()) @map("created_at")
+  updatedAt        DateTime            @updatedAt @map("updated_at")
 
   @@index([status, priority, createdAt])
   @@index([companyId, createdAt])
@@ -653,12 +672,12 @@ model CostCenter {
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @updatedAt @map("updated_at")
 
-  titles           Title[]
-  titleAllocations TitleAllocation[]
-  recurrenceRules  RecurrenceRule[]
+  titles              Title[]
+  titleAllocations    TitleAllocation[]
+  recurrenceRules     RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
-  membershipAccess MembershipCostCenter[]
-  categoryRules    CategoryRule[]
+  membershipAccess    MembershipCostCenter[]
+  categoryRules       CategoryRule[]
 
   @@unique([id, companyId])
   @@unique([companyId, name])
@@ -748,13 +767,13 @@ model Category {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  titles          Title[]
-  titleAllocations TitleAllocation[]
-  recurrenceRules RecurrenceRule[]
+  titles              Title[]
+  titleAllocations    TitleAllocation[]
+  recurrenceRules     RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
-  budgets Budget[]
-  categoryRules CategoryRule[]
-  debts   Debt[]
+  budgets             Budget[]
+  categoryRules       CategoryRule[]
+  debts               Debt[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -786,10 +805,10 @@ model Party {
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
-  titles          Title[]
-  recurrenceRules RecurrenceRule[]
+  titles              Title[]
+  recurrenceRules     RecurrenceRule[]
   creditCardPurchases CreditCardPurchase[]
-  categoryRules   CategoryRule[]
+  categoryRules       CategoryRule[]
 
   @@unique([id, companyId])
   @@index([companyId])
@@ -874,21 +893,21 @@ model Title {
   deleteReason             String?         @map("delete_reason")
 
   /// Conta por onde o valor deve entrar/sair: preenche a baixa e permite projetar o caixa por conta.
-  expectedAccountId       String?          @map("expected_account_id")
-  expectedAccount         FinancialAccount? @relation("TitleExpectedAccount", fields: [expectedAccountId, companyId], references: [id, companyId], onDelete: Restrict)
+  expectedAccountId     String?           @map("expected_account_id")
+  expectedAccount       FinancialAccount? @relation("TitleExpectedAccount", fields: [expectedAccountId, companyId], references: [id, companyId], onDelete: Restrict)
   /// Nota fiscal, boleto ou pedido: serve para conferência e busca.
-  documentNumber          String?          @map("document_number")
-  expectedPaymentMethod   String?          @map("expected_payment_method")
+  documentNumber        String?           @map("document_number")
+  expectedPaymentMethod String?           @map("expected_payment_method")
   /// Linha digitável do boleto ou chave PIX (saídas).
-  paymentCode             String?          @map("payment_code")
+  paymentCode           String?           @map("payment_code")
   /// Saída já agendada no banco para esta data; não é baixa (o dinheiro só sai na baixa).
-  scheduledPaymentDate    DateTime?        @map("scheduled_payment_date") @db.Date
-  lastCollectionAt        DateTime?        @map("last_collection_at")
-  collectionCount         Int              @default(0) @map("collection_count")
+  scheduledPaymentDate  DateTime?         @map("scheduled_payment_date") @db.Date
+  lastCollectionAt      DateTime?         @map("last_collection_at")
+  collectionCount       Int               @default(0) @map("collection_count")
 
-  settlements Settlement[]
-  allocations TitleAllocation[]
-  attachments Attachment[]
+  settlements       Settlement[]
+  allocations       TitleAllocation[]
+  attachments       Attachment[]
   creditCardInvoice CreditCardInvoice?
 
   @@unique([id, companyId])
@@ -953,7 +972,7 @@ model Settlement {
   createdAt            DateTime         @default(now()) @map("created_at")
 
   reconciledByLine BankStatementLine?
-  refunds         SettlementRefund[]
+  refunds          SettlementRefund[]
 
   @@unique([id, companyId])
   @@index([companyId])

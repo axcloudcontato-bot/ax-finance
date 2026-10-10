@@ -4826,3 +4826,32 @@ td .modal-overlay { white-space: normal; text-align: left; }
 .wealth-bar i { display: block; height: 100%; border-radius: inherit; }
 .wealth-bar.is-asset i { background: #14966f; }
 .wealth-bar.is-liability i { background: #c23d68; }
+
+/* Admin > E-mail (SMTP) */
+.admin-smtp-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; padding: 1.1rem 1.5rem 1.3rem; }
+.admin-smtp-status p { flex: 1 1 22rem; margin: 0; color: #59657c; font-size: 0.78rem; line-height: 1.55; }
+.admin-smtp-test { display: flex; align-items: center; gap: 0.75rem; }
+.admin-smtp-test small { color: #8892a6; font-size: 0.7rem; }
+.admin-shell .admin-smtp-test button[type="submit"] { margin-top: 0; }
+.admin-smtp-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.25rem 1.5rem; padding: 1.1rem 1.5rem 1.4rem; }
+.admin-smtp-form .span-2 { grid-column: 1 / -1; }
+.admin-smtp-form label { display: block; margin: 0.85rem 0 0.35rem; color: #59657c; font-size: 0.72rem; font-weight: 650; }
+.admin-smtp-form :is(input:not([type="checkbox"]), select) { width: 100%; padding: 0.6rem 0.7rem; border: 1px solid #dfe4ed; border-radius: 8px; background: #fbfcfe; color: #344057; font: inherit; font-size: 0.8rem; }
+.admin-smtp-form :is(input, select):focus { outline: 3px solid #e7efff; border-color: #6f96f3; }
+.admin-smtp-pair { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 0 0.9rem; }
+.admin-smtp-preset { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; padding: 0.85rem 1rem; border: 1px dashed #d6deeb; border-radius: 10px; background: #f8faff; }
+.admin-smtp-preset select { width: auto !important; min-width: 15rem; }
+.admin-smtp-preset small { flex: 1 1 16rem; font-size: 0.72rem; line-height: 1.45; }
+.admin-smtp-form label.admin-smtp-check { display: flex; align-items: center; gap: 0.5rem; margin: 0.6rem 0 0; color: #344057; font-size: 0.76rem; font-weight: 600; }
+.admin-smtp-check input { width: auto; margin: 0; }
+.admin-smtp-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid #edf0f5; }
+.admin-shell .admin-smtp-footer button[type="submit"] { width: auto; margin-top: 0; }
+.admin-shell .admin-smtp-footer label.admin-smtp-check { margin: 0; }
+.admin-smtp-note { display: flex; align-items: flex-start; gap: 0.45rem; margin: 0.6rem 0 0; color: #8892a6; font-size: 0.7rem; line-height: 1.5; }
+.admin-smtp-note svg { flex: 0 0 auto; margin-top: 0.1rem; color: #16794b; }
+@media (max-width: 720px) {
+  .admin-smtp-form { grid-template-columns: minmax(0, 1fr); padding: 1rem; }
+  .admin-smtp-status { padding: 1rem; }
+  .admin-smtp-preset select { width: 100% !important; min-width: 0; }
+  .admin-smtp-test, .admin-shell .admin-smtp-footer button[type="submit"] { width: 100%; }
+}

@@ -130,6 +130,16 @@ function encryptPayload(payload: unknown): string {
   return `v1:${iv.toString("base64url")}:${cipher.getAuthTag().toString("base64url")}:${encrypted.toString("base64url")}`;
 }
 
+/** Cifra um segredo curto (ex.: senha do SMTP) com a mesma chave da outbox. */
+export function encryptSecretText(value: string): string {
+  return encryptPayload({ value });
+}
+
+export function decryptSecretText(encrypted: string): string {
+  const decoded = decryptPayload({ payloadEncrypted: encrypted });
+  return z.object({ value: z.string() }).parse(decoded).value;
+}
+
 function decryptPayload(event: Pick<OutboxEvent, "payloadEncrypted">): unknown {
   try {
     const [version, iv, tag, encrypted] = event.payloadEncrypted.split(":");

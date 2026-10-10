@@ -706,3 +706,21 @@ export class AssetNotFoundError extends DomainError {
     super("Bem ou investimento não encontrado.", "ASSET_NOT_FOUND");
   }
 }
+
+export class SmtpTestFailedError extends DomainError {
+  constructor(detail: string) {
+    super(`Não foi possível enviar o e-mail de teste: ${detail}`, "SMTP_TEST_FAILED");
+  }
+}
+
+export class SmtpNotConfiguredError extends DomainError {
+  constructor() {
+    super("Nenhum servidor de e-mail configurado: preencha e salve os dados do SMTP antes de testar.", "SMTP_NOT_CONFIGURED");
+  }
+}
+
+export class SmtpPasswordRequiredError extends DomainError {
+  constructor() {
+    super("Informe a senha do SMTP: há um usuário de autenticação e nenhuma senha salva.", "SMTP_PASSWORD_REQUIRED");
+  }
+}

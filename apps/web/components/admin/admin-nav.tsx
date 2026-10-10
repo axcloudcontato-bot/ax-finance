@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Building2, ChevronRight, LayoutDashboard, LifeBuoy } from "@/components/ui/animated-icons";
+import { Activity, Building2, ChevronRight, LayoutDashboard, LifeBuoy, Mail } from "@/components/ui/animated-icons";
 
 const items = [
   { href: "/admin", label: "Visão geral", description: "Indicadores da operação", icon: LayoutDashboard },
   { href: "/admin/empresas", label: "Empresas", description: "Assinaturas e trials", icon: Building2 },
   { href: "/admin/operacoes", label: "Operações", description: "Jobs e diagnósticos", icon: Activity },
   { href: "/admin/suporte", label: "Suporte", description: "Chamados e incidentes", icon: LifeBuoy },
+  { href: "/admin/email", label: "E-mail", description: "Servidor SMTP", icon: Mail },
 ] as const;
 
 export function AdminNav() {

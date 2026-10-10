@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import type { OutboxEvent } from "@ax-finance/db";
 import { structuredLog } from "@ax-finance/domain";
 import {
@@ -14,6 +13,8 @@ import {
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
   axLogoPng,
+  createSmtpTransport,
+  resolveSmtpConfig,
 } from "@ax-finance/domain";
 import { LOGO_CID, escapeHtml, itemList, metricTiles, paragraph, renderEmailLayout, sectionTitle, type EmailTone, type MetricTile } from "./email-layout";
 
@@ -35,30 +36,16 @@ function applicationBaseUrl() {
   return "http://localhost:3000";
 }
 
-function transport() {
-  const host = process.env.SMTP_HOST?.trim();
-  const from = process.env.SMTP_FROM?.trim();
-  if (!host || !from) {
+/** Servidor de envio: o configurado no painel administrativo ou, sem ele, as variáveis SMTP_* do .env. */
+async function transport() {
+  const config = await resolveSmtpConfig();
+  if (!config) {
     if (process.env.NODE_ENV === "production") {
-      throw new Error("SMTP_HOST/SMTP_FROM não configurados.");
+      throw new Error("SMTP não configurado: preencha em Admin > E-mail ou defina SMTP_HOST/SMTP_FROM.");
     }
     return null;
   }
-  const port = Number(process.env.SMTP_PORT || "587");
-  const user = process.env.SMTP_USER?.trim();
-  const password = process.env.SMTP_PASSWORD;
-  return {
-    from,
-    client: nodemailer.createTransport({
-      host,
-      port,
-      secure: process.env.SMTP_SECURE === "true" || port === 465,
-      auth: user && password ? { user, pass: password } : undefined,
-      connectionTimeout: 15_000,
-      greetingTimeout: 15_000,
-      socketTimeout: 30_000,
-    }),
-  };
+  return { from: config.from, client: createSmtpTransport(config) };
 }
 
 export type RenderedEmail = { recipient: string; subject: string; text: string; html: string; attachments?: { filename: string; content: Buffer; contentType: string }[] };
@@ -367,7 +354,7 @@ async function renderEmail(event: OutboxEvent): Promise<RenderedEmail> {
 export async function sendOutboxEmail(event: OutboxEvent) {
   const { recipient, subject, text, html, attachments } = await renderEmail(event);
 
-  const smtp = transport();
+  const smtp = await transport();
   if (!smtp) {
     structuredLog("info", "worker.email_simulated", {
       outboxEventId: event.id,

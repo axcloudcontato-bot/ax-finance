@@ -25,6 +25,7 @@ export * from "./savings-goals/index";
 export * from "./wealth/index";
 export * from "./reports/index";
 export * from "./brand/logo";
+export * from "./email/index";
 export * from "./reconciliation/index";
 export * from "./audit/index";
 export * from "./closures/index";
