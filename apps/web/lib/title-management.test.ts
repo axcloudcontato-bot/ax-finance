@@ -60,6 +60,17 @@ describe("mensagem de cobrança", () => {
     expect(mailtoHref("maria@exemplo.com", message)).toMatch(/^mailto:maria%40exemplo\.com\?subject=.+&body=.+/);
   });
 
+  it("deixa o PIX copia e cola isolado na mensagem e em bloco de código no WhatsApp", () => {
+    const code = "00020126ABCDEF6304ABCD";
+    const message = buildCollectionMessage({ ...base, daysLate: 0, pixCode: code });
+    expect(message.body).toContain(`
+
+${code}
+`);
+    expect(decodeURIComponent(whatsappHref(null, message.body, code))).toContain("```" + code + "```");
+    expect(decodeURIComponent(whatsappHref(null, message.body))).not.toContain("```");
+  });
+
   it("abre o WhatsApp do cliente com a mensagem; sem telefone válido, deixa escolher o contato", () => {
     expect(whatsappHref("(11) 98765-4321", "Olá!")).toBe("https://wa.me/5511987654321?text=Ol%C3%A1!");
     expect(whatsappHref("+55 11 3456-7890", "x")).toBe("https://wa.me/551134567890?text=x");

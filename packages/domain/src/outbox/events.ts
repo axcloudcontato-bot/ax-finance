@@ -29,12 +29,18 @@ const deliveryBaseSchema = z.object({
 });
 
 const dueDateSummaryPayloadSchema = deliveryBaseSchema.extend({
+  /** Dia de referência no fuso da empresa (separa "vence hoje" de "próximos dias"). Opcional: avisos antigos na fila não têm. */
+  today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   items: z.array(z.object({
     type: z.enum(["RECEIVABLE", "PAYABLE"]),
     description: z.string().min(1).max(500),
     dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     overdue: z.boolean(),
     href: z.string().startsWith("/"),
+    /** Saldo em aberto, em centavos. */
+    remainingCents: z.string().regex(/^\d+$/).optional(),
+    currency: z.string().length(3).optional(),
+    partyName: z.string().max(500).nullish(),
   })).min(1).max(50),
 });
 

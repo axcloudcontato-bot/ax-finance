@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { axLogoPng } from "../brand/logo";
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
@@ -136,8 +137,9 @@ export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer>
 
     // Cabeçalho
     doc.rect(0, 0, doc.page.width, 96).fill(COLORS.accent);
-    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(20).text("Relatório mensal", left, 30, { width });
-    doc.font("Helvetica").fontSize(11).text(`${data.companyName} · ${data.monthLabel}`, left, 58, { width });
+    doc.image(axLogoPng(), left, 22, { width: 52, height: 52 });
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(20).text("Relatório mensal", left + 66, 28, { width: width - 66 });
+    doc.font("Helvetica").fontSize(11).text(`${data.companyName} · ${data.monthLabel}`, left + 66, 56, { width: width - 66 });
     doc.y = 120;
 
     const section = (title: string) => {

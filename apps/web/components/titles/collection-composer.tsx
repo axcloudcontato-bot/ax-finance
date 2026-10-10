@@ -12,10 +12,12 @@ export function CollectionComposer({
   message,
   email,
   phone,
+  pixCode,
 }: {
   message: { subject: string; body: string };
   email: string | null;
   phone: string | null;
+  pixCode?: string | null;
 }) {
   const [body, setBody] = useState(message.body);
   const fieldId = useId();
@@ -37,7 +39,7 @@ export function CollectionComposer({
       <p className="collection-subject"><span>Assunto do e-mail</span> {message.subject}</p>
       <div className="collection-send">
         <CopyButton text={body} label="Copiar mensagem" />
-        <a className="button-link secondary" href={whatsappHref(phone, body)} target="_blank" rel="noopener noreferrer">
+        <a className="button-link secondary" href={whatsappHref(phone, body, pixCode)} target="_blank" rel="noopener noreferrer">
           {phone ? "Enviar no WhatsApp" : "Abrir no WhatsApp"}
         </a>
         {mail ? <a className="button-link secondary" href={mail}>Abrir no e-mail</a> : null}

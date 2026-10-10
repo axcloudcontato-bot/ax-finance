@@ -74,7 +74,7 @@ export function CollectionModal({
         </div>
 
         <div className="collection-body">
-          <CollectionComposer message={message} email={contact.email ?? null} phone={contact.phone ?? null} />
+          <CollectionComposer message={message} email={contact.email ?? null} phone={contact.phone ?? null} pixCode={pixCode} />
           {pixCode ? (
             <aside className="collection-pix" aria-label="PIX com o valor em aberto">
               <div className="collection-section-head"><h3>PIX</h3><small>Valor já preenchido</small></div>

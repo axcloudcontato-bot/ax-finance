@@ -13,8 +13,9 @@ import {
   type MonthlyReportData,
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
+  axLogoPng,
 } from "@ax-finance/domain";
-import { escapeHtml, paragraph, renderEmailLayout } from "./email-layout";
+import { LOGO_CID, escapeHtml, itemList, metricTiles, paragraph, renderEmailLayout, sectionTitle, type EmailTone, type MetricTile } from "./email-layout";
 
 const ROLE_LABEL: Record<string, string> = {
   OWNER: "Proprietário",
@@ -74,6 +75,13 @@ export function renderMonthlyReportEmail(payload: { to: string; name: string; co
     `Vencido a receber: ${brl(data.delinquency.overdueReceivableCents)}`,
     `Saldo previsto em 30 dias: ${brl(data.projection.projectedCents)}`,
   ];
+  const tiles: MetricTile[] = [
+    { label: "Receitas", value: brl(data.result.revenueCents), tone: "success" },
+    { label: "Despesas", value: brl(data.result.expenseCents), tone: "accent" },
+    { label: "Resultado", value: brl(data.result.resultCents), tone: data.result.resultCents < BigInt(0) ? "danger" : "success" },
+    { label: "Vencido a receber", value: brl(data.delinquency.overdueReceivableCents), tone: data.delinquency.overdueReceivableCents > BigInt(0) ? "warning" : "neutral" },
+    { label: "Saldo em 30 dias", value: brl(data.projection.projectedCents), hint: "previsto", tone: data.projection.projectedCents < BigInt(0) ? "danger" : "neutral" },
+  ];
   return {
     recipient: payload.to,
     subject: `Relatório de ${data.monthLabel} — ${payload.companyName}`,
@@ -82,13 +90,139 @@ export function renderMonthlyReportEmail(payload: { to: string; name: string; co
       preheader: `Resultado de ${data.monthLabel}: ${brl(data.result.resultCents)}.`,
       heading: `Relatório de ${data.monthLabel}`,
       bodyHtml:
-        paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
-        paragraph(`O relatório completo de <strong>${escapeHtml(payload.companyName)}</strong> está em anexo, em PDF. Os principais números:`) +
-        `<ul style="margin:0;padding:0 0 0 20px;">${lines.map((line) => `<li style="margin:0 0 6px 0;">${escapeHtml(line)}</li>`).join("")}</ul>`,
+        paragraph(`Olá, ${escapeHtml(payload.name)}. O relatório completo de <strong>${escapeHtml(payload.companyName)}</strong> está em anexo, em PDF. Os principais números:`) +
+        metricTiles(tiles),
       cta: { url, label: "Ver no AX Finance" },
       note: "Você recebe este e-mail no início de cada mês. Para parar, desligue em Configurações > Notificações.",
     }),
     attachments: [{ filename: `relatorio-${payload.month}.pdf`, content: pdf, contentType: "application/pdf" }],
+  };
+}
+
+const DAY_MS = 86_400_000;
+
+function formatDay(value: string) {
+  return value.split("-").reverse().join("/");
+}
+
+function daysBetween(from: string, to: string) {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS);
+}
+
+function money(cents: string | bigint, currency = "BRL") {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(Number(BigInt(cents)) / 100);
+}
+
+type DueDateSummaryPayload = ReturnType<typeof decodeDueDateSummaryPayload>;
+type DueItem = DueDateSummaryPayload["items"][number];
+
+/**
+ * Resumo diário de vencimentos: totais no topo e os títulos agrupados em vencidos, do dia e próximos.
+ * Avisos antigos da fila (sem `today`/valor) ainda renderizam, só com menos detalhe.
+ */
+export function renderDueDateSummaryEmail(payload: DueDateSummaryPayload): RenderedEmail {
+  const today = payload.today;
+  const groupOf = (item: DueItem): "overdue" | "today" | "upcoming" =>
+    item.overdue ? "overdue" : today && item.dueDate === today ? "today" : "upcoming";
+  const groups = {
+    overdue: payload.items.filter((item) => groupOf(item) === "overdue"),
+    today: payload.items.filter((item) => groupOf(item) === "today"),
+    upcoming: payload.items.filter((item) => groupOf(item) === "upcoming"),
+  };
+  const hasAmounts = payload.items.every((item) => item.remainingCents !== undefined);
+  const total = (items: DueItem[]) => money(items.reduce((sum, item) => sum + BigInt(item.remainingCents ?? "0"), BigInt(0)));
+  const countLabel = (count: number) => `${count} ${count === 1 ? "título" : "títulos"}`;
+  const dueText = (item: DueItem): { text: string; tone?: EmailTone } => {
+    if (item.overdue) {
+      const late = today ? daysBetween(item.dueDate, today) : 0;
+      return { text: `venceu em ${formatDay(item.dueDate)}${late > 0 ? ` (${late} ${late === 1 ? "dia" : "dias"})` : ""}`, tone: "danger" };
+    }
+    if (groupOf(item) === "today") return { text: "vence hoje", tone: "warning" };
+    return { text: `vence em ${formatDay(item.dueDate)}` };
+  };
+  const rowsOf = (items: DueItem[]) => itemList(items.map((item) => ({
+    href: `${payload.baseUrl}${item.href}`,
+    badge: item.type === "RECEIVABLE" ? { label: "A receber", tone: "success" as const } : { label: "A pagar", tone: "accent" as const },
+    title: item.description,
+    meta: [...(item.partyName ? [{ text: item.partyName }] : []), dueText(item)],
+    amount: item.remainingCents === undefined ? undefined : money(item.remainingCents, item.currency),
+  })));
+
+  const sections = [
+    { key: "overdue" as const, title: "Vencidos", tone: "danger" as const },
+    { key: "today" as const, title: "Vencem hoje", tone: "warning" as const },
+    { key: "upcoming" as const, title: today ? "Próximos dias" : "A vencer", tone: "neutral" as const },
+  ].filter((section) => groups[section.key].length > 0);
+
+  // Entradas e saídas não se somam: cada lado tem o seu cartão, e o terceiro conta o que já venceu.
+  const receivables = payload.items.filter((item) => item.type === "RECEIVABLE");
+  const payables = payload.items.filter((item) => item.type === "PAYABLE");
+  const sideTile = (label: string, items: DueItem[], tone: EmailTone): MetricTile => hasAmounts
+    ? { label, value: total(items), hint: countLabel(items.length), tone: items.length > 0 ? tone : "neutral" }
+    : { label, value: String(items.length), hint: items.length === 1 ? "título" : "títulos", tone: items.length > 0 ? tone : "neutral" };
+  const tiles: MetricTile[] = [
+    sideTile("A receber", receivables, "success"),
+    sideTile("A pagar", payables, "accent"),
+    { label: "Vencidos", value: String(groups.overdue.length), hint: groups.overdue.length === 1 ? "título em atraso" : "títulos em atraso", tone: groups.overdue.length > 0 ? "danger" : "neutral" },
+  ];
+
+  const textLines = sections.flatMap((section) => [
+    "",
+    `${section.title.toUpperCase()} (${groups[section.key].length})`,
+    ...groups[section.key].map((item) => {
+      const kind = item.type === "RECEIVABLE" ? "A receber" : "A pagar";
+      const amount = item.remainingCents === undefined ? "" : ` — ${money(item.remainingCents, item.currency)}`;
+      return `- ${kind}: ${item.description}${item.partyName ? ` (${item.partyName})` : ""}${amount} — ${dueText(item).text}`;
+    }),
+  ]);
+  const url = `${payload.baseUrl}/calendario`;
+  const attention = groups.overdue.length + groups.today.length;
+
+  return {
+    recipient: payload.to,
+    subject: attention > 0
+      ? `${countLabel(attention)} ${attention === 1 ? "precisa" : "precisam"} de atenção — ${payload.companyName}`
+      : `Próximos vencimentos — ${payload.companyName}`,
+    text: `Olá, ${payload.name}.\nEstes são os vencimentos que precisam de atenção em ${payload.companyName}:\n${textLines.join("\n")}\n\nVer no AX Finance: ${url}`,
+    html: renderEmailLayout({
+      preheader: sections.map((section) => `${section.title}: ${groups[section.key].length}`).join(" · "),
+      heading: "Seu resumo do dia",
+      bodyHtml:
+        paragraph(`Olá, ${escapeHtml(payload.name)}. Estes são os vencimentos que precisam de atenção em <strong>${escapeHtml(payload.companyName)}</strong>:`) +
+        metricTiles(tiles) +
+        sections.map((section) => sectionTitle(section.title, section.tone, groups[section.key].length) + rowsOf(groups[section.key])).join(""),
+      cta: { url, label: "Abrir o calendário" },
+      note: "Você recebe este resumo nos dias com vencimentos. Ajuste a antecedência, o horário ou desligue em Configurações &gt; Notificações.",
+    }),
+  };
+}
+
+/** Resumo de segunda-feira: o que está em aberto e o que vence na semana. */
+export function renderWeeklySummaryEmail(payload: ReturnType<typeof decodeWeeklySummaryPayload>): RenderedEmail {
+  const url = `${payload.baseUrl}/relatorios/fluxo-de-caixa`;
+  const balance = BigInt(payload.receivableOpenCents) - BigInt(payload.payableOpenCents);
+  const negative = balance < BigInt(0);
+  const tiles: MetricTile[] = [
+    { label: "A receber", value: money(payload.receivableOpenCents), hint: "em aberto", tone: "success" },
+    { label: "A pagar", value: money(payload.payableOpenCents), hint: "em aberto", tone: "accent" },
+    { label: "Vencidos", value: String(payload.overdueCount), hint: payload.overdueCount === 1 ? "título" : "títulos", tone: payload.overdueCount > 0 ? "danger" : "neutral" },
+    { label: "Próximos 7 dias", value: String(payload.dueNext7Count), hint: payload.dueNext7Count === 1 ? "título vence" : "títulos vencem", tone: payload.dueNext7Count > 0 ? "warning" : "neutral" },
+  ];
+  const balanceText = `${negative ? "−" : ""}${money(negative ? -balance : balance)}`;
+  return {
+    recipient: payload.to,
+    subject: `Resumo financeiro semanal — ${payload.companyName}`,
+    text: `Olá, ${payload.name}.\nResumo semanal de ${payload.companyName}:\n- A receber em aberto: ${money(payload.receivableOpenCents)}\n- A pagar em aberto: ${money(payload.payableOpenCents)}\n- Vencidos: ${payload.overdueCount}\n- Próximos 7 dias: ${payload.dueNext7Count}\n\nVer relatórios: ${url}`,
+    html: renderEmailLayout({
+      preheader: `Resumo semanal de ${payload.companyName}: ${payload.overdueCount} vencido(s), ${payload.dueNext7Count} para os próximos 7 dias.`,
+      heading: "Resumo financeiro semanal",
+      bodyHtml:
+        paragraph(`Olá, ${escapeHtml(payload.name)}. Como está <strong>${escapeHtml(payload.companyName)}</strong> no começo da semana:`) +
+        metricTiles(tiles, 2) +
+        paragraph(`Diferença entre o que entra e o que sai em aberto: <strong style="color:${negative ? "#b4235a" : "#0f7a55"};">${escapeHtml(balanceText)}</strong>.`, true),
+      cta: { url, label: "Abrir relatórios" },
+      note: "Você recebe este resumo às segundas-feiras. Para parar, desligue em Configurações &gt; Notificações.",
+    }),
   };
 }
 
@@ -130,59 +264,9 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
     };
   }
 
-  if (event.type === "DUE_DATE_SUMMARY") {
-    const payload = decodeDueDateSummaryPayload(event);
-    const rows = payload.items.map((item) => {
-      const label = item.type === "RECEIVABLE" ? "Entrada" : "Saída";
-      return `${label}: ${item.description} — ${item.overdue ? "vencido em" : "vence em"} ${item.dueDate}`;
-    });
-    const htmlRows = payload.items.map((item) => {
-      const label = item.type === "RECEIVABLE" ? "Entrada" : "Saída";
-      const url = `${payload.baseUrl}${item.href}`;
-      return `<li style="margin:0 0 8px 0;"><a href="${escapeHtml(url)}" style="color:#2765ec;">${escapeHtml(label)}: ${escapeHtml(item.description)}</a> — ${item.overdue ? "vencido em" : "vence em"} ${escapeHtml(item.dueDate)}</li>`;
-    }).join("");
-    return {
-      recipient: payload.to,
-      subject: `Títulos vencidos e do dia — ${payload.companyName}`,
-      text: `Olá, ${payload.name}.\n\n${rows.join("\n")}\n\nAcesse: ${payload.baseUrl}`,
-      html: renderEmailLayout({
-        preheader: `Títulos que precisam de atenção em ${payload.companyName}.`,
-        heading: "Títulos que precisam de atenção",
-        bodyHtml:
-          paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
-          paragraph(`Estes títulos precisam de atenção em <strong>${escapeHtml(payload.companyName)}</strong>:`) +
-          `<ul style="margin:0;padding:0 0 0 20px;">${htmlRows}</ul>`,
-        cta: { url: payload.baseUrl, label: "Abrir o AX Finance" },
-      }),
-    };
-  }
+  if (event.type === "DUE_DATE_SUMMARY") return renderDueDateSummaryEmail(decodeDueDateSummaryPayload(event));
 
-  if (event.type === "WEEKLY_SUMMARY") {
-    const payload = decodeWeeklySummaryPayload(event);
-    const money = (cents: string) => new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(Number(BigInt(cents)) / 100);
-    const url = `${payload.baseUrl}/relatorios/fluxo-de-caixa`;
-    return {
-      recipient: payload.to,
-      subject: `Resumo financeiro semanal — ${payload.companyName}`,
-      text: `Olá, ${payload.name}.\nEntradas em aberto: ${money(payload.receivableOpenCents)}\nSaídas em aberto: ${money(payload.payableOpenCents)}\nVencidos: ${payload.overdueCount}\nPróximos 7 dias: ${payload.dueNext7Count}\n${url}`,
-      html: renderEmailLayout({
-        preheader: `Resumo semanal de ${payload.companyName}.`,
-        heading: "Resumo financeiro semanal",
-        bodyHtml:
-          paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
-          paragraph(`Resumo semanal de <strong>${escapeHtml(payload.companyName)}</strong>:`) +
-          `<ul style="margin:0;padding:0 0 0 20px;">` +
-          `<li style="margin:0 0 6px 0;">Entradas em aberto: ${escapeHtml(money(payload.receivableOpenCents))}</li>` +
-          `<li style="margin:0 0 6px 0;">Saídas em aberto: ${escapeHtml(money(payload.payableOpenCents))}</li>` +
-          `<li style="margin:0 0 6px 0;">Vencidos: ${payload.overdueCount}</li>` +
-          `<li style="margin:0;">Próximos 7 dias: ${payload.dueNext7Count}</li></ul>`,
-        cta: { url, label: "Abrir relatórios" },
-      }),
-    };
-  }
+  if (event.type === "WEEKLY_SUMMARY") return renderWeeklySummaryEmail(decodeWeeklySummaryPayload(event));
 
   if (event.type === "COMPANY_INVITATION") {
     const payload = decodeCompanyInvitationPayload(event);
@@ -297,7 +381,7 @@ export async function sendOutboxEmail(event: OutboxEvent) {
     subject,
     text,
     html,
-    attachments,
+    attachments: [...(attachments ?? []), { filename: "ax-finance.png", content: axLogoPng(), contentType: "image/png", cid: LOGO_CID, contentDisposition: "inline" as const }],
     // Identificador estável ajuda provedores que deduplicam mensagens repetidas.
     messageId: `<${event.id}@ax-finance-outbox>`,
   });

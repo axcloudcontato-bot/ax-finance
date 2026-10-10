@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-emails-resumo",
+    date: "2026-10-10",
+    title: "E-mails de resumo com visual novo",
+    summary: "O resumo diário de vencimentos e o resumo semanal chegam organizados em cartões, bons de ler no computador e no celular.",
+    changes: [
+      { kind: "IMPROVED", text: "Resumo do dia: totais a receber e a pagar no topo e os títulos separados em vencidos, que vencem hoje e próximos dias, com valor, cliente ou fornecedor e dias de atraso." },
+      { kind: "IMPROVED", text: "Resumo semanal e relatório mensal mostram os números principais em cartões coloridos." },
+    ],
+  },
+  {
     id: "2026-10-10-lembrete-cobranca",
     date: "2026-10-10",
     title: "Lembrete de cobrança de cara nova",

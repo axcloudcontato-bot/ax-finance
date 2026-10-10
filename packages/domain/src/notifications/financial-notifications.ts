@@ -94,7 +94,7 @@ export async function generateDueNotifications(
         dueDate: { lte: addDays(today, maxDaysAhead) },
       },
       orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-      include: { settlements: true },
+      include: { settlements: true, party: { select: { name: true } } },
       take: 50,
     });
 
@@ -137,12 +137,16 @@ export async function generateDueNotifications(
           name: membership.user.name,
           companyName: company.name,
           baseUrl,
+          today,
           items: userTitles.map((title) => ({
             type: title.type,
             description: title.description,
             dueDate: dateOnly(title.dueDate),
             overdue: dateOnly(title.dueDate) < today,
             href: title.type === "RECEIVABLE" ? `/entradas/${title.id}` : `/saidas/${title.id}`,
+            remainingCents: remainingCents(title).toString(),
+            currency: title.currency,
+            partyName: title.party?.name ?? null,
           })),
         }
       );
