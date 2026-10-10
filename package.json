@@ -28,7 +28,7 @@
     "@ax-finance/db": "workspace:*",
     "@ax-finance/domain": "workspace:*",
     "@playwright/test": "1.56.1",
-    "@types/node": "^20.14.0",
+    "@types/node": "^26.6.4",
     "@typescript-eslint/eslint-plugin": "^8.71.0",
     "@typescript-eslint/parser": "^8.71.0",
     "eslint": "^8.57.0",
