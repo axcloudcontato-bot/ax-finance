@@ -21,6 +21,6 @@
     "@types/nodemailer": "^7.0.12",
     "@types/papaparse": "^5.5.2",
     "@types/pdfkit": "0.17.3",
-    "typescript": "^5.5.4"
+    "typescript": "^6.0.3"
   }
 }
