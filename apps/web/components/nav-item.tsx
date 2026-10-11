@@ -42,6 +42,7 @@ export function NavItem({
   const isActive = !!item.href && pathname === item.href;
   const isHighlighted = isActive || activeDescendant;
   const disabled = !item.href && !hasChildren;
+  const submenuId = `nav-submenu-${item.id}`;
 
   useEffect(() => {
     if (activeDescendant) setIsOpen(true);
@@ -98,6 +99,7 @@ export function NavItem({
       role={hasChildren ? "button" : undefined}
       tabIndex={hasChildren ? 0 : undefined}
       aria-expanded={hasChildren ? (!collapsed && isOpen) : undefined}
+      aria-controls={hasChildren && !collapsed ? submenuId : undefined}
       aria-label={collapsed ? item.title : undefined}
       title={collapsed ? item.title : undefined}
     >
@@ -134,11 +136,22 @@ export function NavItem({
   return (
     <div className="flex w-full flex-col">
       {!hasChildren && hrefWithPeriod && !disabled ? (
-        <Link href={hrefWithPeriod} className="block w-full" aria-label={collapsed ? item.title : undefined}>{row}</Link>
+        <Link
+          href={hrefWithPeriod}
+          className="nav-item-link block w-full rounded-[6px]"
+          aria-label={collapsed ? item.title : undefined}
+          aria-current={isActive ? "page" : undefined}
+        >
+          {row}
+        </Link>
       ) : row}
 
       {hasChildren && !collapsed ? (
         <div
+          id={submenuId}
+          // Fechado, o submenu só encolhe visualmente: sem `inert` os links continuariam no Tab, com foco invisível.
+          // React 18 descarta o atributo com valor vazio; qualquer valor vale (o HTML só olha a presença).
+          {...(isOpen ? {} : ({ inert: "true" } as Record<string, string>))}
           className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
             isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}

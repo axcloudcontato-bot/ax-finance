@@ -48,6 +48,8 @@ export function AppShell({
 
   return (
     <div className="ax-model-buttons flex h-svh w-full min-w-0 flex-col bg-background">
+      {/* Primeiro item do Tab: pula a barra do topo e o menu lateral (WCAG 2.4.1). */}
+      <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
       <AppTopbar
         leading={
           <button
@@ -85,7 +87,7 @@ export function AppShell({
           onMobileClose={closeNav}
         />
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <div id="conteudo" tabIndex={-1} className="app-content flex min-w-0 flex-1 flex-col overflow-y-auto">
           {!dashboardOwnsToolbar && showsPeriod ? (
             <div className="app-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-4 md:px-6">
               <GlobalMonthSelector />

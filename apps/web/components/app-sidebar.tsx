@@ -249,7 +249,7 @@ export function AppSidebar({
                 collapsed ? (
                   <span className="mx-2 mb-1 border-t border-border" aria-hidden="true" />
                 ) : (
-                  <span className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground/50 uppercase">
+                  <span className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
                     {group.heading}
                   </span>
                 )
@@ -279,7 +279,7 @@ export function AppSidebar({
                 {userName}
               </span>
               <span className="block truncate text-[11px] text-muted-foreground">{userEmail}</span>
-              <span className="block truncate text-[10px] text-muted-foreground/70">
+              <span className="block truncate text-[11px] text-muted-foreground">
                 {roleLabel[membershipRole]}
               </span>
             </span>

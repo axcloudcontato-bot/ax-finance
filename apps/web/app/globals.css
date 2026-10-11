@@ -335,6 +335,9 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
   --muted: #5b6270;
   --accent: #4680ff;
   --danger: #a4302f;
+  /* Acessibilidade: anel de foco (5,4:1 sobre branco) e borda de campo (≥3:1, WCAG 1.4.11). */
+  --focus: #2f63d6;
+  --field-border: #858e9e;
 
   /* Cores dos gráficos (modelo shadcn chart). Só estes tokens vêm do modelo: o :root dele
      sobrescreveria --background/--card/--border do app. */
@@ -371,6 +374,8 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
   --muted: #aab6ca;
   --accent: #6f9cff;
   --danger: #ff789a;
+  --focus: #9fbcff;
+  --field-border: #6b7a94;
   --chart-1: #6f9cff;
   --chart-2: #ffc266;
   --chart-3: #3fd6c8;
@@ -447,7 +452,7 @@ select,
 textarea {
   width: 100%;
   padding: 0.55rem 0.65rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--field-border);
   border-radius: 6px;
   font-size: 1rem;
 }
@@ -513,10 +518,18 @@ button.secondary:not(:where(.app-sidebar-toggle, .app-sidebar-logout)) {
   transform: translateY(0) scale(0.97);
 }
 
-:is(button, .button-link, .public-button):focus-visible {
-  outline: 3px solid rgba(70, 128, 255, 0.24);
-  outline-offset: 3px;
+/* Foco de teclado único no app inteiro (WCAG 2.4.7): anel sólido de 2px na cor --focus, afastado do
+   elemento para não se confundir com a borda. Componentes não devem trocar por outro estilo. */
+:is(a, button, input, select, textarea, summary, [tabindex], [role="button"], [role="tab"], .button-link, .public-button):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
+:is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus-visible { border-color: var(--focus); }
+
+/* Atalho "Pular para o conteúdo": fora da tela até receber foco. */
+.skip-link { position: fixed; top: 0.5rem; left: 0.5rem; z-index: 2000; padding: 0.6rem 0.9rem; border-radius: 8px; background: var(--card); color: var(--text); font-weight: 650; text-decoration: none; transform: translateY(-200%); }
+.skip-link:focus-visible { transform: none; }
+.app-content:focus { outline: none; }
 
 button:disabled {
   cursor: not-allowed;
@@ -558,8 +571,9 @@ button:disabled {
 }
 
 .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply):focus-visible {
-  outline: none;
-  border-color: #4568ff;
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-color: var(--focus);
   box-shadow: 0 1px 2px rgba(28, 25, 23, 0.08), 0 10px 20px -14px rgba(69, 104, 255, 0.6);
 }
 
@@ -594,7 +608,7 @@ button:disabled {
 }
 
 :root[data-ax-theme="dark"] .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply):focus-visible {
-  border-color: #93b0ff;
+  border-color: var(--focus);
   box-shadow: 0 10px 20px -14px rgba(147, 176, 255, 0.5);
 }
 
@@ -753,7 +767,7 @@ form.inline {
 .title-list-toolbar { display: flex; justify-content: flex-end; margin-bottom: 0.7rem; }
 .title-columns-trigger { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.48rem 0.7rem; border: 1px solid var(--border); border-radius: 9px; background: var(--card); color: var(--text); font: inherit; font-size: 0.82rem; font-weight: 650; cursor: pointer; }
 .title-columns-trigger:hover, .title-columns-trigger[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
-.title-columns-trigger:focus-visible, .title-columns-reset:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.title-columns-trigger:focus-visible, .title-columns-reset:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .title-columns-panel { margin-bottom: 0.85rem; padding: 0.9rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--card) 80%, var(--bg)); }
 .title-columns-panel[hidden] { display: none; }
 .title-columns-panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
@@ -1931,7 +1945,7 @@ main.settings-page {
   box-shadow: 0 5px 18px rgba(20, 30, 60, 0.09);
 }
 
-.stat-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.stat-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .stat-card.is-prominent { background: color-mix(in srgb, var(--accent) 9%, var(--card)); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
 .stat-card.is-blue { --stat-tone: #3978db; }
 .stat-card.is-teal { --stat-tone: #078f85; }
@@ -2028,7 +2042,7 @@ main.settings-page {
 .dashboard-filter-toggle > span:first-child { display: inline-flex; align-items: center; gap: 0.45rem; font-weight: 700; }
 .dashboard-filter-toggle > span:last-child { color: var(--muted); font-size: 0.72rem; }
 .dashboard-filter-toggle:hover > span:first-child { color: var(--accent); }
-.dashboard-filter-toggle:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.dashboard-filter-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .dashboard-filter-grid[hidden] { display: none; }
 
 .dashboard-command-header {
@@ -3334,7 +3348,7 @@ main.settings-page {
 .concil-icon-btn.is-danger:hover { background: color-mix(in srgb, var(--danger) 12%, var(--card)); }
 .concil-icon-btn.is-primary { color: var(--accent); }
 .concil-icon-btn.is-primary:hover { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
-.concil-icon-btn:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); outline-offset: 1px; }
+.concil-icon-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
 /* Novidades: pontinho no botão e lista do painel. */
 .bottom-menu-dot {
@@ -3428,7 +3442,7 @@ main.settings-page {
 .concil-import > summary::-webkit-details-marker { display: none; }
 .concil-import > summary:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
 .concil-import > summary:focus-visible,
-.concil-ignore > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.concil-ignore > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .concil-import-title { font-size: 0.95rem; font-weight: 700; }
 
@@ -3522,7 +3536,7 @@ main.settings-page {
 }
 
 .concil-tabs a:hover { background: color-mix(in srgb, var(--text) 5%, transparent); }
-.concil-tabs a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.concil-tabs a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .concil-tabs a.is-active { border-color: var(--text); background: var(--text); color: var(--card); }
 .concil-tabs a.is-active span { color: color-mix(in srgb, var(--card) 72%, transparent); }
 
@@ -3554,7 +3568,7 @@ main.settings-page {
 }
 
 .concil-row-link:hover { text-decoration: underline; text-underline-offset: 3px; }
-.concil-row-link:focus-visible { border-radius: 4px; outline: 2px solid var(--accent); outline-offset: 2px; }
+.concil-row-link:focus-visible { border-radius: 4px; outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .concil-sub {
   display: flex;
@@ -3942,7 +3956,7 @@ main.settings-page {
 }
 
 .ax-toast-body:hover strong { text-decoration: underline; text-underline-offset: 3px; }
-.ax-toast-body:focus-visible { border-radius: 6px; outline: 2px solid var(--accent); outline-offset: 2px; }
+.ax-toast-body:focus-visible { border-radius: 6px; outline: 2px solid var(--focus); outline-offset: 2px; }
 
 .ax-toast-close {
   display: grid;
@@ -3960,7 +3974,7 @@ main.settings-page {
 }
 
 .ax-toast-close:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
-.ax-toast-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ax-toast-close:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
 @keyframes ax-toast-in {
   from { opacity: 0; transform: translateY(8px); }
@@ -4057,7 +4071,7 @@ main.settings-page {
 .report-navigation { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; }
 .report-navigation a { padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 9px; background: var(--card); color: var(--text); text-decoration: none; font-size: 0.82rem; }
 .report-navigation a[aria-current="page"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--card)); font-weight: 700; }
-.report-navigation a:focus-visible, .report-details summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.report-navigation a:focus-visible, .report-details summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .report-horizon { margin: 0; flex-shrink: 0; }
 .report-section-heading { flex-wrap: wrap; }
 .report-metrics-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -4572,7 +4586,7 @@ label.goal-picker-icon, label.goal-picker-color { position: relative; display: i
 .goal-picker-icon input:checked + span { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); color: var(--accent); }
 .goal-picker-color > span:not(.sr-only) { width: 28px; height: 28px; border: 2px solid var(--card); border-radius: 50%; background: var(--goal); box-shadow: 0 0 0 1px var(--border); }
 .goal-picker-color input:checked + span { box-shadow: 0 0 0 2px var(--goal); }
-.goal-picker-options input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.goal-picker-options input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 /* Painel: cofrinhos mais perto da meta. */
 .dashboard-savings-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
