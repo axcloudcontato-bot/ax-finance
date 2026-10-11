@@ -19,5 +19,6 @@ export * from "./title-batch";
 export * from "./title-details";
 export * from "./late-charges";
 export * from "./title-operations";
+export * from "./cash-planning";
 export * from "./payment-method-report";
 export * from "./pix";

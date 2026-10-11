@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getCashFlowReport, getCashProjection, getCompanyToday } from "@ax-finance/domain";
+import { getCashFlowReport, getCashProjection, getCompanyToday, getCompanyAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
@@ -14,7 +14,7 @@ import { alignRealizedComparison } from "@/lib/report-comparison";
 
 export default async function FluxoDeCaixaPage(
   props: {
-    searchParams: Promise<{ de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string; dias?: string }>;
+    searchParams: Promise<{ de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string; dias?: string; atraso?: string; estimativas?: string; erroReserva?: string; reservaSalva?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -29,10 +29,12 @@ export default async function FluxoDeCaixaPage(
   const today = await getCompanyToday(user.id, company.id);
   const comparison = alignRealizedComparison(period, resolveComparison(searchParams, period), today);
 
-  const [report, comparisonReport, projection] = await Promise.all([
+  const delay = Number(searchParams.atraso ?? 5);
+  const [report, comparisonReport, projection, access] = await Promise.all([
     getCashFlowReport(user.id, company.id, { from, to }),
     comparison ? getCashFlowReport(user.id, company.id, comparison) : Promise.resolve(null),
-    getCashProjection(user.id, company.id, { days: searchParams.dias === "60" ? 60 : searchParams.dias === "90" ? 90 : 30 }),
+    getCashProjection(user.id, company.id, { days: searchParams.dias === "60" ? 60 : searchParams.dias === "90" ? 90 : 30, receiptDelayDays: Number.isInteger(delay) && delay >= 0 && delay <= 60 ? delay : 5, includeEstimates: searchParams.estimativas !== "nao" }),
+    getCompanyAccess(user.id, company.id),
   ]);
   const exportHref = `/api/reports/cash-flow?de=${from}&ate=${to}`;
   const receivedCents = report.entries.reduce((sum, entry) => sum + (entry.cashDeltaCents > BigInt(0) ? entry.cashDeltaCents : BigInt(0)), BigInt(0));
@@ -81,7 +83,8 @@ export default async function FluxoDeCaixaPage(
         <p className="report-caption">Saldo inicial + baixas e devoluções + outras alterações = saldo final. Inclui todas as contas cadastradas, inclusive arquivadas e fora do disponível. Outras alterações incluem saldos de abertura no período, ajustes manuais e tarifas de transferência. Transferências internas não geram receita. A conferência usa os registros vigentes e não substitui a conciliação bancária.</p>
         <Link href="/contas">Conferir contas e saldos</Link>
       </div>
-      <CashProjectionSection report={projection} periodQuery={new URLSearchParams({ de: from, ate: to, ...(searchParams.comparar ? { comparar: searchParams.comparar } : {}) }).toString()} />
+      {searchParams.reservaSalva ? <p className="success-box">Reserva mínima atualizada.</p> : null}
+      <CashProjectionSection report={projection} canManageReserve={access.hasFullCompanyAccess && access.permissions.includes("FINANCE_WRITE")} reserveError={searchParams.erroReserva} periodQuery={new URLSearchParams({ de: from, ate: to, ...(searchParams.comparar ? { comparar: searchParams.comparar } : {}) }).toString()} />
 
       <div className="card">
         <h2>Movimentação realizada por natureza</h2>

@@ -10,6 +10,7 @@ import { getDashboardOverview } from "./dashboard-overview";
 import { getBudgetReport } from "../budgets/budgets";
 import { listSavingsGoals } from "../savings-goals/savings-goals";
 import { enqueueMonthlyReportEmail } from "../outbox/events";
+import { getClosedMonthlySnapshot, getReportSnapshot } from "./report-snapshots";
 
 const monthInput = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const ZERO = BigInt(0);
@@ -32,6 +33,7 @@ export function monthReportLabel(month: string): string {
 }
 
 export interface MonthlyReportData {
+  snapshot?: { kind: string; version: number; asOfDate: string; calculationVersion: string };
   companyName: string;
   month: string;
   monthLabel: string;
@@ -51,7 +53,17 @@ export interface MonthlyReportData {
  * cofrinhos): resultado por competência, caixa pelas baixas, inadimplência e projeção de 30 dias
  * na data em que o relatório é gerado.
  */
-export async function getMonthlyReportData(userId: string, companyId: string, rawMonth: string): Promise<MonthlyReportData> {
+export async function getMonthlyReportData(userId: string, companyId: string, rawMonth: string, snapshotId?: string): Promise<MonthlyReportData> {
+  const month = monthInput.parse(rawMonth);
+  if (snapshotId) {
+    const row = await getReportSnapshot(userId, companyId, snapshotId);
+    if (row.period !== month) throw new Error("A versão selecionada pertence a outro mês.");
+    return row.data.monthly;
+  }
+  return (await getClosedMonthlySnapshot(userId, companyId, month))?.monthly ?? getLiveMonthlyReportData(userId, companyId, month);
+}
+
+export async function getLiveMonthlyReportData(userId: string, companyId: string, rawMonth: string): Promise<MonthlyReportData> {
   const month = monthInput.parse(rawMonth);
   await assertActiveMembership(userId, companyId);
   const { from, to } = monthBounds(month);
@@ -161,6 +173,7 @@ export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer>
     };
 
     // Resultado
+    if (data.snapshot) paragraph(`Versão ${data.snapshot.version} · ${data.snapshot.kind === "CLOSING" ? "fechamento" : "emissão de PDF"} · posição preservada em ${dateBr(data.snapshot.asOfDate)} · ${data.snapshot.calculationVersion}.`);
     section("Resultado operacional do mês (por competência)");
     const { result, previousResult } = data;
     boxes([

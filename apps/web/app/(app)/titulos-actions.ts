@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { registerSettlement, registerTitleCollection, setTitleScheduledPayment, updateLateFeeSettings, updatePixSettings } from "@ax-finance/domain";
+import { registerSettlement, registerTitleCollection, setTitleScheduledPayment, setTitleCashPlan, updateLateFeeSettings, updatePixSettings } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -21,6 +21,22 @@ async function context() {
 }
 
 const text = (formData: FormData, key: string) => String(formData.get(key) ?? "");
+
+export async function saveTitleCashPlanAction(returnTo: string, titleId: string, formData: FormData) {
+  const { user, company } = await context();
+  try {
+    await setTitleCashPlan(user.id, company.id, titleId, {
+      expectedReceiptDate: text(formData, "expectedReceiptDate") || null,
+      promisedReceiptDate: text(formData, "promisedReceiptDate") || null,
+      receiptProbabilityBps: Math.round(Number(text(formData, "receiptProbability").replace(",", ".")) * 100),
+      cashPlanningNote: text(formData, "cashPlanningNote") || null,
+      expectedAccountId: text(formData, "expectedAccountId") || null,
+    });
+  } catch (error) {
+    redirect(listReturnPath(returnTo, { erroPrevisao: actionErrorMessage(error, "Não foi possível atualizar a previsão.") }));
+  }
+  redirect(listReturnPath(returnTo, { atualizado: "1" }, ["erroPrevisao"]));
+}
 
 /** Baixa total ou parcial pelo botão "Pagar"/"Receber" da linha. */
 export async function quickSettleTitleAction(returnTo: string, titleId: string, formData: FormData) {

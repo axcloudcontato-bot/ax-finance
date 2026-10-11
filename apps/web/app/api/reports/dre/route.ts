@@ -19,11 +19,12 @@ export async function GET(request: NextRequest) {
     const from = searchParams.get("de") || `${todayDateOnlyString().slice(0, 8)}01`;
     const to = searchParams.get("ate") || todayDateOnlyString();
 
-    const report = await getManagerialIncomeStatement(user.id, company.id, { from, to });
+    const report = await getManagerialIncomeStatement(user.id, company.id, { from, to, snapshotId: searchParams.get("versao") || undefined });
 
     const csv = toCsv(
       ["Seção", "Grupo gerencial ou linha", "Categoria", "Valor (centavos)"],
       [
+        ["Posição", report.capturedAsOf ? `Versão preservada em ${report.capturedAsOf}` : "Registros vigentes", "", ""],
         ["Formação do resultado", "Receita operacional", "", report.revenueCents.toString()],
         ["Formação do resultado", "Custos", "", report.costCents.toString()],
         ["Formação do resultado", "Resultado bruto", "", report.grossResultCents.toString()],

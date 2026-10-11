@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { getMonthlyReportData, renderMonthlyReportPdf } from "@ax-finance/domain";
+import { prepareMonthlyReportPdf } from "@ax-finance/domain";
 import { requireUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { errorResponse } from "@/lib/api";
@@ -15,8 +15,7 @@ export async function GET(request: NextRequest) {
     const company = await requirePrimaryCompany(user.id);
     const requested = new URL(request.url).searchParams.get("mes");
     const month = isYearMonth(requested) ? requested : currentYearMonth();
-    const data = await getMonthlyReportData(user.id, company.id, month);
-    const pdf = await renderMonthlyReportPdf(data);
+    const { pdf } = await prepareMonthlyReportPdf(user.id, company.id, month, { snapshotId: new URL(request.url).searchParams.get("versao") || undefined });
     return new Response(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",

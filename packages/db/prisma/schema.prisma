@@ -408,6 +408,8 @@ model Company {
   bankStatementLines      BankStatementLine[]
   auditEvents             AuditEvent[]
   periodClosures          PeriodClosure[]
+  reportSnapshots         ReportSnapshot[]
+  minimumCashReserveCents BigInt @default(0) @map("minimum_cash_reserve_cents")
   balanceAdjustments      BalanceAdjustment[]
   creditCards             CreditCard[]
   creditCardInvoices      CreditCardInvoice[]
@@ -752,6 +754,7 @@ enum CategoryStatus {
 }
 
 model Category {
+  costBehavior String @default("UNCLASSIFIED") @map("cost_behavior")
   id              String         @id @default(uuid())
   companyId       String         @map("company_id")
   company         Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
@@ -902,6 +905,10 @@ model Title {
   paymentCode           String?           @map("payment_code")
   /// Saída já agendada no banco para esta data; não é baixa (o dinheiro só sai na baixa).
   scheduledPaymentDate  DateTime?         @map("scheduled_payment_date") @db.Date
+  expectedReceiptDate DateTime? @map("expected_receipt_date") @db.Date
+  promisedReceiptDate DateTime? @map("promised_receipt_date") @db.Date
+  receiptProbabilityBps Int @default(10000) @map("receipt_probability_bps")
+  cashPlanningNote String? @map("cash_planning_note")
   lastCollectionAt      DateTime?         @map("last_collection_at")
   collectionCount       Int               @default(0) @map("collection_count")
 
@@ -1193,6 +1200,25 @@ model PeriodClosure {
 
   @@unique([companyId, period])
   @@map("period_closures")
+}
+
+model ReportSnapshot {
+  id String @id @default(uuid())
+  companyId String @map("company_id")
+  company Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  period String
+  kind String
+  version Int
+  asOfDate DateTime @map("as_of_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdByUserId String @map("created_by_user_id")
+  calculationVersion String @map("calculation_version")
+  payload Json
+  sourceKey String? @map("source_key")
+  @@unique([companyId, period, kind, version])
+  @@unique([companyId, sourceKey])
+  @@index([companyId, period, createdAt])
+  @@map("report_snapshots")
 }
 
 enum CreditCardBrand {

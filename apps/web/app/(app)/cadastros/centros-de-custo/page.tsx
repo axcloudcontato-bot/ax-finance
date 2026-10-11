@@ -23,7 +23,7 @@ export default async function CostCentersPage(
 
   return <main className="wide">
     <div className="page-header">
-      <div><h1>Centros de custo</h1><p className="subtitle">Classifique títulos e limite o acesso dos usuários por área.</p></div>
+      <div><h1>Centros de custo</h1><p className="subtitle">Separe áreas, projetos, contratos ou serviços para acompanhar rentabilidade e limitar o acesso dos usuários.</p></div>
       <ActionModal key={`novo-${searchParams.erro ?? ""}-${searchParams.criado ?? ""}`} triggerLabel="+ Novo centro de custo" triggerClassName="button-link workspace-primary-action" title="Novo centro de custo" initiallyOpen={Boolean(searchParams.erro) && searchParams.acao === "novo"}>
         {searchParams.erro && searchParams.acao === "novo" ? <p className="error">{searchParams.erro}</p> : null}
         <form action={createCostCenterAction}>

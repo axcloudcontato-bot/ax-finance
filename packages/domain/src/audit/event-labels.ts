@@ -1,4 +1,8 @@
 export const EVENT_TYPE_LABEL: Record<string, string> = {
+  CATEGORY_UPDATED: "Categoria atualizada",
+  REPORT_VERSION_PRESERVED: "Versão de relatório preservada",
+  TITLE_CASH_PLAN_UPDATED: "Previsão de recebimento atualizada",
+  CASH_RESERVE_UPDATED: "Reserva mínima atualizada",
   SETTLEMENT_REGISTERED: "Baixa registrada",
   SETTLEMENT_REVERSED: "Baixa estornada",
   TITLE_CANCELLED: "Título cancelado",

@@ -72,6 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
             href: "/relatorios/em-aberto",
           },
           { id: "rel-dre", title: "DRE gerencial", icon: BarChart3, href: "/relatorios/dre" },
+          { id: "rel-rentabilidade", title: "Rentabilidade", icon: BarChart3, href: "/relatorios/rentabilidade" },
           { id: "rel-forma", title: "Forma de pagamento", icon: BarChart3, href: "/relatorios/forma-de-pagamento" },
           { id: "rel-mensal", title: "Relatório mensal (PDF)", icon: BarChart3, href: "/relatorios/mensal" },
         ],

@@ -26,7 +26,7 @@ function merge(current: Line[], previous: Line[] | undefined) {
 
 export default async function DrePage(
   props: {
-    searchParams: Promise<{ de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string }>;
+    searchParams: Promise<{ de?: string; ate?: string; mes?: string; periodo?: string; comparar?: string; versao?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -39,13 +39,13 @@ export default async function DrePage(
 
   const period = resolvePeriodRange(searchParams);
   const { from, to } = period;
-  const comparison = resolveComparison(searchParams, period);
+  const comparison = searchParams.versao ? null : resolveComparison(searchParams, period);
 
   const [report, comparisonReport] = await Promise.all([
-    getManagerialIncomeStatement(user.id, company.id, { from, to }),
+    getManagerialIncomeStatement(user.id, company.id, { from, to, snapshotId: searchParams.versao }),
     comparison ? getManagerialIncomeStatement(user.id, company.id, comparison) : Promise.resolve(null),
   ]);
-  const exportHref = `/api/reports/dre?de=${from}&ate=${to}`;
+  const exportHref = `/api/reports/dre?de=${from}&ate=${to}${searchParams.versao ? `&versao=${encodeURIComponent(searchParams.versao)}` : ""}`;
   const compared = Boolean(comparisonReport);
   const zero = BigInt(0);
   const percentOfRevenue = (cents: bigint) => report.revenueCents > BigInt(0) ? `${(Number(cents * BigInt(10000) / report.revenueCents) / 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : "Sem base de receita";
@@ -80,8 +80,9 @@ export default async function DrePage(
 
   return (
     <main className="wide reports-page">
-      <ReportNavigation active="dre" from={from} to={to} comparison={searchParams.comparar} />
+      <ReportNavigation active="dre" from={from} to={to} comparison={searchParams.comparar} snapshotId={searchParams.versao} />
       <div className="page-header"><h1>DRE gerencial</h1><a href={exportHref} className="button-link">Exportar CSV</a></div>
+      {report.capturedAsOf ? <p className="report-notice">DRE preservada em {formatDateOnly(report.capturedAsOf)}. Valores, categorias e grupos mantêm a posição desta versão.</p> : null}
       <p className="muted" style={{ marginBottom: "1rem" }}>
         {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · operacional e juros contratuais por competência · demais encargos por data da baixa ·
         gerado em {new Date().toLocaleString("pt-BR", { timeZone: company.timezone })}

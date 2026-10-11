@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
     const bucketParam = searchParams.get("faixa") as AgingBucket;
     const bucket = AGING_BUCKETS.includes(bucketParam) ? bucketParam : undefined;
 
-    const report = await getOpenTitlesAgingReport(user.id, company.id, { type, asOfDate, bucket });
+    const report = await getOpenTitlesAgingReport(user.id, company.id, { type, asOfDate, bucket, snapshotId: searchParams.get("versao") || undefined });
 
     const csv = toCsv(
-      ["Saldos atuais em", "Referência dos atrasos", "Vencimento", "Tipo", "Descrição", "Categoria", "Cliente/fornecedor", "Centro de custo", "Saldo aberto (centavos)", "Faixa", "Dias de atraso"],
+      ["Saldos em", "Referência dos atrasos", "Vencimento", "Tipo", "Descrição", "Categoria", "Cliente/fornecedor", "Centro de custo", "Saldo aberto (centavos)", "Faixa", "Dias de atraso", "Versão preservada"],
       report.entries.map((entry) => [
         formatDateOnly(report.balanceAsOfDate), formatDateOnly(report.asOfDate),
         formatDateOnly(entry.dueDate),
@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
         entry.remainingCents.toString(),
         BUCKET_LABEL[entry.bucket] ?? entry.bucket,
         entry.daysLate,
+        report.snapshot ? `${report.snapshot.period} / ${report.snapshot.kind} / ${report.snapshot.version}` : "Atual",
       ])
     );
 

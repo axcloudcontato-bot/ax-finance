@@ -3,11 +3,13 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { getCompanyToday } from "../shared/today";
 import { addReportDays, reportDate } from "./report-period";
+import { getReportSnapshot } from "./report-snapshots";
 
 export const AGING_BUCKETS = ["A_VENCER", "D1_7", "D8_15", "D16_30", "D31_60", "D60_PLUS"] as const;
 export type AgingBucket = (typeof AGING_BUCKETS)[number];
 
 export const agingReportInput = z.object({
+  snapshotId: z.string().uuid().optional(),
   type: z.enum(["RECEIVABLE", "PAYABLE"]).optional(),
   asOfDate: reportDate.optional(),
   bucket: z.enum(AGING_BUCKETS).optional(),
@@ -53,10 +55,11 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
   const data = agingReportInput.parse(input);
   await assertActiveMembership(userId, companyId);
 
-  const balanceAsOf = await getCompanyToday(userId, companyId);
-  const asOf = data.asOfDate ?? balanceAsOf;
+  const snapshot = data.snapshotId ? await getReportSnapshot(userId, companyId, data.snapshotId) : null;
+  const balanceAsOf = snapshot ? snapshot.asOfDate.toISOString().slice(0, 10) : await getCompanyToday(userId, companyId);
+  const asOf = snapshot ? balanceAsOf : data.asOfDate ?? balanceAsOf;
 
-  const titles = await withCompanyContext(userId, companyId, (tx) =>
+  const titles = snapshot ? [] : await withCompanyContext(userId, companyId, (tx) =>
     tx.title.findMany({
       where: {
         companyId,
@@ -74,7 +77,7 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
     })
   );
 
-  const entries: AgingEntry[] = titles.map((title) => {
+  const entries: AgingEntry[] = snapshot ? snapshot.data.aging.filter((entry) => !data.type || entry.type === data.type) : titles.map((title) => {
     const settledPrincipalEquivalent = title.settlements.reduce(
       (sum, settlement) => sum + settlement.principalAmountCents + settlement.discountCents,
       BigInt(0)
@@ -107,6 +110,7 @@ export async function getOpenTitlesAgingReport(userId: string, companyId: string
   }
 
   return {
+    snapshot: snapshot ? { id: snapshot.id, period: snapshot.period, version: snapshot.version, kind: snapshot.kind } : null,
     asOfDate: new Date(`${asOf}T00:00:00Z`),
     balanceAsOfDate: new Date(balanceAsOf),
     schedule,

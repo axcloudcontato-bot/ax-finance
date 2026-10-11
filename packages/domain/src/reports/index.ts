@@ -7,3 +7,5 @@ export * from "./dashboard-overview";
 export * from "./dashboard-insights";
 export * from "./financial-calendar";
 export * from "./monthly-report";
+export * from "./report-snapshots";
+export * from "./profitability-report";

@@ -85,6 +85,7 @@ export default async function CategoriasPage(
               placeholder="Ex.: Receita de serviços, Pessoal, Estrutura..."
             />
 
+            <label htmlFor="costBehavior">Comportamento do gasto</label><select id="costBehavior" name="costBehavior" defaultValue="UNCLASSIFIED"><option value="UNCLASSIFIED">Não classificado</option><option value="FIXED">Fixo</option><option value="VARIABLE">Variável</option></select><p className="muted">Usado em custos e despesas para calcular margem de contribuição. Escolha conforme o gasto varia com as vendas; a natureza não determina o comportamento.</p>
             <SubmitButton>Criar categoria</SubmitButton>
           </form>
         </Modal>
@@ -114,7 +115,7 @@ export default async function CategoriasPage(
                 <tr key={category.id}>
                   <td>{category.parentId ? `↳ ${category.name}` : category.name}</td>
                   <td>{NATURE_LABEL[category.nature] ?? category.nature}</td>
-                  <td>{category.managerialGroup ?? "—"}</td>
+                  <td>{category.managerialGroup ?? "—"}<small className="muted" style={{ display: "block" }}>{category.costBehavior === "FIXED" ? "Gasto fixo" : category.costBehavior === "VARIABLE" ? "Gasto variável" : "Comportamento não classificado"}</small></td>
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                   <td>
                     <RowActionsMenu>
@@ -124,6 +125,7 @@ export default async function CategoriasPage(
                         <label htmlFor={`nature-${category.id}`}>Natureza</label><select id={`nature-${category.id}`} name="nature" defaultValue={category.nature}>{Object.entries(NATURE_LABEL).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
                         <label htmlFor={`parent-${category.id}`}>Categoria pai</label><select id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}><option value="">Nenhuma</option>{topLevelActive.filter((item) => item.id !== category.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
                         <label htmlFor={`group-${category.id}`}>Grupo gerencial</label><input id={`group-${category.id}`} name="managerialGroup" defaultValue={category.managerialGroup ?? ""} maxLength={200} />
+                        <label htmlFor={`behavior-${category.id}`}>Comportamento do gasto</label><select id={`behavior-${category.id}`} name="costBehavior" defaultValue={category.costBehavior}><option value="UNCLASSIFIED">Não classificado</option><option value="FIXED">Fixo</option><option value="VARIABLE">Variável</option></select>
                         <SubmitButton>Salvar alterações</SubmitButton>
                       </form>
                     </ActionModal>

@@ -1,12 +1,14 @@
 import { z } from "zod";
 import { loadDebtSchedules } from "../wealth/debt-installments";
-import { withCompanyContext } from "@ax-finance/db";
+import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { NATURE_LABEL } from "../categories/nature-label";
 import { assertCompanyPlanFeature } from "../subscriptions/plan-features";
 import { reportPeriod } from "./report-period";
+import { getReportSnapshot } from "./report-snapshots";
+import { companyToday } from "../shared/today";
 
-export const managerialIncomeStatementInput = reportPeriod;
+export const managerialIncomeStatementInput = reportPeriod.and(z.object({ snapshotId: z.string().uuid().optional() }));
 
 export type ManagerialIncomeStatementInput = z.infer<typeof managerialIncomeStatementInput>;
 
@@ -51,9 +53,20 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
   const data = managerialIncomeStatementInput.parse(input);
   await assertActiveMembership(userId, companyId);
   await assertCompanyPlanFeature(userId, companyId, "MANAGERIAL_DRE");
+  if (data.snapshotId) {
+    const snapshot = await getReportSnapshot(userId, companyId, data.snapshotId);
+    const saved = snapshot.data.incomeStatement;
+    if (!saved || saved.from !== data.from || saved.to !== data.to) throw new Error("Escolha o mês completo correspondente à versão preservada.");
+    return { ...saved.report, capturedAsOf: snapshot.asOfDate.toISOString().slice(0, 10) };
+  }
+  return { ...await withCompanyContext(userId, companyId, (tx) => getManagerialIncomeStatementInTx(tx, companyId, data)), capturedAsOf: null };
+}
 
+export async function getManagerialIncomeStatementInTx(tx: TenantScopedClient, companyId: string, data: ManagerialIncomeStatementInput) {
   const range = { gte: new Date(data.from), lte: new Date(data.to) };
-  const { titles, cardPurchases, settlements, refunds, debtSchedules } = await withCompanyContext(userId, companyId, async (tx) => {
+  const today = await companyToday(tx, companyId);
+  const effectiveRange = { gte: new Date(data.from), lte: new Date(data.to < today ? data.to : today) };
+  const { titles, cardPurchases, settlements, refunds, debtSchedules } = await (async () => {
     const result = {
       // O título da fatura de cartão fica de fora: o gasto entra pelas compras (abaixo), cada uma na
       // sua categoria e competência. Contar os dois somaria o mesmo dinheiro duas vezes.
@@ -71,19 +84,19 @@ export async function getManagerialIncomeStatement(userId: string, companyId: st
         where: { companyId, canceledAt: null, competenceDate: range },
         include: { category: true },
       }),
-      refunds: await tx.settlementRefund.findMany({ where: { companyId, reversedAt: null, effectiveDate: range }, select: { amountCents: true } }),
+      refunds: await tx.settlementRefund.findMany({ where: { companyId, reversedAt: null, effectiveDate: effectiveRange }, select: { amountCents: true } }),
       settlements: await tx.settlement.findMany({
         where: {
           companyId,
           reversedAt: null,
-          effectiveDate: range,
+          effectiveDate: effectiveRange,
           OR: [{ interestPenaltyCents: { gt: 0 } }, { feesCents: { gt: 0 } }, { discountCents: { gt: 0 } }],
         },
         select: { interestPenaltyCents: true, feesCents: true, discountCents: true, title: { select: { type: true } } },
       }),
     };
     return { ...result, debtSchedules: await loadDebtSchedules(tx, companyId, result.titles.map((title) => title.installmentGroupId)) };
-  });
+  })();
 
   const operating = new Map<string, bigint>();
   const outside = new Map<string, bigint>();

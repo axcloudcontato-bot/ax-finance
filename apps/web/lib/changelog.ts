@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-10-historico-previsao-rentabilidade",
+    date: "2026-10-10",
+    title: "Histórico preservado, previsão de caixa e rentabilidade",
+    summary: "Compare projetos, simule atrasos nos recebimentos e recupere a carteira e os PDFs guardados nos fechamentos.",
+    changes: [
+      { kind: "NEW", text: "Fechamentos preservam versões da carteira, resumo mensal e rentabilidade. Reabrir e fechar novamente mantém as versões anteriores. A posição informa o dia da captura." },
+      { kind: "NEW", text: "PDFs emitidos passam a ficar guardados para recuperar o documento original, mesmo depois de novos pagamentos e ajustes." },
+      { kind: "NEW", text: "Planeje recebimentos com data provável, promessa do cliente, conta prevista e probabilidade estimada. O vencimento contratual permanece igual." },
+      { kind: "NEW", text: "Fluxo de caixa simula atrasos, compara o saldo com uma reserva mínima e identifica pagamentos no primeiro dia de insuficiência. Recorrências ainda não geradas aparecem como estimativas sem duplicação." },
+      { kind: "NEW", text: "Rentabilidade por centro, projeto ou serviço mostra contribuição, fixos diretos e rateados e ponto de equilíbrio. Gastos sem classificação impedem cálculos que poderiam induzir decisões erradas." },
+    ],
+  },
+  {
     id: "2026-10-10-integridade-financeira",
     date: "2026-10-10",
     title: "Fechamento, dívidas e relatórios mais consistentes",

@@ -1,4 +1,6 @@
-import { z } from "zod";
+import { reportDate } from "../reports/report-period";
+import { lockTitles } from "./lock-titles";
+import { lockPeriodClosure } from "../closures/assert-period-open";
 import { withCompanyContext } from "@ax-finance/db";
 import { recordAuditEvent } from "../audit/record-audit-event";
 import { assertCompanyPermission } from "../companies/permissions";
@@ -11,10 +13,12 @@ const OPEN = ["OPEN", "PARTIALLY_SETTLED"];
  * só sai da conta quando a baixa é registrada. Serve para não pagar duas vezes e saber o que já está resolvido.
  */
 export async function setTitleScheduledPayment(userId: string, companyId: string, titleId: string, date: string | null) {
-  const scheduled = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().parse(date);
+  const scheduled = reportDate.nullable().parse(date);
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
+    await lockPeriodClosure(tx, companyId, true);
+    await lockTitles(tx, companyId, [titleId]);
     const title = await tx.title.findFirst({ where: { id: titleId, companyId, deletedAt: null } });
     if (!title) throw new TitleNotFoundError();
     if (title.type !== "PAYABLE" || !OPEN.includes(title.status)) throw new TitleScheduleInvalidError();

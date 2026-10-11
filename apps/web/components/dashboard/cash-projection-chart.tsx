@@ -29,19 +29,20 @@ const shortDate = (value: string) => `${value.slice(8, 10)}/${value.slice(5, 7)}
  * - só a série "todos os recebíveis" tem degradê; "sem vencidos" é um subconjunto dela, e duas
  *   áreas coloridas sobrepostas misturam as cores (azul + âmbar = cinza).
  */
-export function CashProjectionChart({ data, distinguishScenarios = false }: { data: CashProjectionPoint[]; distinguishScenarios?: boolean }) {
+export function CashProjectionChart({ data, distinguishScenarios = false, planning = false, reserve }: { data: CashProjectionPoint[]; distinguishScenarios?: boolean; planning?: boolean; reserve?: number }) {
   return (
     <ChartContainer
-      config={chartConfig}
+      config={planning ? { projected: { ...chartConfig.projected, label: "Datas prováveis e probabilidades" }, withoutOverdue: { ...chartConfig.withoutOverdue, label: "Recebimentos atrasados" } } : chartConfig}
       className="dashboard-cash-chart aspect-auto"
       role="img"
-      aria-label="Projeção diária do saldo nos próximos dias, com uma área incluindo todos os recebíveis e outra sem os recebíveis já vencidos"
+      aria-label={planning ? "Saldo diário pelas datas prováveis e com atraso dos recebimentos, comparado com a reserva mínima" : "Projeção diária do saldo incluindo todos os recebíveis e sem os recebíveis vencidos"}
     >
       <AreaChart accessibilityLayer data={data} margin={{ top: 12, left: 4, right: 14, bottom: 0 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} minTickGap={28} tickFormatter={shortDate} />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} width={72} tickFormatter={(value: number) => compactCurrency.format(value)} />
-        <ReferenceLine y={0} stroke="var(--danger)" strokeDasharray="4 4" />
+        <ReferenceLine y={0} ifOverflow="extendDomain" stroke="var(--danger)" strokeDasharray="4 4" />
+        {reserve !== undefined && reserve > 0 ? <ReferenceLine y={reserve} ifOverflow="extendDomain" stroke="var(--chart-3)" strokeDasharray="3 3" label={{ value: "Reserva mínima", position: "insideTopRight" }} /> : null}
         <ChartTooltip
           cursor={false}
           content={

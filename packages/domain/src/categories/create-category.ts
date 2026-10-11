@@ -14,6 +14,7 @@ export const CATEGORY_NATURES = [
 ] as const;
 
 export const createCategoryInput = z.object({
+  costBehavior: z.enum(["UNCLASSIFIED", "FIXED", "VARIABLE"]).default("UNCLASSIFIED"),
   name: z.string().trim().min(1).max(200),
   nature: z.enum(CATEGORY_NATURES),
   parentId: z.string().uuid().optional(),
@@ -51,6 +52,7 @@ export async function createCategory(userId: string, companyId: string, input: u
         companyId,
         name: data.name,
         nature: data.nature,
+        costBehavior: data.costBehavior,
         parentId: data.parentId,
         managerialGroup: data.managerialGroup,
         color: data.color,

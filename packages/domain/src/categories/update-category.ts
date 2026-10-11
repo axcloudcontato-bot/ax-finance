@@ -4,8 +4,10 @@ import { withCompanyContext } from "@ax-finance/db";
 import { assertCompanyPermission } from "../companies/permissions";
 import { CategoryDepthExceededError, CategoryNotFoundError } from "../errors";
 import { CATEGORY_NATURES } from "./create-category";
+import { recordAuditEvent } from "../audit/record-audit-event";
 
 const updateCategoryInput = z.object({
+  costBehavior: z.enum(["UNCLASSIFIED", "FIXED", "VARIABLE"]).optional(),
   name: z.string().trim().min(1).max(200), nature: z.enum(CATEGORY_NATURES),
   parentId: z.string().uuid().optional(), managerialGroup: z.string().trim().max(200).optional(),
 });
@@ -17,7 +19,7 @@ export async function updateCategory(userId: string, companyId: string, category
     await lockPeriodClosure(tx, companyId, true);
     const category = await tx.category.findFirst({ where: { id: categoryId, companyId } });
     if (!category) throw new CategoryNotFoundError();
-    if (data.nature !== category.nature || (data.managerialGroup?.trim() || null) !== category.managerialGroup) {
+    if (data.nature !== category.nature || (data.managerialGroup?.trim() || null) !== category.managerialGroup || (data.costBehavior !== undefined && data.costBehavior !== category.costBehavior)) {
       // A natureza e o grupo são usados nos relatórios de títulos, rateios e compras já lançados.
       const [titles, purchases] = await Promise.all([
         tx.title.findMany({ where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, OR: [{ categoryId }, { allocations: { some: { categoryId } } }] }, select: { competenceDate: true } }),
@@ -32,7 +34,9 @@ export async function updateCategory(userId: string, companyId: string, category
       if (!parent) throw new CategoryNotFoundError();
       if (parent.parentId || await tx.category.findFirst({ where: { companyId, parentId: categoryId } })) throw new CategoryDepthExceededError();
     }
-    return tx.category.update({ where: { id: categoryId }, data: { ...data, parentId: data.parentId ?? null, managerialGroup: data.managerialGroup || null } });
+    const updated = await tx.category.update({ where: { id: categoryId }, data: { ...data, parentId: data.parentId ?? null, managerialGroup: data.managerialGroup || null } });
+    await recordAuditEvent(tx, { companyId, actorUserId: userId, eventType: "CATEGORY_UPDATED", resourceType: "Category", resourceId: categoryId, summary: `Categoria ${updated.name} atualizada`, metadata: { previousCostBehavior: category.costBehavior, costBehavior: updated.costBehavior, previousNature: category.nature, nature: updated.nature } });
+    return updated;
   });
 }
 

@@ -4857,3 +4857,10 @@ td .modal-overlay { white-space: normal; text-align: left; }
   .admin-smtp-preset select { width: 100% !important; min-width: 0; }
   .admin-smtp-test, .admin-shell .admin-smtp-footer button[type="submit"] { width: 100%; }
 }
+
+/* Histórico e planejamento financeiro */
+.report-version-links { display: flex; flex-wrap: wrap; gap: 0.55rem 1rem; padding-block: 0.25rem; }
+.cash-plan-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem 1.25rem; }
+.cash-plan-full { grid-column: 1 / -1; }
+.cash-plan-form textarea { width: 100%; min-height: 5rem; }
+@media (max-width: 640px) { .cash-plan-form { grid-template-columns: minmax(0, 1fr); } }

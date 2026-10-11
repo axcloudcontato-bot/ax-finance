@@ -8,18 +8,19 @@ import { formatDateOnly } from "@/lib/dates";
 import { addMonths, currentYearMonth, isYearMonth, monthLabel } from "@/lib/month";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { sendMonthlyReportNowAction } from "./actions";
+import { SnapshotHistory } from "@/components/reports/snapshot-history";
 
 const ZERO = BigInt(0);
 const percent = (bps: number) => `${(bps / 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
-export default async function MonthlyReportPage(props: { searchParams: Promise<{ mes?: string; enviado?: string; erro?: string }> }) {
+export default async function MonthlyReportPage(props: { searchParams: Promise<{ mes?: string; enviado?: string; erro?: string; versao?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
   // padrão: o mês anterior, que é o que já fechou
   const month = isYearMonth(searchParams.mes) ? searchParams.mes : addMonths(currentYearMonth(), -1);
-  const data = await getMonthlyReportData(user.id, company.id, month);
+  const data = await getMonthlyReportData(user.id, company.id, month, searchParams.versao);
   const { result } = data;
 
   return (
@@ -35,12 +36,13 @@ export default async function MonthlyReportPage(props: { searchParams: Promise<{
             <strong>{monthLabel(month)}</strong>
             <Link href={`/relatorios/mensal?mes=${addMonths(month, 1)}`} className="button-link" aria-label="Próximo mês">›</Link>
           </nav>
-          <a href={`/api/reports/monthly-pdf?mes=${month}`} className="button-link workspace-primary-action" target="_blank" rel="noopener">Baixar PDF</a>
+          <a href={`/api/reports/monthly-pdf?mes=${month}${searchParams.versao ? `&versao=${encodeURIComponent(searchParams.versao)}` : ""}`} className="button-link workspace-primary-action" target="_blank" rel="noopener">Baixar PDF</a>
         </div>
       </div>
 
       {searchParams.enviado ? <p className="success-box">Relatório de {monthLabel(month)} enviado para a fila de e-mail ({user.email}). Chega em alguns minutos.</p> : null}
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
+      <p className="report-notice">{data.snapshot ? `Versão ${data.snapshot.version} de ${data.snapshot.kind === "CLOSING" ? "fechamento" : "PDF"}. Carteira e projeção preservadas em ${formatDateOnly(data.snapshot.asOfDate)}; pagamentos posteriores não alteram esta posição.` : "Consulta atual, ainda sem versão de fechamento. Resultado refere-se ao mês; inadimplência, orçamento e projeção mostram os dados disponíveis na data de geração."}</p>
 
       <section className="card">
         <div className="workspace-card-heading"><div><h2>Resultado operacional de {data.monthLabel}</h2><p>Por competência: receitas, custos e despesas do mês, pagos ou não. Juros e movimentações de capital aparecem na DRE gerencial.</p></div></div>
@@ -89,6 +91,7 @@ export default async function MonthlyReportPage(props: { searchParams: Promise<{
           <SubmitButton className="secondary">Enviar para {user.email}</SubmitButton>
         </form>
       </section>
+      <SnapshotHistory userId={user.id} companyId={company.id} period={month} />
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AGING_BUCKETS, type AgingBucket, getOpenTitlesAgingReport } from "@ax-finance/domain";
+import { AGING_BUCKETS, type AgingBucket, getOpenTitlesAgingReport, listReportSnapshots } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
@@ -12,7 +12,7 @@ import { ReportNavigation } from "@/components/reports/report-navigation";
 
 export default async function EmAbertoPage(
   props: {
-    searchParams: Promise<{ tipo?: string; data?: string; faixa?: string }>;
+    searchParams: Promise<{ tipo?: string; data?: string; faixa?: string; versao?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -23,11 +23,12 @@ export default async function EmAbertoPage(
   const company = await requirePrimaryCompany(user.id);
 
   const type = searchParams.tipo === "RECEIVABLE" || searchParams.tipo === "PAYABLE" ? searchParams.tipo : undefined;
-  const asOfDate = isDateOnly(searchParams.data) ? searchParams.data : todayDateOnlyString();
+  let asOfDate = isDateOnly(searchParams.data) ? searchParams.data : todayDateOnlyString();
   const bucket = AGING_BUCKETS.includes(searchParams.faixa as AgingBucket) ? searchParams.faixa as AgingBucket : undefined;
 
-  const report = await getOpenTitlesAgingReport(user.id, company.id, { type, asOfDate, bucket });
-  const exportHref = `/api/reports/aging?data=${asOfDate}${type ? `&tipo=${type}` : ""}${bucket ? `&faixa=${bucket}` : ""}`;
+  const [report, versions] = await Promise.all([getOpenTitlesAgingReport(user.id, company.id, { type, asOfDate, bucket, snapshotId: searchParams.versao || undefined }), listReportSnapshots(user.id, company.id)]);
+  asOfDate = report.asOfDate.toISOString().slice(0, 10);
+  const exportHref = `/api/reports/aging?data=${asOfDate}${type ? `&tipo=${type}` : ""}${bucket ? `&faixa=${bucket}` : ""}${searchParams.versao ? `&versao=${encodeURIComponent(searchParams.versao)}` : ""}`;
   const byType = { RECEIVABLE: new Map<string, bigint>(), PAYABLE: new Map<string, bigint>() };
   for (const entry of report.allEntries) {
     const totals = byType[entry.type];
@@ -44,17 +45,18 @@ export default async function EmAbertoPage(
 
   return (
     <main className="wide reports-page">
-      <ReportNavigation active="aging" />
+      <ReportNavigation active="aging" snapshotId={searchParams.versao} snapshotMonth={report.snapshot?.period} />
       <div className="page-header"><h1>Contas a receber e a pagar</h1><a href={exportHref} className="button-link">Exportar seleção CSV</a></div>
       <p className="muted" style={{ marginBottom: "1rem" }}>
         {company.name} · saldos em aberto de {formatDateOnly(report.balanceAsOfDate)} · atrasos em relação a {formatDateOnly(asOfDate)} · gerado em{" "}
         {new Date().toLocaleString("pt-BR", { timeZone: company.timezone })}
       </p>
-      <p className="report-notice">A data de referência altera as faixas de atraso e os vencimentos previstos. Os saldos são os atuais, com baixas efetivas até hoje; esta tela não reconstrói a carteira histórica. Devoluções movimentam caixa e não reabrem automaticamente o principal.</p>
+      <p className="report-notice">{report.snapshot ? `Carteira preservada do mês ${report.snapshot.period}, versão ${report.snapshot.version} de ${report.snapshot.kind === "CLOSING" ? "fechamento" : "PDF"}. Saldos, nomes e atrasos mantêm a posição de ${formatDateOnly(report.balanceAsOfDate)}, sem pagamentos posteriores.` : "Consulta atual: a data de referência altera os atrasos, mas os saldos consideram as baixas vigentes até hoje. Para consultar uma posição antiga, selecione uma versão preservada. Devoluções movimentam caixa e não reabrem o principal."}</p>
       {searchParams.data && !isDateOnly(searchParams.data) ? <p role="alert" className="report-notice report-notice-alert">Data inválida. Foi usada a data de hoje; escolha uma data válida para recalcular os atrasos.</p> : null}
 
       <div className="card">
         <form method="get" className="workspace-report-filters">
+          <div><label htmlFor="versao">Posição da carteira</label><select id="versao" name="versao" defaultValue={searchParams.versao ?? ""}><option value="">Atual</option>{versions.map((version) => <option key={version.id} value={version.id}>{version.period} · {version.kind === "CLOSING" ? "Fechamento" : "PDF"} {version.version} · {formatDateOnly(version.asOfDate)}</option>)}</select></div>
           <div>
             <label htmlFor="tipo">Tipo</label>
             <select id="tipo" name="tipo" defaultValue={type ?? ""}>
@@ -66,7 +68,7 @@ export default async function EmAbertoPage(
           <div><label htmlFor="faixa">Faixa na lista de títulos</label><select id="faixa" name="faixa" defaultValue={bucket ?? ""}><option value="">Todas as faixas</option>{AGING_BUCKETS.map((value) => <option key={value} value={value}>{BUCKET_LABEL[value]}</option>)}</select></div>
           <div>
             <label htmlFor="data">Data de referência</label>
-            <input id="data" name="data" type="date" defaultValue={asOfDate} />
+            <input id="data" name="data" type="date" defaultValue={asOfDate} disabled={Boolean(report.snapshot)} />
           </div>
           <SubmitButton style={{ marginTop: 0 }}>
             Filtrar
@@ -106,7 +108,7 @@ export default async function EmAbertoPage(
               const receivable = byType.RECEIVABLE.get(row.bucket) ?? BigInt(0);
               const payable = byType.PAYABLE.get(row.bucket) ?? BigInt(0);
               return <tr key={row.bucket}>
-                <td><Link href={`?${new URLSearchParams({ data: asOfDate, faixa: row.bucket, ...(type ? { tipo: type } : {}) })}`}>{BUCKET_LABEL[row.bucket] ?? row.bucket}</Link></td>
+                <td><Link href={`?${new URLSearchParams({ data: asOfDate, faixa: row.bucket, ...(type ? { tipo: type } : {}), ...(searchParams.versao ? { versao: searchParams.versao } : {}) })}`}>{BUCKET_LABEL[row.bucket] ?? row.bucket}</Link></td>
                 {type !== "PAYABLE" ? <td className="money"><div className="workspace-aging-value"><span>{formatCents(receivable)}</span><i aria-hidden="true" style={{ width: `${percentOf(receivable, receivableCents)}%` }} /></div></td> : null}
                 {type !== "RECEIVABLE" ? <td className="money"><div className="workspace-aging-value"><span>{formatCents(payable)}</span><i aria-hidden="true" style={{ width: `${percentOf(payable, payableCents)}%` }} /></div></td> : null}
               </tr>;

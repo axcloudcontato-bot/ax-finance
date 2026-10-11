@@ -6,6 +6,7 @@ import { addMonths, currentYearMonth, monthLabel } from "@/lib/month";
 import { closePeriodAction, reopenPeriodAction } from "./actions";
 import { requirePlanFeature } from "@/lib/plan-access";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { SnapshotHistory } from "@/components/reports/snapshot-history";
 
 export default async function FechamentoPage(
   props: {
@@ -31,8 +32,8 @@ export default async function FechamentoPage(
     <main className="wide">
       <div className="page-header"><h1>Fechamento de período</h1></div>
       <p className="subtitle">
-        Fechar um período bloqueia novas baixas e estornos com data efetiva naquele mês. Título
-        novo, cancelamento e transferências não são afetados nesta etapa.
+        Fechar bloqueia alterações financeiras daquele mês e preserva uma versão do relatório e da carteira.
+        Para corrigir a competência ou seus movimentos, reabra com um motivo; a versão anterior permanece disponível.
       </p>
 
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
@@ -95,6 +96,7 @@ export default async function FechamentoPage(
           </tbody>
         </table></div>
       </div>
+      <SnapshotHistory userId={user.id} companyId={company.id} />
     </main>
   );
 }

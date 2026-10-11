@@ -25,6 +25,7 @@ import { TitleStatusBadge } from "@/components/titles/title-status-badge";
 import { SettlementForm } from "@/components/titles/settlement-form";
 import { CopyButton } from "@/components/titles/copy-button";
 import { CollectionModal } from "@/components/titles/collection-modal";
+import { CashPlanModal } from "@/components/titles/cash-plan-modal";
 import { pixChargeForTitle } from "@/lib/pix-charge";
 import { buildCollectionMessage } from "@/lib/collection-message";
 
@@ -52,7 +53,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 export default async function EntradaDetailPage(
   props: {
     params: Promise<{ titleId: string }>;
-    searchParams: Promise<{ erro?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; cobrado?: string; duplicado?: string; rateado?: string }>;
+    searchParams: Promise<{ erro?: string; erroPrevisao?: string; erroBaixa?: string; erroAnexo?: string; anexoAdicionado?: string; anexoRemovido?: string; erroEdicao?: string; erroDevolucao?: string; erroRateio?: string; atualizado?: string; cobrado?: string; duplicado?: string; rateado?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -128,6 +129,7 @@ export default async function EntradaDetailPage(
           </div>
           <div className="record-detail-actions">
             <TitleStatusBadge status={title.status} dueDate={title.dueDate} />
+            {showSettlementForm ? <CashPlanModal title={title} accounts={accounts} returnTo={returnTo} error={searchParams.erroPrevisao} /> : null}
             <ActionModal triggerLabel="Editar" title="Editar entrada" initiallyOpen={Boolean(searchParams.erroEdicao)}>
               <TitleEditForm action={updateEntradaAction.bind(null, title.id)} title={title} categories={categories} parties={clients} costCenters={costCenters} accounts={accounts} partyLabel="Cliente" error={searchParams.erroEdicao}/>
             </ActionModal>
@@ -185,6 +187,8 @@ export default async function EntradaDetailPage(
         <dl className="record-detail-facts">
           {title.party ? <div><dt>Cliente</dt><dd><Link href={`/cadastros/pessoas/${title.party.id}`}>{title.party.name}</Link></dd></div> : null}
           {expectedAccount ? <div><dt>Conta prevista</dt><dd>{expectedAccount.name}</dd></div> : null}
+          {title.promisedReceiptDate || title.expectedReceiptDate ? <div><dt>{title.promisedReceiptDate ? "Promessa de pagamento" : "Recebimento provável"}</dt><dd>{formatDateOnly((title.promisedReceiptDate ?? title.expectedReceiptDate)!)} · {title.receiptProbabilityBps / 100}% de probabilidade estimada</dd></div> : null}
+          {title.cashPlanningNote ? <div><dt>Observação da previsão</dt><dd>{title.cashPlanningNote}</dd></div> : null}
           {title.expectedPaymentMethod ? <div><dt>Forma de pagamento</dt><dd>{paymentMethodLabel(title.expectedPaymentMethod)}</dd></div> : null}
           {title.documentNumber ? <div><dt>Documento</dt><dd>{title.documentNumber}</dd></div> : null}
           {title.paymentCode ? <div><dt>Dados de pagamento</dt><dd className="fact-copy"><code>{title.paymentCode}</code><CopyButton text={title.paymentCode} /></dd></div> : null}

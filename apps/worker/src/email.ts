@@ -7,8 +7,7 @@ import {
   decodeDueDateSummaryPayload,
   decodeImportFailedPayload,
   decodeMonthlyReportPayload,
-  getMonthlyReportData,
-  renderMonthlyReportPdf,
+  prepareMonthlyReportPdf,
   type MonthlyReportData,
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
@@ -345,8 +344,8 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
 async function renderEmail(event: OutboxEvent): Promise<RenderedEmail> {
   if (event.type === "MONTHLY_REPORT") {
     const payload = decodeMonthlyReportPayload(event);
-    const data = await getMonthlyReportData(payload.userId, payload.companyId, payload.month);
-    return renderMonthlyReportEmail(payload, data, await renderMonthlyReportPdf(data));
+    const report = await prepareMonthlyReportPdf(payload.userId, payload.companyId, payload.month, { sourceKey: `outbox:${event.id}` });
+    return renderMonthlyReportEmail(payload, report.data, report.pdf);
   }
   return renderOutboxEmail(event);
 }

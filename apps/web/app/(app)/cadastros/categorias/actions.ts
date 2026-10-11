@@ -20,7 +20,7 @@ export async function createCategoryAction(formData: FormData) {
 
   let category: Awaited<ReturnType<typeof createCategory>>;
   try {
-    category = await createCategory(user.id, company.id, { name, nature, parentId, managerialGroup });
+    category = await createCategory(user.id, company.id, { name, nature, parentId, managerialGroup, costBehavior: String(formData.get("costBehavior") ?? "UNCLASSIFIED") });
   } catch (error) {
     const message = actionErrorMessage(error, "Não foi possível criar a categoria.");
     redirect(`/cadastros/categorias?erro=${encodeURIComponent(message)}`);
@@ -51,6 +51,7 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
       name: String(formData.get("name") ?? ""), nature: String(formData.get("nature") ?? ""),
       parentId: String(formData.get("parentId") ?? "") || undefined,
       managerialGroup: String(formData.get("managerialGroup") ?? "") || undefined,
+      costBehavior: String(formData.get("costBehavior") ?? "UNCLASSIFIED"),
     });
   } catch (error) {
     redirect(`/cadastros/categorias?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar a categoria."))}`);
