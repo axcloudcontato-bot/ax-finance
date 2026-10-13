@@ -37,7 +37,7 @@ export function CashProjectionChart({ data, distinguishScenarios = false, planni
       role="img"
       aria-label={planning ? "Saldo diário pelas datas prováveis e com atraso dos recebimentos, comparado com a reserva mínima" : "Projeção diária do saldo incluindo todos os recebíveis e sem os recebíveis vencidos"}
     >
-      <AreaChart accessibilityLayer data={data} margin={{ top: 12, left: 4, right: 14, bottom: 0 }}>
+      <AreaChart accessibilityLayer data={data} margin={{ top: 12, left: 4, right: 24, bottom: 0 }}>
         <CartesianGrid vertical={false} />
         <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} minTickGap={28} tickFormatter={shortDate} />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} width={72} tickFormatter={(value: number) => compactCurrency.format(value)} />

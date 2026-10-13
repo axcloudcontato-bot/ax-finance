@@ -53,7 +53,7 @@ export default async function FluxoDeCaixaPage(
     <main className="wide reports-page">
       <ReportNavigation active="cash" from={from} to={to} comparison={searchParams.comparar} />
       <div className="page-header"><h1>Fluxo de caixa</h1><a href={exportHref} className="button-link">Exportar realizado CSV</a></div>
-      <p className="muted" style={{ marginBottom: "1rem" }}>
+      <p className="muted report-meta">
         {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · gerado em{" "}
         {new Date().toLocaleString("pt-BR", { timeZone: company.timezone })}
       </p>
@@ -81,7 +81,7 @@ export default async function FluxoDeCaixaPage(
         </div>
         {report.balanceDifferenceCents !== BigInt(0) ? <p className="report-notice report-notice-alert" role="alert">Há uma diferença de {formatCents(report.balanceDifferenceCents)} entre o saldo e os movimentos consultados. Os registros podem ter mudado durante a consulta; atualize o relatório e confira as contas antes de usar o saldo.</p> : null}
         <p className="report-caption">Saldo inicial + baixas e devoluções + outras alterações = saldo final. Inclui todas as contas cadastradas, inclusive arquivadas e fora do disponível. Outras alterações incluem saldos de abertura no período, ajustes manuais e tarifas de transferência. Transferências internas não geram receita. A conferência usa os registros vigentes e não substitui a conciliação bancária.</p>
-        <Link href="/contas">Conferir contas e saldos</Link>
+        <Link href="/contas" className="report-card-link">Conferir contas e saldos →</Link>
       </div>
       {searchParams.reservaSalva ? <p className="success-box">Reserva mínima atualizada.</p> : null}
       <CashProjectionSection report={projection} canManageReserve={access.hasFullCompanyAccess && access.permissions.includes("FINANCE_WRITE")} reserveError={searchParams.erroReserva} periodQuery={new URLSearchParams({ de: from, ate: to, ...(searchParams.comparar ? { comparar: searchParams.comparar } : {}) }).toString()} />

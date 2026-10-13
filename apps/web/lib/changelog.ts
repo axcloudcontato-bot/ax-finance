@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-12-orcamento-repete-meses",
+    date: "2026-10-12",
+    title: "Orçamento do ano mais rápido de preencher",
+    summary: "Digite o valor de uma categoria uma vez e ele se repete nos meses vazios.",
+    changes: [
+      { kind: "IMPROVED", text: "Na grade do orçamento anual, o primeiro valor digitado numa categoria preenche os meses ainda vazios. Ajuste à mão só os meses diferentes; valores já salvos não mudam." },
+      { kind: "FIXED", text: "Fluxo de caixa, Contas a receber/pagar e Rentabilidade: filtros alinhados com o botão e espaçamento uniforme nos cartões." },
+    ],
+  },
+  {
     id: "2026-10-10-historico-previsao-rentabilidade",
     date: "2026-10-10",
     title: "Histórico preservado, previsão de caixa e rentabilidade",

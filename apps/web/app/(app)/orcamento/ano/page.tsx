@@ -9,6 +9,7 @@ import { sortCategoriesTree } from "@/lib/categories";
 import { ActionModal } from "@/components/ui/action-modal";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ScrollToCurrent } from "@/components/scroll-to-current";
+import { BudgetYearAutofill } from "@/components/budget/budget-year-autofill";
 import { fillBudgetYearAction, saveBudgetYearAction } from "../actions";
 
 const MONTH_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -151,7 +152,8 @@ export default async function AnnualBudgetPage(props: { searchParams: Promise<{ 
                 </tfoot>
               </table>
             </ScrollToCurrent>
-            <p className="field-note">Digite em reais (1.200 ou 1.200,50). Deixe em branco para não orçar o mês. O número pequeno é o gasto do mês; em vermelho, acima do planejado.</p>
+            <BudgetYearAutofill />
+            <p className="field-note">Digite em reais (1.200 ou 1.200,50). O primeiro valor de uma categoria se repete nos meses vazios; ajuste à mão os meses diferentes. Deixe em branco para não orçar o mês. O número pequeno é o gasto do mês; em vermelho, acima do planejado.</p>
             <SubmitButton>Salvar orçamento do ano</SubmitButton>
           </>
         )}

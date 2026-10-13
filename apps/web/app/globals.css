@@ -4123,6 +4123,27 @@ main.dashboard-page h2 { font-weight: 700; }
 .workspace-table tbody th[scope="row"] { text-transform: none !important; letter-spacing: normal !important; text-align: left; font-size: 0.84rem !important; font-weight: inherit; }
 @media (max-width: 1050px) { .report-metrics-four, .report-balance-bridge { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .report-metrics-four, .report-balance-bridge { grid-template-columns: 1fr; } .report-navigation a { flex: 1 1 auto; text-align: center; } .workspace-report-filters > div { max-width: 100%; } .workspace-report-filters :is(input, select) { min-width: 0; width: 100%; } }
+
+/* Relatórios: filtros ocupam a linha com campos e botão na mesma altura, e um só ritmo vertical dentro dos cartões. */
+.workspace-report-filters { gap: 0.85rem 1rem; margin-bottom: 1.25rem; }
+.workspace-report-filters:last-child { margin-bottom: 0; }
+.workspace-report-filters > div { display: flex; flex: 1 1 200px; flex-direction: column; min-width: 0; }
+.workspace-report-filters > div > label { margin-bottom: 0.35rem; }
+.workspace-report-filters > div > :is(select, input) { width: 100%; min-width: 0; height: 44px; margin: 0; }
+.ax-model-buttons main .workspace-report-filters > button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button) { flex: 0 0 auto; height: 44px; min-height: 44px; margin: 0; padding-inline: 1.25rem; }
+.report-meta { margin: 0 0 1.25rem; }
+.reports-page .page-header { margin-bottom: 0.5rem; }
+.reports-page .report-balance-bridge { margin-bottom: 0.25rem; }
+.reports-page .card > .report-card-link { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--accent); font-size: 0.85rem; font-weight: 650; text-decoration: none; }
+.reports-page .card > .report-card-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.reports-page .card .workspace-metrics { margin-bottom: 1.25rem; }
+.reports-page .card .report-notice { margin-bottom: 1.25rem; }
+.reports-page .card .report-caption { margin: 1rem 0; }
+.reports-page .card .report-chart-legend { margin: 0 0 1rem; }
+.reports-page .card .report-details { border-top: 1px solid var(--border); }
+.reports-page .card .report-details:last-of-type { border-bottom: 1px solid var(--border); }
+.reports-page .card .report-details[open] > .table-scroll { margin-bottom: 1rem; }
+@media (max-width: 640px) { .ax-model-buttons main .workspace-report-filters > button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button) { width: 100%; } }
 .workspace-list-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
 .workspace-list-toolbar p { margin: 0; color: var(--muted); font-size: 0.8rem; }
 .workspace-list-toolbar form { display: flex; align-items: center; gap: 0.4rem; }
@@ -4818,6 +4839,8 @@ td .modal-overlay { white-space: normal; text-align: left; }
 .budget-year-input { width: 100%; min-width: 68px; min-height: 32px; margin: 0; padding: 0.25rem 0.4rem; font-size: 0.8rem; text-align: right; }
 .budget-year-table td small, .budget-year-total small { display: block; margin-top: 0.15rem; color: var(--muted); font-size: 0.68rem; text-align: right; white-space: nowrap; }
 .budget-year-table small.is-over { color: #c23d68; font-weight: 700; }
+/* Mês preenchido pela repetição do primeiro valor: tom de "sugerido" até a pessoa ajustar. */
+.budget-year-input[data-autofill] { border-style: dashed; background: color-mix(in srgb, var(--accent) 6%, var(--card)); color: var(--muted); }
 :root[data-ax-theme="dark"] .budget-year-table small.is-over, :root[data-ax-theme="dark"] .budget-year-page .negative { color: #ff7aa8; }
 .budget-year-total { min-width: 140px; text-align: right; }
 .budget-year-total strong { font-size: 0.82rem; }
