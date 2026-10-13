@@ -142,7 +142,7 @@ export default async function SubscriptionPage(props:{ searchParams: Promise<{ e
         <section className="card settings-panel subscription-danger-panel">
           <div className="settings-panel-header"><span className="settings-icon pink"><ShieldAlert className="size-5" /></span><div><h2>Cancelamento</h2><p>O cancelamento não apaga o histórico financeiro.</p></div></div>
           {subscription.status === "CANCELLATION_SCHEDULED" ? <><p>Cancelamento agendado para <strong>{formatDate(subscription.cancellationEffectiveAt)}</strong>. Você pode desfazer enquanto essa data não tiver chegado.</p><form action={undoCancellationAction}><SubmitButton className="secondary">Manter minha assinatura</SubmitButton></form></> : <details className="subscription-cancellation"><summary>Quero cancelar a assinatura</summary><p>Revise a exportação antes de confirmar. Digite <strong>CANCELAR</strong> para agendar o encerramento.</p><form action={scheduleCancellationAction}><label>Confirmação<input name="confirmation" required autoComplete="off" /></label><SubmitButton className="danger-button">Agendar cancelamento</SubmitButton></form></details>}
-          <Link href="/cancelamento">Ler política de cancelamento e exportação</Link>
+          <Link href="/cancelamento" className="subscription-policy-link">Ler política de cancelamento e exportação</Link>
         </section>
       </div>
     </main>

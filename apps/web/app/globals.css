@@ -2016,7 +2016,9 @@ main.settings-page {
 
 .dashboard-section-heading p { margin: 0; color: var(--muted); font-size: 0.82rem; }
 .dashboard-section-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
-.dashboard-section-heading h2, .dashboard-category-section h2 { margin: 0 0 0.25rem; font-size: 1.1rem; }
+.dashboard-section-heading h2, .dashboard-category-section h2 { margin: 0 0 0.25rem; font-size: 1.1rem; font-weight: 700; }
+/* Todo título de card do painel em negrito, para cada bloco ser achado de relance. */
+main.dashboard-page h2 { font-weight: 700; }
 .dashboard-section-heading > span { color: var(--muted); font-size: 0.76rem; white-space: nowrap; }
 .dashboard-projection-unavailable { display: flex; min-height: 176px; flex-direction: column; gap: 0.45rem; padding: 1.1rem 1.2rem; border: 1px dashed var(--border); border-radius: 14px; background: var(--card); color: var(--muted); }
 .dashboard-projection-unavailable strong { color: var(--text); }
@@ -2691,6 +2693,33 @@ main.settings-page {
 .subscription-cancellation { margin: 1rem 0; padding: 0.85rem; border: 1px solid #f0d1dc; border-radius: 10px; background: #fff7fa; }
 .subscription-cancellation summary { color: #a62355; cursor: pointer; font-weight: 700; }
 .subscription-cancellation form { margin-top: 0.75rem; }
+
+/* Cartões de exportação e cancelamento: o corpo alinha com o título (depois do ícone), com o mesmo
+   tamanho de texto do cabeçalho e um espaço fixo entre os blocos. */
+.subscription-actions-grid .settings-panel { gap: 1rem; }
+.subscription-actions-grid .settings-panel > :not(.settings-panel-header) { margin: 0 0 0 calc(2.55rem + 0.9rem); }
+.subscription-actions-grid .settings-panel > p:not(.settings-info-note) { color: var(--text); font-size: 0.9rem; line-height: 1.6; }
+.ax-model-buttons .subscription-actions-grid .settings-panel > .button-link { margin-top: 0; }
+.subscription-actions-grid .settings-info-note { margin-top: auto; }
+.subscription-actions-grid .subscription-cancellation { padding: 0; border: 0; background: transparent; }
+.subscription-cancellation summary { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 40px; padding: 0 0.95rem; border: 1px solid #c2416e; border-radius: 9px; background: var(--card); color: #a62355; font-size: 0.85rem; list-style: none; }
+.subscription-cancellation summary::-webkit-details-marker { display: none; }
+.subscription-cancellation summary::before { content: "▸"; font-size: 0.8rem; transition: transform 150ms ease; }
+.subscription-cancellation[open] summary::before { transform: rotate(90deg); }
+.subscription-cancellation summary:hover { background: #fff2f6; }
+.subscription-cancellation > p { margin: 0.9rem 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
+.subscription-policy-link { margin-top: auto; color: var(--accent); font-size: 0.85rem; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+:root[data-ax-theme="dark"] .subscription-actions-grid .settings-panel .subscription-cancellation { border-color: transparent; background: transparent; }
+:root[data-ax-theme="dark"] .subscription-cancellation summary { border-color: color-mix(in srgb, var(--tone-bad) 70%, var(--card)); background: color-mix(in srgb, var(--tone-bad) 12%, var(--card)); color: var(--tone-bad); }
+:root[data-ax-theme="dark"] .subscription-cancellation summary:hover { background: color-mix(in srgb, var(--tone-bad) 20%, var(--card)); }
+/* O botão que agenda o cancelamento é o único destrutivo da página: vermelho cheio nos dois temas. */
+.ax-model-buttons .subscription-cancellation button.danger-button[type="submit"],
+:root[data-ax-theme="dark"] .ax-model-buttons .subscription-cancellation button.danger-button[type="submit"] { min-height: 40px; margin-top: 0.85rem; padding: 0 1rem; border: 1px solid #a61f48; background: #b42354; color: #fff; box-shadow: none; }
+.ax-model-buttons .subscription-cancellation button.danger-button[type="submit"]:hover:not(:disabled),
+:root[data-ax-theme="dark"] .ax-model-buttons .subscription-cancellation button.danger-button[type="submit"]:hover:not(:disabled) { background: #9a1c46; }
+@media (max-width: 620px) {
+  .subscription-actions-grid .settings-panel > :not(.settings-panel-header) { margin-left: 0; }
+}
 .subscription-cancellation .danger-button {
   --ax-button-edge: #a61f48;
   --ax-button-spark: #ffd4e1;
@@ -4590,6 +4619,9 @@ label.goal-picker-icon, label.goal-picker-color { position: relative; display: i
 
 /* Painel: cofrinhos mais perto da meta. */
 .dashboard-savings-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
+/* Cada cofrinho é um cartão próprio dentro do card de Cofrinhos. */
+.dashboard-savings-list > li { min-width: 0; padding: 0.95rem 1rem 1rem; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--text) 3%, var(--card)); transition: border-color 150ms ease; }
+.dashboard-savings-list > li:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .dashboard-savings-head { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.55rem; color: var(--text); text-decoration: none; }
 .dashboard-savings-head > span:not(.goal-badge) { display: grid; min-width: 0; flex: 1; }
 .dashboard-savings-head strong { overflow: hidden; font-size: 0.88rem; text-overflow: ellipsis; white-space: nowrap; }

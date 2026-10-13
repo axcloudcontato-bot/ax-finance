@@ -150,8 +150,8 @@ export function NavItem({
         <div
           id={submenuId}
           // Fechado, o submenu só encolhe visualmente: sem `inert` os links continuariam no Tab, com foco invisível.
-          // React 18 descarta o atributo com valor vazio; qualquer valor vale (o HTML só olha a presença).
-          {...(isOpen ? {} : ({ inert: "true" } as Record<string, string>))}
+          // O React do App Router (19) trata `inert` como booleano: string vazia vira "falso".
+          {...(isOpen ? {} : ({ inert: true } as Record<string, boolean>))}
           className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
             isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           }`}
