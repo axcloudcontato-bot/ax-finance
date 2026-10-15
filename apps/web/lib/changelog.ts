@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-leitura-e-toque",
+    date: "2026-10-15",
+    title: "Mais fácil de ler e de tocar",
+    summary: "Textos coloridos mais nítidos, barra do topo mais legível e botões maiores no celular.",
+    changes: [
+      { kind: "IMPROVED", text: "Links, valores positivos e negativos, percentuais dos cofrinhos e o botão principal ganharam contraste suficiente para leitura confortável, inclusive no tema claro." },
+      { kind: "IMPROVED", text: "Verde, vermelho e âmbar agora significam a mesma coisa em todas as telas: entrou, saiu ou atrasou, e atenção." },
+      { kind: "IMPROVED", text: "No celular, botões, abas e itens do menu têm altura mínima para o toque, e Novidades e Aparência ficam no menu do perfil, deixando o topo mais limpo." },
+    ],
+  },
+  {
     id: "2026-10-15-detalhes-que-expandem",
     date: "2026-10-15",
     title: "Detalhes que se abrem de onde você clicou",

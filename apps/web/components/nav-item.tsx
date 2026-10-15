@@ -79,7 +79,7 @@ export function NavItem({
 
   const row = (
     <div
-      className={`group relative flex items-center rounded-[6px] py-[7px] transition-all duration-200 select-none ${
+      className={`nav-item-row group relative flex items-center rounded-[6px] py-[7px] transition-all duration-200 select-none ${
         collapsed ? "justify-center px-0" : "justify-between px-2.5"
       } ${
         isHighlighted
@@ -115,7 +115,7 @@ export function NavItem({
 
       {!collapsed ? <div className="flex shrink-0 items-center gap-2">
         {item.badge ? (
-          <span className="flex h-5 items-center justify-center whitespace-nowrap rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+          <span className="flex h-5 items-center justify-center whitespace-nowrap rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-(--accent-text)">
             {item.badge}
           </span>
         ) : null}

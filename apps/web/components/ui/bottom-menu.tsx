@@ -324,6 +324,17 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
         <div className="bottom-menu-list min-w-[245px]">
           <div className="bottom-menu-user"><span>{userName.slice(0, 1).toUpperCase()}</span><div><strong>{userName}</strong><small>Minha conta</small></div></div>
           <MenuRow href="/dashboard" icon={DashboardSquare01Icon} onClick={closeMenu}>Dashboard</MenuRow>
+          {/* No celular, Novidades e Aparência saem do topo e ficam aqui (menos ícones na barra). */}
+          <button type="button" className="bottom-menu-row bottom-menu-mobile-only" onClick={() => setView("whatsnew")}>
+            <HugeiconsIcon icon={Megaphone01Icon} size={19} strokeWidth={1.8} /><span>Novidades{unreadNews > 0 ? " · há novas" : ""}</span>
+          </button>
+          <div className="bottom-menu-mobile-only bottom-menu-theme-row" role="group" aria-label="Aparência">
+            {THEME_OPTIONS.map((option) => (
+              <button key={option.key} type="button" aria-pressed={theme === option.key} onClick={() => selectTheme(option.key)} className={cn("bottom-menu-theme", theme === option.key && "is-active")}>
+                <HugeiconsIcon icon={option.icon} size={18} strokeWidth={1.8} /><span>{option.text}</span>
+              </button>
+            ))}
+          </div>
           <MenuRow href="/configuracoes/seguranca" icon={SecurityCheckIcon} onClick={closeMenu}>Segurança</MenuRow>
           <MenuRow href="/configuracoes/suporte" icon={CustomerSupportIcon} onClick={closeMenu}>Suporte</MenuRow>
           {canManageMembers ? (
@@ -390,7 +401,7 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
         {MENU_ITEMS.map((item) => {
           const active = view === item.name;
           return (
-            <button key={item.name} type="button" aria-label={item.name === "whatsnew" && unreadNews > 0 ? "Novidades (há novidades não vistas)" : item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active")}>
+            <button key={item.name} type="button" aria-label={item.name === "whatsnew" && unreadNews > 0 ? "Novidades (há novidades não vistas)" : item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active", (item.name === "whatsnew" || item.name === "theme") && "bottom-menu-desktop-only")}>
               <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.8} />
               {item.name === "whatsnew" && unreadNews > 0 ? <span className="bottom-menu-dot" aria-hidden="true" /> : null}
               {item.name === "notifications" && unreadCount > 0 ? <span className="bottom-menu-badge">{Math.min(unreadCount, 9)}{unreadCount > 9 ? "+" : ""}</span> : null}
