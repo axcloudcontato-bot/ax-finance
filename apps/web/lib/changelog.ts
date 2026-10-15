@@ -30,7 +30,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     title: "Detalhes que se abrem de onde você clicou",
     summary: "Cofrinhos no painel mostram meta, prazo e quanto guardar por mês sem sair da tela.",
     changes: [
-      { kind: "NEW", text: "No painel, clique num cofrinho para ver o guardado, o que falta, o prazo, quanto guardar por mês e a conta padrão." },
+      { kind: "NEW", text: "No painel e na lista de cofrinhos, clique num cofrinho (ou em Detalhes) para ver o guardado, o que falta, o prazo, quanto guardar por mês e a conta padrão." },
       { kind: "IMPROVED", text: "As janelas de detalhes e de formulários agora se abrem a partir do botão ou cartão clicado e voltam para ele ao fechar. Quem ativou \"reduzir movimento\" no sistema continua sem animação." },
     ],
   },

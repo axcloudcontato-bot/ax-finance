@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animated-icons";
 import { CategorySuggestion } from "@/components/category-suggestion";
 import { TransferForm } from "@/components/transfers/transfer-form";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
-import { animateModalIn } from "@/components/ui/use-modal-presence";
+import { useModalPresence } from "@/components/ui/use-modal-presence";
 import { todayDateOnlyString } from "@/lib/dates";
 import {
   loadQuickCreateOptionsAction,
@@ -48,6 +48,8 @@ const TITLES: Record<QuickCreateKind, { title: string; icon: ReactNode }> = {
 export function QuickCreateModal() {
   const router = useRouter();
   const [kind, setKind] = useState<QuickCreateKind | null>(null);
+  // Continua mostrando o último formulário enquanto o modal encolhe de volta ao fechar.
+  const [shownKind, setShownKind] = useState<QuickCreateKind | null>(null);
   const [options, setOptions] = useState<QuickCreateOptions | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Muda a cada "Salvar e nova": remonta o formulário limpo e com outra chave de idempotência.
@@ -58,11 +60,7 @@ export function QuickCreateModal() {
   const overlayRef = useRef<HTMLDivElement>(null);
   // Quem abriu (o "+" do topo, um atalho...): o modal cresce a partir dele.
   const originRef = useRef<HTMLElement | null>(null);
-  const isOpen = kind !== null;
-
-  useLayoutEffect(() => {
-    if (isOpen) animateModalIn(originRef.current, dialogRef.current, overlayRef.current);
-  }, [isOpen]);
+  const mounted = useModalPresence(kind !== null, originRef, dialogRef, overlayRef);
 
   const close = useCallback(() => setKind(null), []);
   const setOpen = useCallback((open: boolean) => { if (!open) setKind(null); }, []);
@@ -74,6 +72,7 @@ export function QuickCreateModal() {
       setOptions(null);
       setLoadError(null);
       setRound((value) => value + 1);
+      setShownKind((event as CustomEvent<QuickCreateKind>).detail);
       setKind((event as CustomEvent<QuickCreateKind>).detail);
     };
     window.addEventListener(OPEN_EVENT, onOpen);
@@ -101,8 +100,8 @@ export function QuickCreateModal() {
     return () => document.removeEventListener("keydown", onKey);
   }, [kind, options, close]);
 
-  if (!kind) return null;
-  const { title, icon } = TITLES[kind];
+  if (!mounted || !shownKind) return null;
+  const { title, icon } = TITLES[shownKind];
 
   function done(message: string, keepOpen: boolean) {
     flash(message);
@@ -121,7 +120,7 @@ export function QuickCreateModal() {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        style={{ maxWidth: kind === "TRANSFER" ? "620px" : "720px" }}
+        style={{ maxWidth: shownKind === "TRANSFER" ? "620px" : "720px" }}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="modal-header">
@@ -134,11 +133,11 @@ export function QuickCreateModal() {
 
         {loadError ? <p className="error">{loadError}</p> : null}
         {!options && !loadError ? <p className="muted" aria-live="polite">Carregando…</p> : null}
-        {options && kind === "TRANSFER" ? (
+        {options && shownKind === "TRANSFER" ? (
           <QuickTransfer key={round} accounts={options.accounts} onDone={done} onCancel={close} />
         ) : null}
-        {options && kind !== "TRANSFER" ? (
-          <QuickTitle key={`${kind}-${round}`} kind={kind} options={options} onDone={done} />
+        {options && shownKind !== "TRANSFER" ? (
+          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onDone={done} />
         ) : null}
       </div>
     </div>

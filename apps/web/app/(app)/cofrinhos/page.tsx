@@ -8,6 +8,7 @@ import { ActionModal } from "@/components/ui/action-modal";
 import { GoalCard } from "@/components/savings-goals/goal-card";
 import { GoalForm, GoalMoveForm } from "@/components/savings-goals/goal-forms";
 import { GoalBadge } from "@/components/savings-goals/goal-visuals";
+import { GoalDetailSummary } from "@/components/savings-goals/goal-detail-summary";
 import { createSavingsGoalAction, depositToSavingsGoalAction, withdrawFromSavingsGoalAction } from "./actions";
 
 const FILTERS = [
@@ -136,9 +137,9 @@ export default async function SavingsGoalsPage(props: {
                       ? <GoalMoveForm action={withdrawFromSavingsGoalAction.bind(null, goal.id, "lista")} accounts={accountOptions} direction="WITHDRAW" balanceCents={goal.balanceCents} defaultAccountId={goal.defaultSourceAccountId} today={today} idPrefix={`resgatar-${goal.id}`} />
                       : <p className="muted">Este cofrinho ainda está vazio.</p>}
                   </ActionModal>
-                  <Link href={`/cofrinhos/${goal.id}`} className="button-link">Detalhes</Link>
+                  <ActionModal key={`detalhes-${goal.id}`} triggerLabel="Detalhes" title={goal.name} icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}><GoalDetailSummary goal={goal} /></ActionModal>
                 </>
-              ) : <Link href={`/cofrinhos/${goal.id}`} className="button-link">Detalhes</Link>}
+              ) : <ActionModal key={`detalhes-${goal.id}`} triggerLabel="Detalhes" title={goal.name} icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}><GoalDetailSummary goal={goal} /></ActionModal>}
             />
           ))}
         </div>

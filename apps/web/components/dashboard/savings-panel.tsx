@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { listSavingsGoals } from "@ax-finance/domain";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly } from "@/lib/dates";
 import { GoalBadge } from "@/components/savings-goals/goal-visuals";
 import { GoalProgressBar } from "@/components/savings-goals/goal-progress-bar";
-import { PACE_LABEL, goalHint } from "@/components/savings-goals/goal-card";
+import { GoalDetailSummary } from "@/components/savings-goals/goal-detail-summary";
 import { ActionModal } from "@/components/ui/action-modal";
 import { formatPercent } from "@/lib/percent";
 
@@ -49,25 +48,7 @@ export function SavingsPanel({ savings }: { savings: SavingsSummary }) {
                     </>
                   }
                 >
-                  <div className={`dashboard-savings-detail goal-color-${goal.color}`}>
-                    <p className="subtitle"><span className={`goal-pace is-${progress.pace.toLowerCase().replace("_", "-")}`}>{PACE_LABEL[progress.pace]}</span></p>
-                    <div className="goal-detail-numbers">
-                      <div><span>Guardado</span><strong>{formatCents(goal.balanceCents)}</strong></div>
-                      <div className="goal-detail-percent"><strong>{formatPercent(progress.percent)}</strong><span>da meta de {formatCents(goal.targetAmountCents)}</span></div>
-                    </div>
-                    <GoalProgressBar percent={progress.percent} barPercent={progress.barPercent} color={goal.color} reached={progress.reached} large />
-                    <dl className="goal-detail-facts">
-                      <div><dt>Falta</dt><dd>{formatCents(progress.remainingCents)}</dd></div>
-                      <div><dt>Prazo</dt><dd>{goal.targetDate ? formatDateOnly(goal.targetDate) : "Sem prazo"}</dd></div>
-                      <div><dt>Por mês até o prazo</dt><dd>{progress.monthlySuggestionCents ? formatCents(progress.monthlySuggestionCents) : "—"}</dd></div>
-                      <div><dt>Conta padrão</dt><dd>{goal.defaultSourceAccount?.name ?? "Escolher a cada vez"}</dd></div>
-                    </dl>
-                    <p className="goal-card-hint">{goalHint(goal)}</p>
-                    <div className="form-actions">
-                      <Link href={`/cofrinhos/${goal.id}`} className="button-link workspace-primary-action">Abrir cofrinho</Link>
-                      <Link href="/cofrinhos" className="button-link">Todos os cofrinhos</Link>
-                    </div>
-                  </div>
+                  <GoalDetailSummary goal={goal} showAllLink />
                 </ActionModal>
               </li>
             );

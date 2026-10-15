@@ -4132,7 +4132,9 @@ main.dashboard-page h2 { font-weight: 700; }
 .workspace-report-filters > div > :is(select, input) { width: 100%; min-width: 0; height: 44px; margin: 0; }
 .ax-model-buttons main .workspace-report-filters > button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button) { flex: 0 0 auto; height: 44px; min-height: 44px; margin: 0; padding-inline: 1.25rem; }
 .report-meta { margin: 0 0 1.25rem; }
-.reports-page .page-header { margin-bottom: 0.5rem; }
+.reports-page .page-header:not(:has(.subtitle)) { margin-bottom: 0.5rem; }
+/* Ação do cabeçalho (ex.: Exportar CSV) não encolhe nem quebra em duas linhas ao lado de um título longo. */
+.ax-model-buttons main.reports-page > .page-header > .button-link { flex-shrink: 0; white-space: nowrap; }
 .reports-page .report-balance-bridge { margin-bottom: 0.25rem; }
 .reports-page .card > .report-card-link { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--accent); font-size: 0.85rem; font-weight: 650; text-decoration: none; }
 .reports-page .card > .report-card-link:hover { text-decoration: underline; text-underline-offset: 3px; }
