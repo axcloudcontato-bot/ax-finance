@@ -2,6 +2,7 @@ import type { OutboxEvent } from "@ax-finance/db";
 import { structuredLog } from "@ax-finance/domain";
 import {
   decodeAccessChangedPayload,
+  decodeAccountExistsPayload,
   decodeBillingNoticePayload,
   decodeCompanyInvitationPayload,
   decodeDueDateSummaryPayload,
@@ -245,6 +246,28 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
         bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph("Recebemos uma solicitação para redefinir a senha da sua conta:", true),
         cta: { url, label: "Redefinir senha" },
         note: "O link expira em 1 hora. Se não foi você quem solicitou, ignore esta mensagem — sua senha continua a mesma.",
+        footerNote: ACTION_FOOTER,
+      }),
+    };
+  }
+
+  if (event.type === "ACCOUNT_EXISTS") {
+    const payload = decodeAccountExistsPayload(event);
+    const loginUrl = `${payload.baseUrl}/login`;
+    const resetUrl = `${payload.baseUrl}/recuperar-senha`;
+    return {
+      recipient: payload.to,
+      subject: "Você já tem conta no AX Finance",
+      text: `Olá, ${payload.name}. Alguém tentou criar uma conta no AX Finance com este e-mail, mas você já tem uma. Entre em ${loginUrl} ou, se esqueceu a senha, redefina em ${resetUrl}. Se não foi você, ignore esta mensagem: nada mudou na sua conta.`,
+      html: renderEmailLayout({
+        preheader: "Este e-mail já tem uma conta no AX Finance.",
+        heading: "Você já tem conta",
+        bodyHtml:
+          paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
+          paragraph("Alguém tentou criar uma conta no AX Finance com este e-mail, mas você já tem uma. Entre com sua senha ou redefina-a se não lembrar.") +
+          paragraph(`Esqueceu a senha? <a href="${escapeHtml(resetUrl)}">Redefinir senha</a>.`, true),
+        cta: { url: loginUrl, label: "Entrar no AX Finance" },
+        note: "Se não foi você, ignore esta mensagem: nada mudou na sua conta.",
         footerNote: ACTION_FOOTER,
       }),
     };

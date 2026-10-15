@@ -94,7 +94,7 @@ export function LoginExperience({
 
             {registrationCompleted && (
               <p className={`${styles.status} ${styles.success}`} role="status">
-                Cadastro concluído. Confirme o e-mail enviado para ativar sua conta. <Link href="/verificar-email">Reenviar confirmação</Link>
+                Enviamos um e-mail para você. Siga as instruções da mensagem para ativar sua conta e entrar. <Link href="/verificar-email">Reenviar confirmação</Link>
               </p>
             )}
 

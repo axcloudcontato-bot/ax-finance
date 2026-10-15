@@ -7,6 +7,7 @@ import {
   generateSubscriptionNotifications,
   registerUser,
   requestPasswordReset,
+  requestSignUp,
 } from "@ax-finance/domain";
 import { renderDueDateSummaryEmail, renderOutboxEmail, renderWeeklySummaryEmail } from "./email";
 
@@ -40,6 +41,20 @@ describe("renderização dos e-mails da outbox", () => {
     expect(email.html).not.toContain("<img src=x");
     expect(email.html).toContain("&lt;img src=x onerror=alert(1)&gt;");
     expect(email.text).toContain("https://financeiro.example.com/redefinir-senha/");
+  });
+
+  it("avisa quem já tem conta quando alguém tenta se cadastrar com o mesmo e-mail", async () => {
+    const user = await registerUser({ email: `existe.${randomUUID()}@teste.ax.finance`, name: "Dona da Conta", password: "senha-forte-123" });
+    await requestSignUp({ email: user.email, name: "Outra", password: "outra-senha-123" }, { verificationDelivery: { baseUrl: "https://financeiro.example.com" } });
+
+    const event = await rootClient.outboxEvent.findFirstOrThrow({ where: { type: "ACCOUNT_EXISTS" } });
+    const email = renderOutboxEmail(event);
+
+    expect(email.recipient).toBe(user.email);
+    expect(email.subject).toBe("Você já tem conta no AX Finance");
+    expect(email.html).toContain("Dona da Conta");
+    expect(email.html).toContain('href="https://financeiro.example.com/login"');
+    expect(email.html).toContain('href="https://financeiro.example.com/recuperar-senha"');
   });
 
   it("renderiza convite e aviso de assinatura com o mesmo layout", async () => {

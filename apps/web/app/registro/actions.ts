@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { registerUser } from "@ax-finance/domain";
+import { requestSignUp } from "@ax-finance/domain";
 import { ZodError } from "zod";
 import { publicBaseUrl, verificationPreviewPath } from "@/lib/email";
 import { actionErrorMessage } from "@/lib/action-errors";
@@ -17,19 +17,19 @@ export async function registerAction(formData: FormData) {
     ? requestedReturnTo
     : `/onboarding?plano=${planCode}`;
 
+  // Mesma resposta para e-mail novo ou já cadastrado (não revela quem tem conta).
   let user;
   try {
     const requestHeaders = await headers();
-    user = await registerUser(
+    ({ createdUser: user } = await requestSignUp(
       { email, name, password },
       {
-        requireEmailVerification: true,
         verificationDelivery: {
           baseUrl: publicBaseUrl(requestHeaders.get("origin") ?? undefined),
           returnTo: returnTo || undefined,
         },
       }
-    );
+    ));
   } catch (error) {
     const message =
       error instanceof ZodError
@@ -38,7 +38,7 @@ export async function registerAction(formData: FormData) {
     redirect(`/registro?erro=${encodeURIComponent(message)}&plano=${planCode}${returnTo ? `&retorno=${encodeURIComponent(returnTo)}` : ""}`);
   }
 
-  const previewPath = user.verification
+  const previewPath = user?.verification
     ? verificationPreviewPath(user.verification.rawToken, returnTo || undefined)
     : undefined;
 

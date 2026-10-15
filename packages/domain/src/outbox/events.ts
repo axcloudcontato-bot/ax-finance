@@ -77,6 +77,12 @@ const accessChangedPayloadSchema = z.object({
   targetName: z.string().min(1).max(200).optional(),
 });
 
+const accountExistsPayloadSchema = z.object({
+  to: z.string().email(),
+  name: z.string().min(1).max(200),
+  baseUrl: z.string().url().refine((value) => value.startsWith("http://") || value.startsWith("https://")),
+});
+
 const importFailedPayloadSchema = z.object({
   to: z.string().email(),
   name: z.string().min(1).max(200),
@@ -108,6 +114,7 @@ export type MonthlyReportPayload = z.infer<typeof monthlyReportPayloadSchema>;
 export type CompanyInvitationPayload = z.infer<typeof companyInvitationPayloadSchema>;
 export type AccessChangedPayload = z.infer<typeof accessChangedPayloadSchema>;
 export type ImportFailedPayload = z.infer<typeof importFailedPayloadSchema>;
+export type AccountExistsPayload = z.infer<typeof accountExistsPayloadSchema>;
 export type BillingNoticePayload = z.infer<typeof billingNoticePayloadSchema>;
 
 function encryptionKey(): Buffer {
@@ -198,6 +205,10 @@ export function decodeAccessChangedPayload(event: Pick<OutboxEvent, "payloadEncr
   return decodePayload(event, accessChangedPayloadSchema);
 }
 
+export function decodeAccountExistsPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, accountExistsPayloadSchema);
+}
+
 export function decodeImportFailedPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
   return decodePayload(event, importFailedPayloadSchema);
 }
@@ -258,7 +269,7 @@ export async function enqueueWeeklySummaryEmail(
 
 async function enqueueTransactionalEmail(
   tx: Prisma.TransactionClient,
-  type: Extract<OutboxEventType, "COMPANY_INVITATION" | "ACCESS_CHANGED" | "IMPORT_FAILED" | "BILLING_NOTICE">,
+  type: Extract<OutboxEventType, "COMPANY_INVITATION" | "ACCESS_CHANGED" | "IMPORT_FAILED" | "BILLING_NOTICE" | "ACCOUNT_EXISTS">,
   dedupKey: string,
   payload: unknown,
   schema: z.ZodType
@@ -284,6 +295,15 @@ export function enqueueAccessChangedEmail(
   payload: AccessChangedPayload
 ) {
   return enqueueTransactionalEmail(tx, "ACCESS_CHANGED", dedupKey, payload, accessChangedPayloadSchema);
+}
+
+/** Aviso ao dono do e-mail quando alguém tenta criar outra conta com ele. */
+export function enqueueAccountExistsEmail(
+  tx: Prisma.TransactionClient,
+  dedupKey: string,
+  payload: AccountExistsPayload
+) {
+  return enqueueTransactionalEmail(tx, "ACCOUNT_EXISTS", dedupKey, payload, accountExistsPayloadSchema);
 }
 
 export function enqueueImportFailedEmail(

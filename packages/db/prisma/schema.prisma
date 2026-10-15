@@ -39,6 +39,7 @@ enum OutboxEventType {
   IMPORT_FAILED
   BILLING_NOTICE
   MONTHLY_REPORT
+  ACCOUNT_EXISTS
 }
 
 enum OutboxEventStatus {

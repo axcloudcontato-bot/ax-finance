@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "@ax-finance/db";
 import { EmailNotVerifiedError, InvalidCredentialsError, TooManyLoginAttemptsError } from "../errors";
-import { verifyPassword } from "./password";
+import { hashPassword, verifyPassword } from "./password";
 import { createSession } from "./session";
 import { createMfaChallenge } from "./mfa";
 import { isTrustedDevice } from "./trusted-devices";
@@ -14,6 +14,14 @@ export const loginInput = z.object({
 
 export type LoginInput = z.infer<typeof loginInput>;
 
+// Hash descartável, calculado uma vez: e-mail sem conta também passa pelo scrypt, para o tempo de
+// resposta não revelar quem tem conta.
+let dummyHash: Promise<string> | null = null;
+function timingDummyHash() {
+  dummyHash ??= hashPassword("ax-finance-timing-equalizer");
+  return dummyHash;
+}
+
 export async function login(
   input: LoginInput,
   context: { ipAddress?: string; rememberSession?: boolean; trustedDeviceToken?: string } = {}
@@ -25,6 +33,7 @@ export async function login(
   // Mesma mensagem para "não existe" e "senha errada": não confirmar quais
   // e-mails têm conta (evita enumeração de usuários).
   if (!user || user.status !== "ACTIVE") {
+    await verifyPassword(data.password, await timingDummyHash());
     if (await recordLoginFailure(data.email, context.ipAddress)) {
       throw new TooManyLoginAttemptsError();
     }

@@ -28,27 +28,37 @@ export async function assertLoginAllowed(email: string, ipAddress?: string) {
   if (limits.length > 0) throw new TooManyLoginAttemptsError();
 }
 
+/** "YYYY-MM-DD HH:MM:SS.mmm" em UTC, o formato das colunas timestamp(3) sem fuso. */
+function utcTimestamp(date: Date): string {
+  return date.toISOString().replace("T", " ").replace("Z", "");
+}
+
+/**
+ * Conta a falha com um único INSERT ... ON CONFLICT: o incremento acontece no banco, então tentativas
+ * simultâneas não se perdem (ler e regravar deixava passar mais tentativas que o limite).
+ */
 export async function recordLoginFailure(email: string, ipAddress?: string): Promise<boolean> {
   const now = new Date();
+  const nowSql = utcTimestamp(now);
+  const windowFloor = utcTimestamp(new Date(now.getTime() - WINDOW_MS));
+  const blockUntil = utcTimestamp(new Date(now.getTime() + BLOCK_MS));
   let blocked = false;
 
   for (const item of keysFor(email, ipAddress)) {
-    const result = await prisma.$transaction(async (tx) => {
-      const current = await tx.loginRateLimit.findUnique({ where: { keyHash: item.keyHash } });
-      const windowExpired = !current || current.windowStartedAt.getTime() + WINDOW_MS <= now.getTime();
-      const failedAttempts = windowExpired ? 1 : current.failedAttempts + 1;
-      const blockedUntil = failedAttempts >= item.limit ? new Date(now.getTime() + BLOCK_MS) : null;
-      return tx.loginRateLimit.upsert({
-        where: { keyHash: item.keyHash },
-        create: { keyHash: item.keyHash, failedAttempts, windowStartedAt: now, blockedUntil },
-        update: {
-          failedAttempts,
-          windowStartedAt: windowExpired ? now : current!.windowStartedAt,
-          blockedUntil,
-        },
-      });
-    });
-    blocked ||= Boolean(result.blockedUntil && result.blockedUntil > now);
+    const rows = await prisma.$queryRaw<{ blocked: boolean }[]>`
+      INSERT INTO "login_rate_limits" ("key_hash", "failed_attempts", "window_started_at", "blocked_until", "updated_at")
+      VALUES (${item.keyHash}, 1, ${nowSql}::timestamp(3), CASE WHEN 1 >= ${item.limit}::int THEN ${blockUntil}::timestamp(3) END, ${nowSql}::timestamp(3))
+      ON CONFLICT ("key_hash") DO UPDATE SET
+        "failed_attempts" = CASE WHEN "login_rate_limits"."window_started_at" <= ${windowFloor}::timestamp(3) THEN 1 ELSE "login_rate_limits"."failed_attempts" + 1 END,
+        "window_started_at" = CASE WHEN "login_rate_limits"."window_started_at" <= ${windowFloor}::timestamp(3) THEN ${nowSql}::timestamp(3) ELSE "login_rate_limits"."window_started_at" END,
+        "blocked_until" = CASE
+          WHEN (CASE WHEN "login_rate_limits"."window_started_at" <= ${windowFloor}::timestamp(3) THEN 1 ELSE "login_rate_limits"."failed_attempts" + 1 END) >= ${item.limit}::int
+          THEN ${blockUntil}::timestamp(3)
+        END,
+        "updated_at" = ${nowSql}::timestamp(3)
+      RETURNING ("blocked_until" IS NOT NULL AND "blocked_until" > ${nowSql}::timestamp(3)) AS "blocked"
+    `;
+    blocked ||= Boolean(rows[0]?.blocked);
   }
 
   return blocked;

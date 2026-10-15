@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { registerUser } from "../identity/register";
+import { registerUser, requestSignUp } from "../identity/register";
+import { recordLoginFailure } from "../identity/login-rate-limit";
 import { login } from "../identity/login";
 import { resolveSession } from "../identity/session";
 import {
@@ -78,5 +79,50 @@ describe("endurecimento da autenticação", () => {
     await expect(login({ email: user.email, password: "senha-correta-123" }, context)).rejects.toBeInstanceOf(
       TooManyLoginAttemptsError
     );
+  });
+
+  it("cadastro público responde igual para e-mail novo ou já cadastrado e avisa o dono", async () => {
+    const delivery = { verificationDelivery: { baseUrl: "https://app.ax.finance" } };
+    const email = uniqueEmail("signup");
+
+    const first = await requestSignUp({ email, name: "Primeira", password: "senha-forte-123" }, delivery);
+    expect(first.createdUser?.email).toBe(email);
+    expect(await rootClient.outboxEvent.count({ where: { type: "EMAIL_VERIFICATION" } })).toBe(1);
+
+    // Ainda não confirmado: nova tentativa reenvia a confirmação, sem criar outra conta nem trocar a senha.
+    const again = await requestSignUp({ email, name: "Outra pessoa", password: "outra-senha-456" }, delivery);
+    expect(again.createdUser).toBeNull();
+    expect(await rootClient.user.count({ where: { email } })).toBe(1);
+    expect(await rootClient.outboxEvent.count({ where: { type: "EMAIL_VERIFICATION" } })).toBe(2);
+
+    // Confirmado: recebe o aviso "você já tem conta", no máximo um por hora.
+    await rootClient.user.update({ where: { email }, data: { emailVerifiedAt: new Date() } });
+    expect((await requestSignUp({ email, name: "X", password: "qualquer-senha-1" }, delivery)).createdUser).toBeNull();
+    expect((await requestSignUp({ email, name: "X", password: "qualquer-senha-1" }, delivery)).createdUser).toBeNull();
+    expect(await rootClient.outboxEvent.count({ where: { type: "ACCOUNT_EXISTS" } })).toBe(1);
+    await expect(login({ email, password: "senha-forte-123" })).resolves.toMatchObject({ mfaRequired: false });
+  });
+
+  it("conta falhas de login simultâneas sem perder nenhuma", async () => {
+    const email = uniqueEmail("race");
+    const results = await Promise.all(Array.from({ length: 12 }, () => recordLoginFailure(email, "198.51.100.20")));
+    expect(results.some(Boolean)).toBe(true);
+    const rows = await rootClient.loginRateLimit.findMany({ orderBy: { failedAttempts: "asc" } });
+    expect(rows.map((row) => row.failedAttempts)).toEqual([12, 12]);
+    // Só a chave do e-mail (limite 5) bloqueia; a do IP tem limite 20.
+    expect(rows.filter((row) => row.blockedUntil && row.blockedUntil > new Date())).toHaveLength(1);
+
+    // Janela vencida: a contagem recomeça do zero e o bloqueio sai.
+    await rootClient.loginRateLimit.updateMany({ data: { windowStartedAt: new Date(Date.now() - 16 * 60 * 1000), blockedUntil: null } });
+    expect(await recordLoginFailure(email, "198.51.100.20")).toBe(false);
+    const reset = await rootClient.loginRateLimit.findMany();
+    expect(reset.map((row) => row.failedAttempts)).toEqual([1, 1]);
+  });
+
+  it("e-mail sem conta também passa pela verificação de senha", async () => {
+    const started = performance.now();
+    await expect(login({ email: uniqueEmail("ghost"), password: "qualquer" })).rejects.toBeInstanceOf(InvalidCredentialsError);
+    // scrypt leva dezenas de milissegundos; sem ele a resposta voltaria quase instantânea.
+    expect(performance.now() - started).toBeGreaterThan(20);
   });
 });
