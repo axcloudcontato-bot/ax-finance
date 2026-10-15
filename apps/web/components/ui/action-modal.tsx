@@ -2,6 +2,7 @@
 
 import { useId, useRef, useState, type ReactNode } from "react";
 import { useModalFocus } from "./use-modal-focus";
+import { useModalPresence } from "./use-modal-presence";
 
 /**
  * Modal de estado local (não observa a query string, ao contrário de
@@ -36,7 +37,9 @@ export function ActionModal({
   const titleId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   useModalFocus(open, setOpen, triggerRef, dialogRef);
+  const mounted = useModalPresence(open, triggerRef, dialogRef, overlayRef);
 
   return (
     <>
@@ -52,8 +55,8 @@ export function ActionModal({
         {triggerLabel}
       </button>
 
-      {open ? (
-        <div className="modal-overlay" onClick={() => setOpen(false)}>
+      {mounted ? (
+        <div ref={overlayRef} className="modal-overlay" onClick={() => setOpen(false)}>
           <div ref={dialogRef} className={`modal-dialog${size === "wide" ? " modal-dialog-wide" : ""}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>

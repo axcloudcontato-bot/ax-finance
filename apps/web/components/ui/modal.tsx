@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { useModalFocus } from "./use-modal-focus";
+import { useModalPresence } from "./use-modal-presence";
 
 /**
  * Server Actions redirecionam via navegação client-side (o Next não recarrega
@@ -43,7 +44,9 @@ export function Modal({
   const titleId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   useModalFocus(open, setOpen, triggerRef, dialogRef);
+  const mounted = useModalPresence(open, triggerRef, dialogRef, overlayRef);
 
   useEffect(() => {
     if (paramsKey !== lastParamsKey.current) {
@@ -64,8 +67,8 @@ export function Modal({
         {triggerLabel}
       </button>
 
-      {open ? (
-        <div className="modal-overlay" onClick={() => setOpen(false)}>
+      {mounted ? (
+        <div ref={overlayRef} className="modal-overlay" onClick={() => setOpen(false)}>
           <div
             ref={dialogRef}
             className="modal-dialog"

@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-detalhes-que-expandem",
+    date: "2026-10-15",
+    title: "Detalhes que se abrem de onde você clicou",
+    summary: "Cofrinhos no painel mostram meta, prazo e quanto guardar por mês sem sair da tela.",
+    changes: [
+      { kind: "NEW", text: "No painel, clique num cofrinho para ver o guardado, o que falta, o prazo, quanto guardar por mês e a conta padrão." },
+      { kind: "IMPROVED", text: "As janelas de detalhes e de formulários agora se abrem a partir do botão ou cartão clicado e voltam para ele ao fechar. Quem ativou \"reduzir movimento\" no sistema continua sem animação." },
+    ],
+  },
+  {
     id: "2026-10-12-orcamento-repete-meses",
     date: "2026-10-12",
     title: "Orçamento do ano mais rápido de preencher",

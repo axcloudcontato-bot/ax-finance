@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animated-icons";
 import { CategorySuggestion } from "@/components/category-suggestion";
 import { TransferForm } from "@/components/transfers/transfer-form";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
+import { animateModalIn } from "@/components/ui/use-modal-presence";
 import { todayDateOnlyString } from "@/lib/dates";
 import {
   loadQuickCreateOptionsAction,
@@ -54,6 +55,14 @@ export function QuickCreateModal() {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  // Quem abriu (o "+" do topo, um atalho...): o modal cresce a partir dele.
+  const originRef = useRef<HTMLElement | null>(null);
+  const isOpen = kind !== null;
+
+  useLayoutEffect(() => {
+    if (isOpen) animateModalIn(originRef.current, dialogRef.current, overlayRef.current);
+  }, [isOpen]);
 
   const close = useCallback(() => setKind(null), []);
   const setOpen = useCallback((open: boolean) => { if (!open) setKind(null); }, []);
@@ -61,6 +70,7 @@ export function QuickCreateModal() {
 
   useEffect(() => {
     const onOpen = (event: Event) => {
+      originRef.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
       setOptions(null);
       setLoadError(null);
       setRound((value) => value + 1);
@@ -103,7 +113,7 @@ export function QuickCreateModal() {
   }
 
   return (
-    <div className="modal-overlay" onClick={close}>
+    <div ref={overlayRef} className="modal-overlay" onClick={close}>
       <div
         ref={dialogRef}
         className="modal-dialog"

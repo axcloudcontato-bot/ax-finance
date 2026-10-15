@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useModalPresence } from "@/components/ui/use-modal-presence";
 
 export function StatCard({
   icon,
@@ -31,6 +32,9 @@ export function StatCard({
   const titleId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  const mounted = useModalPresence(open, triggerRef, dialogRef, overlayRef);
 
   useEffect(() => {
     if (!open) return;
@@ -85,8 +89,8 @@ export function StatCard({
         ) : null}
       </button>
 
-      {open ? (
-        <div className="modal-overlay" onClick={() => setOpen(false)}>
+      {mounted ? (
+        <div ref={overlayRef} className="modal-overlay" onClick={() => setOpen(false)}>
           <div ref={dialogRef} className="modal-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ maxWidth: "640px" }} onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>

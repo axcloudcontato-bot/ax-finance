@@ -4641,13 +4641,22 @@ label.goal-picker-icon, label.goal-picker-color { position: relative; display: i
 /* Painel: cofrinhos mais perto da meta. */
 .dashboard-savings-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
 /* Cada cofrinho é um cartão próprio dentro do card de Cofrinhos. */
-.dashboard-savings-list > li { min-width: 0; padding: 0.95rem 1rem 1rem; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--text) 3%, var(--card)); transition: border-color 150ms ease; }
+.dashboard-savings-list > li { min-width: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--text) 3%, var(--card)); transition: border-color 150ms ease; }
 .dashboard-savings-list > li:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .dashboard-savings-head { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.55rem; color: var(--text); text-decoration: none; }
 .dashboard-savings-head > span:not(.goal-badge) { display: grid; min-width: 0; flex: 1; }
 .dashboard-savings-head strong { overflow: hidden; font-size: 0.88rem; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-savings-head small { color: var(--muted); font-size: 0.72rem; }
 .dashboard-savings-head em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* O cartão inteiro é o gatilho do detalhe (que cresce a partir dele). */
+.ax-model-buttons main button.dashboard-savings-trigger { display: block; width: 100%; height: auto; min-height: 0; margin: 0; padding: 0.95rem 1rem 1rem; border: 0; border-radius: 12px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.ax-model-buttons main button.dashboard-savings-trigger:hover { background: transparent; transform: none; }
+.dashboard-savings-detail { display: grid; gap: 0.9rem; margin-top: 0.5rem; }
+.dashboard-savings-detail > .subtitle { margin: 0; }
+.dashboard-savings-detail .goal-detail-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+.dashboard-savings-detail .goal-card-hint { margin: 0; }
+.dashboard-savings-detail .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+.ax-model-buttons main .dashboard-savings-detail .form-actions > .button-link { margin: 0; }
 
 @media (max-width: 900px) {
   .goal-detail-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
