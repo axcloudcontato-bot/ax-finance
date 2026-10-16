@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-cartao-de-avisos",
+    date: "2026-10-15",
+    title: "Avisos novos num só cartão",
+    summary: "Os lembretes chegam juntos no canto da tela: veja quantos são e abra a lista quando quiser.",
+    changes: [
+      { kind: "IMPROVED", text: "Os avisos não lidos aparecem num cartão compacto no canto inferior direito, com a quantidade e o mais recente. Clique para ver a lista com ícone, resumo e há quanto tempo cada um chegou." },
+      { kind: "IMPROVED", text: "Abrir um aviso leva direto à tela certa e o marca como lido. Fechar o cartão não apaga nada: os avisos continuam na campainha." },
+    ],
+  },
+  {
     id: "2026-10-15-leitura-e-toque",
     date: "2026-10-15",
     title: "Mais fácil de ler e de tocar",

@@ -6,6 +6,8 @@ export interface AppNotification {
   title: string;
   body: string;
   href: string;
+  /** NotificationType do banco (ex.: TITLE_OVERDUE); define o ícone no cartão de avisos. */
+  type?: string;
   readAt: string | Date | null;
   createdAt: string | Date;
 }

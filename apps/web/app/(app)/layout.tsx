@@ -59,6 +59,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         title: notification.title,
         body: notification.body,
         href: notification.href,
+        type: notification.type,
         readAt: notification.readAt,
         createdAt: notification.createdAt,
       }))}
