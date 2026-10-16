@@ -1832,7 +1832,7 @@ main.settings-page {
 }
 
 .stat-card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.stat-card.is-prominent { background: color-mix(in srgb, var(--accent) 9%, var(--card)); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
+.stat-card.is-prominent { background: var(--card); border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); box-shadow: inset 3px 0 0 var(--accent); }
 .stat-card.is-blue { --stat-tone: #3978db; }
 .stat-card.is-teal { --stat-tone: #078f85; }
 .stat-card.is-orange { --stat-tone: #b76512; }
@@ -1845,8 +1845,8 @@ main.settings-page {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--stat-tone) 11%, var(--card));
-  color: var(--stat-tone);
+  background: color-mix(in srgb, var(--text) 6%, var(--card));
+  color: var(--muted);
   margin-bottom: 0.55rem;
 }
 
@@ -2112,9 +2112,14 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   white-space: nowrap;
 }
 
-.dashboard-alert.warning { border-color: #f3cc7a; background: #fff9ec; color: #8a5a00; }
-.dashboard-alert.danger { border-color: #f3a8bf; background: #fff2f6; color: #a72255; }
-.dashboard-alert.success { border-color: #90ddd6; background: #effbf9; color: #087c73; }
+/* Superfície neutra para o texto ficar legível; o status aparece na marca lateral e no ícone. */
+.dashboard-alert { border-color: var(--border); background: color-mix(in srgb, var(--text) 2.5%, var(--card)); color: var(--text); box-shadow: inset 3px 0 0 var(--alert-tone, var(--accent)); }
+.dashboard-alert.warning { --alert-tone: var(--tone-warn); }
+.dashboard-alert.danger { --alert-tone: var(--tone-out); }
+.dashboard-alert.success { --alert-tone: var(--tone-in); }
+.dashboard-alert > :is(svg, .animated-icon) { color: var(--alert-tone, var(--accent)); }
+.dashboard-alert strong { color: var(--text); }
+.dashboard-alert a { color: var(--accent-text); }
 
 /* Cards de lançamento rápido (Nova receita/despesa) — via portal, na mesma
    linha do seletor de mês global (ver PageActionsSlot/PortalToPageActions). */
@@ -2160,25 +2165,13 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 }
 
 .quick-action-card.revenue .quick-action-icon {
-  color: #0bc7b9;
-  background: rgba(11, 199, 185, 0.12);
-}
-
-.quick-action-card.revenue {
-  border-color: #b9e9e5;
-  background: #f2fbfa;
-  color: #087c73;
+  color: var(--tone-in);
+  background: color-mix(in srgb, var(--tone-in) 12%, var(--card));
 }
 
 .quick-action-card.expense .quick-action-icon {
-  color: #fc5296;
-  background: rgba(252, 82, 150, 0.12);
-}
-
-.quick-action-card.expense {
-  border-color: #f5c8d8;
-  background: #fff5f8;
-  color: #a72255;
+  color: var(--tone-out);
+  background: color-mix(in srgb, var(--tone-out) 12%, var(--card));
 }
 
 
@@ -3096,22 +3089,22 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--muted);
 }
 
 .bottom-menu-shell.is-top .bottom-menu-trigger:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
+  background: color-mix(in srgb, var(--text) 7%, var(--card));
+  color: var(--text);
   transform: none;
 }
 
 .bottom-menu-shell.is-top .bottom-menu-trigger.is-active {
-  background: rgba(255, 255, 255, 0.26);
-  color: #fff;
+  background: color-mix(in srgb, var(--accent) 12%, var(--card));
+  color: var(--accent-text);
 }
 
 .bottom-menu-shell.is-top .bottom-menu-trigger:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline: 2px solid var(--focus);
   outline-offset: 1px;
 }
 
@@ -3119,7 +3112,7 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   top: 3px;
   right: 2px;
   border: 0;
-  box-shadow: 0 0 0 2px #2f66d8;
+  box-shadow: 0 0 0 2px var(--card);
 }
 
 .bottom-menu-shell.is-top .bottom-menu-popover-wrap {
@@ -3165,7 +3158,7 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   height: 8px;
   border-radius: 999px;
   background: #ed3d72;
-  box-shadow: 0 0 0 2px rgba(63, 120, 245, 0.9);
+  box-shadow: 0 0 0 2px var(--card);
 }
 
 .bottom-menu-news a { gap: 0.25rem; }
@@ -3493,13 +3486,13 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #fff;
+  color: var(--text);
   cursor: pointer;
   transition: background-color 150ms ease;
 }
 
-.app-nav-toggle:hover { background: rgba(255, 255, 255, 0.16); }
-.app-nav-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.app-nav-toggle:hover { background: color-mix(in srgb, var(--text) 7%, var(--card)); }
+.app-nav-toggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
 @media (max-width: 767px) {
   .app-sidebar-backdrop {
@@ -3561,8 +3554,7 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 }
 
 :root[data-ax-theme="dark"] .success-box,
-:root[data-ax-theme="dark"] .security-state-card,
-:root[data-ax-theme="dark"] .dashboard-alert.success {
+:root[data-ax-theme="dark"] .security-state-card {
   border-color: color-mix(in srgb, var(--tone-ok) 38%, var(--card));
   background: color-mix(in srgb, var(--tone-ok) 11%, var(--card));
   color: #8be5c1;
@@ -3574,31 +3566,19 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   color: #b7ccff;
 }
 
-:root[data-ax-theme="dark"] :is(.subscription-upgrade-notice, .dashboard-alert.warning) {
+:root[data-ax-theme="dark"] .subscription-upgrade-notice {
   border-color: color-mix(in srgb, var(--tone-warn) 40%, var(--card));
   background: color-mix(in srgb, var(--tone-warn) 11%, var(--card));
   color: #ffd699;
 }
 
-:root[data-ax-theme="dark"] :is(.dashboard-alert.danger, .subscription-cancellation) {
+:root[data-ax-theme="dark"] .subscription-cancellation {
   border-color: color-mix(in srgb, var(--tone-bad) 38%, var(--card));
   background: color-mix(in srgb, var(--tone-bad) 11%, var(--card));
   color: #ffb3b3;
 }
 
 :root[data-ax-theme="dark"] .subscription-danger-panel { border-color: color-mix(in srgb, var(--tone-bad) 38%, var(--border)); }
-
-:root[data-ax-theme="dark"] .quick-action-card.revenue {
-  border-color: color-mix(in srgb, var(--tone-ok) 36%, var(--card));
-  background: color-mix(in srgb, var(--tone-ok) 10%, var(--card));
-  color: #8be5c1;
-}
-
-:root[data-ax-theme="dark"] .quick-action-card.expense {
-  border-color: color-mix(in srgb, var(--tone-out) 36%, var(--card));
-  background: color-mix(in srgb, var(--tone-out) 10%, var(--card));
-  color: #ffb0cb;
-}
 
 :root[data-ax-theme="dark"] :is(.notification-settings-form .notification-channel, .subscription-date-grid > div, .mfa-secret, .recovery-codes code) {
   border-color: var(--border);
@@ -3704,16 +3684,11 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
   .app-nav-toggle { display: none; }
 }
 
-/* Barra superior: o azul claro do tema claro fica estridente sobre o fundo escuro;
-   no escuro ela usa um azul profundo, da mesma família da paleta. */
-/* Claro: azul profundo o bastante para ícones e marca brancos (≥ 4,5:1 em toda a barra). */
-.app-topbar { background: linear-gradient(135deg, #2a5fd0 0%, #3a70e2 100%); }
+/* Barra superior em superfície neutra, com uma linha fina embaixo: a cor de marca fica só no
+   quadro da logo, e o azul volta a ser sinal de ação em vez de moldura. */
+.app-topbar { border-bottom: 1px solid var(--border); background: var(--card); color: var(--text); }
 
-:root[data-ax-theme="dark"] .app-topbar {
-  --grad-blue-solid: #234a9b;
-  background: linear-gradient(135deg, #1a2f63 0%, #234a9b 100%);
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-}
+:root[data-ax-theme="dark"] .app-topbar { --grad-blue-solid: #234a9b; }
 
 /* Avisos recentes: cartão pequeno no canto inferior direito. Opaco e sem sombra, como os
    painéis do menu rápido; só lembretes e alertas novos, no máximo dois. */
@@ -4858,3 +4833,4 @@ td .modal-overlay { white-space: normal; text-align: left; }
 @media (pointer: coarse) { .modal-dialog .modal-close { width: 44px; height: 44px; } }
 /* Títulos dos painéis do topo (Notificações, Novidades) e do cartão de avisos: um só tamanho e peso. */
 .bottom-menu-heading strong, .ax-activities-titles strong { color: var(--text); font-size: 0.92rem; font-weight: 650; letter-spacing: -0.005em; }
+

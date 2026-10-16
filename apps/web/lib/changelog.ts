@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-visual-mais-calmo",
+    date: "2026-10-16",
+    title: "Visual mais limpo, cor onde importa",
+    summary: "Topo neutro e cores usadas só para indicar entrada, saída, atraso e atenção.",
+    changes: [
+      { kind: "IMPROVED", text: "A barra do topo ficou neutra, com a marca em destaque, e cansa menos no uso diário." },
+      { kind: "IMPROVED", text: "No painel, os alertas mostram a gravidade por uma marca colorida na lateral, com o texto mais fácil de ler. Os indicadores e os botões de nova receita e nova despesa usam cor só no ícone." },
+    ],
+  },
+  {
     id: "2026-10-16-janelas-padronizadas",
     date: "2026-10-16",
     title: "Janelas com o mesmo cabeçalho",
