@@ -83,6 +83,16 @@ const accountExistsPayloadSchema = z.object({
   baseUrl: z.string().url().refine((value) => value.startsWith("http://") || value.startsWith("https://")),
 });
 
+const supportCaseOpenedPayloadSchema = z.object({
+  caseId: z.string().uuid(),
+  companyName: z.string().min(1).max(200),
+  openedByName: z.string().min(1).max(200),
+  contactEmail: z.string().email(),
+  subject: z.string().min(1).max(200),
+  summary: z.string().min(1).max(4000),
+  priority: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
+});
+
 const importFailedPayloadSchema = z.object({
   to: z.string().email(),
   name: z.string().min(1).max(200),
@@ -115,6 +125,7 @@ export type CompanyInvitationPayload = z.infer<typeof companyInvitationPayloadSc
 export type AccessChangedPayload = z.infer<typeof accessChangedPayloadSchema>;
 export type ImportFailedPayload = z.infer<typeof importFailedPayloadSchema>;
 export type AccountExistsPayload = z.infer<typeof accountExistsPayloadSchema>;
+export type SupportCaseOpenedPayload = z.infer<typeof supportCaseOpenedPayloadSchema>;
 export type BillingNoticePayload = z.infer<typeof billingNoticePayloadSchema>;
 
 function encryptionKey(): Buffer {
@@ -205,6 +216,10 @@ export function decodeAccessChangedPayload(event: Pick<OutboxEvent, "payloadEncr
   return decodePayload(event, accessChangedPayloadSchema);
 }
 
+export function decodeSupportCaseOpenedPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
+  return decodePayload(event, supportCaseOpenedPayloadSchema);
+}
+
 export function decodeAccountExistsPayload(event: Pick<OutboxEvent, "payloadEncrypted">) {
   return decodePayload(event, accountExistsPayloadSchema);
 }
@@ -269,7 +284,7 @@ export async function enqueueWeeklySummaryEmail(
 
 async function enqueueTransactionalEmail(
   tx: Prisma.TransactionClient,
-  type: Extract<OutboxEventType, "COMPANY_INVITATION" | "ACCESS_CHANGED" | "IMPORT_FAILED" | "BILLING_NOTICE" | "ACCOUNT_EXISTS">,
+  type: Extract<OutboxEventType, "COMPANY_INVITATION" | "ACCESS_CHANGED" | "IMPORT_FAILED" | "BILLING_NOTICE" | "ACCOUNT_EXISTS" | "SUPPORT_CASE_OPENED">,
   dedupKey: string,
   payload: unknown,
   schema: z.ZodType
@@ -295,6 +310,15 @@ export function enqueueAccessChangedEmail(
   payload: AccessChangedPayload
 ) {
   return enqueueTransactionalEmail(tx, "ACCESS_CHANGED", dedupKey, payload, accessChangedPayloadSchema);
+}
+
+/** Aviso à equipe interna de que um cliente abriu um chamado (os destinatários saem no envio). */
+export function enqueueSupportCaseOpenedEmail(
+  tx: Prisma.TransactionClient,
+  dedupKey: string,
+  payload: SupportCaseOpenedPayload
+) {
+  return enqueueTransactionalEmail(tx, "SUPPORT_CASE_OPENED", dedupKey, payload, supportCaseOpenedPayloadSchema);
 }
 
 /** Aviso ao dono do e-mail quando alguém tenta criar outra conta com ele. */

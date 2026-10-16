@@ -1,8 +1,9 @@
-import type { OutboxEvent } from "@ax-finance/db";
+import { prisma, type OutboxEvent } from "@ax-finance/db";
 import { structuredLog } from "@ax-finance/domain";
 import {
   decodeAccessChangedPayload,
   decodeAccountExistsPayload,
+  decodeSupportCaseOpenedPayload,
   decodeBillingNoticePayload,
   decodeCompanyInvitationPayload,
   decodeDueDateSummaryPayload,
@@ -364,7 +365,45 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
   throw new Error(`Tipo de e-mail não suportado: ${event.type}`);
 }
 
-async function renderEmail(event: OutboxEvent): Promise<RenderedEmail> {
+const PRIORITY_LABEL: Record<string, string> = { LOW: "Baixa", NORMAL: "Normal", HIGH: "Alta", URGENT: "Urgente" };
+
+/** Aviso à equipe interna: um cliente abriu um chamado. `recipients` vem do banco no envio. */
+export function renderSupportCaseOpenedEmail(payload: ReturnType<typeof decodeSupportCaseOpenedPayload>, recipients: string[]): RenderedEmail {
+  const url = `${applicationBaseUrl()}/admin/suporte`;
+  const priority = PRIORITY_LABEL[payload.priority] ?? payload.priority;
+  const urgent = payload.priority === "HIGH" || payload.priority === "URGENT";
+  return {
+    recipient: recipients.join(", "),
+    subject: `${urgent ? "[Prioridade alta] " : ""}Novo chamado: ${payload.subject} — ${payload.companyName}`,
+    text: `Novo chamado de ${payload.companyName}.\nAssunto: ${payload.subject}\nPrioridade: ${priority}\nAberto por: ${payload.openedByName} (${payload.contactEmail})\n\n${payload.summary}\n\nAtender: ${url}`,
+    html: renderEmailLayout({
+      preheader: `${payload.companyName} abriu um chamado: ${payload.subject}`,
+      heading: "Novo chamado de suporte",
+      bodyHtml:
+        metricTiles([
+          { label: "Empresa", value: payload.companyName },
+          { label: "Prioridade", value: priority, tone: urgent ? "danger" : "neutral" },
+        ]) +
+        paragraph(`<strong>${escapeHtml(payload.subject)}</strong>`) +
+        paragraph(escapeHtml(payload.summary).replace(/\n/g, "<br>")) +
+        paragraph(`Aberto por <strong>${escapeHtml(payload.openedByName)}</strong> · responda para ${escapeHtml(payload.contactEmail)}.`, true),
+      cta: { url, label: "Atender no Admin" },
+      footerNote: "Você recebeu este aviso porque atende chamados no painel interno do AX Finance.",
+    }),
+  };
+}
+
+async function supportRecipients(): Promise<string[]> {
+  const rows = await prisma.$queryRaw<{ email: string }[]>`SELECT email FROM app_support_case_recipients()`;
+  return rows.map((row) => row.email);
+}
+
+async function renderEmail(event: OutboxEvent): Promise<RenderedEmail | null> {
+  if (event.type === "SUPPORT_CASE_OPENED") {
+    const recipients = await supportRecipients();
+    if (recipients.length === 0) return null;
+    return renderSupportCaseOpenedEmail(decodeSupportCaseOpenedPayload(event), recipients);
+  }
   if (event.type === "MONTHLY_REPORT") {
     const payload = decodeMonthlyReportPayload(event);
     const report = await prepareMonthlyReportPdf(payload.userId, payload.companyId, payload.month, { sourceKey: `outbox:${event.id}` });
@@ -374,7 +413,13 @@ async function renderEmail(event: OutboxEvent): Promise<RenderedEmail> {
 }
 
 export async function sendOutboxEmail(event: OutboxEvent) {
-  const { recipient, subject, text, html, attachments } = await renderEmail(event);
+  const rendered = await renderEmail(event);
+  if (!rendered) {
+    // Sem destinatário (ex.: nenhum administrador interno ativo): nada a enviar, sem novas tentativas.
+    structuredLog("warn", "worker.email_without_recipients", { outboxEventId: event.id, outboxEventType: event.type });
+    return;
+  }
+  const { recipient, subject, text, html, attachments } = rendered;
 
   const smtp = await transport();
   if (!smtp) {

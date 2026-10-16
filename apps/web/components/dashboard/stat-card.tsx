@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ModalHeader } from "@/components/ui/modal-header";
 import { useModalPresence } from "@/components/ui/use-modal-presence";
 
@@ -90,14 +91,16 @@ export function StatCard({
         ) : null}
       </button>
 
-      {mounted ? (
+      {/* No corpo da página, fora da grade: dentro dela o modal contava como item e deslocava o
+          tamanho dos cartões seguintes (as regras do celular usam a posição de cada um). */}
+      {mounted ? createPortal(
         <div ref={overlayRef} className="modal-overlay" onClick={() => setOpen(false)}>
           <div ref={dialogRef} className="modal-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ maxWidth: "640px" }} onClick={(event) => event.stopPropagation()}>
             <ModalHeader title={modalTitle} titleId={titleId} icon={icon} onClose={() => setOpen(false)} />
             {children}
           </div>
         </div>
-      ) : null}
+      , document.body) : null}
     </>
   );
 }

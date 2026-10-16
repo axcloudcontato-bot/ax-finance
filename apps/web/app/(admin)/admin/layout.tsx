@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowUpRight, LogOut, ShieldCheck, WalletCards } from "@/components/ui/animated-icons";
-import { getPlatformAdminAccess } from "@ax-finance/domain";
+import { countOpenSupportCases, getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";
 import { AdminNav } from "@/components/admin/admin-nav";
@@ -21,6 +21,7 @@ export default async function InternalAdminLayout({ children }: { children: Reac
   if (!user) redirect(loginPathFor("/admin"));
   const access = await getPlatformAdminAccess(user.id);
   if (!access) redirect("/dashboard");
+  const openCases = await countOpenSupportCases(user.id);
   const initials = user.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 
   return (
@@ -31,7 +32,7 @@ export default async function InternalAdminLayout({ children }: { children: Reac
           <span className="admin-brand-mark"><WalletCards size={22} /></span>
           <span><strong>AX Finance</strong><small>Admin console</small></span>
         </Link>
-        <AdminNav />
+        <AdminNav openCases={openCases} />
         <div className="admin-sidebar-footer">
           <div className="admin-profile">
             <span className="admin-avatar">{initials}</span>

@@ -163,6 +163,8 @@
 .admin-nav-copy small { overflow: hidden; color: #8190ad; font-size: 0.69rem; text-overflow: ellipsis; white-space: nowrap; }
 .admin-nav-item.is-active .admin-nav-copy small { color: #aebde0; }
 .admin-nav-chevron { opacity: 0; transform: translateX(-4px); transition: 160ms ease; }
+/* Chamados abertos aguardando atendimento, ao lado de "Suporte". */
+.admin-nav-count { display: grid; flex: none; min-width: 22px; height: 22px; place-items: center; padding: 0 6px; border-radius: 999px; background: #b42d5f; color: #fff; font-size: 0.7rem; font-weight: 750; line-height: 1; }
 .admin-nav-item:hover .admin-nav-chevron, .admin-nav-item.is-active .admin-nav-chevron { opacity: 1; transform: translateX(0); }
 
 .admin-sidebar-footer { display: flex; align-items: center; gap: 0.5rem; padding: 0.85rem 0.65rem 0; border-top: 1px solid rgba(255, 255, 255, 0.1); }

@@ -65,3 +65,8 @@ export async function updateIncident(userId: string, incidentId: string, input: 
     return updated;
   });
 }
+
+/** Chamados ainda sem atendimento (status Aberto), para o contador do menu Suporte do admin. */
+export async function countOpenSupportCases(userId: string) {
+  return withUserContext(userId, (tx) => tx.supportCase.count({ where: { status: "OPEN" } }));
+}

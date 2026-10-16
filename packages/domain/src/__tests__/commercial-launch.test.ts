@@ -8,6 +8,8 @@ import { createTitle } from "../titles/create-title";
 import { createCompanySupportCase, listCompanySupportCases } from "../support/company-support";
 import { buildCompanyFinalExport } from "../exports/company-export";
 import { scheduleSubscriptionCancellation, undoSubscriptionCancellation } from "../subscriptions/subscriptions";
+import { prisma, withUserContext } from "@ax-finance/db";
+import { decodeSupportCaseOpenedPayload } from "../outbox/events";
 import { rootClient, resetDatabase } from "./test-db";
 
 async function setup() {
@@ -24,6 +26,25 @@ describe("preparação comercial", () => {
     const { user, company } = await setup();
     await createCompanySupportCase(user.id, company.id, { subject: "Importação não concluiu", summary: "O arquivo ficou processando por mais de vinte minutos.", contactEmail: user.email, priority: "HIGH" });
     expect(await listCompanySupportCases(user.id, company.id)).toMatchObject([{ subject: "Importação não concluiu", status: "OPEN", priority: "HIGH" }]);
+  });
+
+  it("chamado aberto avisa a equipe interna; a lista de destinatários só sai para o worker", async () => {
+    const { user, company } = await setup();
+    const admin = await registerUser({ email: `suporte.${randomUUID()}@teste.ax.finance`, name: "Equipe de suporte", password: "senha-forte-123" });
+    const analyst = await registerUser({ email: `analista.${randomUUID()}@teste.ax.finance`, name: "Analista", password: "senha-forte-123" });
+    await rootClient.platformAdmin.createMany({ data: [{ userId: admin.id, role: "SUPPORT" }, { userId: analyst.id, role: "ANALYST" }] });
+
+    const created = await createCompanySupportCase(user.id, company.id, { subject: "Não consigo conciliar", summary: "As linhas do extrato não aparecem depois da importação.", contactEmail: user.email, priority: "NORMAL" });
+    const events = await rootClient.outboxEvent.findMany({ where: { type: "SUPPORT_CASE_OPENED" } });
+    expect(events).toHaveLength(1);
+    expect(decodeSupportCaseOpenedPayload(events[0]!)).toMatchObject({ caseId: created.id, companyName: "Empresa piloto", openedByName: "Proprietário", subject: "Não consigo conciliar", priority: "NORMAL" });
+
+    // Worker (sem usuário no contexto): só quem atende chamados; analista fica de fora.
+    const recipients = await prisma.$queryRaw<{ email: string }[]>`SELECT email FROM app_support_case_recipients()`;
+    expect(recipients.map((row) => row.email)).toEqual([admin.email]);
+    // Em nome de um cliente, a função não devolve ninguém.
+    const asCustomer = await withUserContext(user.id, (tx) => tx.$queryRaw<{ email: string }[]>`SELECT email FROM app_support_case_recipients()`);
+    expect(asCustomer).toEqual([]);
   });
 
   it("agenda e desfaz cancelamento com auditoria", async () => {

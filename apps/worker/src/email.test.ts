@@ -9,7 +9,7 @@ import {
   requestPasswordReset,
   requestSignUp,
 } from "@ax-finance/domain";
-import { renderDueDateSummaryEmail, renderOutboxEmail, renderWeeklySummaryEmail } from "./email";
+import { renderDueDateSummaryEmail, renderOutboxEmail, renderSupportCaseOpenedEmail, renderWeeklySummaryEmail } from "./email";
 
 const rootClient = createPrismaClient(process.env.DATABASE_URL!);
 
@@ -55,6 +55,19 @@ describe("renderização dos e-mails da outbox", () => {
     expect(email.html).toContain("Dona da Conta");
     expect(email.html).toContain('href="https://financeiro.example.com/login"');
     expect(email.html).toContain('href="https://financeiro.example.com/recuperar-senha"');
+  });
+
+  it("aviso de chamado aberto traz empresa, prioridade, resumo e o link do admin", () => {
+    const email = renderSupportCaseOpenedEmail(
+      { caseId: randomUUID(), companyName: "Padaria <Pão>", openedByName: "Ana", contactEmail: "ana@exemplo.com", subject: "Erro na baixa", summary: "Linha 1\nLinha 2", priority: "URGENT" },
+      ["suporte@exemplo.com", "ops@exemplo.com"],
+    );
+    expect(email.recipient).toBe("suporte@exemplo.com, ops@exemplo.com");
+    expect(email.subject).toBe("[Prioridade alta] Novo chamado: Erro na baixa — Padaria <Pão>");
+    expect(email.html).toContain("Padaria &lt;Pão&gt;");
+    expect(email.html).toContain("Linha 1<br>Linha 2");
+    expect(email.html).toContain("/admin/suporte");
+    expect(email.html).toContain("Urgente");
   });
 
   it("renderiza convite e aviso de assinatura com o mesmo layout", async () => {

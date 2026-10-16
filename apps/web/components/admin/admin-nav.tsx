@@ -12,7 +12,8 @@ const items = [
   { href: "/admin/email", label: "E-mail", description: "Servidor SMTP", icon: Mail },
 ] as const;
 
-export function AdminNav() {
+/** `openCases`: chamados abertos e ainda sem atendimento, mostrados em Suporte. */
+export function AdminNav({ openCases = 0 }: { openCases?: number }) {
   const pathname = usePathname();
 
   return (
@@ -25,6 +26,7 @@ export function AdminNav() {
           <Link key={item.href} href={item.href} className={`admin-nav-item${active ? " is-active" : ""}`} aria-current={active ? "page" : undefined}>
             <span className="admin-nav-icon"><Icon size={19} strokeWidth={1.8} /></span>
             <span className="admin-nav-copy"><strong>{item.label}</strong><small>{item.description}</small></span>
+            {item.href === "/admin/suporte" && openCases > 0 ? <span className="admin-nav-count" aria-label={`${openCases} ${openCases === 1 ? "chamado aberto" : "chamados abertos"}`}>{openCases > 99 ? "99+" : openCases}</span> : null}
             <ChevronRight className="admin-nav-chevron" size={16} />
           </Link>
         );

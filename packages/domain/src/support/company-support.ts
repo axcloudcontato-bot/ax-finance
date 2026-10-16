@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
+import { enqueueSupportCaseOpenedEmail } from "../outbox/events";
 
 const customerSupportInput = z.object({
   subject: z.string().trim().min(5).max(200),
@@ -19,10 +20,28 @@ export async function listCompanySupportCases(userId: string, companyId: string)
   }));
 }
 
+/**
+ * Abre um chamado e, na mesma transação, enfileira o aviso por e-mail para a equipe interna
+ * (super admin, operações e suporte ativos, resolvidos pelo worker no envio).
+ */
 export async function createCompanySupportCase(userId: string, companyId: string, input: unknown) {
   const data = customerSupportInput.parse(input);
   await assertActiveMembership(userId, companyId);
-  return withCompanyContext(userId, companyId, (tx) => tx.supportCase.create({
-    data: { ...data, companyId, createdByUserId: userId },
-  }));
+  return withCompanyContext(userId, companyId, async (tx) => {
+    const created = await tx.supportCase.create({ data: { ...data, companyId, createdByUserId: userId } });
+    const [company, user] = await Promise.all([
+      tx.company.findUnique({ where: { id: companyId }, select: { name: true } }),
+      tx.user.findUnique({ where: { id: userId }, select: { name: true } }),
+    ]);
+    await enqueueSupportCaseOpenedEmail(tx, `support-case-opened:${created.id}`, {
+      caseId: created.id,
+      companyName: company?.name ?? "Empresa",
+      openedByName: user?.name ?? "Cliente",
+      contactEmail: data.contactEmail,
+      subject: data.subject,
+      summary: data.summary,
+      priority: data.priority,
+    });
+    return created;
+  });
 }
