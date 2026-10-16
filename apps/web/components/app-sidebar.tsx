@@ -195,12 +195,12 @@ export function AppSidebar({
     />
     <aside
       className={`app-sidebar border-r border-border md:relative md:z-auto md:h-full md:shrink-0 md:bg-card/50 md:transition-[width] md:duration-300 md:ease-in-out ${
-        collapsed ? "md:w-[72px]" : "md:w-[260px]"
+        collapsed ? "md:w-[72px]" : "md:w-[232px]"
       } ${mobileOpen ? "is-open" : ""}`}
       aria-label="Navegação principal"
       data-collapsed={collapsed}
     >
-      <div className={`flex h-full w-full flex-col overflow-hidden p-3 transition-[width,padding] duration-300 ease-in-out ${collapsed ? "md:w-[72px] md:p-2" : "md:w-[260px] md:p-3"}`}>
+      <div className={`flex h-full w-full flex-col overflow-hidden p-3 transition-[width,padding] duration-300 ease-in-out ${collapsed ? "md:w-[72px] md:p-2" : "md:w-[232px] md:p-3"}`}>
         <div id="app-sidebar-navigation" role="navigation" className="flex flex-1 flex-col items-stretch gap-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex shrink-0 items-center">
             <div className="min-w-0 flex-1">

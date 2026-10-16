@@ -4888,3 +4888,9 @@ select:not([multiple]):not([size]) {
   background-size: 14px 14px !important;
   text-overflow: ellipsis;
 }
+
+/* Orçamento anual: nome longo da categoria quebra linha dentro da coluna fixa (não invade janeiro),
+   e a coluna fixa ganha uma divisa à direita para os meses passarem por baixo dela ao rolar. */
+.budget-year-table :is(thead th:first-child, tbody th, tfoot th) { box-shadow: inset -1px 0 0 var(--border); }
+.budget-year-table tbody th .category-name { display: flex; max-width: 100%; white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+.budget-year-table tbody th .category-name > :is(.category-icon, span) { flex-shrink: 0; }
