@@ -25,6 +25,28 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-orcamento-receitas-despesas",
+    date: "2026-10-15",
+    title: "Orçamento com receitas e despesas separadas",
+    summary: "Planeje também o que espera receber e veja cada categoria principal somando as suas subcategorias.",
+    changes: [
+      { kind: "NEW", text: "O orçamento do mês e do ano tem duas seções: Receitas (quanto espera receber, comparado com o que entrou) e Despesas (quanto pretende gastar). O resumo mostra o resultado previsto." },
+      { kind: "IMPROVED", text: "Subcategorias aparecem agrupadas embaixo da categoria principal, que mostra o subtotal do grupo. Ex.: Moradia soma Aluguel, Condomínio, Água e Luz." },
+      { kind: "IMPROVED", text: "Novas contas já começam com Aluguel, Condomínio, Água, Luz, Gás e IPTU separados dentro de Moradia." },
+      { kind: "FIXED", text: "Salvar o orçamento do ano ficou mais rápido com muitas categorias. Se o sistema for atualizado com a tela aberta, aparece um aviso para recarregar a página." },
+    ],
+  },
+  {
+    id: "2026-10-15-detalhes-cartoes-contas",
+    date: "2026-10-15",
+    title: "Detalhes de cartões e contas numa janela",
+    summary: "Clique num cartão ou numa conta para ver limite, faturas, saldo e últimos movimentos sem sair da tela.",
+    changes: [
+      { kind: "IMPROVED", text: "No painel e em Cartões de crédito, o cartão abre uma janela com limite usado e disponível, fatura aberta, próximo pagamento e as faturas pendentes, cada uma com link." },
+      { kind: "NEW", text: "Em Contas, clique no nome da conta ou carteira para ver o saldo atual, o saldo de abertura e os últimos movimentos: baixas, devoluções, transferências e ajustes." },
+    ],
+  },
+  {
     id: "2026-10-15-tabela-da-divida",
     date: "2026-10-15",
     title: "Tabela da dívida sem sair da lista",

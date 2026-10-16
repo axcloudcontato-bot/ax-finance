@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
 import { todayDateOnlyString } from "@/lib/dates";
-import { sortCategoriesTree } from "@/lib/categories";
+import { budgetSections } from "@/lib/budget-groups";
 import { ActionModal } from "@/components/ui/action-modal";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { ScrollToCurrent } from "@/components/scroll-to-current";
@@ -28,6 +28,32 @@ function short(cents: bigint): string {
   return value >= 10_000 ? `${Math.round(value / 1000).toLocaleString("pt-BR")} mil` : value.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 }
 
+type AnnualRow = Awaited<ReturnType<typeof getAnnualBudgetReport>>["rows"][number];
+
+/** Linha editável da grade: um campo por mês e, embaixo, o realizado. */
+function YearRow({ row, label, nested, currentMonth }: { row: AnnualRow; label: string; nested: boolean; currentMonth: string }) {
+  const revenue = row.kind === "REVENUE";
+  return (
+    <tr className={nested ? "budget-child" : undefined}>
+      <th scope="row">{nested ? <span className="muted" aria-hidden="true">↳ </span> : null}{label}</th>
+      {row.cells.map((cell, index) => {
+        const over = !revenue && cell.plannedCents > ZERO && cell.actualCents > cell.plannedCents;
+        return (
+          <td key={cell.period} className={cell.period === currentMonth ? "is-current" : undefined}>
+            <input type="hidden" name={`w|${row.categoryId}|${cell.period}`} value={toInput(cell.plannedCents)} />
+            <input name={`a|${row.categoryId}|${cell.period}`} defaultValue={toInput(cell.plannedCents)} inputMode="decimal" placeholder="—" aria-label={`${label}, ${MONTH_SHORT[index]}`} className="budget-year-input" />
+            {cell.actualCents > ZERO ? <small className={over ? "is-over" : undefined}>{short(cell.actualCents)}</small> : null}
+          </td>
+        );
+      })}
+      <td className="money budget-year-total">
+        <strong>{formatCents(row.plannedCents)}</strong>
+        <small className={!revenue && row.status === "OVER" ? "is-over" : undefined}>{revenue ? "recebido" : "gasto"} {formatCents(row.actualCents)}{row.plannedCents > ZERO ? ` · ${Math.round(row.percent)}%` : ""}</small>
+      </td>
+    </tr>
+  );
+}
+
 export default async function AnnualBudgetPage(props: { searchParams: Promise<{ ano?: string; erro?: string; salvo?: string; planejado?: string }> }) {
   const searchParams = await props.searchParams;
   const user = await getCurrentUser();
@@ -38,8 +64,8 @@ export default async function AnnualBudgetPage(props: { searchParams: Promise<{ 
   const currentYear = Number(today.slice(0, 4));
   const year = /^\d{4}$/.test(searchParams.ano ?? "") ? Number(searchParams.ano) : currentYear;
   const report = await getAnnualBudgetReport(user.id, company.id, year);
-  const ids = new Set(report.rows.map((row) => row.categoryId));
-  const rows = sortCategoriesTree(report.rows.map((row) => ({ ...row, id: row.categoryId, order: 0, parentId: row.parentId && ids.has(row.parentId) ? row.parentId : null })));
+  const sections = budgetSections(report.rows);
+  const plannedResult = report.revenueTotals.plannedCents - report.totals.plannedCents;
   const usedPercent = report.totals.plannedCents > ZERO ? Math.round(Number((report.totals.actualCents * BigInt(1000)) / report.totals.plannedCents) / 10) : null;
   const currentMonth = today.slice(0, 7);
 
@@ -48,7 +74,7 @@ export default async function AnnualBudgetPage(props: { searchParams: Promise<{ 
       <div className="page-header">
         <div>
           <h1>Orçamento de {year}</h1>
-          <p className="subtitle">Planeje os 12 meses de cada categoria e compare com o que foi gasto. Embaixo de cada valor aparece o realizado do mês.</p>
+          <p className="subtitle">Planeje os 12 meses de cada categoria, separando o que espera receber do que pretende gastar. Embaixo de cada valor aparece o realizado do mês.</p>
         </div>
         <div className="budget-year-actions">
           <ActionModal triggerLabel="Planejar o ano" triggerClassName="button-link workspace-primary-action" title={`Planejar ${year}`} size="wide" initiallyOpen={Boolean(searchParams.erro) && !searchParams.salvo}>
@@ -96,65 +122,92 @@ export default async function AnnualBudgetPage(props: { searchParams: Promise<{ 
       {searchParams.salvo ? <p className="success-box">{Number(searchParams.salvo) > 0 ? `Orçamento salvo (${searchParams.salvo} ${Number(searchParams.salvo) === 1 ? "valor alterado" : "valores alterados"}).` : "Nada mudou."}</p> : null}
       {searchParams.planejado ? <p className="success-box">{Number(searchParams.planejado) > 0 ? `${searchParams.planejado} ${Number(searchParams.planejado) === 1 ? "valor preenchido" : "valores preenchidos"}. Confira e ajuste o que precisar.` : "Nada a preencher: a origem está vazia ou os meses já tinham valor (marque substituir para trocar)."}</p> : null}
 
-      <section className="workspace-metrics" aria-label="Resumo do ano">
-        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Planejado no ano</span><strong>{formatCents(report.totals.plannedCents)}</strong><span className="workspace-metric-detail">Soma de todos os meses e categorias</span></div>
-        <div className="workspace-metric"><span className="workspace-metric-label">Gasto no ano</span><strong>{formatCents(report.totals.actualCents)}</strong><span className="workspace-metric-detail">{usedPercent !== null ? `${usedPercent}% do planejado` : "Defina valores na grade"}</span></div>
-        <div className="workspace-metric"><span className="workspace-metric-label">Categorias acima do planejado</span><strong className={report.totals.overCount > 0 ? "negative" : undefined}>{report.totals.overCount}</strong><span className="workspace-metric-detail">No acumulado do ano</span></div>
+      <section className="workspace-metrics budget-metrics" aria-label="Resumo do ano">
+        <div className="workspace-metric"><span className="workspace-metric-label">Receitas previstas no ano</span><strong className="positive">{formatCents(report.revenueTotals.plannedCents)}</strong><span className="workspace-metric-detail">Recebido {formatCents(report.revenueTotals.actualCents)}</span></div>
+        <div className="workspace-metric"><span className="workspace-metric-label">Despesas planejadas no ano</span><strong className="negative">{formatCents(report.totals.plannedCents)}</strong><span className="workspace-metric-detail">Gasto {formatCents(report.totals.actualCents)}{usedPercent !== null ? ` · ${usedPercent}%` : ""}</span></div>
+        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Resultado previsto</span><strong className={plannedResult < ZERO ? "negative" : undefined}>{formatCents(plannedResult)}</strong><span className="workspace-metric-detail">Receitas previstas − despesas planejadas</span></div>
+        <div className="workspace-metric"><span className="workspace-metric-label">Despesas acima do planejado</span><strong className={report.totals.overCount > 0 ? "negative" : undefined}>{report.totals.overCount}</strong><span className="workspace-metric-detail">Categorias, no acumulado do ano</span></div>
       </section>
 
-      <form action={saveBudgetYearAction} className="card">
+      <form action={saveBudgetYearAction}>
         <input type="hidden" name="year" value={year} />
-        {rows.length === 0 ? (
-          <div className="workspace-empty"><strong>Nenhuma categoria de gasto</strong><p>Cadastre categorias de despesa para poder orçar.</p></div>
+        {report.rows.length === 0 ? (
+          <div className="card"><div className="workspace-empty"><strong>Nenhuma categoria para orçar</strong><p>Cadastre categorias de receita e de despesa em Cadastros &gt; Categorias.</p></div></div>
         ) : (
           <>
-            <ScrollToCurrent className="table-scroll budget-year-scroll">
-              <table className="workspace-table budget-year-table">
-                <thead>
-                  <tr>
-                    <th>Categoria</th>
-                    {report.months.map((month, index) => <th key={month} className={`money${month === currentMonth ? " is-current" : ""}`}>{MONTH_SHORT[index]}</th>)}
-                    <th className="money">Ano</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.categoryId}>
-                      <th scope="row">{row.parentId ? <span className="muted">↳ </span> : null}{row.name}</th>
-                      {row.cells.map((cell, index) => {
-                        const over = cell.plannedCents > ZERO && cell.actualCents > cell.plannedCents;
-                        return (
-                          <td key={cell.period} className={cell.period === currentMonth ? "is-current" : undefined}>
-                            <input type="hidden" name={`w|${row.categoryId}|${cell.period}`} value={toInput(cell.plannedCents)} />
-                            <input name={`a|${row.categoryId}|${cell.period}`} defaultValue={toInput(cell.plannedCents)} inputMode="decimal" placeholder="—" aria-label={`${row.name}, ${MONTH_SHORT[index]}`} className="budget-year-input" />
-                            {cell.actualCents > ZERO ? <small className={over ? "is-over" : undefined}>{short(cell.actualCents)}</small> : null}
-                          </td>
-                        );
-                      })}
-                      <td className="money budget-year-total">
-                        <strong>{formatCents(row.plannedCents)}</strong>
-                        <small className={row.status === "OVER" ? "is-over" : undefined}>gasto {formatCents(row.actualCents)}{row.plannedCents > ZERO ? ` · ${Math.round(row.percent)}%` : ""}</small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th scope="row">Total</th>
-                    {report.monthTotals.map((month) => (
-                      <td key={month.period} className={`money${month.period === currentMonth ? " is-current" : ""}`}>
-                        <strong>{month.plannedCents > ZERO ? short(month.plannedCents) : "—"}</strong>
-                        <small className={month.plannedCents > ZERO && month.actualCents > month.plannedCents ? "is-over" : undefined}>{month.actualCents > ZERO ? short(month.actualCents) : "—"}</small>
-                      </td>
-                    ))}
-                    <td className="money budget-year-total"><strong>{formatCents(report.totals.plannedCents)}</strong><small>gasto {formatCents(report.totals.actualCents)}</small></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </ScrollToCurrent>
+            {sections.map((section) => {
+              const revenue = section.kind === "REVENUE";
+              const monthTotals = revenue ? report.revenueMonthTotals : report.monthTotals;
+              const sectionTotals = revenue ? report.revenueTotals : report.totals;
+              return (
+                <section key={section.kind} className={`card budget-section is-${section.kind.toLowerCase()}`} aria-labelledby={`budget-year-${section.kind}`}>
+                  <div className="workspace-card-heading">
+                    <div>
+                      <h2 id={`budget-year-${section.kind}`}>{section.title}</h2>
+                      <p>{revenue ? "Quanto espera receber por mês. O número pequeno é o que entrou." : "Quanto pretende gastar por mês. O número pequeno é o gasto; em vermelho, acima do planejado."}</p>
+                    </div>
+                  </div>
+                  {section.groups.length === 0 ? (
+                    <div className="workspace-empty"><strong>{revenue ? "Nenhuma categoria de receita" : "Nenhuma categoria de despesa"}</strong><p>Cadastre em Cadastros &gt; Categorias.</p></div>
+                  ) : (
+                    <ScrollToCurrent className="table-scroll budget-year-scroll">
+                      <table className="workspace-table budget-year-table">
+                        <thead>
+                          <tr>
+                            <th>Categoria</th>
+                            {report.months.map((month, index) => <th key={month} className={`money${month === currentMonth ? " is-current" : ""}`}>{MONTH_SHORT[index]}</th>)}
+                            <th className="money">Ano</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {section.groups.map((group) => {
+                            if (group.children.length === 0) return <YearRow key={group.head.categoryId} row={group.head} label={group.head.name} nested={false} currentMonth={currentMonth} />;
+                            const members = [group.head, ...group.children];
+                            const ownValues = group.head.plannedCents > ZERO || group.head.actualCents > ZERO;
+                            return [
+                              <tr key={`${group.head.categoryId}-grupo`} className="budget-group">
+                                <th scope="row">{group.head.name}</th>
+                                {report.months.map((month, index) => {
+                                  const planned = members.reduce((sum, row) => sum + row.cells[index]!.plannedCents, ZERO);
+                                  const actual = members.reduce((sum, row) => sum + row.cells[index]!.actualCents, ZERO);
+                                  return (
+                                    <td key={month} className={`money${month === currentMonth ? " is-current" : ""}`}>
+                                      <strong>{planned > ZERO ? short(planned) : "—"}</strong>
+                                      <small className={!revenue && planned > ZERO && actual > planned ? "is-over" : undefined}>{actual > ZERO ? short(actual) : "—"}</small>
+                                    </td>
+                                  );
+                                })}
+                                <td className="money budget-year-total">
+                                  <strong>{formatCents(members.reduce((sum, row) => sum + row.plannedCents, ZERO))}</strong>
+                                  <small>{revenue ? "recebido" : "gasto"} {formatCents(members.reduce((sum, row) => sum + row.actualCents, ZERO))}</small>
+                                </td>
+                              </tr>,
+                              ...group.children.map((child) => <YearRow key={child.categoryId} row={child} label={child.name} nested currentMonth={currentMonth} />),
+                              ownValues ? <YearRow key={`${group.head.categoryId}-proprio`} row={group.head} label={`${group.head.name} (sem subcategoria)`} nested currentMonth={currentMonth} /> : null,
+                            ];
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <th scope="row">{revenue ? "Total de receitas" : "Total de despesas"}</th>
+                            {monthTotals.map((month) => (
+                              <td key={month.period} className={`money${month.period === currentMonth ? " is-current" : ""}`}>
+                                <strong>{month.plannedCents > ZERO ? short(month.plannedCents) : "—"}</strong>
+                                <small className={!revenue && month.plannedCents > ZERO && month.actualCents > month.plannedCents ? "is-over" : undefined}>{month.actualCents > ZERO ? short(month.actualCents) : "—"}</small>
+                              </td>
+                            ))}
+                            <td className="money budget-year-total"><strong>{formatCents(sectionTotals.plannedCents)}</strong><small>{revenue ? "recebido" : "gasto"} {formatCents(sectionTotals.actualCents)}</small></td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </ScrollToCurrent>
+                  )}
+                </section>
+              );
+            })}
             <BudgetYearAutofill />
-            <p className="field-note">Digite em reais (1.200 ou 1.200,50). O primeiro valor de uma categoria se repete nos meses vazios; ajuste à mão os meses diferentes. Deixe em branco para não orçar o mês. O número pequeno é o gasto do mês; em vermelho, acima do planejado.</p>
-            <SubmitButton>Salvar orçamento do ano</SubmitButton>
+            <p className="field-note">Digite em reais (1.200 ou 1.200,50). O primeiro valor de uma categoria se repete nos meses vazios; ajuste à mão os meses diferentes. Deixe em branco para não orçar o mês. A linha da categoria principal soma as subcategorias.</p>
+            <div className="budget-save"><SubmitButton>Salvar orçamento do ano</SubmitButton></div>
           </>
         )}
       </form>

@@ -7,8 +7,15 @@ import { CategoryNotFoundError } from "../errors";
 
 const period = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 
-/** Gasto planejado só faz sentido em categoria que não seja de receita. */
+/** Categorias de gasto: o planejado é um teto. */
 const SPENDING_NATURES = ["COST", "EXPENSE", "INVESTMENT", "FINANCING", "EQUITY"] as const;
+/** Categorias de receita: o planejado é uma meta de entrada. */
+const REVENUE_NATURES = ["OPERATING_REVENUE"] as const;
+/** Tudo o que pode ter orçamento: receitas e gastos (transferência técnica não). */
+const BUDGET_NATURES = [...REVENUE_NATURES, ...SPENDING_NATURES] as const;
+
+export type BudgetKind = "REVENUE" | "EXPENSE";
+const kindOf = (nature: string): BudgetKind => ((REVENUE_NATURES as readonly string[]).includes(nature) ? "REVENUE" : "EXPENSE");
 
 export const setBudgetInput = z.object({
   categoryId: z.string().uuid(),
@@ -26,7 +33,7 @@ export async function setBudget(userId: string, companyId: string, input: unknow
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
 
   return withCompanyContext(userId, companyId, async (tx) => {
-    const category = await tx.category.findFirst({ where: { id: data.categoryId, companyId, status: "ACTIVE", nature: { in: [...SPENDING_NATURES] } } });
+    const category = await tx.category.findFirst({ where: { id: data.categoryId, companyId, status: "ACTIVE", nature: { in: [...BUDGET_NATURES] } } });
     if (!category) throw new CategoryNotFoundError();
 
     const key = { companyId_categoryId_period: { companyId, categoryId: data.categoryId, period: data.period } };
@@ -79,15 +86,17 @@ export async function copyBudgets(userId: string, companyId: string, input: unkn
   });
 }
 
-export type BudgetStatus = "OK" | "WARNING" | "OVER" | "UNBUDGETED";
+/** Gasto: OK, WARNING (≥ 80%), OVER (estourou). Receita: BELOW (abaixo da meta), REACHED (atingiu). */
+export type BudgetStatus = "OK" | "WARNING" | "OVER" | "UNBUDGETED" | "BELOW" | "REACHED";
 
 export interface BudgetRow {
   categoryId: string;
   name: string;
   parentId: string | null;
+  kind: BudgetKind;
   plannedCents: bigint;
   actualCents: bigint;
-  /** Planejado − realizado; negativo = estourou. */
+  /** Planejado − realizado; no gasto, negativo = estourou; na receita, positivo = falta entrar. */
   remainingCents: bigint;
   /** Realizado / planejado, em %. Sem planejado, 0. */
   percent: number;
@@ -96,6 +105,15 @@ export interface BudgetRow {
 
 /** Acima de 80% do orçamento já pede atenção; acima de 100%, estourou. */
 export const BUDGET_WARNING_PERCENT = 80;
+
+/** Receita: meta atingida quando o realizado alcança o planejado. */
+export function revenueBudgetStatus(plannedCents: bigint, actualCents: bigint): BudgetStatus {
+  if (plannedCents === BigInt(0)) return actualCents > BigInt(0) ? "UNBUDGETED" : "OK";
+  return actualCents >= plannedCents ? "REACHED" : "BELOW";
+}
+
+const statusFor = (kind: BudgetKind, plannedCents: bigint, actualCents: bigint) =>
+  kind === "REVENUE" ? revenueBudgetStatus(plannedCents, actualCents) : budgetStatus(plannedCents, actualCents);
 
 export function budgetStatus(plannedCents: bigint, actualCents: bigint): BudgetStatus {
   if (plannedCents === BigInt(0)) return actualCents > BigInt(0) ? "UNBUDGETED" : "OK";
@@ -118,13 +136,13 @@ export async function getBudgetReport(userId: string, companyId: string, periodV
 
   const { categories, budgets, titles, purchases } = await withCompanyContext(userId, companyId, async (tx) => ({
     categories: await tx.category.findMany({
-      where: { companyId, status: "ACTIVE", nature: { in: [...SPENDING_NATURES] } },
+      where: { companyId, status: "ACTIVE", nature: { in: [...BUDGET_NATURES] } },
       orderBy: [{ order: "asc" }, { name: "asc" }],
     }),
     budgets: await tx.budget.findMany({ where: { companyId, period: parsed } }),
     titles: await tx.title.findMany({
-      where: { companyId, type: "PAYABLE", deletedAt: null, status: { not: "CANCELLED" }, competenceDate: range, creditCardInvoice: null },
-      select: { categoryId: true, originalAmountCents: true, allocations: { select: { categoryId: true, amountCents: true } } },
+      where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, competenceDate: range, creditCardInvoice: null },
+      select: { type: true, categoryId: true, originalAmountCents: true, allocations: { select: { categoryId: true, amountCents: true } } },
     }),
     purchases: await tx.creditCardPurchase.findMany({
       where: { companyId, canceledAt: null, competenceDate: range },
@@ -132,44 +150,58 @@ export async function getBudgetReport(userId: string, companyId: string, periodV
     }),
   }));
 
+  // Saída conta em categoria de gasto e entrada em categoria de receita.
+  const kinds = new Map(categories.map((category) => [category.id, kindOf(category.nature)]));
   const actual = new Map<string, bigint>();
-  const addActual = (categoryId: string, cents: bigint) => actual.set(categoryId, (actual.get(categoryId) ?? BigInt(0)) + cents);
+  const addActual = (categoryId: string, cents: bigint, kind: BudgetKind) => {
+    if (kinds.get(categoryId) === kind) actual.set(categoryId, (actual.get(categoryId) ?? BigInt(0)) + cents);
+  };
   for (const title of titles) {
-    if (title.allocations.length > 0) for (const line of title.allocations) addActual(line.categoryId, line.amountCents);
-    else addActual(title.categoryId, title.originalAmountCents);
+    const kind: BudgetKind = title.type === "RECEIVABLE" ? "REVENUE" : "EXPENSE";
+    if (title.allocations.length > 0) for (const line of title.allocations) addActual(line.categoryId, line.amountCents, kind);
+    else addActual(title.categoryId, title.originalAmountCents, kind);
   }
-  for (const purchase of purchases) addActual(purchase.categoryId, purchase.amountCents);
+  for (const purchase of purchases) addActual(purchase.categoryId, purchase.amountCents, "EXPENSE");
   const planned = new Map(budgets.map((budget) => [budget.categoryId, budget.amountCents]));
 
   const rows: BudgetRow[] = categories.map((category) => {
     const plannedCents = planned.get(category.id) ?? BigInt(0);
     const actualCents = actual.get(category.id) ?? BigInt(0);
+    const kind = kindOf(category.nature);
     return {
       categoryId: category.id,
       name: category.name,
       parentId: category.parentId,
+      kind,
       plannedCents,
       actualCents,
       remainingCents: plannedCents - actualCents,
       percent: plannedCents > BigInt(0) ? Number((actualCents * BigInt(1000)) / plannedCents) / 10 : 0,
-      status: budgetStatus(plannedCents, actualCents),
+      status: statusFor(kind, plannedCents, actualCents),
     };
   });
 
-  const budgeted = rows.filter((row) => row.plannedCents > BigInt(0));
+  // Totais de gasto (o que o painel e o relatório mensal comparam) e, à parte, os de receita.
+  const spending = rows.filter((row) => row.kind === "EXPENSE");
+  const revenue = rows.filter((row) => row.kind === "REVENUE");
+  const budgeted = spending.filter((row) => row.plannedCents > BigInt(0));
   const plannedTotal = budgeted.reduce((sum, row) => sum + row.plannedCents, BigInt(0));
   const actualOnBudgeted = budgeted.reduce((sum, row) => sum + row.actualCents, BigInt(0));
   return {
     period: parsed,
     rows,
+    revenueTotals: {
+      plannedCents: revenue.reduce((sum, row) => sum + row.plannedCents, BigInt(0)),
+      actualCents: revenue.reduce((sum, row) => sum + row.actualCents, BigInt(0)),
+    },
     totals: {
       plannedCents: plannedTotal,
       /** Realizado só das categorias orçadas, para comparar com o planejado. */
       actualOnBudgetedCents: actualOnBudgeted,
       /** Gasto do mês em categorias sem orçamento. */
-      unbudgetedActualCents: rows.filter((row) => row.plannedCents === BigInt(0)).reduce((sum, row) => sum + row.actualCents, BigInt(0)),
-      overCount: rows.filter((row) => row.status === "OVER").length,
-      warningCount: rows.filter((row) => row.status === "WARNING").length,
+      unbudgetedActualCents: spending.filter((row) => row.plannedCents === BigInt(0)).reduce((sum, row) => sum + row.actualCents, BigInt(0)),
+      overCount: spending.filter((row) => row.status === "OVER").length,
+      warningCount: spending.filter((row) => row.status === "WARNING").length,
     },
   };
 }
@@ -181,24 +213,26 @@ const monthsOf = (year: number) => Array.from({ length: 12 }, (_, index) => `${y
 async function actualByCategoryAndMonth(tx: TenantScopedClient, companyId: string, from: Date, to: Date) {
   const [titles, purchases] = await Promise.all([
     tx.title.findMany({
-      where: { companyId, type: "PAYABLE", deletedAt: null, status: { not: "CANCELLED" }, competenceDate: { gte: from, lte: to }, creditCardInvoice: null },
-      select: { categoryId: true, competenceDate: true, originalAmountCents: true, allocations: { select: { categoryId: true, amountCents: true } } },
+      where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, competenceDate: { gte: from, lte: to }, creditCardInvoice: null },
+      select: { type: true, categoryId: true, competenceDate: true, originalAmountCents: true, allocations: { select: { categoryId: true, amountCents: true } } },
     }),
     tx.creditCardPurchase.findMany({
       where: { companyId, canceledAt: null, competenceDate: { gte: from, lte: to } },
       select: { categoryId: true, competenceDate: true, amountCents: true },
     }),
   ]);
+  // Chave "tipo|categoria|mês": quem lê usa o tipo que combina com a categoria (saída em gasto, entrada em receita).
   const actual = new Map<string, bigint>();
-  const add = (categoryId: string, date: Date, cents: bigint) => {
-    const key = `${categoryId}|${date.toISOString().slice(0, 7)}`;
+  const add = (kind: BudgetKind, categoryId: string, date: Date, cents: bigint) => {
+    const key = `${kind}|${categoryId}|${date.toISOString().slice(0, 7)}`;
     actual.set(key, (actual.get(key) ?? BigInt(0)) + cents);
   };
   for (const title of titles) {
-    if (title.allocations.length > 0) for (const line of title.allocations) add(line.categoryId, title.competenceDate, line.amountCents);
-    else add(title.categoryId, title.competenceDate, title.originalAmountCents);
+    const kind: BudgetKind = title.type === "RECEIVABLE" ? "REVENUE" : "EXPENSE";
+    if (title.allocations.length > 0) for (const line of title.allocations) add(kind, line.categoryId, title.competenceDate, line.amountCents);
+    else add(kind, title.categoryId, title.competenceDate, title.originalAmountCents);
   }
-  for (const purchase of purchases) add(purchase.categoryId, purchase.competenceDate, purchase.amountCents);
+  for (const purchase of purchases) add("EXPENSE", purchase.categoryId, purchase.competenceDate, purchase.amountCents);
   return actual;
 }
 
@@ -214,17 +248,18 @@ export async function getAnnualBudgetReport(userId: string, companyId: string, r
   const to = new Date(Date.UTC(year, 11, 31));
   return withCompanyContext(userId, companyId, async (tx) => {
     const [categories, budgets, actual] = await Promise.all([
-      tx.category.findMany({ where: { companyId, status: "ACTIVE", nature: { in: [...SPENDING_NATURES] } }, orderBy: [{ order: "asc" }, { name: "asc" }] }),
+      tx.category.findMany({ where: { companyId, status: "ACTIVE", nature: { in: [...BUDGET_NATURES] } }, orderBy: [{ order: "asc" }, { name: "asc" }] }),
       tx.budget.findMany({ where: { companyId, period: { in: months } } }),
       actualByCategoryAndMonth(tx, companyId, from, to),
     ]);
     const planned = new Map(budgets.map((budget) => [`${budget.categoryId}|${budget.period}`, budget.amountCents]));
     const ZERO = BigInt(0);
     const rows = categories.map((category) => {
+      const kind = kindOf(category.nature);
       const cells = months.map((month) => ({
         period: month,
         plannedCents: planned.get(`${category.id}|${month}`) ?? ZERO,
-        actualCents: actual.get(`${category.id}|${month}`) ?? ZERO,
+        actualCents: actual.get(`${kind}|${category.id}|${month}`) ?? ZERO,
       }));
       const plannedCents = cells.reduce((sum, cell) => sum + cell.plannedCents, ZERO);
       const actualCents = cells.reduce((sum, cell) => sum + cell.actualCents, ZERO);
@@ -232,28 +267,41 @@ export async function getAnnualBudgetReport(userId: string, companyId: string, r
         categoryId: category.id,
         name: category.name,
         parentId: category.parentId,
+        kind,
         cells,
         plannedCents,
         actualCents,
         percent: plannedCents > ZERO ? Number((actualCents * BigInt(1000)) / plannedCents) / 10 : 0,
-        status: budgetStatus(plannedCents, actualCents),
+        status: statusFor(kind, plannedCents, actualCents),
       };
     });
-    const monthTotals = months.map((month, index) => ({
-      period: month,
-      plannedCents: rows.reduce((sum, row) => sum + row.cells[index]!.plannedCents, ZERO),
-      actualCents: rows.reduce((sum, row) => sum + row.cells[index]!.actualCents, ZERO),
-    }));
+    const totalsOf = (kind: BudgetKind) => {
+      const group = rows.filter((row) => row.kind === kind);
+      return {
+        monthTotals: months.map((month, index) => ({
+          period: month,
+          plannedCents: group.reduce((sum, row) => sum + row.cells[index]!.plannedCents, ZERO),
+          actualCents: group.reduce((sum, row) => sum + row.cells[index]!.actualCents, ZERO),
+        })),
+        plannedCents: group.reduce((sum, row) => sum + row.plannedCents, ZERO),
+        actualCents: group.reduce((sum, row) => sum + row.actualCents, ZERO),
+      };
+    };
+    const spending = totalsOf("EXPENSE");
+    const revenue = totalsOf("REVENUE");
     return {
       year,
       months,
       rows,
-      monthTotals,
+      /** Totais por mês dos gastos (como antes) e, à parte, das receitas. */
+      monthTotals: spending.monthTotals,
+      revenueMonthTotals: revenue.monthTotals,
       totals: {
-        plannedCents: rows.reduce((sum, row) => sum + row.plannedCents, ZERO),
-        actualCents: rows.reduce((sum, row) => sum + row.actualCents, ZERO),
-        overCount: rows.filter((row) => row.status === "OVER").length,
+        plannedCents: spending.plannedCents,
+        actualCents: spending.actualCents,
+        overCount: rows.filter((row) => row.kind === "EXPENSE" && row.status === "OVER").length,
       },
+      revenueTotals: { plannedCents: revenue.plannedCents, actualCents: revenue.actualCents },
     };
   });
 }
@@ -269,18 +317,24 @@ export async function saveBudgetCells(userId: string, companyId: string, rawInpu
   if (cells.length === 0) return { saved: 0 };
   return withCompanyContext(userId, companyId, async (tx) => {
     const ids = [...new Set(cells.map((cell) => cell.categoryId))];
-    const valid = await tx.category.findMany({ where: { id: { in: ids }, companyId, status: "ACTIVE", nature: { in: [...SPENDING_NATURES] } }, select: { id: true } });
+    const valid = await tx.category.findMany({ where: { id: { in: ids }, companyId, status: "ACTIVE", nature: { in: [...BUDGET_NATURES] } }, select: { id: true } });
     if (valid.length !== ids.length) throw new CategoryNotFoundError();
-    for (const cell of cells) {
-      if (cell.amountCents === 0) {
-        await tx.budget.deleteMany({ where: { companyId, categoryId: cell.categoryId, period: cell.period } });
-      } else {
-        await tx.budget.upsert({
-          where: { companyId_categoryId_period: { companyId, categoryId: cell.categoryId, period: cell.period } },
-          create: { companyId, categoryId: cell.categoryId, period: cell.period, amountCents: BigInt(cell.amountCents), createdByUserId: userId },
-          update: { amountCents: BigInt(cell.amountCents) },
-        });
-      }
+    // Duas instruções em lote no lugar de uma por célula: a grade do ano pode mandar centenas de
+    // valores (o primeiro valor se repete nos meses vazios) e a transação tem limite de tempo.
+    const removed = cells.filter((cell) => cell.amountCents === 0);
+    const kept = cells.filter((cell) => cell.amountCents > 0);
+    if (removed.length > 0) {
+      await tx.$executeRaw`
+        DELETE FROM "budgets" b
+        USING unnest(${removed.map((cell) => cell.categoryId)}::text[], ${removed.map((cell) => cell.period)}::text[]) AS r(category_id, period)
+        WHERE b."company_id" = ${companyId} AND b."category_id" = r.category_id AND b."period" = r.period`;
+    }
+    if (kept.length > 0) {
+      await tx.$executeRaw`
+        INSERT INTO "budgets" ("id", "company_id", "category_id", "period", "amount_cents", "created_by_user_id", "updated_at")
+        SELECT gen_random_uuid()::text, ${companyId}, c.category_id, c.period, c.amount_cents, ${userId}, now()
+        FROM unnest(${kept.map((cell) => cell.categoryId)}::text[], ${kept.map((cell) => cell.period)}::text[], ${kept.map((cell) => String(cell.amountCents))}::bigint[]) AS c(category_id, period, amount_cents)
+        ON CONFLICT ("company_id", "category_id", "period") DO UPDATE SET "amount_cents" = EXCLUDED."amount_cents", "updated_at" = now()`;
     }
     await recordAuditEvent(tx, {
       companyId, actorUserId: userId, eventType: "BUDGET_SET", resourceType: "Company", resourceId: companyId,
@@ -318,8 +372,9 @@ export async function fillBudgetYear(userId: string, companyId: string, rawInput
   await assertCompanyPermission(userId, companyId, "FINANCE_WRITE");
   const months = monthsOf(data.year);
   return withCompanyContext(userId, companyId, async (tx) => {
-    const categories = await tx.category.findMany({ where: { companyId, status: "ACTIVE", nature: { in: [...SPENDING_NATURES] } }, select: { id: true } });
+    const categories = await tx.category.findMany({ where: { companyId, status: "ACTIVE", nature: { in: [...BUDGET_NATURES] } }, select: { id: true, nature: true } });
     const active = new Set(categories.map((category) => category.id));
+    const kinds = new Map(categories.map((category) => [category.id, kindOf(category.nature)]));
     const existing = await tx.budget.findMany({ where: { companyId, period: { in: months } }, select: { categoryId: true, period: true } });
     const taken = new Set(existing.map((row) => `${row.categoryId}|${row.period}`));
 
@@ -334,7 +389,8 @@ export async function fillBudgetYear(userId: string, companyId: string, rawInput
     } else {
       const actual = await actualByCategoryAndMonth(tx, companyId, new Date(Date.UTC(data.year - 1, 0, 1)), new Date(Date.UTC(data.year - 1, 11, 31)));
       for (const [key, cents] of actual) {
-        const [categoryId, previousMonth] = key.split("|") as [string, string];
+        const [kind, categoryId, previousMonth] = key.split("|") as [BudgetKind, string, string];
+        if (kinds.get(categoryId) !== kind) continue;
         source.set(`${categoryId}|${data.year}${previousMonth.slice(4)}`, cents);
       }
     }

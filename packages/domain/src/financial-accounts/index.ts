@@ -6,3 +6,4 @@ export * from "./reverse-balance-adjustment";
 export * from "./list-balance-adjustments";
 export * from "./manage-account";
 export * from "./operational";
+export * from "./recent-movements";

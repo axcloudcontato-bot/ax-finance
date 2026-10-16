@@ -41,7 +41,7 @@ const BUSINESS_CATEGORY_GROUPS: DefaultCategoryGroup[] = [
     name: "Despesas administrativas",
     nature: "EXPENSE",
     managerialGroup: "Despesas administrativas",
-    children: ["Aluguel e condomínio", "Água, luz e internet", "Material de escritório"],
+    children: ["Aluguel", "Condomínio", "Água", "Luz", "Internet e telefone", "Material de escritório"],
   },
   {
     name: "Despesas comerciais",
@@ -80,7 +80,7 @@ const PERSONAL_CATEGORY_GROUPS: DefaultCategoryGroup[] = [
     name: "Moradia",
     nature: "EXPENSE",
     managerialGroup: "Moradia",
-    children: ["Aluguel", "Condomínio e IPTU", "Água, luz e gás", "Internet e telefone", "Manutenção e reparos"],
+    children: ["Aluguel", "Condomínio", "Água", "Luz", "Gás", "IPTU", "Internet e telefone", "Manutenção e reparos"],
   },
   {
     name: "Alimentação",

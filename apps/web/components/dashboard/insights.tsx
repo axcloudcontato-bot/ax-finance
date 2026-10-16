@@ -4,6 +4,8 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly } from "@/lib/dates";
 import { LimitBar } from "@/components/credit-cards/limit-bar";
 import { IssuerBadge } from "@/components/credit-cards/issuer-badge";
+import { CardDetailSummary } from "@/components/credit-cards/card-detail-summary";
+import { ActionModal } from "@/components/ui/action-modal";
 
 export type Insights = Awaited<ReturnType<typeof getDashboardInsights>>;
 export type Overview = Awaited<ReturnType<typeof getDashboardOverview>>;
@@ -167,19 +169,30 @@ export function CardsPanel({ cards, today }: { cards: CardSummary[] | null; toda
             const soon = next && next.dueDate <= new Date(new Date(`${today}T00:00:00Z`).getTime() + 3 * DAY_MS).toISOString().slice(0, 10);
             return (
               <li key={card.id}>
-                <Link href={`/cartoes/${card.id}`} className="dashboard-card-head">
-                  <IssuerBadge issuer={card.issuer} size={32} />
-                  <span><strong>{card.name}</strong><small>{card.lastDigits ? `final ${card.lastDigits}` : `fecha dia ${card.closingDay}`}</small></span>
-                </Link>
-                <LimitBar limitCents={card.limitCents} usedCents={card.usedLimitCents} />
-                <p className="dashboard-card-invoice">
-                  <span>Fatura aberta <strong>{formatCents(card.openCycle.totalCents)}</strong></span>
-                  {next ? (
-                    <span className={next.stage === "OVERDUE" ? "negative" : soon ? "is-soon" : undefined}>
-                      {next.stage === "OVERDUE" ? "Vencida" : "A pagar"} {formatCents(next.remainingCents)} · {next.stage === "OVERDUE" ? "venceu" : "vence"} {formatDateOnly(next.dueDate)}
-                    </span>
-                  ) : null}
-                </p>
+                <ActionModal
+                  triggerClassName="dashboard-detail-trigger"
+                  title={card.name}
+                  icon={<IssuerBadge issuer={card.issuer} size={30} />}
+                  triggerLabel={
+                    <>
+                      <span className="dashboard-card-head">
+                        <IssuerBadge issuer={card.issuer} size={32} />
+                        <span><strong>{card.name}</strong><small>{card.lastDigits ? `final ${card.lastDigits}` : `fecha dia ${card.closingDay}`}</small></span>
+                      </span>
+                      <LimitBar limitCents={card.limitCents} usedCents={card.usedLimitCents} />
+                      <span className="dashboard-card-invoice">
+                        <span>Fatura aberta <strong>{formatCents(card.openCycle.totalCents)}</strong></span>
+                        {next ? (
+                          <span className={next.stage === "OVERDUE" ? "negative" : soon ? "is-soon" : undefined}>
+                            {next.stage === "OVERDUE" ? "Vencida" : "A pagar"} {formatCents(next.remainingCents)} · {next.stage === "OVERDUE" ? "venceu" : "vence"} {formatDateOnly(next.dueDate)}
+                          </span>
+                        ) : null}
+                      </span>
+                    </>
+                  }
+                >
+                  <CardDetailSummary card={card} />
+                </ActionModal>
               </li>
             );
           })}

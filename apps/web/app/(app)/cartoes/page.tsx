@@ -22,6 +22,7 @@ import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
 import { LimitBar } from "@/components/credit-cards/limit-bar";
 import { IssuerBadge } from "@/components/credit-cards/issuer-badge";
+import { CardDetailSummary } from "@/components/credit-cards/card-detail-summary";
 import { createCardAction, createPurchaseAction } from "./actions";
 
 export default async function CartoesPage(props: {
@@ -194,7 +195,9 @@ export default async function CartoesPage(props: {
                       />
                     </ActionModal>
                   ) : null}
-                  <Link href={`/cartoes/${card.id}`} className="button-link">Abrir cartão</Link>
+                  <ActionModal key={`detalhes-${card.id}`} triggerLabel="Detalhes" title={card.name} icon={<IssuerBadge issuer={card.issuer} size={30} />}>
+                    <CardDetailSummary card={card} />
+                  </ActionModal>
                 </footer>
               </article>
             );

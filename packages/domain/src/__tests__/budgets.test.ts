@@ -58,13 +58,18 @@ describe("orçamento por categoria e mês", () => {
     expect(events).toHaveLength(3);
   });
 
-  it("recusa categoria de receita, período inválido e valor negativo", async () => {
+  it("aceita meta de receita e recusa categoria inexistente, período inválido e valor negativo", async () => {
     const ctx = await setup("invalidos");
-    await expect(setBudget(ctx.user.id, ctx.company.id, { categoryId: ctx.income.id, period: "2026-10", amountCents: 1_000 })).rejects.toBeInstanceOf(CategoryNotFoundError);
+    await setBudget(ctx.user.id, ctx.company.id, { categoryId: ctx.income.id, period: "2026-10", amountCents: 1_000 });
+    await expect(setBudget(ctx.user.id, ctx.company.id, { categoryId: randomUUID(), period: "2026-10", amountCents: 1_000 })).rejects.toBeInstanceOf(CategoryNotFoundError);
     await expect(setBudget(ctx.user.id, ctx.company.id, { categoryId: ctx.food.id, period: "2026-13", amountCents: 1_000 })).rejects.toThrow();
     await expect(setBudget(ctx.user.id, ctx.company.id, { categoryId: ctx.food.id, period: "2026-10", amountCents: -1 })).rejects.toThrow();
     const report = await getBudgetReport(ctx.user.id, ctx.company.id, "2026-10");
-    expect(report.rows.map((row) => row.name).sort()).toEqual(["Alimentação", "Moradia"]);
+    expect(report.rows.map((row) => row.name).sort()).toEqual(["Alimentação", "Moradia", "Salário"]);
+    // A meta de receita fica fora dos totais de gasto (painel e relatório mensal).
+    expect(report.totals.plannedCents).toBe(0n);
+    expect(report.revenueTotals.plannedCents).toBe(1_000n);
+    expect(report.rows.find((row) => row.categoryId === ctx.income.id)).toMatchObject({ kind: "REVENUE", status: "BELOW" });
   });
 
   it("o realizado segue a competência: títulos do mês, rateio, sem cancelados nem outros meses", async () => {

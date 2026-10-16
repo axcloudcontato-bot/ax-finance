@@ -7,6 +7,7 @@ import { createCategory } from "../categories/create-category";
 import { createFinancialAccount } from "../financial-accounts/create-account";
 import { computeAccountBalanceDeltas, listFinancialAccountsWithBalance } from "../financial-accounts/account-balances";
 import { createBalanceAdjustment } from "../financial-accounts/create-balance-adjustment";
+import { listRecentAccountMovements } from "../financial-accounts/recent-movements";
 import { createTitle } from "../titles/create-title";
 import { registerSettlement } from "../titles/register-settlement";
 import { reverseSettlement } from "../titles/reverse-settlement";
@@ -66,5 +67,14 @@ describe("saldo por conta somado no banco", () => {
     const asOf = await withCompanyContext(user.id, company.id, (tx) => computeAccountBalanceDeltas(tx, company.id, new Date("2026-09-10T00:00:00Z")));
     expect(Number(asOf.get(main.id))).toBe(50_200 - 30_700 - 4_000 - 20_150);
     expect(Number(asOf.get(second.id))).toBe(20_000);
+
+    // Movimentos do detalhe da conta: os mesmos efeitos do saldo, um a um, do mais recente ao mais antigo.
+    const movements = await listRecentAccountMovements(user.id, company.id, { limit: 50 });
+    const principal = movements.get(main.id) ?? [];
+    expect(principal.reduce((sum, item) => sum + Number(item.cents), 0)).toBe(50_200 - 30_700 - 4_000 - 20_150 - 7_000);
+    expect(principal[0]).toMatchObject({ kind: "SETTLEMENT", date: "2026-10-15", description: "Depois" });
+    expect(principal.map((item) => item.date)).toEqual([...principal.map((item) => item.date)].sort().reverse());
+    expect((movements.get(second.id) ?? []).map((item) => item.kind).sort()).toEqual(["ADJUSTMENT", "TRANSFER_IN"]);
+    expect((await listRecentAccountMovements(user.id, company.id, { limit: 2 })).get(main.id)).toHaveLength(2);
   });
 });

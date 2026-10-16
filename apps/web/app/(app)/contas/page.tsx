@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Landmark, Scale } from "@/components/ui/animated-icons";
-import { listBalanceAdjustments, listFinancialAccountsWithBalance } from "@ax-finance/domain";
+import { listBalanceAdjustments, listFinancialAccountsWithBalance, listRecentAccountMovements } from "@ax-finance/domain";
+import { AccountDetailSummary } from "@/components/accounts/account-detail-summary";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
@@ -47,9 +48,10 @@ export default async function ContasPage(
   const company = await requirePrimaryCompany(user.id);
 
   const period = resolvePeriodRange(searchParams);
-  const [accounts, adjustments] = await Promise.all([
+  const [accounts, adjustments, movements] = await Promise.all([
     listFinancialAccountsWithBalance(user.id, company.id),
     listBalanceAdjustments(user.id, company.id, period),
+    listRecentAccountMovements(user.id, company.id, { limit: 8 }),
   ]);
   const today = todayDateOnlyString();
   const activeAccounts = accounts.filter((account) => account.status === "ACTIVE");
@@ -143,7 +145,11 @@ export default async function ContasPage(
               <tbody>
                 {accounts.map((account) => (
                   <tr key={account.id}>
-                    <td>{account.name}</td>
+                    <td>
+                      <ActionModal key={`detalhes-${account.id}`} triggerLabel={account.name} triggerClassName="table-detail-trigger" title={account.name} icon={<Landmark className="size-5" strokeWidth={1.5} />}>
+                        <AccountDetailSummary account={account} movements={movements.get(account.id) ?? []} />
+                      </ActionModal>
+                    </td>
                     <td>{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td>
                     <td className="money">{formatCents(account.openingBalanceCents, account.currency)}</td>
                     <td className="money" style={{ fontWeight: 600 }}>

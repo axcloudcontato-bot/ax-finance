@@ -2028,7 +2028,7 @@ main.settings-page {
 .dashboard-section-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .dashboard-section-heading h2, .dashboard-category-section h2 { margin: 0 0 0.25rem; font-size: 1.1rem; font-weight: 700; }
 /* Todo título de card do painel em negrito, para cada bloco ser achado de relance. */
-main.dashboard-page h2 { font-weight: 700; }
+main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 .dashboard-section-heading > span { color: var(--muted); font-size: 0.76rem; white-space: nowrap; }
 .dashboard-projection-unavailable { display: flex; min-height: 176px; flex-direction: column; gap: 0.45rem; padding: 1.1rem 1.2rem; border: 1px dashed var(--border); border-radius: 14px; background: var(--card); color: var(--muted); }
 .dashboard-projection-unavailable strong { color: var(--text); }
@@ -4416,6 +4416,36 @@ main.dashboard-page h2 { font-weight: 700; }
 .dashboard-card-head small { color: var(--muted); font-size: 0.72rem; }
 .dashboard-card-invoice { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem; margin: 0.45rem 0 0; color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .dashboard-card-invoice strong { color: var(--text); }
+/* Cartão do painel inteiro como gatilho do detalhe (que cresce a partir dele). */
+.ax-model-buttons main button.dashboard-detail-trigger { display: block; width: 100%; height: auto; min-height: 0; margin: 0; padding: 0.55rem 0.6rem; border: 1px solid transparent; border-radius: 12px; background: transparent; box-shadow: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.ax-model-buttons main button.dashboard-detail-trigger:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); background: color-mix(in srgb, var(--accent) 4%, var(--card)); transform: none; }
+.dashboard-detail-trigger .dashboard-card-head strong { font-weight: 650; }
+/* Nome da conta na tabela abre o detalhe: aparência de link. */
+.ax-model-buttons main button.table-detail-trigger { display: inline; height: auto; min-height: 0; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; color: var(--accent-text); font: inherit; font-weight: 600; text-align: left; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent-text) 35%, transparent); text-underline-offset: 3px; cursor: pointer; }
+.ax-model-buttons main button.table-detail-trigger:hover { text-decoration-color: currentColor; transform: none; }
+/* Painéis de detalhe (cartão, conta): fatos, uma lista de itens e as ações. */
+.detail-summary { display: grid; gap: 0.9rem; margin-top: 0.5rem; }
+.detail-summary > .subtitle { margin: 0; }
+.detail-summary .goal-detail-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+.detail-summary .goal-detail-facts small { display: block; margin-top: 0.15rem; color: var(--muted); font-size: 0.72rem; }
+.detail-summary .goal-detail-facts dd.positive { color: var(--tone-in); }
+.detail-summary .goal-detail-facts dd.negative { color: var(--tone-out); }
+.detail-summary .credit-card-warning { margin: 0; }
+.detail-summary .detail-summary-heading { margin: 0.25rem 0 0; color: var(--text); font-size: 0.9rem; font-weight: 700; letter-spacing: normal; text-transform: none; }
+.detail-summary-list { margin: -0.4rem 0 0; padding: 0; list-style: none; }
+.detail-summary-list li { border-bottom: 1px solid var(--border); }
+.detail-summary-list li:last-child { border-bottom: 0; }
+.detail-summary-list :is(a, div) { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.25rem; color: var(--text); text-decoration: none; }
+.detail-summary-list a:hover { background: color-mix(in srgb, var(--accent) 5%, var(--card)); }
+.detail-summary-list span:first-child { display: grid; min-width: 0; flex: 1; }
+.detail-summary-list strong { overflow: hidden; font-size: 0.84rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.detail-summary-list small { color: var(--muted); font-size: 0.74rem; }
+.detail-summary-list em { flex: none; font-style: normal; font-weight: 650; font-variant-numeric: tabular-nums; }
+.detail-summary-list em.positive { color: var(--tone-in); }
+.detail-summary-list em.negative { color: var(--tone-out); }
+.detail-summary .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+.ax-model-buttons main .detail-summary .form-actions > .button-link { margin: 0; }
+@media (max-width: 480px) { .detail-summary .goal-detail-facts { grid-template-columns: minmax(0, 1fr); } }
 
 .budget-summary p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 1rem; margin: 0.55rem 0 1rem; color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
 .budget-summary p strong { color: var(--text); }
@@ -5009,3 +5039,25 @@ td .modal-overlay { white-space: normal; text-align: left; }
   .modal-close { min-width: 44px; min-height: 44px; }
   .nav-item-row, .app-sidebar-logout { min-height: 44px; }
 }
+
+/* Tela de erro dentro do app: os dois botões lado a lado, na mesma altura. */
+.app-error-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+.ax-model-buttons main .app-error-actions > :is(a, button).button-link { min-height: 40px; height: 40px; margin: 0; padding-block: 0; }
+
+/* Orçamento em duas seções (receitas e despesas), com a categoria principal somando as subcategorias. */
+.budget-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.budget-metrics strong.positive { color: var(--tone-in); }
+.budget-metrics strong.negative { color: var(--tone-out); }
+@media (max-width: 1050px) { .budget-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .budget-metrics { grid-template-columns: minmax(0, 1fr); } }
+.budget-section { margin-bottom: 1.25rem; border-left: 4px solid var(--border); }
+.budget-section.is-revenue { border-left-color: var(--tone-in); }
+.budget-section.is-expense { border-left-color: var(--tone-out); }
+.budget-section .workspace-card-heading h2 { margin-bottom: 0.4rem; }
+.budget-section tr.budget-group > :is(th, td) { background: color-mix(in srgb, var(--text) 4%, var(--card)); font-weight: 700; }
+.budget-section tr.budget-group > th { font-size: 0.86rem; }
+.budget-section tr.budget-child > :is(th, td):first-child { padding-left: 1.4rem; font-weight: 500; }
+.budget-section tbody th[scope="row"] { text-align: left; }
+.budget-section tfoot :is(th, td) { border-top: 2px solid var(--border); font-weight: 700; }
+.budget-save { display: flex; justify-content: flex-end; margin-top: 0.25rem; }
+.ax-model-buttons main .budget-save button[type="submit"] { margin-top: 0; }

@@ -33,7 +33,7 @@ describe("orçamento anual", () => {
 
     const report = await getAnnualBudgetReport(ctx.user.id, ctx.company.id, 2026);
     expect(report.months).toHaveLength(12);
-    expect(report.rows.map((row) => row.name)).toEqual(["Alimentação", "Moradia"]); // receita não entra
+    expect(report.rows.map((row) => [row.name, row.kind])).toEqual([["Alimentação", "EXPENSE"], ["Moradia", "EXPENSE"], ["Salário", "REVENUE"]]);
     expect(cellOf(report, ctx.food.id, 1)).toMatchObject({ plannedCents: 100_000n, actualCents: 80_000n });
     expect(cellOf(report, ctx.food.id, 2)).toMatchObject({ plannedCents: 120_000n, actualCents: 130_000n });
     const food = report.rows.find((row) => row.categoryId === ctx.food.id)!;
@@ -41,7 +41,21 @@ describe("orçamento anual", () => {
     expect(report.monthTotals[1]).toMatchObject({ plannedCents: 120_000n, actualCents: 130_000n });
   });
 
-  it("grava a grade de uma vez e recusa categoria de receita", async () => {
+  it("receita tem meta própria: entradas contam na receita e não somam no total de gastos", async () => {
+    const ctx = await setup("receita");
+    await setBudget(ctx.user.id, ctx.company.id, { categoryId: ctx.income.id, period: "2026-01", amountCents: 500_000 });
+    await createTitle(ctx.user.id, ctx.company.id, { type: "RECEIVABLE", description: "Salário", categoryId: ctx.income.id, originalAmountCents: 450_000, competenceDate: "2026-01-05", dueDate: "2026-01-05" });
+    await createTitle(ctx.user.id, ctx.company.id, { type: "PAYABLE", description: "Mercado", categoryId: ctx.food.id, originalAmountCents: 80_000, competenceDate: "2026-01-10", dueDate: "2026-01-10" });
+
+    const report = await getAnnualBudgetReport(ctx.user.id, ctx.company.id, 2026);
+    expect(cellOf(report, ctx.income.id, 1)).toMatchObject({ plannedCents: 500_000n, actualCents: 450_000n });
+    expect(report.rows.find((row) => row.categoryId === ctx.income.id)).toMatchObject({ kind: "REVENUE", status: "BELOW" });
+    expect(report.revenueTotals).toEqual({ plannedCents: 500_000n, actualCents: 450_000n });
+    expect(report.revenueMonthTotals[0]).toMatchObject({ plannedCents: 500_000n, actualCents: 450_000n });
+    expect(report.totals).toMatchObject({ plannedCents: 0n, actualCents: 80_000n });
+  });
+
+  it("grava a grade de uma vez, inclusive metas de receita", async () => {
     const ctx = await setup("grade");
     await saveBudgetCells(ctx.user.id, ctx.company.id, { cells: [
       { categoryId: ctx.rent.id, period: "2026-03", amountCents: 250_000 },
@@ -51,7 +65,9 @@ describe("orçamento anual", () => {
     const report = await getAnnualBudgetReport(ctx.user.id, ctx.company.id, 2026);
     expect(cellOf(report, ctx.rent.id, 3).plannedCents).toBe(250_000n);
     expect(cellOf(report, ctx.rent.id, 4).plannedCents).toBe(0n);
-    await expect(saveBudgetCells(ctx.user.id, ctx.company.id, { cells: [{ categoryId: ctx.income.id, period: "2026-03", amountCents: 1 }] }))
+    await saveBudgetCells(ctx.user.id, ctx.company.id, { cells: [{ categoryId: ctx.income.id, period: "2026-03", amountCents: 600_000 }] });
+    expect(cellOf(await getAnnualBudgetReport(ctx.user.id, ctx.company.id, 2026), ctx.income.id, 3).plannedCents).toBe(600_000n);
+    await expect(saveBudgetCells(ctx.user.id, ctx.company.id, { cells: [{ categoryId: randomUUID(), period: "2026-03", amountCents: 1 }] }))
       .rejects.toBeInstanceOf(CategoryNotFoundError);
   });
 
