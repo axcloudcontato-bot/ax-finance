@@ -4025,7 +4025,7 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 .credit-summary-note { color: var(--muted); font-size: 0.8rem; line-height: 1.55; margin: 0; }
 .credit-card-warning { color: #a62950; font-size: 0.82rem; font-weight: 600; margin: 0; }
 :root[data-ax-theme="dark"] .credit-card-warning { color: #ff9bb8; }
-.credit-impact { border: 1px solid var(--border); background: color-mix(in srgb, var(--card) 95%, var(--accent)); border-radius: 10px; padding: 1rem; }
+.credit-impact { margin-top: 1.1rem; border: 1px solid var(--border); background: color-mix(in srgb, var(--card) 95%, var(--accent)); border-radius: 10px; padding: 1rem; }
 .credit-impact p { font-size: 0.82rem; line-height: 1.5; margin: 0.45rem 0 0; }
 .credit-impact dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.7rem; margin: 0.8rem 0; }
 .credit-impact dt { font-size: 0.72rem; color: var(--muted); }
@@ -4098,16 +4098,16 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 .category-suggestion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; margin-top: 0.4rem; padding: 0.45rem 0.65rem; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 6%, var(--card)); font-size: 0.82rem; }
 .category-suggestion small { color: var(--muted); font-size: 0.74rem; }
 .ax-model-buttons main .category-suggestion > button { min-height: 30px; margin-top: 0; }
-/* "+ Nova categoria" no lançamento: abre uma janela própria por cima da janela do lançamento. */
-.ax-model-buttons .category-quick-add-toggle { display: inline-flex; align-items: center; min-height: 28px; margin-top: 0.35rem; padding: 0 0.15rem; border: 0; background: transparent; box-shadow: none; color: var(--accent-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
-.ax-model-buttons .category-quick-add-toggle:hover { background: transparent; color: var(--text); text-decoration: underline; }
+/* "+ Nova categoria" / "+ Novo fornecedor" embaixo de um seletor: abre uma janela por cima (StackedModal). */
+.ax-model-buttons .inline-add-toggle { display: inline-flex; align-items: center; min-height: 28px; margin-top: 0.35rem; padding: 0 0.15rem; border: 0; background: transparent; box-shadow: none; color: var(--accent-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ax-model-buttons .inline-add-toggle:hover { background: transparent; color: var(--text); text-decoration: underline; }
 .modal-overlay.modal-overlay-stacked { z-index: 1010; }
-.modal-dialog.category-quick-add-dialog { max-width: 480px; }
-.category-quick-add-dialog form { display: grid; gap: 0.4rem; }
-.category-quick-add-dialog .form-grid { margin-top: 0.4rem; }
-.category-quick-add-hint { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
-.category-quick-add-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.85rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
-.ax-model-buttons .category-quick-add-dialog .category-quick-add-actions > button:is([type="submit"], .secondary) { margin-top: 0; }
+.modal-dialog.stacked-modal-dialog { max-width: 480px; }
+.stacked-modal-form { display: grid; gap: 0.4rem; }
+.stacked-modal-form .form-grid { margin-top: 0.4rem; }
+.stacked-modal-hint { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
+.stacked-modal-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.85rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+.ax-model-buttons .stacked-modal-dialog .stacked-modal-actions > button:is([type="submit"], .secondary) { margin-top: 0; }
 
 /* ===== Dashboard: indicadores de gestão (resultado, evolução, agenda, cartões, orçamento, saúde) ===== */
 .dashboard-insight-section { margin-bottom: 1.5rem; }

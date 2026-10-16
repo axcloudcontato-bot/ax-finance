@@ -7,6 +7,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animated-icons";
 import { CategorySuggestion } from "@/components/category-suggestion";
 import { CategoryQuickAdd } from "@/components/categories/category-quick-add";
+import { withCategory } from "@/components/categories/category-picker";
+import { PartyQuickAdd } from "@/components/parties/party-quick-add";
+import { useSelectAfterCreate } from "@/components/ui/use-select-after-create";
 import { TransferForm } from "@/components/transfers/transfer-form";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useModalPresence } from "@/components/ui/use-modal-presence";
@@ -133,7 +136,7 @@ export function QuickCreateModal() {
           <QuickTransfer key={round} accounts={options.accounts} onDone={done} onCancel={close} />
         ) : null}
         {options && shownKind !== "TRANSFER" ? (
-          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onDone={done} onCategoryCreated={(category) => setOptions((current) => current ? { ...current, categories: withCategory(current.categories, category) } : current)} />
+          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onDone={done} onCategoryCreated={(category) => setOptions((current) => current ? { ...current, categories: withCategory(current.categories, category) } : current)} onPartyCreated={(party) => setOptions((current) => current && !current.parties.some((item) => item.id === party.id) ? { ...current, parties: [...current.parties, party].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")) } : current)} />
         ) : null}
       </div>
     </div>
@@ -142,17 +145,7 @@ export function QuickCreateModal() {
 
 type QuickCategory = QuickCreateOptions["categories"][number];
 
-/** Encaixa a categoria nova na ordem da árvore: depois do pai e das irmãs, ou no fim. */
-function withCategory(categories: QuickCategory[], category: QuickCategory): QuickCategory[] {
-  if (categories.some((item) => item.id === category.id)) return categories;
-  if (!category.parentId) return [...categories, category];
-  let index = categories.findIndex((item) => item.id === category.parentId);
-  if (index < 0) return [...categories, category];
-  while (index + 1 < categories.length && categories[index + 1]!.parentId === category.parentId) index += 1;
-  return [...categories.slice(0, index + 1), category, ...categories.slice(index + 1)];
-}
-
-function QuickTitle({ kind, options, onDone, onCategoryCreated }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onDone: (message: string, keepOpen: boolean) => void; onCategoryCreated: (category: QuickCategory) => void }) {
+function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onDone: (message: string, keepOpen: boolean) => void; onCategoryCreated: (category: QuickCategory) => void; onPartyCreated: (party: QuickCreateOptions["parties"][number]) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState(false);
   const confirmDuplicate = useRef(false);
@@ -161,16 +154,9 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated }: { kind: "RECEI
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const today = todayDateOnlyString();
   const keepOpen = useRef(false);
-  const categoryRef = useRef<HTMLSelectElement>(null);
-  const [selectCategory, setSelectCategory] = useState<string | null>(null);
-  // Categoria criada aqui: quando ela aparece na lista, já fica escolhida.
-  useEffect(() => {
-    if (!selectCategory || !categoryRef.current) return;
-    if (![...categoryRef.current.options].some((option) => option.value === selectCategory)) return;
-    categoryRef.current.value = selectCategory;
-    categoryRef.current.dispatchEvent(new Event("change", { bubbles: true }));
-    setSelectCategory(null);
-  }, [selectCategory, options.categories]);
+  // Categoria/pessoa criada pelo "+ Novo": quando aparece na lista, já fica escolhida.
+  const { selectRef: categoryRef, selectCreated: selectCategory } = useSelectAfterCreate(options.categories);
+  const { selectRef: partyRef, selectCreated: selectParty } = useSelectAfterCreate(options.parties);
   const partyLabel = kind === "RECEIVABLE" ? "Cliente" : "Fornecedor";
 
   async function submit(formData: FormData) {
@@ -231,19 +217,22 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated }: { kind: "RECEI
           <CategoryQuickAdd
             kind={kind}
             parents={options.categories.filter((category) => !category.parentId)}
-            onCreated={(category) => { onCategoryCreated(category); setSelectCategory(category.id); }}
+            onCreated={(category) => { onCategoryCreated(category); selectCategory(category.id); }}
           />
         </div>
 
-        {options.parties.length > 0 ? (
-          <div>
-            <label htmlFor="qc-party">{partyLabel} (opcional)</label>
-            <select id="qc-party" name="partyId" defaultValue="">
-              <option value="">Nenhum</option>
-              {options.parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}
-            </select>
-          </div>
-        ) : null}
+        <div>
+          <label htmlFor="qc-party">{partyLabel} (opcional)</label>
+          <select ref={partyRef} id="qc-party" name="partyId" defaultValue="">
+            <option value="">Nenhum</option>
+            {options.parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}
+          </select>
+          <PartyQuickAdd
+            role={kind === "RECEIVABLE" ? "CLIENT" : "SUPPLIER"}
+            noun={kind === "RECEIVABLE" ? "cliente" : "fornecedor"}
+            onCreated={(party) => { onPartyCreated(party); selectParty(party.id); }}
+          />
+        </div>
 
         {options.costCenters.length > 0 ? (
           <div>

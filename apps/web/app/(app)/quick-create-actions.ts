@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { PAYMENT_METHOD_LABEL, PossibleDuplicateTitleError, createCategory, createTitle, createTransfer, listActiveCategories, listCostCenters, listFinancialAccounts, listParties } from "@ax-finance/domain";
+import { PAYMENT_METHOD_LABEL, PossibleDuplicateTitleError, createCategory, createParty, createTitle, createTransfer, listActiveCategories, listCostCenters, listFinancialAccounts, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -79,6 +79,27 @@ export async function quickCreateCategoryAction(kind: "RECEIVABLE" | "PAYABLE", 
     return { ok: true, category: { id: category.id, name: category.name, parentId: category.parentId } };
   } catch (error) {
     return { ok: false, error: actionErrorMessage(error, "Não foi possível criar a categoria.") };
+  }
+}
+
+export type QuickPartyResult = { ok: true; party: { id: string; name: string } } | { ok: false; error: string };
+
+/**
+ * Cadastra cliente/fornecedor (ou estabelecimento da compra no cartão) sem sair do lançamento:
+ * só nome e, se quiser, CPF/CNPJ. O resto do cadastro fica em Cadastros > Clientes e fornecedores.
+ */
+export async function quickCreatePartyAction(role: "CLIENT" | "SUPPLIER", input: { name: string; document?: string }): Promise<QuickPartyResult> {
+  const { userId, companyId } = await requireContext();
+  try {
+    const party = await createParty(userId, companyId, {
+      name: input.name,
+      document: input.document || undefined,
+      isClient: role === "CLIENT",
+      isSupplier: role === "SUPPLIER",
+    });
+    return { ok: true, party: { id: party.id, name: party.name } };
+  } catch (error) {
+    return { ok: false, error: actionErrorMessage(error, "Não foi possível fazer o cadastro.") };
   }
 }
 

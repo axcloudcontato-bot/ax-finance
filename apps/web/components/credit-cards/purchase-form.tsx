@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import { CARD_INVOICE_CATEGORY_NAME } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { CategorySuggestion } from "@/components/category-suggestion";
+import { CategoryPicker } from "@/components/categories/category-picker";
+import { PartyPicker } from "@/components/parties/party-picker";
 import { filterCategoriesByTitleType, sortCategoriesTree } from "@/lib/categories";
 import { todayDateOnlyString } from "@/lib/dates";
 import { PurchaseImpact, type PurchaseImpactCard } from "./purchase-impact";
@@ -60,10 +62,6 @@ export function PurchaseForm({
   const defaultDate = today ?? todayDateOnlyString();
   const options = purchaseCategoryOptions(categories);
 
-  if (options.length === 0) {
-    return <p className="muted">Cadastre uma categoria de despesa antes de lançar compras no cartão.</p>;
-  }
-
   return (
     <form action={action}>
       {editing ? null : <input type="hidden" name="idempotencyKey" value={randomUUID()} />}
@@ -75,24 +73,25 @@ export function PurchaseForm({
 
         <div>
           <label htmlFor={`${idPrefix}-category`}>Categoria</label>
-          <select id={`${idPrefix}-category`} name="categoryId" required defaultValue={defaults?.categoryId ?? ""}>
-            <option value="" disabled>Selecione</option>
-            {options.map((category) => (
-              <option key={category.id} value={category.id}>{category.parentId ? `  ↳ ${category.name}` : category.name}</option>
-            ))}
-          </select>
+          <CategoryPicker
+            id={`${idPrefix}-category`}
+            kind="PAYABLE"
+            categories={options.map(({ id, name, parentId }) => ({ id, name, parentId }))}
+            defaultValue={defaults?.categoryId ?? ""}
+          />
           {editing ? null : <CategorySuggestion type="PAYABLE" />}
         </div>
 
-        {parties.length > 0 ? (
-          <div>
-            <label htmlFor={`${idPrefix}-party`}>Estabelecimento (opcional)</label>
-            <select id={`${idPrefix}-party`} name="partyId" defaultValue={defaults?.partyId ?? ""}>
-              <option value="">Nenhum</option>
-              {parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}
-            </select>
-          </div>
-        ) : null}
+        <div>
+          <label htmlFor={`${idPrefix}-party`}>Estabelecimento (opcional)</label>
+          <PartyPicker
+            id={`${idPrefix}-party`}
+            role="SUPPLIER"
+            noun="estabelecimento"
+            parties={parties.map(({ id, name }) => ({ id, name }))}
+            defaultValue={defaults?.partyId ?? ""}
+          />
+        </div>
 
         {costCenters.length > 0 ? (
           <div>

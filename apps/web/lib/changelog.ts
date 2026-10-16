@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-cadastro-rapido-compra-cartao",
+    date: "2026-10-16",
+    title: "Estabelecimento e fornecedor na hora do lançamento",
+    summary: "Cadastre o estabelecimento da compra no cartão, ou o cliente/fornecedor do lançamento, sem sair da janela.",
+    changes: [
+      { kind: "NEW", text: "Na Nova compra do cartão, \"+ Novo estabelecimento\" e \"+ Nova categoria\" abrem uma janela por cima da compra. O cadastro já volta escolhido e o resto da compra continua preenchido." },
+      { kind: "NEW", text: "Na Nova entrada e Nova saída, \"+ Novo cliente\" e \"+ Novo fornecedor\" funcionam do mesmo jeito. Basta o nome; o resto do cadastro pode ser completado depois em Cadastros > Clientes e fornecedores." },
+      { kind: "FIXED", text: "Espaçamento do quadro \"Impacto desta compra\" na janela de compra do cartão." },
+    ],
+  },
+  {
     id: "2026-10-16-categoria-no-lancamento",
     date: "2026-10-16",
     title: "Crie a categoria na hora do lançamento",
