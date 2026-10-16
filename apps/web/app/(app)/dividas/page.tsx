@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Banknote } from "lucide-react";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { getDebt, listActiveCategories, listDebts, listFinancialAccounts } from "@ax-finance/domain";
@@ -102,7 +103,7 @@ export default async function DebtsPage(props: { searchParams: Promise<{ erro?: 
               <footer className="card-tile-actions">
                 {debt.nextInstallment ? <Link href={`/saidas/${debt.nextInstallment.titleId}`} className="button-link workspace-primary-action">Pagar parcela</Link> : null}
                 {schedules.get(debt.id) ? (
-                  <ActionModal triggerLabel="Ver tabela" title={debt.name} size="wide">
+                  <ActionModal triggerLabel="Ver tabela" title={`Tabela de amortização — ${debt.name}`} icon={<Banknote strokeWidth={1.8} />} size="wide">
                     <p className="subtitle">{DEBT_KIND_LABEL[debt.kind]}{debt.lender ? ` · ${debt.lender}` : ""} · {formatCents(debt.principalCents)} em {debt.installmentCount}x · {(debt.monthlyRateBps / 100).toLocaleString("pt-BR")}% a.m. · tabela {schedules.get(debt.id)!.amortization === "PRICE" ? "Price" : "SAC"}</p>
                     <DebtMetrics debt={schedules.get(debt.id)!} />
                     <DebtScheduleTable debt={schedules.get(debt.id)!} />

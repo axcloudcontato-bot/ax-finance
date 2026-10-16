@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-janelas-padronizadas",
+    date: "2026-10-16",
+    title: "Janelas com o mesmo cabeçalho",
+    summary: "Todas as janelas ganharam ícone, título e contexto no mesmo padrão.",
+    changes: [
+      { kind: "IMPROVED", text: "Toda janela abre com um ícone do mesmo tamanho, que indica a ação (editar, registrar, cancelar...), o título e, embaixo, a que conta, cartão ou lançamento ela se refere. Ações que apagam ou cancelam aparecem com o ícone em vermelho." },
+    ],
+  },
+  {
     id: "2026-10-16-categorias-receitas-despesas",
     date: "2026-10-16",
     title: "Categorias separadas em receitas e despesas",

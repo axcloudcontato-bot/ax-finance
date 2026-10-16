@@ -137,9 +137,9 @@ export default async function SavingsGoalsPage(props: {
                       ? <GoalMoveForm action={withdrawFromSavingsGoalAction.bind(null, goal.id, "lista")} accounts={accountOptions} direction="WITHDRAW" balanceCents={goal.balanceCents} defaultAccountId={goal.defaultSourceAccountId} today={today} idPrefix={`resgatar-${goal.id}`} />
                       : <p className="muted">Este cofrinho ainda está vazio.</p>}
                   </ActionModal>
-                  <ActionModal key={`detalhes-${goal.id}`} triggerLabel="Detalhes" title={goal.name} icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}><GoalDetailSummary goal={goal} /></ActionModal>
+                  <ActionModal key={`detalhes-${goal.id}`} triggerLabel="Detalhes" title={`Detalhes do cofrinho — ${goal.name}`} icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}><GoalDetailSummary goal={goal} /></ActionModal>
                 </>
-              ) : <ActionModal key={`detalhes-${goal.id}`} triggerLabel="Detalhes" title={goal.name} icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}><GoalDetailSummary goal={goal} /></ActionModal>}
+              ) : <ActionModal key={`detalhes-${goal.id}`} triggerLabel="Detalhes" title={`Detalhes do cofrinho — ${goal.name}`} icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}><GoalDetailSummary goal={goal} /></ActionModal>}
             />
           ))}
         </div>

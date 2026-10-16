@@ -195,7 +195,7 @@ export default async function CartoesPage(props: {
                       />
                     </ActionModal>
                   ) : null}
-                  <ActionModal key={`detalhes-${card.id}`} triggerLabel="Detalhes" title={card.name} icon={<IssuerBadge issuer={card.issuer} size={30} />}>
+                  <ActionModal key={`detalhes-${card.id}`} triggerLabel="Detalhes" title={`Detalhes do cartão — ${card.name}`} icon={<IssuerBadge issuer={card.issuer} size={30} />}>
                     <CardDetailSummary card={card} />
                   </ActionModal>
                 </footer>

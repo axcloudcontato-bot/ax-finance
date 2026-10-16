@@ -81,7 +81,7 @@ function applyTheme(preference: ThemePreference) {
 function ActionRow({ icon, children, onClick }: { icon: typeof PlusSignIcon; children: ReactNode; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="bottom-menu-row group">
-      <HugeiconsIcon icon={icon} size={19} strokeWidth={1.8} />
+      <HugeiconsIcon icon={icon} size={18} strokeWidth={1.8} />
       <span>{children}</span>
     </button>
   );
@@ -90,7 +90,7 @@ function ActionRow({ icon, children, onClick }: { icon: typeof PlusSignIcon; chi
 function MenuRow({ href, icon, children, onClick }: { href: string; icon: typeof PlusSignIcon; children: ReactNode; onClick: () => void }) {
   return (
     <Link href={href} onClick={onClick} className="bottom-menu-row group">
-      <HugeiconsIcon icon={icon} size={19} strokeWidth={1.8} />
+      <HugeiconsIcon icon={icon} size={18} strokeWidth={1.8} />
       <span>{children}</span>
     </Link>
   );
@@ -326,7 +326,7 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
           <MenuRow href="/dashboard" icon={DashboardSquare01Icon} onClick={closeMenu}>Dashboard</MenuRow>
           {/* No celular, Novidades e Aparência saem do topo e ficam aqui (menos ícones na barra). */}
           <button type="button" className="bottom-menu-row bottom-menu-mobile-only" onClick={() => setView("whatsnew")}>
-            <HugeiconsIcon icon={Megaphone01Icon} size={19} strokeWidth={1.8} /><span>Novidades{unreadNews > 0 ? " · há novas" : ""}</span>
+            <HugeiconsIcon icon={Megaphone01Icon} size={18} strokeWidth={1.8} /><span>Novidades{unreadNews > 0 ? " · há novas" : ""}</span>
           </button>
           <div className="bottom-menu-mobile-only bottom-menu-theme-row" role="group" aria-label="Aparência">
             {THEME_OPTIONS.map((option) => (
@@ -348,7 +348,7 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
             <button type="submit" className="bottom-menu-row bottom-menu-logout" onClick={() => {
               sessionStorage.removeItem("ax-finance:period-filter:v1");
               Object.keys(sessionStorage).filter((key) => key.startsWith("ax-finance:dashboard-filters:v1:")).forEach((key) => sessionStorage.removeItem(key));
-            }}><HugeiconsIcon icon={Logout03Icon} size={19} strokeWidth={1.8} /><span>Sair</span></button>
+            }}><HugeiconsIcon icon={Logout03Icon} size={18} strokeWidth={1.8} /><span>Sair</span></button>
           </form>
         </div>
       );

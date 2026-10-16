@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { ModalHeader } from "@/components/ui/modal-header";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animated-icons";
@@ -123,13 +124,7 @@ export function QuickCreateModal() {
         style={{ maxWidth: shownKind === "TRANSFER" ? "620px" : "720px" }}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="modal-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-            {icon}
-            <h2 id={titleId}>{title}</h2>
-          </div>
-          <button type="button" className="modal-close" aria-label="Fechar" onClick={close}>×</button>
-        </div>
+        <ModalHeader title={title} titleId={titleId} icon={icon} onClose={close} />
 
         {loadError ? <p className="error">{loadError}</p> : null}
         {!options && !loadError ? <p className="muted" aria-live="polite">Carregando…</p> : null}

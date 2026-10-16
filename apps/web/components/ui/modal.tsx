@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { ModalHeader } from "./modal-header";
 import { useSearchParams } from "next/navigation";
 import { useModalFocus } from "./use-modal-focus";
 import { useModalPresence } from "./use-modal-presence";
@@ -79,20 +80,7 @@ export function Modal({
             style={maxWidth ? { maxWidth } : undefined}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="modal-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                {icon}
-                <h2 id={titleId}>{title}</h2>
-              </div>
-              <button
-                type="button"
-                className="modal-close"
-                aria-label="Fechar"
-                onClick={() => setOpen(false)}
-              >
-                ×
-              </button>
-            </div>
+            <ModalHeader title={title} titleId={titleId} icon={icon} onClose={() => setOpen(false)} />
             {children}
           </div>
         </div>

@@ -146,7 +146,7 @@ export default async function ContasPage(
                 {accounts.map((account) => (
                   <tr key={account.id}>
                     <td>
-                      <ActionModal key={`detalhes-${account.id}`} triggerLabel={account.name} triggerClassName="table-detail-trigger" title={account.name} icon={<Landmark className="size-5" strokeWidth={1.5} />}>
+                      <ActionModal key={`detalhes-${account.id}`} triggerLabel={account.name} triggerClassName="table-detail-trigger" title={`Detalhes da conta — ${account.name}`} icon={<Landmark className="size-5" strokeWidth={1.5} />}>
                         <AccountDetailSummary account={account} movements={movements.get(account.id) ?? []} />
                       </ActionModal>
                     </td>

@@ -35,7 +35,7 @@ export function SavingsPanel({ savings }: { savings: SavingsSummary }) {
               <li key={goal.id}>
                 <ActionModal
                   triggerClassName="dashboard-savings-trigger"
-                  title={goal.name}
+                  title={`Detalhes do cofrinho — ${goal.name}`}
                   icon={<GoalBadge icon={goal.icon} color={goal.color} size={30} />}
                   triggerLabel={
                     <>

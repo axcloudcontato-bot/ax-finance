@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { ModalHeader } from "@/components/ui/modal-header";
 import { useModalPresence } from "@/components/ui/use-modal-presence";
 
 export function StatCard({
@@ -92,20 +93,7 @@ export function StatCard({
       {mounted ? (
         <div ref={overlayRef} className="modal-overlay" onClick={() => setOpen(false)}>
           <div ref={dialogRef} className="modal-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} style={{ maxWidth: "640px" }} onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                {icon}
-                <h2 id={titleId}>{modalTitle}</h2>
-              </div>
-              <button
-                type="button"
-                className="modal-close"
-                aria-label="Fechar"
-                onClick={() => setOpen(false)}
-              >
-                ×
-              </button>
-            </div>
+            <ModalHeader title={modalTitle} titleId={titleId} icon={icon} onClose={() => setOpen(false)} />
             {children}
           </div>
         </div>

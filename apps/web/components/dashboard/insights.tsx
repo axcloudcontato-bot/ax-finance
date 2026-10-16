@@ -171,7 +171,7 @@ export function CardsPanel({ cards, today }: { cards: CardSummary[] | null; toda
               <li key={card.id}>
                 <ActionModal
                   triggerClassName="dashboard-detail-trigger"
-                  title={card.name}
+                  title={`Detalhes do cartão — ${card.name}`}
                   icon={<IssuerBadge issuer={card.issuer} size={30} />}
                   triggerLabel={
                     <>
