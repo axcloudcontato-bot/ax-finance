@@ -4,15 +4,13 @@ import { DebtNotFoundError, getDebt } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
-import { formatDateOnly } from "@/lib/dates";
 import { ActionModal } from "@/components/ui/action-modal";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { deleteDebtAction, setDebtArchivedAction } from "../actions";
 import { DEBT_KIND_LABEL } from "@/lib/wealth-labels";
+import { DebtMetrics, DebtScheduleTable } from "@/components/wealth/debt-schedule";
 
-const STATE_LABEL: Record<string, string> = { PAID_BEFORE: "Paga antes", PAID: "Paga", OPEN: "Em aberto", PARTIAL: "Paga parcialmente", OVERDUE: "Vencida", REMOVED: "Removida · saldo preservado", CANCELLED: "Cancelada · saldo preservado" };
-const STATE_CLASS: Record<string, string> = { PAID_BEFORE: "", PAID: "is-active", OPEN: "", PARTIAL: "", OVERDUE: "is-overdue", REMOVED: "", CANCELLED: "" };
 
 export default async function DebtPage(props: { params: Promise<{ debtId: string }>; searchParams: Promise<{ erro?: string; criada?: string; reativada?: string }> }) {
   const [{ debtId }, searchParams] = await Promise.all([props.params, props.searchParams]);
@@ -65,33 +63,11 @@ export default async function DebtPage(props: { params: Promise<{ debtId: string
       {debt.contractWarningsCount > 0 ? <p className="error">Há {debt.contractWarningsCount} parcela(s) com valor alterado, cancelada(s) ou removida(s). O saldo contratual foi preservado; confira os lançamentos e o extrato do credor antes de usar a previsão de pagamentos.</p> : null}
       <p className="field-note">Posição pelos pagamentos efetivados até hoje. Baixas parciais e descontos são rateados proporcionalmente entre juros e amortização da parcela; multas e tarifas adicionais não amortizam o contrato. Antecipações seguem a tabela contratada, sem recalcular juros: confira condições de liquidação com o credor.</p>
 
-      <section className="workspace-metrics debt-metrics" aria-label="Situação da dívida">
-        <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Saldo devedor</span><strong>{formatCents(debt.balanceCents)}</strong><span className="workspace-metric-detail">{Math.round(debt.paidPercent)}% quitado · {debt.paidCount} de {debt.installmentCount} parcelas</span></div>
-        <div className="workspace-metric"><span className="workspace-metric-label">Falta pagar (com juros)</span><strong>{formatCents(debt.remainingPaymentsCents)}</strong><span className="workspace-metric-detail">{debt.installmentCount - debt.paidCount} parcelas</span></div>
-        <div className="workspace-metric"><span className="workspace-metric-label">Juros que ainda vai pagar</span><strong className="negative">{formatCents(debt.remainingInterestCents)}</strong><span className="workspace-metric-detail">de {formatCents(debt.totalInterestCents)} no contrato todo</span></div>
-      </section>
+      <DebtMetrics debt={debt} />
 
       <section className="card">
         <div className="workspace-card-heading"><div><h2>Tabela de amortização</h2><p>Cada parcela = juros do mês sobre o saldo + amortização. Pagar a parcela em Saídas atualiza esta tabela.</p></div></div>
-        <div className="table-scroll">
-          <table className="workspace-table debt-table">
-            <thead><tr><th>Parcela</th><th>Vencimento</th><th className="money">Valor contratado</th><th className="money">Juros</th><th className="money">Amortização</th><th className="money">Saldo na tabela</th><th className="money">Falta pagar</th><th>Situação</th></tr></thead>
-            <tbody>
-              {debt.rows.map((row) => (
-                <tr key={row.number} className={row.state === "PAID" || row.state === "PAID_BEFORE" ? "is-paid" : undefined}>
-                  <td>{row.titleId ? <Link href={`/saidas/${row.titleId}`}>{row.number}/{debt.installmentCount}</Link> : `${row.number}/${debt.installmentCount}`}</td>
-                  <td>{formatDateOnly(row.dueDate)}</td>
-                  <td className="money">{formatCents(row.paymentCents)}</td>
-                  <td className="money">{formatCents(row.interestCents)}</td>
-                  <td className="money">{formatCents(row.amortizationCents)}</td>
-                  <td className="money">{formatCents(row.balanceCents)}</td>
-                  <td className="money">{formatCents(row.remainingPaymentCents)}</td>
-                  <td><span className={`workspace-status ${STATE_CLASS[row.state]}`}>{STATE_LABEL[row.state]}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DebtScheduleTable debt={debt} />
       </section>
     </main>
   );

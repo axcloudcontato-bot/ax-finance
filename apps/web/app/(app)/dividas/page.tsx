@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
-import { listActiveCategories, listDebts, listFinancialAccounts } from "@ax-finance/domain";
+import { getDebt, listActiveCategories, listDebts, listFinancialAccounts } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { formatCents } from "@/lib/currency";
@@ -11,6 +11,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { DebtPreview } from "@/components/wealth/debt-preview";
 import { createDebtAction } from "./actions";
 import { DEBT_KIND_LABEL } from "@/lib/wealth-labels";
+import { DebtMetrics, DebtScheduleTable } from "@/components/wealth/debt-schedule";
 
 const ZERO = BigInt(0);
 
@@ -25,6 +26,8 @@ export default async function DebtsPage(props: { searchParams: Promise<{ erro?: 
     listActiveCategories(user.id, company.id),
     listFinancialAccounts(user.id, company.id),
   ]);
+  // Tabela de cada dívida para o modal "Ver tabela" (poucas por empresa; mesma leitura da página da dívida).
+  const schedules = new Map((await Promise.all(debts.map((debt) => getDebt(user.id, company.id, debt.id)))).map((detail) => [detail.id, detail]));
   const spending = categories.filter((category) => category.nature !== "OPERATING_REVENUE");
   // sugere a categoria de financiamento, se houver
   const suggestedCategory = spending.find((category) => category.nature === "FINANCING")?.id ?? "";
@@ -98,7 +101,14 @@ export default async function DebtsPage(props: { searchParams: Promise<{ erro?: 
               {debt.overdueCount > 0 ? <p className="credit-card-warning">{debt.overdueCount} {debt.overdueCount === 1 ? "parcela vencida" : "parcelas vencidas"}</p> : null}
               <footer className="card-tile-actions">
                 {debt.nextInstallment ? <Link href={`/saidas/${debt.nextInstallment.titleId}`} className="button-link workspace-primary-action">Pagar parcela</Link> : null}
-                <Link href={`/dividas/${debt.id}`} className="button-link">Ver tabela</Link>
+                {schedules.get(debt.id) ? (
+                  <ActionModal triggerLabel="Ver tabela" title={debt.name} size="wide">
+                    <p className="subtitle">{DEBT_KIND_LABEL[debt.kind]}{debt.lender ? ` · ${debt.lender}` : ""} · {formatCents(debt.principalCents)} em {debt.installmentCount}x · {(debt.monthlyRateBps / 100).toLocaleString("pt-BR")}% a.m. · tabela {schedules.get(debt.id)!.amortization === "PRICE" ? "Price" : "SAC"}</p>
+                    <DebtMetrics debt={schedules.get(debt.id)!} />
+                    <DebtScheduleTable debt={schedules.get(debt.id)!} />
+                    <div className="form-actions"><Link href={`/dividas/${debt.id}`} className="button-link">Abrir página da dívida</Link></div>
+                  </ActionModal>
+                ) : <Link href={`/dividas/${debt.id}`} className="button-link">Ver tabela</Link>}
               </footer>
             </article>
           ))}

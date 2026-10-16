@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-tabela-da-divida",
+    date: "2026-10-15",
+    title: "Tabela da dívida sem sair da lista",
+    summary: "Em Dívidas e financiamentos, \"Ver tabela\" abre a tabela de amortização numa janela.",
+    changes: [
+      { kind: "IMPROVED", text: "\"Ver tabela\" abre uma janela com saldo devedor, quanto falta pagar, juros restantes e a tabela completa das parcelas, sem sair da lista. A página da dívida continua disponível para arquivar ou excluir." },
+    ],
+  },
+  {
     id: "2026-10-15-parcelas-curtas",
     date: "2026-10-15",
     title: "Parcelas com descrição mais curta",

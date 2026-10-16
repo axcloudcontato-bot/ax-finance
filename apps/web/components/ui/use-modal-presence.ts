@@ -67,9 +67,12 @@ export function useModalPresence(
       { duration: 220, easing: EXIT_EASE, fill: "forwards" },
     );
     let cancelled = false;
-    exit.finished.then(() => { if (!cancelled) setMounted(false); }, () => undefined);
+    const finish = () => { if (!cancelled) setMounted(false); };
+    exit.finished.then(finish, () => undefined);
+    // Aba em segundo plano pausa a animação: desmonta mesmo assim, logo depois do tempo previsto.
+    const fallback = setTimeout(finish, 320);
     // Reabriu antes de terminar: a saída é cancelada e a entrada recomeça.
-    return () => { cancelled = true; exit.cancel(); fade?.cancel(); };
+    return () => { cancelled = true; clearTimeout(fallback); exit.cancel(); fade?.cancel(); };
     // `mounted` fica fora de propósito: a saída só começa quando `open` vira false.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
