@@ -54,7 +54,7 @@ describe("dívidas e patrimônio", () => {
     });
     const titles = await rootClient.title.findMany({ where: { companyId: company.id, installmentGroupId: debt.installmentGroupId }, orderBy: { installmentNumber: "asc" } });
     expect(titles).toHaveLength(10);
-    expect(titles[0]).toMatchObject({ type: "PAYABLE", installmentNumber: 3, installmentCount: 12, originalAmountCents: 88_849n, description: "Financiamento do carro — parcela 3/12" });
+    expect(titles[0]).toMatchObject({ type: "PAYABLE", installmentNumber: 3, installmentCount: 12, originalAmountCents: 88_849n, description: "Financiamento do carro (3/12)" });
     expect(titles[0]!.dueDate.toISOString().slice(0, 10)).toBe("2026-10-10");
 
     let view = await getDebt(user.id, company.id, debt.id);

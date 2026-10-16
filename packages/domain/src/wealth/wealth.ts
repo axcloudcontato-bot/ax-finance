@@ -94,7 +94,7 @@ export async function createDebt(userId: string, companyId: string, rawInput: un
         data: {
           companyId,
           type: "PAYABLE",
-          description: `${data.name} — parcela ${row.number}/${data.installmentCount}`,
+          description: `${data.name} (${row.number}/${data.installmentCount})`,
           categoryId: data.categoryId,
           originalAmountCents: row.paymentCents,
           competenceDate: dueDate,

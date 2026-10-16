@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-15-parcelas-curtas",
+    date: "2026-10-15",
+    title: "Parcelas com descrição mais curta",
+    summary: "Parcelas de dívidas e compras no cartão aparecem como \"Nome (1/12)\".",
+    changes: [
+      { kind: "IMPROVED", text: "As parcelas de dívidas passam a se chamar \"Nome (3/12)\" em vez de \"Nome — parcela 3/12\", inclusive as já cadastradas. Nas faturas do cartão, as compras parceladas seguem o mesmo formato." },
+    ],
+  },
+  {
     id: "2026-10-15-cartao-de-avisos",
     date: "2026-10-15",
     title: "Avisos novos num só cartão",

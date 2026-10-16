@@ -174,7 +174,7 @@ export default async function FaturaPage(props: {
                       <td>{formatDateOnly(purchase.purchaseDate)}</td>
                       <td>
                         {purchase.description}
-                        {purchase.installmentNumber ? <span className="muted"> · parcela {purchase.installmentNumber}/{purchase.installmentCount}</span> : null}
+                        {purchase.installmentNumber ? <span className="muted"> ({purchase.installmentNumber}/{purchase.installmentCount})</span> : null}
                         {purchase.party ? <span className="muted"> · {purchase.party.name}</span> : null}
                       </td>
                       <td>{purchase.category.name}{purchase.costCenter ? <span className="muted"> · {purchase.costCenter.name}</span> : null}</td>
@@ -274,7 +274,7 @@ export default async function FaturaPage(props: {
                   {canceledPurchases.map((purchase) => (
                     <tr key={purchase.id} style={{ opacity: 0.6 }}>
                       <td>{formatDateOnly(purchase.purchaseDate)}</td>
-                      <td>{purchase.description}{purchase.installmentNumber ? ` · parcela ${purchase.installmentNumber}/${purchase.installmentCount}` : ""}</td>
+                      <td>{purchase.description}{purchase.installmentNumber ? ` (${purchase.installmentNumber}/${purchase.installmentCount})` : ""}</td>
                       <td className="money">{formatCents(purchase.amountCents)}</td>
                       <td>{purchase.cancelReason}</td>
                     </tr>
