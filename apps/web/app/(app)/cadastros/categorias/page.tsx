@@ -11,6 +11,29 @@ import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { archiveCategoryAction, createCategoryAction, reactivateCategoryAction, updateCategoryAction } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
 
+type Category = Awaited<ReturnType<typeof listCategories>>[number];
+
+/** Receita: o que entra. Despesa: custo, despesa, investimento, financiamento e patrimônio. */
+const SECTIONS = [
+  { key: "revenue", title: "Receitas", hint: "Categorias de entrada de dinheiro.", natures: ["OPERATING_REVENUE"] },
+  { key: "expense", title: "Despesas", hint: "Categorias de saída: custos, despesas, investimentos e financiamentos.", natures: ["COST", "EXPENSE", "INVESTMENT", "FINANCING", "EQUITY"] },
+  { key: "other", title: "Outras", hint: "Movimentos técnicos que não são receita nem despesa.", natures: ["TECHNICAL_TRANSFER"] },
+] as const;
+
+const sectionOf = (nature: string) => SECTIONS.find((section) => (section.natures as readonly string[]).includes(nature)) ?? SECTIONS[2];
+
+/** Opções de "Categoria pai" separadas em receitas e despesas. */
+function ParentOptions({ categories, exclude }: { categories: Category[]; exclude?: string }) {
+  return (
+    <>
+      {SECTIONS.map((section) => {
+        const items = categories.filter((item) => item.id !== exclude && sectionOf(item.nature).key === section.key);
+        return items.length ? <optgroup key={section.key} label={section.title}>{items.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</optgroup> : null;
+      })}
+    </>
+  );
+}
+
 export default async function CategoriasPage(
   props: {
     searchParams: Promise<{ erro?: string; atualizado?: string; busca?: string }>;
@@ -69,11 +92,7 @@ export default async function CategoriasPage(
             <label htmlFor="parentId">Categoria pai (opcional)</label>
             <select id="parentId" name="parentId" defaultValue="">
               <option value="">Nenhuma — categoria de topo</option>
-              {topLevelActive.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
+              <ParentOptions categories={topLevelActive} />
             </select>
 
             <label htmlFor="managerialGroup">Grupo gerencial (opcional)</label>
@@ -99,7 +118,23 @@ export default async function CategoriasPage(
         </div>
         {visibleCategories.length === 0 ? (
           <div className="workspace-empty"><strong>{search ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}</strong><p>{search ? "Tente outro termo ou limpe a busca." : "Crie categorias para organizar lançamentos e relatórios."}</p></div>
-        ) : (
+        ) : null}
+      </div>
+
+      {SECTIONS.map((section) => {
+        const items = visibleCategories.filter((category) => sectionOf(category.nature).key === section.key);
+        if (items.length === 0 && (section.key === "other" || search)) return null;
+        return (
+          <section key={section.key} className={`card category-section is-${section.key}`} aria-labelledby={`categorias-${section.key}`}>
+            <div className="workspace-card-heading">
+              <div>
+                <h2 id={`categorias-${section.key}`}>{section.title} <span className="muted">({items.length})</span></h2>
+                <p>{section.hint}</p>
+              </div>
+            </div>
+            {items.length === 0 ? (
+              <div className="workspace-empty"><strong>Nenhuma categoria de {section.title.toLowerCase()}</strong><p>Crie em &ldquo;+ Nova categoria&rdquo;.</p></div>
+            ) : (
           <div className="table-scroll"><table className="workspace-table">
             <thead>
               <tr>
@@ -111,7 +146,7 @@ export default async function CategoriasPage(
               </tr>
             </thead>
             <tbody>
-              {visibleCategories.map((category) => (
+              {items.map((category) => (
                 <tr key={category.id}>
                   <td>{category.parentId ? `↳ ${category.name}` : category.name}</td>
                   <td>{NATURE_LABEL[category.nature] ?? category.nature}</td>
@@ -123,7 +158,7 @@ export default async function CategoriasPage(
                       <form action={updateCategoryAction.bind(null, category.id)}>
                         <label htmlFor={`name-${category.id}`}>Nome</label><input id={`name-${category.id}`} name="name" defaultValue={category.name} required maxLength={200} />
                         <label htmlFor={`nature-${category.id}`}>Natureza</label><select id={`nature-${category.id}`} name="nature" defaultValue={category.nature}>{Object.entries(NATURE_LABEL).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
-                        <label htmlFor={`parent-${category.id}`}>Categoria pai</label><select id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}><option value="">Nenhuma</option>{topLevelActive.filter((item) => item.id !== category.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+                        <label htmlFor={`parent-${category.id}`}>Categoria pai</label><select id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}><option value="">Nenhuma</option><ParentOptions categories={topLevelActive} exclude={category.id} /></select>
                         <label htmlFor={`group-${category.id}`}>Grupo gerencial</label><input id={`group-${category.id}`} name="managerialGroup" defaultValue={category.managerialGroup ?? ""} maxLength={200} />
                         <label htmlFor={`behavior-${category.id}`}>Comportamento do gasto</label><select id={`behavior-${category.id}`} name="costBehavior" defaultValue={category.costBehavior}><option value="UNCLASSIFIED">Não classificado</option><option value="FIXED">Fixo</option><option value="VARIABLE">Variável</option></select>
                         <SubmitButton>Salvar alterações</SubmitButton>
@@ -143,8 +178,10 @@ export default async function CategoriasPage(
               ))}
             </tbody>
           </table></div>
-        )}
-      </div>
+            )}
+          </section>
+        );
+      })}
     </main>
   );
 }

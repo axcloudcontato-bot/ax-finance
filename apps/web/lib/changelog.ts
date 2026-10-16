@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-categorias-receitas-despesas",
+    date: "2026-10-16",
+    title: "Categorias separadas em receitas e despesas",
+    summary: "Em Cadastros > Categorias, receitas e despesas ficam em seções próprias.",
+    changes: [
+      { kind: "IMPROVED", text: "As categorias de receita e de despesa aparecem em seções separadas, cada uma com suas subcategorias, e a escolha da categoria pai também separa as duas." },
+    ],
+  },
+  {
     id: "2026-10-15-orcamento-receitas-despesas",
     date: "2026-10-15",
     title: "Orçamento com receitas e despesas separadas",
