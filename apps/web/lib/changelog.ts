@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-estornar-pagamento-fatura",
+    date: "2026-10-16",
+    title: "Estornar antecipação e pagamento da fatura",
+    summary: "Lançou errado? Estorne a antecipação ou o pagamento direto na página da fatura.",
+    changes: [
+      { kind: "NEW", text: "Em Pagamentos, na página da fatura do cartão, o menu Gerenciar de cada linha tem \"Estornar antecipação\" ou \"Estornar pagamento\". Informe o motivo: o valor volta para a conta, a fatura volta a ter esse saldo em aberto e o registro fica na lista como estornado." },
+    ],
+  },
+  {
     id: "2026-10-16-antecipar-fatura",
     date: "2026-10-16",
     title: "Antecipar fatura do cartão",

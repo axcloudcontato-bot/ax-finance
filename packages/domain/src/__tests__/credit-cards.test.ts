@@ -13,6 +13,7 @@ import { deleteTitle } from "../titles/delete-title";
 import { duplicateTitle } from "../titles/duplicate-title";
 import { updateTitle } from "../titles/update-title";
 import { registerSettlement } from "../titles/register-settlement";
+import { reverseSettlement } from "../titles/reverse-settlement";
 import { applyTitleBatch, previewTitleBatch } from "../titles/title-batch";
 import { getManagerialIncomeStatement } from "../reports/managerial-income-statement";
 import { listAuditEvents } from "../audit/list-audit-events";
@@ -447,6 +448,25 @@ describe("antecipar fatura", () => {
     await buy(ctx, { purchaseDate: today, totalAmountCents: 1_000 });
     expect((await getCreditCardInvoice(ctx.user.id, ctx.company.id, open.id)).invoice).toMatchObject({ totalCents: BigInt(6_000), remainingCents: BigInt(4_000) });
     expect((await invoiceTitle(ctx.company.id, open.referenceMonth)).status).toBe("PARTIALLY_SETTLED");
+  });
+
+  it("estornar a antecipação devolve o valor à conta e reabre o saldo da fatura", async () => {
+    const ctx = await setup("antecipa-estorno");
+    const today = new Date().toISOString().slice(0, 10);
+    await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
+    const open = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "OPEN")!;
+    const payment = await anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { financialAccountId: ctx.account.id, amountCents: 5_000, effectiveDate: today });
+    expect((await invoiceTitle(ctx.company.id, open.referenceMonth)).status).toBe("SETTLED");
+
+    await reverseSettlement(ctx.user.id, ctx.company.id, payment.id, { reason: "Valor digitado errado" });
+    const accounts = await listFinancialAccountsWithBalance(ctx.user.id, ctx.company.id);
+    expect(Number(accounts.find((account) => account.id === ctx.account.id)!.currentBalanceCents)).toBe(1_000_000);
+    expect((await getCreditCardInvoice(ctx.user.id, ctx.company.id, open.id)).invoice).toMatchObject({ stage: "OPEN", remainingCents: BigInt(5_000) });
+    expect((await invoiceTitle(ctx.company.id, open.referenceMonth)).status).toBe("OPEN");
+
+    // Depois do estorno dá para antecipar de novo com o valor certo.
+    await anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { financialAccountId: ctx.account.id, amountCents: 500, effectiveDate: today });
+    expect((await getCreditCardInvoice(ctx.user.id, ctx.company.id, open.id)).invoice.remainingCents).toBe(BigInt(4_500));
   });
 
   it("recusa valor acima do total atual, data no fechamento ou depois e fatura já fechada", async () => {

@@ -10,6 +10,7 @@ import {
   anticipateCreditCardInvoice,
   payCreditCardInvoice,
   reactivateCreditCard,
+  reverseSettlement,
   updateCreditCard,
   updateCreditCardPurchase,
 } from "@ax-finance/domain";
@@ -191,4 +192,16 @@ export async function anticipateInvoiceAction(cardId: string, invoiceId: string,
     toRedirect(base, { erroAntecipacao: actionErrorMessage(error, "Não foi possível registrar a antecipação.") });
   }
   toRedirect(base, { antecipado: "1" });
+}
+
+/** Estorna um pagamento ou uma antecipação da fatura: a baixa fica marcada como estornada e o valor volta para a conta. */
+export async function reverseInvoicePaymentAction(cardId: string, invoiceId: string, settlementId: string, formData: FormData) {
+  const { user, company } = await currentContext();
+  const base = `/cartoes/${cardId}/faturas/${invoiceId}`;
+  try {
+    await reverseSettlement(user.id, company.id, settlementId, { reason: text(formData, "reason").trim() });
+  } catch (error) {
+    toRedirect(base, { erroEstorno: actionErrorMessage(error, "Não foi possível estornar."), pagamento: settlementId });
+  }
+  toRedirect(base, { estornado: "1" });
 }

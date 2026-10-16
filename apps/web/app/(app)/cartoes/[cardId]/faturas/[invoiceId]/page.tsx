@@ -24,7 +24,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { PaymentImpact } from "@/components/credit-cards/payment-impact";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
-import { anticipateInvoiceAction, cancelPurchaseAction, payInvoiceAction, updatePurchaseAction } from "../../../actions";
+import { anticipateInvoiceAction, cancelPurchaseAction, payInvoiceAction, reverseInvoicePaymentAction, updatePurchaseAction } from "../../../actions";
 
 /** "1234,56" — o formato que o leitor de valores aceita de volta. */
 function toInputAmount(cents: bigint): string {
@@ -40,7 +40,7 @@ function previousDay(date: string): string {
 
 export default async function FaturaPage(props: {
   params: Promise<{ cardId: string; invoiceId: string }>;
-  searchParams: Promise<{ antecipar?: string; erroAntecipacao?: string; antecipado?: string; erroPagamento?: string; erroEdicao?: string; erroCancelamento?: string; compra?: string; pago?: string; editado?: string; cancelado?: string }>;
+  searchParams: Promise<{ erroEstorno?: string; pagamento?: string; estornado?: string; antecipar?: string; erroAntecipacao?: string; antecipado?: string; erroPagamento?: string; erroEdicao?: string; erroCancelamento?: string; compra?: string; pago?: string; editado?: string; cancelado?: string }>;
 }) {
   const { cardId, invoiceId } = await props.params;
   const searchParams = await props.searchParams;
@@ -71,7 +71,7 @@ export default async function FaturaPage(props: {
   const locked = invoice.stage === "PAID";
   // Antes do fechamento (ciclo atual ou futuro com parcelas) dá para adiantar qualquer valor até o total de agora.
   const anticipatable = (invoice.stage === "OPEN" || invoice.stage === "FUTURE") && invoice.remainingCents > BigInt(0);
-  const refreshKey = [searchParams.antecipado, searchParams.erroAntecipacao, searchParams.pago, searchParams.editado, searchParams.cancelado, searchParams.erroPagamento, searchParams.erroEdicao, searchParams.erroCancelamento].join("|");
+  const refreshKey = [searchParams.estornado, searchParams.erroEstorno, searchParams.antecipado, searchParams.erroAntecipacao, searchParams.pago, searchParams.editado, searchParams.cancelado, searchParams.erroPagamento, searchParams.erroEdicao, searchParams.erroCancelamento].join("|");
   const monthLabel = formatReferenceMonth(invoice.referenceMonth);
   const activePayments = payments.filter((payment) => !payment.reversedAt);
 
@@ -182,6 +182,7 @@ export default async function FaturaPage(props: {
         ) : null}
       </div>
 
+      {searchParams.estornado ? <p className="success-box">Estorno registrado. O valor voltou para a conta e o saldo da fatura foi recalculado.</p> : null}
       {searchParams.antecipado ? <p className="success-box">Antecipação registrada. O valor já saiu da conta e liberou limite do cartão.</p> : null}
       {searchParams.pago ? <p className="success-box">Pagamento registrado.</p> : null}
       {searchParams.editado ? <p className="success-box">Compra atualizada.</p> : null}
@@ -301,7 +302,7 @@ export default async function FaturaPage(props: {
         ) : (
           <div className="table-scroll">
             <table className="workspace-table">
-              <thead><tr><th>Data</th><th>Conta</th><th className="money">Principal</th><th className="money">Juros/multa</th><th className="money">Tarifas</th><th className="money">Saída total</th><th>Situação</th></tr></thead>
+              <thead><tr><th>Data</th><th>Conta</th><th className="money">Principal</th><th className="money">Juros/multa</th><th className="money">Tarifas</th><th className="money">Saída total</th><th>Situação</th><th><span className="sr-only">Ações</span></th></tr></thead>
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.id} style={payment.reversedAt ? { opacity: 0.55 } : undefined}>
@@ -312,6 +313,27 @@ export default async function FaturaPage(props: {
                     <td className="money">{formatCents(payment.feesCents)}</td>
                     <td className="money">{formatCents(payment.principalAmountCents + payment.interestPenaltyCents + payment.feesCents)}</td>
                     <td>{payment.reversedAt ? `Estornado${payment.reversalReason ? `: ${payment.reversalReason}` : ""}` : payment.paymentMethod === ANTICIPATION_PAYMENT_METHOD ? "Antecipação" : "Efetivado"}</td>
+                    <td>
+                      {payment.reversedAt ? null : (() => {
+                        const kind = payment.paymentMethod === ANTICIPATION_PAYMENT_METHOD ? "antecipação" : "pagamento";
+                        const failed = searchParams.pagamento === payment.id && Boolean(searchParams.erroEstorno);
+                        return (
+                          <RowActionsMenu>
+                            <ActionModal key={`estornar-${payment.id}-${refreshKey}`} triggerLabel={`Estornar ${kind}`} title={`Estornar ${kind} — ${formatDateOnly(payment.effectiveDate)} · ${formatCents(payment.principalAmountCents)}`} initiallyOpen={failed}>
+                              {failed ? <p className="error">{searchParams.erroEstorno}</p> : null}
+                              <form action={reverseInvoicePaymentAction.bind(null, card.id, invoice.id, payment.id)}>
+                                <p className="subtitle">
+                                  Use quando {kind === "antecipação" ? "a antecipação foi lançada" : "o pagamento foi lançado"} com erro. O registro fica na lista como estornado (não é apagado), {formatCents(payment.principalAmountCents + payment.interestPenaltyCents + payment.feesCents)} volta para {payment.financialAccount.name} e a fatura volta a ter esse valor em aberto.
+                                </p>
+                                <label htmlFor={`reverse-reason-${payment.id}`}>Motivo</label>
+                                <input id={`reverse-reason-${payment.id}`} name="reason" type="text" required maxLength={500} placeholder="Ex.: valor digitado errado, conta errada" />
+                                <SubmitButton>Estornar {kind}</SubmitButton>
+                              </form>
+                            </ActionModal>
+                          </RowActionsMenu>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
