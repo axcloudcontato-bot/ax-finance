@@ -625,18 +625,17 @@ button:disabled {
 
 /* Controles do menu lateral precisam neutralizar o estilo global de botão,
    que é voltado aos CTAs dos formulários. */
+/* Recolher menu: linha do rodapé do menu lateral, no mesmo estilo de "Sair". */
 .app-sidebar-toggle {
   margin-top: 0;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: 0;
   background: transparent;
   color: var(--muted);
+  cursor: pointer;
 }
 
 .app-sidebar-toggle:hover {
-  border-color: var(--border);
-  background: rgba(0, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--text);
 }
 
@@ -647,7 +646,7 @@ button:disabled {
 }
 
 .app-sidebar-logout:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--text);
 }
 
@@ -4855,3 +4854,11 @@ td .modal-overlay { white-space: normal; text-align: left; }
 /* Títulos dos painéis do topo (Notificações, Novidades) e do cartão de avisos: um só tamanho e peso. */
 .bottom-menu-heading strong, .ax-activities-titles strong { color: var(--text); font-size: 0.92rem; font-weight: 650; letter-spacing: -0.005em; }
 
+
+/* Ícone da categoria (Phosphor, traço fino): quadro neutro de 30px, ícone de 18px. */
+.category-name { display: inline-flex; min-width: 0; align-items: center; gap: 0.6rem; }
+.category-icon { display: grid; flex: none; width: 30px; height: 30px; place-items: center; border: 1px solid var(--border); border-radius: 9px; background: color-mix(in srgb, var(--text) 3%, var(--card)); color: var(--muted); }
+.category-icon.is-revenue { border-color: color-mix(in srgb, var(--tone-in) 28%, var(--border)); background: color-mix(in srgb, var(--tone-in) 7%, var(--card)); color: var(--tone-in); }
+.category-icon svg { width: 18px; height: 18px; }
+.budget-year-table .category-icon { width: 26px; height: 26px; border-radius: 8px; }
+.budget-year-table .category-icon svg { width: 16px; height: 16px; }

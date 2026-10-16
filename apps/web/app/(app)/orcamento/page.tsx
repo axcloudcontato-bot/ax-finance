@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryIcon } from "@/components/categories/category-icon";
 import { redirect } from "next/navigation";
 import { budgetStatus, getBudgetReport, revenueBudgetStatus, type BudgetRow, type BudgetStatus } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -63,7 +64,7 @@ function Figures({ figures }: { figures: Figures }) {
 function EditableRow({ row, label, nested }: { row: BudgetRow; label: string; nested: boolean }) {
   return (
     <tr className={nested ? "budget-child" : undefined}>
-      <td>{nested ? <span className="muted" aria-hidden="true">↳ </span> : null}{label}</td>
+      <td><span className="category-name">{nested ? <span className="muted" aria-hidden="true">↳</span> : null}<CategoryIcon name={row.name} nature={row.kind === "REVENUE" ? "OPERATING_REVENUE" : "EXPENSE"} />{label}</span></td>
       <td className="money">
         <input type="hidden" name={`was_${row.categoryId}`} value={toInput(row.plannedCents)} />
         <input name={`amount_${row.categoryId}`} defaultValue={toInput(row.plannedCents)} inputMode="decimal" placeholder="0,00" aria-label={`${row.kind === "REVENUE" ? "Previsão" : "Orçamento"} de ${label}`} className="budget-input" />
@@ -163,7 +164,7 @@ export default async function OrcamentoPage(props: {
                         const subtotal = sum([group.head, ...group.children], section.kind);
                         return [
                           <tr key={`${group.head.categoryId}-grupo`} className="budget-group">
-                            <th scope="row">{group.head.name}</th>
+                            <th scope="row"><span className="category-name"><CategoryIcon name={group.head.name} nature={group.head.kind === "REVENUE" ? "OPERATING_REVENUE" : "EXPENSE"} />{group.head.name}</span></th>
                             <td className="money"><strong>{subtotal.plannedCents > ZERO ? formatCents(subtotal.plannedCents) : "—"}</strong></td>
                             <Figures figures={subtotal} />
                           </tr>,

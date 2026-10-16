@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryIcon } from "@/components/categories/category-icon";
 import { redirect } from "next/navigation";
 import { getAnnualBudgetReport } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -35,7 +36,7 @@ function YearRow({ row, label, nested, currentMonth }: { row: AnnualRow; label: 
   const revenue = row.kind === "REVENUE";
   return (
     <tr className={nested ? "budget-child" : undefined}>
-      <th scope="row">{nested ? <span className="muted" aria-hidden="true">↳ </span> : null}{label}</th>
+      <th scope="row"><span className="category-name">{nested ? <span className="muted" aria-hidden="true">↳</span> : null}<CategoryIcon name={row.name} nature={row.kind === "REVENUE" ? "OPERATING_REVENUE" : "EXPENSE"} />{label}</span></th>
       {row.cells.map((cell, index) => {
         const over = !revenue && cell.plannedCents > ZERO && cell.actualCents > cell.plannedCents;
         return (
@@ -166,7 +167,7 @@ export default async function AnnualBudgetPage(props: { searchParams: Promise<{ 
                             const ownValues = group.head.plannedCents > ZERO || group.head.actualCents > ZERO;
                             return [
                               <tr key={`${group.head.categoryId}-grupo`} className="budget-group">
-                                <th scope="row">{group.head.name}</th>
+                                <th scope="row"><span className="category-name"><CategoryIcon name={group.head.name} nature={group.head.kind === "REVENUE" ? "OPERATING_REVENUE" : "EXPENSE"} />{group.head.name}</span></th>
                                 {report.months.map((month, index) => {
                                   const planned = members.reduce((sum, row) => sum + row.cells[index]!.plannedCents, ZERO);
                                   const actual = members.reduce((sum, row) => sum + row.cells[index]!.actualCents, ZERO);

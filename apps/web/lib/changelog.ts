@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-icones-categorias",
+    date: "2026-10-16",
+    title: "Ícones nas categorias",
+    summary: "Cada categoria de receita e despesa ganhou um ícone de traço fino que combina com ela.",
+    changes: [
+      { kind: "IMPROVED", text: "Em Cadastros > Categorias e no Orçamento, cada categoria aparece com um ícone escolhido pelo nome: casa para Aluguel, gota para Água, raio para Luz, carrinho para Supermercado e assim por diante. Categorias com nome diferente recebem o ícone de receita ou de despesa." },
+    ],
+  },
+  {
     id: "2026-10-16-calendario-celular",
     date: "2026-10-16",
     title: "Calendário completo no celular",

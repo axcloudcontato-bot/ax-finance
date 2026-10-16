@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { CategoryIcon } from "@/components/categories/category-icon";
 import { Tag } from "@/components/ui/animated-icons";
 import { listCategories } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
@@ -148,7 +149,7 @@ export default async function CategoriasPage(
             <tbody>
               {items.map((category) => (
                 <tr key={category.id}>
-                  <td>{category.parentId ? `↳ ${category.name}` : category.name}</td>
+                  <td><span className="category-name">{category.parentId ? <span className="muted" aria-hidden="true">↳</span> : null}<CategoryIcon name={category.name} nature={category.nature} />{category.name}</span></td>
                   <td>{NATURE_LABEL[category.nature] ?? category.nature}</td>
                   <td>{category.managerialGroup ?? "—"}<small className="muted" style={{ display: "block" }}>{category.costBehavior === "FIXED" ? "Gasto fixo" : category.costBehavior === "VARIABLE" ? "Gasto variável" : "Comportamento não classificado"}</small></td>
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>

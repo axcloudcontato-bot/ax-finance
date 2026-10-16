@@ -46,8 +46,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
     <AppShell
       userName={user.name}
-      userEmail={user.email}
-      membershipRole={access.role}
       canManageMembers={canManageMembers}
       isPlatformAdmin={Boolean(platformAdmin)}
       planCode={planAccess.code}

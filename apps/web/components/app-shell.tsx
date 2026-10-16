@@ -9,12 +9,9 @@ import { BottomMenu } from "@/components/ui/bottom-menu";
 import { NotificationToasts } from "@/components/notification-toasts";
 import { QuickCreateModal } from "@/components/quick-create";
 import type { WriteBlockNotice } from "@/lib/write-block-notice";
-import type { MembershipRole } from "@ax-finance/db";
 
 export function AppShell({
   userName,
-  userEmail,
-  membershipRole,
   canManageMembers,
   isPlatformAdmin,
   planCode,
@@ -25,8 +22,6 @@ export function AppShell({
   children,
 }: {
   userName: string;
-  userEmail: string;
-  membershipRole: MembershipRole;
   canManageMembers: boolean;
   isPlatformAdmin: boolean;
   planCode: "PERSONAL" | "ESSENTIAL";
@@ -77,9 +72,6 @@ export function AppShell({
 
       <div className="flex min-h-0 flex-1">
         <AppSidebar
-          userName={userName}
-          userEmail={userEmail}
-          membershipRole={membershipRole}
           planCode={planCode}
           canUseCreditCards={canUseCreditCards}
           logoutAction={logoutAction}

@@ -20,9 +20,7 @@ import {
 } from "@/components/ui/animated-icons";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import type { MembershipRole } from "@ax-finance/db";
 import { NavItem, type NavItemData } from "@/components/nav-item";
-import { initialsOf } from "@/lib/user-display";
 
 interface NavGroup {
   heading?: string;
@@ -105,18 +103,12 @@ const DASHBOARD_ITEM: NavItemData = {
 const SIDEBAR_PREFERENCE_KEY = "ax-finance:sidebar-collapsed:v1";
 
 export function AppSidebar({
-  userName,
-  userEmail,
-  membershipRole,
   planCode,
   canUseCreditCards,
   logoutAction,
   mobileOpen = false,
   onMobileClose,
 }: {
-  userName: string;
-  userEmail: string;
-  membershipRole: MembershipRole;
   planCode: "PERSONAL" | "ESSENTIAL";
   /** Falso para quem tem acesso restrito a centros de custo: a fatura mistura vários centros. */
   canUseCreditCards: boolean;
@@ -178,13 +170,6 @@ export function AppSidebar({
     }
   }
 
-  const roleLabel: Record<MembershipRole, string> = {
-    OWNER: "Proprietário",
-    FINANCE_ADMIN: "Administrador financeiro",
-    OPERATOR: "Operador",
-    ACCOUNTANT: "Contador",
-    VIEWER: "Consulta",
-  };
   const unavailableItems = new Set<string>(
     planCode === "PERSONAL" ? ["conciliacao", "rel-dre", "auditoria", "fechamento"] : [],
   );
@@ -215,26 +200,10 @@ export function AppSidebar({
       aria-label="Navegação principal"
       data-collapsed={collapsed}
     >
-      <button
-        type="button"
-        onClick={() => updateCollapsed(!collapsed)}
-        className={`app-sidebar-toggle absolute z-10 hidden shrink-0 place-items-center rounded-lg border border-transparent outline-none transition-[background-color,border-color,color,box-shadow,transform] focus-visible:ring-2 focus-visible:ring-primary/40 md:grid ${
-          collapsed
-            ? "top-[11px] -right-3 size-7 bg-card shadow-sm"
-            : "top-3 right-3 size-8"
-        }`}
-        aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-        aria-expanded={!collapsed}
-        aria-controls="app-sidebar-navigation"
-        title={collapsed ? "Expandir menu" : "Recolher menu"}
-      >
-        {collapsed ? <PanelLeftOpen className="size-3.5" strokeWidth={1.7} /> : <PanelLeftClose className="size-4" strokeWidth={1.7} />}
-      </button>
-
       <div className={`flex h-full w-full flex-col overflow-hidden p-3 transition-[width,padding] duration-300 ease-in-out ${collapsed ? "md:w-[72px] md:p-2" : "md:w-[260px] md:p-3"}`}>
         <div id="app-sidebar-navigation" role="navigation" className="flex flex-1 flex-col items-stretch gap-4 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex shrink-0 items-center">
-            <div className={`min-w-0 flex-1 ${collapsed ? "" : "pr-9"}`}>
+            <div className="min-w-0 flex-1">
               <NavItem
                 item={DASHBOARD_ITEM}
                 collapsed={collapsed}
@@ -267,23 +236,19 @@ export function AppSidebar({
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">
-          <div
-            className={`flex items-center overflow-hidden rounded-xl py-1 transition-[gap,padding] duration-300 ${collapsed ? "justify-center px-0" : "gap-3 px-1"}`}
-            title={collapsed ? `${userName} — ${roleLabel[membershipRole]}` : undefined}
+          {/* Recolher/expandir o menu (só no desktop): no rodapé, ao lado de Sair. */}
+          <button
+            type="button"
+            onClick={() => updateCollapsed(!collapsed)}
+            className={`app-sidebar-toggle hidden w-full items-center rounded-[6px] py-[7px] text-left text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 md:flex ${collapsed ? "justify-center px-0" : "gap-2.5 px-2.5"}`}
+            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            aria-expanded={!collapsed}
+            aria-controls="app-sidebar-navigation"
+            title={collapsed ? "Expandir menu" : undefined}
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-foreground text-xs font-semibold text-background">
-              {initialsOf(userName)}
-            </span>
-            <span className={`min-w-0 flex-1 transition-opacity duration-200 ${collapsed ? "sr-only opacity-0" : "opacity-100"}`}>
-              <span className="block truncate text-[13px] font-medium text-foreground">
-                {userName}
-              </span>
-              <span className="block truncate text-[11px] text-muted-foreground">{userEmail}</span>
-              <span className="block truncate text-[11px] text-muted-foreground">
-                {roleLabel[membershipRole]}
-              </span>
-            </span>
-          </div>
+            {collapsed ? <PanelLeftOpen className="size-4 shrink-0" strokeWidth={1.5} /> : <PanelLeftClose className="size-4 shrink-0" strokeWidth={1.5} />}
+            <span className={collapsed ? "sr-only" : undefined}>Recolher menu</span>
+          </button>
 
           <form action={logoutAction}>
             <button
