@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-calendario-celular",
+    date: "2026-10-16",
+    title: "Calendário completo no celular",
+    summary: "A grade do mês aparece também no celular, com marcas de a receber e a pagar.",
+    changes: [
+      { kind: "IMPROVED", text: "No celular, o calendário mostra o mês inteiro: cada dia tem um ponto verde quando há algo a receber e vermelho quando há algo a pagar. Toque no dia para ver o detalhe; a agenda em lista continua logo abaixo." },
+    ],
+  },
+  {
     id: "2026-10-16-visual-mais-calmo",
     date: "2026-10-16",
     title: "Visual mais limpo, cor onde importa",
