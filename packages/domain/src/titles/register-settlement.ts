@@ -63,7 +63,15 @@ export async function registerSettlement(
 }
 
 /** Permite que a fatura e sua baixa usem a mesma transação e a mesma chave de repetição. */
-export async function registerSettlementInTx(tx: TenantScopedClient, userId: string, companyId: string, titleId: string, data: RegisterSettlementInput) {
+export async function registerSettlementInTx(
+  tx: TenantScopedClient,
+  userId: string,
+  companyId: string,
+  titleId: string,
+  data: RegisterSettlementInput,
+  /** `allowOpenCardInvoice`: só a antecipação de fatura (que já conferiu o ciclo) paga fatura ainda aberta. */
+  options: { allowOpenCardInvoice?: boolean } = {}
+) {
     const { idempotencyKey, ...request } = data;
     const idempotency = await beginIdempotentOperation(tx, {
       companyId,
@@ -100,7 +108,7 @@ export async function registerSettlementInTx(tx: TenantScopedClient, userId: str
     }
 
     await assertPeriodOpen(tx, companyId, data.effectiveDate);
-    await assertInvoiceTitlePayable(tx, companyId, titleId);
+    if (!options.allowOpenCardInvoice) await assertInvoiceTitlePayable(tx, companyId, titleId);
 
     const existingSettlements = await tx.settlement.findMany({
       where: { titleId, reversedAt: null },

@@ -78,6 +78,10 @@ export default async function CartaoPage(props: {
         {archived ? (
           <span className="workspace-status">Arquivado</span>
         ) : (
+          <div className="page-header-actions">
+          {openInvoice && openInvoice.remainingCents > BigInt(0) ? (
+            <Link href={`/cartoes/${card.id}/faturas/${openInvoice.id}?antecipar=1`} className="button-link">Antecipar fatura</Link>
+          ) : null}
           <ActionModal
             key={`compra-${refreshKey}`}
             triggerLabel="+ Nova compra"
@@ -98,6 +102,7 @@ export default async function CartaoPage(props: {
               card={{ ...card, availableLimitCents, pendingInvoices: invoices }}
             />
           </ActionModal>
+          </div>
         )}
       </div>
 

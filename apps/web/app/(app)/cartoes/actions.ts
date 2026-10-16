@@ -7,6 +7,7 @@ import {
   createCreditCard,
   createCreditCardPurchase,
   deleteCreditCard,
+  anticipateCreditCardInvoice,
   payCreditCardInvoice,
   reactivateCreditCard,
   updateCreditCard,
@@ -173,4 +174,21 @@ export async function payInvoiceAction(cardId: string, invoiceId: string, formDa
     toRedirect(base, { erroPagamento: actionErrorMessage(error, "Não foi possível registrar o pagamento.") });
   }
   toRedirect(base, { pago: "1" });
+}
+
+export async function anticipateInvoiceAction(cardId: string, invoiceId: string, formData: FormData) {
+  const { user, company } = await currentContext();
+  const base = `/cartoes/${cardId}/faturas/${invoiceId}`;
+  try {
+    await anticipateCreditCardInvoice(user.id, company.id, invoiceId, {
+      financialAccountId: text(formData, "financialAccountId"),
+      amountCents: parseAmountToCents(text(formData, "amount")),
+      effectiveDate: text(formData, "effectiveDate"),
+      notes: optional(formData, "notes"),
+      idempotencyKey: optional(formData, "idempotencyKey"),
+    });
+  } catch (error) {
+    toRedirect(base, { erroAntecipacao: actionErrorMessage(error, "Não foi possível registrar a antecipação.") });
+  }
+  toRedirect(base, { antecipado: "1" });
 }

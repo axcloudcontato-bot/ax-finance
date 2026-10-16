@@ -615,8 +615,36 @@ export class CreditCardInvoiceNotPayableError extends DomainError {
   constructor(closingDate: string) {
     const [year, month, day] = closingDate.split("-");
     super(
-      `A fatura ainda está aberta e recebendo compras. Ela fecha em ${day}/${month}/${year}; registre o pagamento depois do fechamento.`,
+      `A fatura ainda está aberta e recebendo compras. Ela fecha em ${day}/${month}/${year}; registre o pagamento depois do fechamento ou use "Antecipar fatura".`,
       "CREDIT_CARD_INVOICE_NOT_PAYABLE"
+    );
+  }
+}
+
+/** Antecipar só vale antes do fechamento: depois dele é pagamento comum da fatura. */
+export class CreditCardInvoiceNotAnticipatableError extends DomainError {
+  constructor(closingDate: string) {
+    const [year, month, day] = closingDate.split("-");
+    super(
+      `Esta fatura já fechou em ${day}/${month}/${year}. Use "Registrar pagamento" para pagá-la.`,
+      "CREDIT_CARD_INVOICE_NOT_ANTICIPATABLE"
+    );
+  }
+}
+
+export class CreditCardAnticipationExceedsError extends DomainError {
+  constructor(remainingCents: bigint) {
+    const reais = (Number(remainingCents) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    super(`O valor passa do que esta fatura soma agora. Antecipe até R$ ${reais}.`, "CREDIT_CARD_ANTICIPATION_EXCEEDS");
+  }
+}
+
+export class CreditCardAnticipationDateError extends DomainError {
+  constructor(closingDate: string) {
+    const [year, month, day] = closingDate.split("-");
+    super(
+      `A antecipação precisa ter data anterior ao fechamento da fatura (${day}/${month}/${year}).`,
+      "CREDIT_CARD_ANTICIPATION_DATE"
     );
   }
 }

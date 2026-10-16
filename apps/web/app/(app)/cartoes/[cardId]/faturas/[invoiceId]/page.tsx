@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  ANTICIPATION_PAYMENT_METHOD,
   CreditCardAccessRestrictedError,
   CreditCardInvoiceNotFoundError,
   formatReferenceMonth,
@@ -23,16 +24,23 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { PurchaseForm } from "@/components/credit-cards/purchase-form";
 import { PaymentImpact } from "@/components/credit-cards/payment-impact";
 import { InvoiceStageBadge } from "@/components/credit-cards/invoice-stage-badge";
-import { cancelPurchaseAction, payInvoiceAction, updatePurchaseAction } from "../../../actions";
+import { anticipateInvoiceAction, cancelPurchaseAction, payInvoiceAction, updatePurchaseAction } from "../../../actions";
 
 /** "1234,56" — o formato que o leitor de valores aceita de volta. */
 function toInputAmount(cents: bigint): string {
   return (Number(cents) / 100).toFixed(2).replace(".", ",");
 }
 
+/** Véspera de uma data YYYY-MM-DD (limite da data da antecipação). */
+function previousDay(date: string): string {
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() - 1);
+  return day.toISOString().slice(0, 10);
+}
+
 export default async function FaturaPage(props: {
   params: Promise<{ cardId: string; invoiceId: string }>;
-  searchParams: Promise<{ erroPagamento?: string; erroEdicao?: string; erroCancelamento?: string; compra?: string; pago?: string; editado?: string; cancelado?: string }>;
+  searchParams: Promise<{ antecipar?: string; erroAntecipacao?: string; antecipado?: string; erroPagamento?: string; erroEdicao?: string; erroCancelamento?: string; compra?: string; pago?: string; editado?: string; cancelado?: string }>;
 }) {
   const { cardId, invoiceId } = await props.params;
   const searchParams = await props.searchParams;
@@ -61,7 +69,9 @@ export default async function FaturaPage(props: {
   const today = todayInTimeZone(company.timezone);
   const payable = invoice.stage === "CLOSED" || invoice.stage === "OVERDUE";
   const locked = invoice.stage === "PAID";
-  const refreshKey = [searchParams.pago, searchParams.editado, searchParams.cancelado, searchParams.erroPagamento, searchParams.erroEdicao, searchParams.erroCancelamento].join("|");
+  // Antes do fechamento (ciclo atual ou futuro com parcelas) dá para adiantar qualquer valor até o total de agora.
+  const anticipatable = (invoice.stage === "OPEN" || invoice.stage === "FUTURE") && invoice.remainingCents > BigInt(0);
+  const refreshKey = [searchParams.antecipado, searchParams.erroAntecipacao, searchParams.pago, searchParams.editado, searchParams.cancelado, searchParams.erroPagamento, searchParams.erroEdicao, searchParams.erroCancelamento].join("|");
   const monthLabel = formatReferenceMonth(invoice.referenceMonth);
   const activePayments = payments.filter((payment) => !payment.reversedAt);
 
@@ -124,8 +134,55 @@ export default async function FaturaPage(props: {
             )}
           </ActionModal>
         ) : null}
+        {anticipatable ? (
+          <ActionModal
+            key={`antecipar-${refreshKey}`}
+            triggerLabel="Antecipar fatura"
+            triggerClassName="button-link workspace-primary-action"
+            title={`Antecipar fatura ${monthLabel} — ${card.name}`}
+            icon={<CreditCard className="size-5" strokeWidth={1.5} />}
+            initiallyOpen={Boolean(searchParams.erroAntecipacao || searchParams.antecipar)}
+          >
+            {searchParams.erroAntecipacao ? <p className="error">{searchParams.erroAntecipacao}</p> : null}
+            {accounts.length === 0 ? (
+              <p className="muted">Cadastre uma conta antes de antecipar a fatura.</p>
+            ) : (
+              <form action={anticipateInvoiceAction.bind(null, card.id, invoice.id)}>
+                <input type="hidden" name="idempotencyKey" value={randomUUID()} />
+                <p className="subtitle">
+                  A fatura ainda não fechou e soma {formatCents(invoice.remainingCents)} em aberto. Informe quanto quer adiantar (até esse valor): o valor sai da conta, libera limite e, no fechamento, falta pagar só a diferença.
+                </p>
+                <div className="form-grid">
+                  <div className="span-2">
+                    <label htmlFor="anticipate-account">Pagar com a conta</label>
+                    <select id="anticipate-account" name="financialAccountId" required defaultValue={card.defaultPaymentAccountId ?? ""}>
+                      <option value="" disabled>Selecione</option>
+                      {accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="anticipate-amount">Valor a antecipar (R$)</label>
+                    <input id="anticipate-amount" name="amount" type="text" inputMode="decimal" placeholder="0,00" required />
+                    <p className="field-note">Em aberto agora: {formatCents(invoice.remainingCents)}</p>
+                  </div>
+                  <div>
+                    <label htmlFor="anticipate-date">Data da antecipação</label>
+                    <input id="anticipate-date" name="effectiveDate" type="date" defaultValue={today} max={previousDay(invoice.closingDate)} required />
+                    <p className="field-note">Antes do fechamento ({formatDateOnly(invoice.closingDate)})</p>
+                  </div>
+                  <div className="span-2">
+                    <label htmlFor="anticipate-notes">Observações</label>
+                    <input id="anticipate-notes" name="notes" type="text" maxLength={2000} />
+                  </div>
+                </div>
+                <SubmitButton>Antecipar</SubmitButton>
+              </form>
+            )}
+          </ActionModal>
+        ) : null}
       </div>
 
+      {searchParams.antecipado ? <p className="success-box">Antecipação registrada. O valor já saiu da conta e liberou limite do cartão.</p> : null}
       {searchParams.pago ? <p className="success-box">Pagamento registrado.</p> : null}
       {searchParams.editado ? <p className="success-box">Compra atualizada.</p> : null}
       {searchParams.cancelado ? <p className="success-box">Compra cancelada e fatura recalculada.</p> : null}
@@ -240,7 +297,7 @@ export default async function FaturaPage(props: {
         <div className="workspace-card-heading"><div><h2>Pagamentos</h2>
           <p>O pagamento é uma baixa comum da fatura: pode ser estornado e conciliado com o extrato pela <Link href={`/saidas/${invoice.titleId}`}>página do título</Link>.</p></div></div>
         {payments.length === 0 ? (
-          <div className="workspace-empty"><strong>Nenhum pagamento</strong><p>{payable ? "Use “Registrar pagamento” para registrar um pagamento feito ao banco." : invoice.stage === "EMPTY" ? "Esta fatura não tem saldo a pagar." : "A fatura ainda não fechou; o registro de pagamento fica disponível depois do fechamento."}</p></div>
+          <div className="workspace-empty"><strong>Nenhum pagamento</strong><p>{payable ? "Use “Registrar pagamento” para registrar um pagamento feito ao banco." : invoice.stage === "EMPTY" ? "Esta fatura não tem saldo a pagar." : "A fatura ainda não fechou. Use “Antecipar fatura” para adiantar um valor, ou registre o pagamento depois do fechamento."}</p></div>
         ) : (
           <div className="table-scroll">
             <table className="workspace-table">
@@ -254,7 +311,7 @@ export default async function FaturaPage(props: {
                     <td className="money">{formatCents(payment.interestPenaltyCents)}</td>
                     <td className="money">{formatCents(payment.feesCents)}</td>
                     <td className="money">{formatCents(payment.principalAmountCents + payment.interestPenaltyCents + payment.feesCents)}</td>
-                    <td>{payment.reversedAt ? `Estornado${payment.reversalReason ? `: ${payment.reversalReason}` : ""}` : "Efetivado"}</td>
+                    <td>{payment.reversedAt ? `Estornado${payment.reversalReason ? `: ${payment.reversalReason}` : ""}` : payment.paymentMethod === ANTICIPATION_PAYMENT_METHOD ? "Antecipação" : "Efetivado"}</td>
                   </tr>
                 ))}
               </tbody>

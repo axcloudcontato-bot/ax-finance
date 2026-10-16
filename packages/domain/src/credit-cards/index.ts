@@ -5,4 +5,5 @@ export * from "./purchases";
 export * from "./queries";
 export * from "./portfolio-summary";
 export * from "./pay-invoice";
+export * from "./anticipate-invoice";
 export { CARD_INVOICE_CATEGORY_NAME, assertTitleNotCardInvoice } from "./invoices";

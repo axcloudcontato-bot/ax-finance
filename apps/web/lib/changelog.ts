@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-antecipar-fatura",
+    date: "2026-10-16",
+    title: "Antecipar fatura do cartão",
+    summary: "Adiante o valor que quiser de uma fatura que ainda não fechou.",
+    changes: [
+      { kind: "NEW", text: "Na página do cartão ou da fatura, \"Antecipar fatura\" registra um pagamento antes do fechamento com o valor que você escolher, até o total lançado na fatura até agora. O valor sai da conta escolhida e libera limite na hora; quando a fatura fechar, falta pagar só a diferença. Vale também para faturas futuras com parcelas." },
+    ],
+  },
+  {
     id: "2026-10-16-cadastro-rapido-compra-cartao",
     date: "2026-10-16",
     title: "Estabelecimento e fornecedor na hora do lançamento",

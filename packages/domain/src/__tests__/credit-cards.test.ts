@@ -26,12 +26,17 @@ import {
   getCreditCard,
   getCreditCardInvoice,
   listCreditCards,
+  anticipateCreditCardInvoice,
+  ANTICIPATION_PAYMENT_METHOD,
   payCreditCardInvoice,
   reactivateCreditCard,
   updateCreditCard,
   updateCreditCardPurchase,
 } from "../credit-cards";
 import {
+  CreditCardAnticipationDateError,
+  CreditCardAnticipationExceedsError,
+  CreditCardInvoiceNotAnticipatableError,
   CreditCardAccessRestrictedError,
   CreditCardCategoryInvalidError,
   CreditCardHasOpenInvoicesError,
@@ -419,5 +424,58 @@ describe("integração com o resto do sistema", () => {
     await expect(getCreditCard(b.user.id, b.company.id, a.card.id)).rejects.toBeInstanceOf(CreditCardNotFoundError);
     const invoice = await rootClient.creditCardInvoice.findFirstOrThrow({ where: { companyId: a.company.id } });
     await expect(getCreditCardInvoice(b.user.id, b.company.id, invoice.id)).rejects.toThrow();
+  });
+});
+
+describe("antecipar fatura", () => {
+  it("paga parte da fatura aberta com valor livre: sai da conta, libera limite e o fechamento cobra só a diferença", async () => {
+    const ctx = await setup("antecipa");
+    const today = new Date().toISOString().slice(0, 10);
+    await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
+    const open = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "OPEN")!;
+
+    const payment = await anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { financialAccountId: ctx.account.id, amountCents: 2_000, effectiveDate: today });
+    expect(payment).toMatchObject({ principalAmountCents: BigInt(2_000), paymentMethod: ANTICIPATION_PAYMENT_METHOD });
+
+    const accounts = await listFinancialAccountsWithBalance(ctx.user.id, ctx.company.id);
+    expect(Number(accounts.find((account) => account.id === ctx.account.id)!.currentBalanceCents)).toBe(998_000);
+    const detail = await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id);
+    expect(detail.invoices.find((invoice) => invoice.id === open.id)).toMatchObject({ stage: "OPEN", remainingCents: BigInt(3_000) });
+    expect(detail.usedLimitCents).toBe(BigInt(3_000));
+
+    // Compra nova no mesmo ciclo soma ao total; o antecipado continua abatido.
+    await buy(ctx, { purchaseDate: today, totalAmountCents: 1_000 });
+    expect((await getCreditCardInvoice(ctx.user.id, ctx.company.id, open.id)).invoice).toMatchObject({ totalCents: BigInt(6_000), remainingCents: BigInt(4_000) });
+    expect((await invoiceTitle(ctx.company.id, open.referenceMonth)).status).toBe("PARTIALLY_SETTLED");
+  });
+
+  it("recusa valor acima do total atual, data no fechamento ou depois e fatura já fechada", async () => {
+    const ctx = await setup("antecipa-limites");
+    const today = new Date().toISOString().slice(0, 10);
+    await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
+    const open = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "OPEN")!;
+    const base = { financialAccountId: ctx.account.id, effectiveDate: today };
+
+    await expect(anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { ...base, amountCents: 5_001 })).rejects.toBeInstanceOf(CreditCardAnticipationExceedsError);
+    await expect(anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { ...base, amountCents: 1_000, effectiveDate: open.closingDate })).rejects.toBeInstanceOf(CreditCardAnticipationDateError);
+
+    await buy(ctx, { purchaseDate: PAST_PURCHASE, totalAmountCents: 3_000 });
+    const closed = await rootClient.creditCardInvoice.findFirstOrThrow({ where: { companyId: ctx.company.id, referenceMonth: "2026-01" } });
+    await expect(anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, closed.id, { ...base, amountCents: 1_000 })).rejects.toBeInstanceOf(CreditCardInvoiceNotAnticipatableError);
+
+    // O pagamento normal continua travado para fatura aberta.
+    await expect(payCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { ...base, amountCents: 1_000 })).rejects.toBeInstanceOf(CreditCardInvoiceNotPayableError);
+  });
+
+  it("antecipa parcela de fatura futura e trava cancelar compra que deixe o total abaixo do antecipado", async () => {
+    const ctx = await setup("antecipa-futura");
+    const today = new Date().toISOString().slice(0, 10);
+    const [first] = await buy(ctx, { purchaseDate: today, totalAmountCents: 9_000, installmentCount: 3 });
+    const future = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "FUTURE")!;
+
+    await anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, future.id, { financialAccountId: ctx.account.id, amountCents: 1_000, effectiveDate: today });
+    expect((await invoiceTitle(ctx.company.id, future.referenceMonth)).status).toBe("PARTIALLY_SETTLED");
+
+    await expect(cancelCreditCardPurchase(ctx.user.id, ctx.company.id, first!.id, { reason: "Devolvido", includeFollowingInstallments: true })).rejects.toBeInstanceOf(CreditCardInvoiceBelowSettledError);
   });
 });
