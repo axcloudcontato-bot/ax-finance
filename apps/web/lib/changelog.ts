@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-16-categoria-no-lancamento",
+    date: "2026-10-16",
+    title: "Crie a categoria na hora do lançamento",
+    summary: "Faltou a categoria? Cadastre na própria janela de entrada ou saída, sem sair da tela.",
+    changes: [
+      { kind: "NEW", text: "Na janela de Nova entrada e Nova saída, \"+ Nova categoria\", logo abaixo do campo Categoria, abre uma janela por cima do lançamento: informe o nome, escolha se fica dentro de outra categoria e confirme. A categoria nova já aparece escolhida, e o que você tinha preenchido no lançamento continua lá." },
+    ],
+  },
+  {
     id: "2026-10-16-icones-categorias",
     date: "2026-10-16",
     title: "Ícones nas categorias",

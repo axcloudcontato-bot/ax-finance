@@ -4098,6 +4098,16 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 .category-suggestion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.4rem 0.75rem; margin-top: 0.4rem; padding: 0.45rem 0.65rem; border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border)); border-radius: 8px; background: color-mix(in srgb, var(--accent) 6%, var(--card)); font-size: 0.82rem; }
 .category-suggestion small { color: var(--muted); font-size: 0.74rem; }
 .ax-model-buttons main .category-suggestion > button { min-height: 30px; margin-top: 0; }
+/* "+ Nova categoria" no lançamento: abre uma janela própria por cima da janela do lançamento. */
+.ax-model-buttons .category-quick-add-toggle { display: inline-flex; align-items: center; min-height: 28px; margin-top: 0.35rem; padding: 0 0.15rem; border: 0; background: transparent; box-shadow: none; color: var(--accent-text); font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.ax-model-buttons .category-quick-add-toggle:hover { background: transparent; color: var(--text); text-decoration: underline; }
+.modal-overlay.modal-overlay-stacked { z-index: 1010; }
+.modal-dialog.category-quick-add-dialog { max-width: 480px; }
+.category-quick-add-dialog form { display: grid; gap: 0.4rem; }
+.category-quick-add-dialog .form-grid { margin-top: 0.4rem; }
+.category-quick-add-hint { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
+.category-quick-add-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.85rem; padding-top: 0.9rem; border-top: 1px solid var(--border); }
+.ax-model-buttons .category-quick-add-dialog .category-quick-add-actions > button:is([type="submit"], .secondary) { margin-top: 0; }
 
 /* ===== Dashboard: indicadores de gestão (resultado, evolução, agenda, cartões, orçamento, saúde) ===== */
 .dashboard-insight-section { margin-bottom: 1.5rem; }
@@ -4862,3 +4872,19 @@ td .modal-overlay { white-space: normal; text-align: left; }
 .category-icon svg { width: 18px; height: 18px; }
 .budget-year-table .category-icon { width: 26px; height: 26px; border-radius: 8px; }
 .budget-year-table .category-icon svg { width: 16px; height: 16px; }
+
+/* Seta dos selects: a seta nativa encosta na borda direita e muda de navegador para navegador. Todo
+   select de uma linha usa a mesma seta fina, com respiro fixo da borda e espaço reservado para o texto
+   não passar por baixo dela. !important porque vários campos definem `background` em atalho. */
+:root { --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235b6270' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); }
+:root[data-ax-theme="dark"] { --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23aab6ca' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); }
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 2.25rem !important;
+  background-image: var(--select-arrow) !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 14px 14px !important;
+  text-overflow: ellipsis;
+}

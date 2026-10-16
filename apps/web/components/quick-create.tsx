@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animated-icons";
 import { CategorySuggestion } from "@/components/category-suggestion";
+import { CategoryQuickAdd } from "@/components/categories/category-quick-add";
 import { TransferForm } from "@/components/transfers/transfer-form";
 import { useModalFocus } from "@/components/ui/use-modal-focus";
 import { useModalPresence } from "@/components/ui/use-modal-presence";
@@ -132,14 +133,26 @@ export function QuickCreateModal() {
           <QuickTransfer key={round} accounts={options.accounts} onDone={done} onCancel={close} />
         ) : null}
         {options && shownKind !== "TRANSFER" ? (
-          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onDone={done} />
+          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onDone={done} onCategoryCreated={(category) => setOptions((current) => current ? { ...current, categories: withCategory(current.categories, category) } : current)} />
         ) : null}
       </div>
     </div>
   );
 }
 
-function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onDone: (message: string, keepOpen: boolean) => void }) {
+type QuickCategory = QuickCreateOptions["categories"][number];
+
+/** Encaixa a categoria nova na ordem da árvore: depois do pai e das irmãs, ou no fim. */
+function withCategory(categories: QuickCategory[], category: QuickCategory): QuickCategory[] {
+  if (categories.some((item) => item.id === category.id)) return categories;
+  if (!category.parentId) return [...categories, category];
+  let index = categories.findIndex((item) => item.id === category.parentId);
+  if (index < 0) return [...categories, category];
+  while (index + 1 < categories.length && categories[index + 1]!.parentId === category.parentId) index += 1;
+  return [...categories.slice(0, index + 1), category, ...categories.slice(index + 1)];
+}
+
+function QuickTitle({ kind, options, onDone, onCategoryCreated }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onDone: (message: string, keepOpen: boolean) => void; onCategoryCreated: (category: QuickCategory) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState(false);
   const confirmDuplicate = useRef(false);
@@ -148,6 +161,16 @@ function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE";
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const today = todayDateOnlyString();
   const keepOpen = useRef(false);
+  const categoryRef = useRef<HTMLSelectElement>(null);
+  const [selectCategory, setSelectCategory] = useState<string | null>(null);
+  // Categoria criada aqui: quando ela aparece na lista, já fica escolhida.
+  useEffect(() => {
+    if (!selectCategory || !categoryRef.current) return;
+    if (![...categoryRef.current.options].some((option) => option.value === selectCategory)) return;
+    categoryRef.current.value = selectCategory;
+    categoryRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+    setSelectCategory(null);
+  }, [selectCategory, options.categories]);
   const partyLabel = kind === "RECEIVABLE" ? "Cliente" : "Fornecedor";
 
   async function submit(formData: FormData) {
@@ -178,15 +201,6 @@ function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE";
     formRef.current?.requestSubmit();
   }
 
-  if (options.categories.length === 0) {
-    return (
-      <p className="muted">
-        Cadastre uma categoria antes de lançar: nenhum lançamento pode ficar sem classificação.{" "}
-        <Link href="/cadastros/categorias">Ir para Categorias</Link>
-      </p>
-    );
-  }
-
   return (
     <form ref={formRef} onSubmit={onSubmit} onChange={() => { if (duplicate) setDuplicate(false); }}>
       {error ? <p className="error">{error}</p> : null}
@@ -206,13 +220,19 @@ function QuickTitle({ kind, options, onDone }: { kind: "RECEIVABLE" | "PAYABLE";
 
         <div>
           <label htmlFor="qc-category">Categoria</label>
-          <select id="qc-category" name="categoryId" required defaultValue="">
+          <select ref={categoryRef} id="qc-category" name="categoryId" required defaultValue="">
             <option value="" disabled>Selecione</option>
             {options.categories.map((category) => (
               <option key={category.id} value={category.id}>{category.parentId ? `  ↳ ${category.name}` : category.name}</option>
             ))}
           </select>
+          {options.categories.length === 0 ? <small className="muted">Nenhuma categoria ainda: crie a primeira aqui embaixo.</small> : null}
           <CategorySuggestion type={kind} />
+          <CategoryQuickAdd
+            kind={kind}
+            parents={options.categories.filter((category) => !category.parentId)}
+            onCreated={(category) => { onCategoryCreated(category); setSelectCategory(category.id); }}
+          />
         </div>
 
         {options.parties.length > 0 ? (

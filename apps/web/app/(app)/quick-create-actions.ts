@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { PAYMENT_METHOD_LABEL, PossibleDuplicateTitleError, createTitle, createTransfer, listActiveCategories, listCostCenters, listFinancialAccounts, listParties } from "@ax-finance/domain";
+import { PAYMENT_METHOD_LABEL, PossibleDuplicateTitleError, createCategory, createTitle, createTransfer, listActiveCategories, listCostCenters, listFinancialAccounts, listParties } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { parseAmountToCents } from "@/lib/currency";
@@ -59,6 +59,26 @@ export async function loadQuickCreateOptionsAction(kind: QuickCreateKind): Promi
     };
   } catch (error) {
     return { ok: false, error: actionErrorMessage(error, "Não foi possível carregar o formulário.") };
+  }
+}
+
+/** Naturezas que uma saída aceita ao criar a categoria pela janela de lançamento. */
+const PAYABLE_NATURES = ["EXPENSE", "COST", "INVESTMENT", "FINANCING"] as const;
+
+export type QuickCategoryResult = { ok: true; category: { id: string; name: string; parentId: string | null } } | { ok: false; error: string };
+
+/**
+ * Cria a categoria sem sair do lançamento: entrada vira receita operacional; saída usa a natureza
+ * escolhida (despesa por padrão). Devolve a categoria para a janela já selecioná-la.
+ */
+export async function quickCreateCategoryAction(kind: "RECEIVABLE" | "PAYABLE", input: { name: string; parentId?: string; nature?: string }): Promise<QuickCategoryResult> {
+  const { userId, companyId } = await requireContext();
+  const nature = kind === "RECEIVABLE" ? "OPERATING_REVENUE" : (PAYABLE_NATURES as readonly string[]).includes(input.nature ?? "") ? input.nature! : "EXPENSE";
+  try {
+    const category = await createCategory(userId, companyId, { name: input.name, nature, parentId: input.parentId || undefined });
+    return { ok: true, category: { id: category.id, name: category.name, parentId: category.parentId } };
+  } catch (error) {
+    return { ok: false, error: actionErrorMessage(error, "Não foi possível criar a categoria.") };
   }
 }
 
