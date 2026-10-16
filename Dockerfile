@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # Build multi-stage do monorepo AX Finance (pnpm workspaces).
 # Dois alvos finais: `web` (Next.js em modo standalone) e `migrate`
 # (roda `prisma migrate deploy` uma vez, antes do `web` subir).
@@ -36,6 +35,8 @@ RUN pnpm --filter web build
 # ---- imagem da aplicação web ----
 FROM base AS web
 ENV NODE_ENV=production
+# server.js do Next escuta em $HOSTNAME (no Docker, o id do container): 0.0.0.0 atende também em 127.0.0.1.
+ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public

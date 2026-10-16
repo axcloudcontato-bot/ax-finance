@@ -47,6 +47,10 @@ services:
       NODE_ENV: production
       SERVICE_NAME: web
       PORT: "3000"
+      # O server.js do Next escuta em $HOSTNAME, que o Docker preenche com o id do container: sem
+      # isto o app não atende em 127.0.0.1 dentro do container e o healthcheck fica "unhealthy".
+      # Continua fechado para fora: a porta só é publicada em 127.0.0.1 do host (ver `ports`).
+      HOSTNAME: "0.0.0.0"
       # HTTPS de verdade é terminado na borda da Cloudflare (túnel
       # axcloud-infra-tunnel) — o cookie "Secure" volta ao padrão (true).
       # Role de baixo privilégio (`ax_app`) criado pela migration de RLS — é
