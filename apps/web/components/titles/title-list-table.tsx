@@ -7,7 +7,6 @@ import { pixChargeForTitle, type PixSettingsView } from "@/lib/pix-charge";
 import { sortHref } from "@/lib/title-list-params";
 import { quickSettleTitleAction } from "@/app/(app)/titulos-actions";
 import { ActionModal } from "@/components/ui/action-modal";
-import { SubmitButton } from "@/components/ui/submit-button";
 import { TitleStatusBadge } from "./title-status-badge";
 import { TitleColumnPreferences } from "./title-column-preferences";
 import { SettlementForm } from "./settlement-form";
@@ -66,11 +65,18 @@ export function TitleListTable({
           {/* Formulário do lote vazio e fora da tabela: as janelas de Pagar/Cobrar dentro das linhas têm
               os próprios formulários e formulário não pode conter formulário. As caixas apontam para ele. */}
           <form id={BATCH_FORM_ID} action={`${basePath}/lote`} method="get" />
+          <div className="title-mobile-sort" aria-label="Ordenar lançamentos">
+            <span>Ordenar:</span>
+            <SortHeader label="Vencimento" column="vencimento" basePath={basePath} params={params} />
+            <SortHeader label="Valor" column="valor" basePath={basePath} params={params} />
+            <SortHeader label="Descrição" column="descricao" basePath={basePath} params={params} />
+            <SortHeader label={receivable ? "Cliente" : "Fornecedor"} column="pessoa" basePath={basePath} params={params} />
+          </div>
           <div className="table-scroll">
-          <table className="title-list-table">
+          <table className="title-list-table" role="table">
             <thead>
               <tr>
-                <th><input type="checkbox" data-select-all aria-label={`Selecionar todas as ${noun}s da página`} /></th>
+                <th><label className="title-select-page"><input type="checkbox" data-select-all aria-label={`Selecionar todas as ${noun}s da página`} /><span>Selecionar página</span></label></th>
                 <th><SortHeader label="Descrição" column="descricao" basePath={basePath} params={params} /></th>
                 <th data-column="party"><SortHeader label={receivable ? "Cliente" : "Fornecedor"} column="pessoa" basePath={basePath} params={params} /></th>
                 <th data-column="category">Categoria</th>
@@ -109,13 +115,13 @@ export function TitleListTable({
                         </small>
                       ) : null}
                     </td>
-                    <td data-column="party">{title.party?.name ?? "—"}</td>
-                    <td data-column="category">{title.category.name}</td>
-                    <td data-column="costCenter">{title.costCenter?.name ?? "—"}</td>
-                    <td data-column="dueDate">{formatDateOnly(title.dueDate)}</td>
-                    <td data-column="amount">{formatCents(title.originalAmountCents, title.currency)}</td>
-                    <td data-column="remaining">{formatCents(title.remainingCents, title.currency)}</td>
-                    <td data-column="status"><TitleStatusBadge status={title.status} dueDate={title.dueDate} /></td>
+                    <td data-column="party" data-label="Pessoa">{title.party?.name ?? "—"}</td>
+                    <td data-column="category" data-label="Categoria">{title.category.name}</td>
+                    <td data-column="costCenter" data-label="Centro de custo">{title.costCenter?.name ?? "—"}</td>
+                    <td data-column="dueDate" data-label="Vencimento">{formatDateOnly(title.dueDate)}</td>
+                    <td data-column="amount" data-label="Valor">{formatCents(title.originalAmountCents, title.currency)}</td>
+                    <td data-column="remaining" data-label="Saldo aberto">{formatCents(title.remainingCents, title.currency)}</td>
+                    <td data-column="status" data-label="Situação"><TitleStatusBadge status={title.status} dueDate={title.dueDate} /></td>
                     <td className="title-row-actions">
                       <div className="title-row-actions-inner">
                       {open && !isInvoice ? (

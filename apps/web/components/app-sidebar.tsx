@@ -27,17 +27,20 @@ interface NavGroup {
   items: NavItemData[];
 }
 
-// Menu principal da Seção 4 do DIRECAO.md, agrupado. Só Configurações e
-// alguns cadastros planejados ainda mostram "Em breve" em vez de virar link
-// morto (Seção 24: separar disponível, piloto e planejado) — o resto já
-// navega para rotas reais.
+// Grupos seguem as tarefas do dia a dia; permissões são aplicadas abaixo.
 const NAV_GROUPS: NavGroup[] = [
   {
-    heading: "Financeiro",
+    heading: "Dia a dia",
     items: [
       { id: "entradas", title: "Entradas", icon: ArrowDownCircle, href: "/entradas" },
       { id: "saidas", title: "Saídas", icon: ArrowUpCircle, href: "/saidas" },
       { id: "calendario", title: "Calendário", icon: CalendarDays, href: "/calendario" },
+      { id: "conciliacao", title: "Conciliação", icon: ListChecks, href: "/conciliacao" },
+    ],
+  },
+  {
+    heading: "Contas e patrimônio",
+    items: [
       {
         id: "contas",
         title: "Contas e transferências",
@@ -51,11 +54,10 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "dividas", title: "Dívidas", icon: CreditCard, href: "/dividas" },
       { id: "patrimonio", title: "Patrimônio", icon: TrendingUp, href: "/patrimonio" },
       { id: "cartoes", title: "Cartões de crédito", icon: CreditCard, href: "/cartoes" },
-      { id: "conciliacao", title: "Conciliação", icon: ListChecks, href: "/conciliacao" },
     ],
   },
   {
-    heading: "Gestão",
+    heading: "Planejamento e gestão",
     items: [
       {
         id: "relatorios",

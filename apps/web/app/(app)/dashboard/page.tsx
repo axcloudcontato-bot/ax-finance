@@ -218,7 +218,7 @@ export default async function DashboardPage(
           ))}
         </nav>
       </div>
-      <CashProjectionChart data={cashProjectionSeries} />
+      <CashProjectionChart data={cashProjectionSeries} distinguishScenarios />
       <div className="dashboard-projection-legend"><span><i className="is-full" />Todos os recebíveis</span><span><i className="is-without-overdue" />Sem receber vencidos</span></div>
       <p className="dashboard-projection-note">As duas linhas consideram pagamentos e recebimentos futuros nas datas cadastradas. Confira os vencidos antes de usar a projeção para decidir pagamentos.</p>
       {accountOnly && overview.unassignedOpen ? <p className="dashboard-projection-note">Considera só os títulos com esta conta como conta prevista. {overview.unassignedOpen} {overview.unassignedOpen === 1 ? "título em aberto não tem" : "títulos em aberto não têm"} conta prevista e {overview.unassignedOpen === 1 ? "fica" : "ficam"} fora desta projeção.</p> : null}
@@ -227,7 +227,10 @@ export default async function DashboardPage(
 
   return (
     <main className="wide dashboard-page">
-      <h1 className="sr-only">Dashboard financeiro</h1>
+      <header className="workspace-overview-heading">
+        <h1>Dashboard financeiro</h1>
+        <p>Acompanhe seu saldo, os próximos vencimentos e a evolução do caixa.</p>
+      </header>
       <DashboardFilters companyId={activeCompanyId} accounts={activeAccounts.map(({ id, name }) => ({ id, name }))}
         categories={sortCategoriesTree(categories).map(({ id, name, parentId }) => ({ id, name: parentId ? `↳ ${name}` : name }))}
         parties={parties.map(({ id, name }) => ({ id, name }))} costCenters={costCenters.map(({ id, name }) => ({ id, name }))} values={selected}

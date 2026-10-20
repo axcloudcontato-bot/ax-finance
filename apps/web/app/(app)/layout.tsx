@@ -8,6 +8,11 @@ import { AppShell } from "@/components/app-shell";
 import { logoutAction } from "./actions";
 import { noIndexMetadata } from "@/lib/site";
 import { writeBlockNotice } from "@/lib/write-block-notice";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "./workspace.css";
 
 export const metadata: Metadata = noIndexMetadata;
 
@@ -46,6 +51,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
     <AppShell
       userName={user.name}
+      companyName={company.name}
       canManageMembers={canManageMembers}
       isPlatformAdmin={Boolean(platformAdmin)}
       planCode={planAccess.code}

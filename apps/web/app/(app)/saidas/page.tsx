@@ -71,10 +71,13 @@ export default async function SaidasPage(props: { searchParams: Promise<SearchPa
   for (const [key, value] of Object.entries(params)) if (!["pagina", "erro", "erroBaixa", "titulo", "baixado", "agendado", "loteConcluido", "novo"].includes(key)) exportQuery.set(key, value);
 
   return (
-    <main className="wide">
+    <main className="wide titles-workspace">
       <div className="page-header">
         <h1>Saídas</h1>
         <div className="page-header-actions">
+          <details className="title-extra-actions">
+            <summary>Mais ações</summary>
+            <div className="title-extra-actions-panel">
           <Link href="/saidas/recorrencias" className="button-link">
             Recorrências
           </Link>
@@ -84,6 +87,8 @@ export default async function SaidasPage(props: { searchParams: Promise<SearchPa
           <a href={`/api/titles/export?${exportQuery.toString()}`} className="button-link" download>
             Exportar CSV
           </a>
+            </div>
+          </details>
           <QuickCreateButton kind="PAYABLE" className="button-link workspace-primary-action">+ Novo lançamento</QuickCreateButton>
         </div>
       </div>
