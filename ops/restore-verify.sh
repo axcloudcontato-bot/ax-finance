@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+started_epoch="$(date +%s)"
 
 BACKUP_DIR="${BACKUP_DIR:-/backups}"
 marker="$BACKUP_DIR/.last_success"
@@ -66,12 +67,24 @@ migrations="$(su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify 
   "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL;")"
 database_attachments="$(su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify -Atc \
   "SELECT count(*) FROM attachments;")"
+test "$tables" -gt 0 && test "$migrations" -gt 0 || {
+  echo '{"level":"error","event":"restore_verify.empty_schema"}' >&2
+  exit 1
+}
+# Um backup do volume local não prova a recuperação de objetos em S3.
+remote_attachments="$(su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify -Atc \
+  "SELECT count(*) FROM attachments WHERE storage_backend <> 'LOCAL';")"
+if [ "$remote_attachments" -gt 0 ]; then
+  echo '{"level":"error","event":"restore_verify.external_objects_require_verification"}' >&2
+  exit 1
+fi
 
 tar -xzf "$source_dir/attachments.tar.gz" -C "$attachments_dir"
 archive_attachments="$(find "$attachments_dir" -type f ! -path '*/.coordination/*' | wc -l | tr -d ' ')"
 
-su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify -Atc \
-  "SELECT storage_key FROM attachments ORDER BY storage_key;" | while IFS= read -r storage_key; do
+su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify -At -F '|' -c \
+  "SELECT storage_key, sha256, size_bytes FROM attachments ORDER BY storage_key;" > "$work_dir/attachment-inventory"
+while IFS='|' read -r storage_key expected_hash expected_size; do
   case "$storage_key" in
     *[!a-f0-9/-]*|*..*)
       echo '{"level":"error","event":"restore_verify.invalid_attachment_key"}' >&2
@@ -82,12 +95,24 @@ su-exec postgres psql -h "$socket_dir" -p 55432 -d restore_verify -Atc \
     echo '{"level":"error","event":"restore_verify.missing_attachment_file"}' >&2
     exit 1
   }
-done
+  actual_hash="$(sha256sum "$attachments_dir/$storage_key" | awk '{print $1}')"
+  actual_size="$(wc -c < "$attachments_dir/$storage_key" | tr -d ' ')"
+  if [ "$actual_hash" != "$expected_hash" ] || [ "$actual_size" != "$expected_size" ]; then
+    echo '{"level":"error","event":"restore_verify.attachment_integrity_failed"}' >&2
+    exit 1
+  fi
+done < "$work_dir/attachment-inventory"
 
 if [ "$archive_attachments" -lt "$database_attachments" ]; then
   echo '{"level":"error","event":"restore_verify.missing_attachment_files"}' >&2
   exit 1
 fi
 
-printf '{"timestamp":"%s","level":"info","service":"restore-verify","event":"restore_verify.completed","backup":"%s","tables":%s,"migrations":%s,"databaseAttachments":%s,"archiveFiles":%s}\n' \
-  "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$backup_name" "$tables" "$migrations" "$database_attachments" "$archive_attachments"
+backup_epoch="$(sed -n '1p' "$marker")"
+started_backup_epoch="$(sed -n 's/.*"startedEpoch":\([0-9][0-9]*\).*/\1/p' "$source_dir/metadata.json")"
+# Backups novos medem a idade desde o começo da captura, conservadoramente.
+if [ -n "$started_backup_epoch" ]; then backup_epoch="$started_backup_epoch"; fi
+case "$backup_epoch" in ''|*[!0-9]*) exit 1 ;; esac
+completed_epoch="$(date +%s)"
+printf '{"timestamp":"%s","level":"info","service":"restore-verify","event":"restore_verify.completed","backup":"%s","tables":%s,"migrations":%s,"databaseAttachments":%s,"archiveFiles":%s,"durationSeconds":%s,"backupAgeSeconds":%s}\n' \
+  "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$backup_name" "$tables" "$migrations" "$database_attachments" "$archive_attachments" "$((completed_epoch-started_epoch))" "$((completed_epoch-backup_epoch))"

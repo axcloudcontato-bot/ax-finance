@@ -45,7 +45,7 @@ AI_SUGGESTIONS_ENABLED=true
 ANTHROPIC_API_KEY=...
 ```
 
-3. `./deploy.sh`. Sem as duas variáveis o recurso fica só no histórico.
+3. Após aprovação do commit no CI, `./deploy.sh SHA_COMPLETO_DE_40_CARACTERES`. Sem as duas variáveis o recurso fica só no histórico.
 
 ## Fora desta versão
 

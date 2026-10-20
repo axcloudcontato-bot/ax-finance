@@ -1,4 +1,4 @@
-import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
+import { withCompanyContext, withCompanyReadSnapshot, type TenantScopedClient } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { assertCompanyPermission } from "../companies/permissions";
 import { CompanyAccessScopeInvalidError } from "../errors";
@@ -37,7 +37,9 @@ export async function captureReportSnapshotInTx(tx: TenantScopedClient, userId: 
   const [year, month] = period.split("-").map(Number);
   const to = new Date(Date.UTC(year!, month!, 0)).toISOString().slice(0, 10);
   const version = (await tx.reportSnapshot.aggregate({ where: { companyId, period, kind }, _max: { version: true } }))._max.version ?? 0;
-  const [monthly, aging, ledger, asOf, profitabilityNone, profitabilityRevenue, incomeStatement] = await Promise.all([
+  // A trava de fechamento já foi adquirida pelo chamador. A fotografia começa
+  // depois dela e inclui também os serviços que abrem contextos internamente.
+  const [monthly, aging, ledger, asOf, profitabilityNone, profitabilityRevenue, incomeStatement] = await withCompanyReadSnapshot(userId, companyId, (tx) => Promise.all([
     getLiveMonthlyReportData(userId, companyId, period),
     getOpenTitlesAgingReport(userId, companyId, {}),
     (async () => ({
@@ -54,7 +56,7 @@ export async function captureReportSnapshotInTx(tx: TenantScopedClient, userId: 
     getProfitabilityReportInTx(tx, companyId, { from, to, fixedAllocation: "NONE" }),
     getProfitabilityReportInTx(tx, companyId, { from, to, fixedAllocation: "REVENUE" }),
     getManagerialIncomeStatementInTx(tx, companyId, { from, to }),
-  ]);
+  ]));
   monthly.snapshot = { kind, version: version + 1, asOfDate: asOf, calculationVersion: CALCULATION_VERSION };
   const pdf = await renderMonthlyReportPdf(monthly);
   const snapshot = await tx.reportSnapshot.create({ data: { companyId, period, kind, version: version + 1, asOfDate: new Date(asOf), createdByUserId: userId, calculationVersion: CALCULATION_VERSION, sourceKey,
@@ -111,5 +113,5 @@ export async function prepareMonthlyReportPdf(userId: string, companyId: string,
     row ??= await captureReportSnapshotInTx(tx, userId, companyId, period, "PDF", options.sourceKey);
     const data = decode(row.payload);
     return { snapshotId: row.id, data: data.monthly, pdf: Buffer.from(data.pdfBase64, "base64") };
-  });
+  }, undefined, { timeout: 75_000, maxWait: 10_000 });
 }

@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-20-exportacao-patrimonio-integridade",
+    date: "2026-10-20",
+    title: "Seus dados completos e um patrimônio mais claro",
+    summary: "Leve os dados em um pacote conferível e veja os direitos e obrigações que compõem seu patrimônio.",
+    changes: [
+      { kind: "NEW", text: "Em Assinatura, baixe um ZIP com dados, planilhas, relatórios preservados e anexos disponíveis. O manifesto informa quais arquivos foram incluídos e identifica pendências." },
+      { kind: "IMPROVED", text: "A exportação inclui dívidas, bens, cofrinhos, regras de categoria e versões de relatórios. A opção JSON continua disponível." },
+      { kind: "NEW", text: "O patrimônio inclui contas a receber e a pagar com competência até hoje. Abra a composição para conferir cada lançamento, sem duplicar faturas e parcelas de financiamentos." },
+      { kind: "IMPROVED", text: "Relatórios preservados, exportações e patrimônio usam uma visão consistente dos dados durante a consulta." },
+    ],
+  },
+  {
     id: "2026-10-16-estornar-pagamento-fatura",
     date: "2026-10-16",
     title: "Estornar antecipação e pagamento da fatura",

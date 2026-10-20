@@ -10,6 +10,8 @@ import { amortizationSchedule, balanceAfter } from "../wealth/amortization";
 import { createAsset, createDebt, deleteAsset, deleteDebt, getDebt, getNetWorth, listDebts, setDebtArchived, updateAsset } from "../wealth/wealth";
 import { todayInTimeZone } from "../shared/today";
 import { DebtHasPaymentsError, DebtNotFoundError } from "../errors";
+import { createTitle } from "../titles/create-title";
+import { createCreditCard, createCreditCardPurchase } from "../credit-cards";
 import { rootClient, resetDatabase } from "./test-db";
 
 const today = todayInTimeZone();
@@ -46,6 +48,29 @@ describe("tabela de amortização", () => {
 });
 
 describe("dívidas e patrimônio", () => {
+  it("inclui direitos e obrigações efetivos sem duplicar dívidas ou cartões, preservando pagamentos futuros", async () => {
+    const { user, company, account, financing } = await setup("composicao");
+    const category = await createCategory(user.id, company.id, { name: "Despesa", nature: "EXPENSE" });
+    const revenue = await createCategory(user.id, company.id, { name: "Receita", nature: "OPERATING_REVENUE" });
+    const make = (type: "PAYABLE" | "RECEIVABLE", amount: number, date = today) => createTitle(user.id, company.id, {
+      type, description: type, originalAmountCents: amount, categoryId: type === "PAYABLE" ? category.id : revenue.id, competenceDate: date, dueDate: date,
+    });
+    const sale = await make("RECEIVABLE", 10000);
+    await registerSettlement(user.id, company.id, sale.id, { financialAccountId: account.id, principalAmountCents: 2000, discountCents: 1000, effectiveDate: today });
+    const bill = await make("PAYABLE", 5000);
+    await registerSettlement(user.id, company.id, bill.id, { financialAccountId: account.id, principalAmountCents: 5000, effectiveDate: "2099-01-01" });
+    await make("RECEIVABLE", 99999, "2099-01-01");
+    await createDebt(user.id, company.id, { name: "Crédito", principalCents: 20000, monthlyRateBps: 0, installmentCount: 2, firstDueDate: today, amortization: "SAC", categoryId: financing.id });
+    const card = await createCreditCard(user.id, company.id, { name: "Cartão", limitCents: 100000, closingDay: 25, dueDay: 5 });
+    await createCreditCardPurchase(user.id, company.id, { cardId: card.id, description: "Compra", totalAmountCents: 6000, purchaseDate: today, categoryId: category.id, installmentCount: 2 });
+    const worth = await getNetWorth(user.id, company.id);
+    expect(worth.receivablesCents).toBe(7000n);
+    expect(worth.payablesCents).toBe(5000n);
+    expect(worth.receivables.map((title) => title.id)).toEqual([sale.id]);
+    expect(worth.payables.map((title) => title.id)).toEqual([bill.id]);
+    expect(worth.totalLiabilitiesCents).toBe(worth.debtsCents + worth.cardDebtCents + 5000n);
+    expect(worth.totalAssetsCents).toBe(worth.accountsCents + 7000n);
+  });
   it("lança as parcelas que faltam como saídas e o saldo devedor acompanha as pagas", async () => {
     const { user, company, account, financing } = await setup("divida");
     const debt = await createDebt(user.id, company.id, {

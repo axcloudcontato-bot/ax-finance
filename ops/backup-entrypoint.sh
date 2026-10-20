@@ -35,6 +35,8 @@ json_log() {
 }
 
 create_backup() {
+  backup_started_epoch="$(date +%s)"
+  backup_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
   final_dir="$BACKUP_DIR/backup-$timestamp"
   temporary_dir="$BACKUP_DIR/.backup-$timestamp.tmp"
@@ -71,8 +73,8 @@ create_backup() {
   attachment_bytes="$(wc -c < "$temporary_dir/attachments.tar.gz" | tr -d ' ')"
   attachment_count="$(find "$ATTACHMENTS_SOURCE" -type f ! -path '*/.coordination/*' | wc -l | tr -d ' ')"
   created_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  printf '{"formatVersion":1,"createdAt":"%s","databaseBytes":%s,"attachmentsArchiveBytes":%s,"attachmentFileCount":%s}\n' \
-    "$created_at" "$database_bytes" "$attachment_bytes" "$attachment_count" > "$temporary_dir/metadata.json"
+  printf '{"formatVersion":2,"startedAt":"%s","startedEpoch":%s,"createdAt":"%s","databaseBytes":%s,"attachmentsArchiveBytes":%s,"attachmentFileCount":%s}\n' \
+    "$backup_started_at" "$backup_started_epoch" "$created_at" "$database_bytes" "$attachment_bytes" "$attachment_count" > "$temporary_dir/metadata.json"
 
   (
     cd "$temporary_dir"

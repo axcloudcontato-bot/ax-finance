@@ -67,4 +67,4 @@ Packages ship TypeScript sources (no build step); `next.config.mjs` transpiles t
 
 ## Deploy
 
-Production runs with Docker Compose on a server: `git pull && ./deploy.sh` rebuilds, runs the `migrate` service (applies pending migrations automatically), then starts web and worker and runs smoke checks. Secrets are set directly on the server's `.env`. Backups: `ops/backup-entrypoint.sh` (daily) and `ops/run-restore-verification.sh` (restore test); runbook in `docs/OPERACAO_PRODUCAO.md`.
+Production runs with Docker Compose on a server: `./deploy.sh FULL_COMMIT_SHA` requires successful CI and Security checks for that exact commit, preserves previous images, builds, backs up and verifies recovery before migrations, then starts web/worker and checks their health. Rollback is automatic only when migrations have not changed; otherwise the recovery marker requires an operator review. See `docs/ENTREGA_SEGURA.md`. Secrets are set directly on the server's `.env`. Backups: `ops/backup-entrypoint.sh` (daily), `ops/run-restore-verification.sh` (manual restore test), and the weekly `restore-drill` service. Never claim production validation based on local tests.

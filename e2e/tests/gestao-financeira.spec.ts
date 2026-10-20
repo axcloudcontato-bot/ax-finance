@@ -30,7 +30,7 @@ test.describe.serial("gestão financeira: histórico, caixa e margem", () => {
     await page.getByRole("link", { name: "Venda previsão E2E", exact: true }).click();
     const plan = await modal(page, "Planejar recebimento");
     await expect(plan).toBeVisible();
-    expect((await plan.boundingBox())!.width).toBeGreaterThan(700);
+    await expect.poll(async () => (await plan.boundingBox())?.width ?? 0).toBeGreaterThan(700);
     await plan.getByLabel("Data provável de recebimento").fill(day(2));
     await plan.getByLabel("Data prometida pelo cliente").fill(day(4));
     await plan.getByLabel("Probabilidade estimada de recebimento (%)").fill("80");

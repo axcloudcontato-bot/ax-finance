@@ -135,9 +135,10 @@ export default async function SubscriptionPage(props:{ searchParams: Promise<{ e
       <div className="settings-grid subscription-actions-grid">
         <section className="card settings-panel">
           <div className="settings-panel-header"><span className="settings-icon teal"><Download className="size-5" /></span><div><h2>Exportação final</h2><p>Baixe uma cópia completa e legível dos registros da empresa.</p></div></div>
-          <p>O arquivo JSON contém cadastros, títulos, baixas, transferências, conciliações, fechamentos, auditoria e metadados de anexos. Valores monetários são exportados em centavos.</p>
-          <a className="button-link" href="/api/exports/company">Gerar exportação completa</a>
-          <p className="settings-info-note">Arquivos físicos dos anexos não fazem parte do JSON e devem ser baixados separadamente.</p>
+          <p>Baixe um ZIP com os registros da empresa, planilhas, dívidas, bens, cofrinhos, relatórios preservados e anexos disponíveis.</p>
+          <a className="button-link" href="/api/exports/company?format=zip">Baixar pacote completo</a>
+          <p><a href="/api/exports/company">Baixar somente os dados em JSON</a></p>
+          <p className="settings-info-note">Confira LEIA-ME.txt e manifesto.json no pacote: anexos indisponíveis ou bloqueados pelo antivírus são identificados. Nas planilhas e no JSON, valores monetários são expressos em centavos.</p>
         </section>
         <section className="card settings-panel subscription-danger-panel">
           <div className="settings-panel-header"><span className="settings-icon pink"><ShieldAlert className="size-5" /></span><div><h2>Cancelamento</h2><p>O cancelamento não apaga o histórico financeiro.</p></div></div>

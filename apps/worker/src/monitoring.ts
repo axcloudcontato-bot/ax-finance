@@ -122,6 +122,20 @@ export async function monitorOperations(now = new Date()) {
   if (process.uptime() > 15 * 60 && (!backup.available || (backup.ageSeconds ?? Infinity) > backupMaxAge)) {
     await deliverAlert("backup_stale", "O backup automático está ausente ou vencido.", backup.ageSeconds ?? -1, now);
   }
+  if (process.uptime() > 30 * 60 && process.env.RESTORE_DRILL_STATUS_FILE) {
+    const restore = await readTimestampStatus(process.env.RESTORE_DRILL_STATUS_FILE, now);
+    const failure = await readTimestampStatus(process.env.RESTORE_DRILL_FAILURE_FILE || "/data/restore/.last_failure", now);
+    if (failure.available) await deliverAlert("restore_drill_failed", "O ensaio de restauração falhou; confira a evidência operacional.", failure.ageSeconds ?? 0, now);
+    else if (!restore.available || (restore.ageSeconds ?? Infinity) > positiveNumber(process.env.RESTORE_DRILL_MAX_AGE_SECONDS, 691200)) {
+      await deliverAlert("restore_drill_stale", "Não há ensaio recente de restauração aprovado.", restore.ageSeconds ?? -1, now);
+    }
+  }
+  if (process.uptime() > 30 * 60 && process.env.EXTERNAL_BACKUP_REQUIRED === "true") {
+    const external = await readTimestampStatus(process.env.BACKUP_COPY_STATUS_FILE || "/data/backups/.external_copy_success", now);
+    if (!external.available || (external.ageSeconds ?? Infinity) > backupMaxAge) {
+      await deliverAlert("external_backup_stale", "A cópia externa do backup está ausente ou vencida.", external.ageSeconds ?? -1, now);
+    }
+  }
 
   return { diagnostics, backup };
 }
