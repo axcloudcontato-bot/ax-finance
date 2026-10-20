@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { E2E_DATABASE_URL } from "../env";
+import { E2E_APP_DATABASE_URL, E2E_DATABASE_URL } from "../env";
 import { E2E_ACCOUNT, E2E_USER } from "../fixtures";
 
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -64,6 +64,8 @@ test("compra parcelada, cadastros sobrepostos, antecipação, fechamento, pagame
   // Avança somente o ciclo da fatura fictícia no banco dedicado, sem alterar
   // o relógio do sistema nem criar uma rota de teste na aplicação.
   if (new URL(E2E_DATABASE_URL).pathname !== "/ax_finance_e2e") throw new Error("Banco de E2E obrigatório.");
+  // O processo do Playwright não herda webServer.env no CI.
+  process.env.APP_DATABASE_URL = E2E_APP_DATABASE_URL;
   const { PrismaClient } = await import("@ax-finance/db");
   const db = new PrismaClient({ datasourceUrl: E2E_DATABASE_URL });
   try {
