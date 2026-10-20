@@ -45,9 +45,11 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
     { label: "Contas", cents: worth.accountsCents, href: "/contas" },
     { label: "Cofrinhos", cents: worth.savingsCents, href: "/cofrinhos" },
     { label: "Bens e investimentos", cents: worth.assetsCents, href: "#bens" },
+    { label: "Contas a receber", cents: worth.receivablesCents, href: "#composicao-titulos" },
   ];
   const liabilityRows = [
     { label: "Dívidas (saldo devedor)", cents: worth.debtsCents, href: "/dividas" },
+    { label: "Outras contas a pagar", cents: worth.payablesCents, href: "#composicao-titulos" },
     ...(worth.cardsAvailable ? [{ label: "Cartões (faturas e parcelas)", cents: worth.cardDebtCents, href: "/cartoes" }] : []),
   ];
   const share = (cents: bigint, total: bigint) => (total > ZERO && cents > ZERO ? Math.max(1, Number((cents * BigInt(1000)) / total) / 10) : 0);
@@ -57,7 +59,7 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
       <div className="page-header">
         <div>
           <h1>Patrimônio</h1>
-          <p className="subtitle">Contas, cofrinhos e bens cadastrados menos dívidas e cartões acompanhados, na posição de {formatDateOnly(worth.today)}.</p>
+          <p className="subtitle">Seus recursos e direitos menos as obrigações cadastradas, na posição de {formatDateOnly(worth.today)}.</p>
         </div>
         <ActionModal key={`novo-${refreshKey}`} triggerLabel="+ Bem ou investimento" triggerClassName="button-link workspace-primary-action" title="Novo bem ou investimento" size="wide" initiallyOpen={Boolean(searchParams.erro) && searchParams.acao === "novo"}>
           {searchParams.erro && searchParams.acao === "novo" ? <p className="error">{searchParams.erro}</p> : null}
@@ -71,8 +73,8 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
 
       <section className="workspace-metrics" aria-label="Patrimônio">
         <div className="workspace-metric workspace-metric-primary"><span className="workspace-metric-label">Patrimônio acompanhado</span><strong className={worth.netWorthCents < ZERO ? "negative" : undefined}>{formatCents(worth.netWorthCents)}</strong><span className="workspace-metric-detail">Ativos cadastrados − obrigações acompanhadas</span></div>
-        <div className="workspace-metric"><span className="workspace-metric-label">O que você tem</span><strong className="positive">{formatCents(worth.totalAssetsCents)}</strong><span className="workspace-metric-detail">Contas, cofrinhos, bens e investimentos</span></div>
-        <div className="workspace-metric"><span className="workspace-metric-label">O que você deve</span><strong className="negative">{formatCents(worth.totalLiabilitiesCents)}</strong><span className="workspace-metric-detail">Dívidas e cartões</span></div>
+        <div className="workspace-metric"><span className="workspace-metric-label">O que você tem</span><strong className="positive">{formatCents(worth.totalAssetsCents)}</strong><span className="workspace-metric-detail">Contas, cofrinhos, bens e direitos a receber</span></div>
+        <div className="workspace-metric"><span className="workspace-metric-label">O que você deve</span><strong className="negative">{formatCents(worth.totalLiabilitiesCents)}</strong><span className="workspace-metric-detail">Dívidas, cartões e contas a pagar</span></div>
       </section>
 
       <div className="dashboard-insight-grid">
@@ -100,10 +102,24 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
             ))}
           </ul>
           {worth.debts.length ? <p className="field-note">{worth.debts.map((debt) => `${debt.name}${debt.archived ? " (arquivada)" : ""}: ${formatCents(debt.balanceCents)}`).join(" · ")}</p> : null}
-          <p className="field-note">Esta é uma visão parcial do patrimônio: contas a receber e outras contas a pagar não estão incluídas. Dívidas arquivadas com saldo continuam aqui. As parcelas vinculadas às dívidas já compõem o saldo devedor, sem duplicação.</p>
+          <p className="field-note">Contas a receber e a pagar incluem o saldo pendente dos lançamentos com competência até hoje. Competências futuras, lançamentos cancelados ou excluídos ficam fora. Pagamentos futuros ainda não abatem esse saldo. Dívidas arquivadas continuam incluídas; suas parcelas e as faturas não são somadas novamente.</p>
+          <p className="field-note">Esta posição depende dos cadastros e do acesso do seu perfil. Contas e cofrinhos ativos compõem os recursos. Um investimento já representado em uma conta não deve ser cadastrado novamente como bem.</p>
           {!worth.cardsAvailable ? <p className="field-note">O saldo dos cartões não está disponível neste perfil e não compõe o total exibido.</p> : null}
         </section>
       </div>
+
+      <section className="card" id="composicao-titulos">
+        <div className="workspace-card-heading"><div><h2>Composição dos direitos e obrigações</h2><p>Confira cada lançamento que participa do patrimônio.</p></div></div>
+        {[{ label: "Contas a receber", rows: worth.receivables, total: worth.receivablesCents, path: "entradas" }, { label: "Outras contas a pagar", rows: worth.payables, total: worth.payablesCents, path: "saidas" }].map((group) => (
+          <details key={group.path}>
+            <summary>{group.label} · {group.rows.length} lançamentos · {formatCents(group.total)}</summary>
+            {group.rows.length ? <div className="table-scroll"><table className="workspace-table">
+              <thead><tr><th>Lançamento</th><th>Vencimento</th><th className="money">Saldo pendente hoje</th></tr></thead>
+              <tbody>{group.rows.map((title) => <tr key={title.id}><td><Link href={`/${group.path}/${title.id}`}>{title.description}</Link></td><td>{formatDateOnly(title.dueDate)}</td><td className="money">{formatCents(title.remainingCents)}</td></tr>)}</tbody>
+            </table></div> : <p className="muted">Nenhum lançamento pendente reconhecido até hoje.</p>}
+          </details>
+        ))}
+      </section>
 
       <section className="card" id="bens">
         <div className="workspace-card-heading"><div><h2>Bens e investimentos</h2><p>Valores que você informa: aplicações, imóveis, veículos e outros bens.</p></div></div>

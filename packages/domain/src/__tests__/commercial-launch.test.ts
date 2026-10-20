@@ -11,6 +11,9 @@ import { scheduleSubscriptionCancellation, undoSubscriptionCancellation } from "
 import { prisma, withUserContext } from "@ax-finance/db";
 import { decodeSupportCaseOpenedPayload } from "../outbox/events";
 import { rootClient, resetDatabase } from "./test-db";
+import { createAsset, createDebt } from "../wealth/wealth";
+import { createSavingsGoal } from "../savings-goals/savings-goals";
+import { closePeriod } from "../closures/close-period";
 
 async function setup() {
   const user = await registerUser({ email: `launch.${randomUUID()}@teste.ax.finance`, name: "Proprietário", password: "senha-forte-123" });
@@ -63,8 +66,14 @@ describe("preparação comercial", () => {
     const category = await createCategory(user.id, company.id, { name: "Serviços", nature: "OPERATING_REVENUE" });
     await createFinancialAccount(user.id, company.id, { name: "Conta principal", type: "BANK", openingBalanceCents: 50000, openingDate: "2026-09-01" });
     await createTitle(user.id, company.id, { type: "RECEIVABLE", description: "Projeto piloto", categoryId: category.id, originalAmountCents: 150000, competenceDate: "2026-09-01", dueDate: "2026-09-30" });
+    const expense = await createCategory(user.id, company.id, { name: "Financiamento", nature: "FINANCING" });
+    const asset = await createAsset(user.id, company.id, { name: "Equipamento", kind: "OTHER", valueCents: 10000, valuedAt: "2026-09-01" });
+    const debt = await createDebt(user.id, company.id, { name: "Crédito", principalCents: 10000, monthlyRateBps: 0, installmentCount: 2, firstDueDate: "2026-09-01", amortization: "SAC", categoryId: expense.id });
+    const goal = await createSavingsGoal(user.id, company.id, { name: "Reserva", targetAmountCents: 10000, color: "green", icon: "shield" });
+    await closePeriod(user.id, company.id, { period: "2026-09" });
     const archive = await buildCompanyFinalExport(user.id, company.id, new Date("2026-09-29T12:00:00Z"));
-    expect(archive).toMatchObject({ format: "ax-finance-company-export", version: 1, company: { id: company.id }, titles: [{ description: "Projeto piloto" }] });
+    expect(archive).toMatchObject({ format: "ax-finance-company-export", version: 2, company: { id: company.id }, assets: [{ id: asset.id }], debts: [{ id: debt.id }], savingsGoals: [{ id: goal.id }], reportSnapshots: [{ period: "2026-09" }] });
+    expect(archive.titles.some((title) => title.description === "Projeto piloto")).toBe(true);
     expect(await rootClient.auditEvent.findFirst({ where: { eventType: "COMPANY_FINAL_EXPORT_GENERATED" } })).not.toBeNull();
   });
 });

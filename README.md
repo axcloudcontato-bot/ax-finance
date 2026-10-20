@@ -33,7 +33,9 @@ fechamento de período e ajuste manual de saldo — não só a fundação.
 ## Deploy via Docker
 
 `docker compose up -d --build` (ver `.env.docker.example` para as variáveis necessárias).
-`deploy.sh` automatiza atualização em produção (`git pull` + rebuild + prune de imagens antigas).
+`./deploy.sh SHA_COMPLETO` publica um commit aprovado pelo CI, preserva imagens anteriores,
+gera e testa um backup antes das migrations e verifica a saúde dos serviços.
+O procedimento de retorno e os pré-requisitos estão em [Entrega segura](docs/ENTREGA_SEGURA.md).
 
 O Compose também sobe backup diário do PostgreSQL + anexos, health checks do web/worker/backup,
 rotação de logs e monitoramento operacional. O teste isolado de restauração e o runbook completo

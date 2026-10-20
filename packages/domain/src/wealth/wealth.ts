@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { withCompanyContext, type TenantScopedClient } from "@ax-finance/db";
+import { withCompanyContext, withCompanyReadSnapshot, type TenantScopedClient } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
 import { assertCompanyPermission } from "../companies/permissions";
 import { recordAuditEvent } from "../audit/record-audit-event";
@@ -293,11 +293,15 @@ export async function deleteAsset(userId: string, companyId: string, assetId: st
 /**
  * Patrimônio líquido = o que se tem (saldo das contas, cofrinhos, bens e investimentos) menos o que se
  * deve (saldo devedor das dívidas e o que falta pagar nos cartões, incluindo parcelas futuras).
- * Visão parcial: recebíveis e obrigações comuns não entram. As parcelas das dívidas cadastradas
- * já estão no saldo devedor e não devem ser somadas novamente.
+ * Inclui títulos reconhecidos até hoje. Parcelas das dívidas e faturas
+ * ficam exclusivamente nos respectivos módulos, sem duplicação.
  */
 export async function getNetWorth(userId: string, companyId: string) {
   await assertActiveMembership(userId, companyId);
+  return withCompanyReadSnapshot(userId, companyId, (tx) => getNetWorthInTx(userId, companyId, tx));
+}
+
+async function getNetWorthInTx(userId: string, companyId: string, tx: TenantScopedClient) {
   const [base, savings, debts, assets, cards] = await Promise.all([
     withCompanyContext(userId, companyId, async (tx) => {
       const today = await companyToday(tx, companyId);
@@ -320,14 +324,33 @@ export async function getNetWorth(userId: string, companyId: string) {
       throw error;
     }),
   ]);
+  const debtGroups = await tx.debt.findMany({ where: { companyId }, select: { installmentGroupId: true } });
+  const excludedGroups = new Set(debtGroups.map((debt) => debt.installmentGroupId));
+  const titles = await tx.title.findMany({
+    where: { companyId, deletedAt: null, status: { not: "CANCELLED" }, competenceDate: { lte: asDate(base.today) }, creditCardInvoice: { is: null } },
+    include: { settlements: { where: { reversedAt: null, effectiveDate: { lte: asDate(base.today) } } } },
+    orderBy: [{ dueDate: "asc" }, { id: "asc" }],
+  });
+  const obligations = titles.filter((title) => !title.installmentGroupId || !excludedGroups.has(title.installmentGroupId)).map((title) => ({
+    id: title.id, description: title.description, type: title.type, dueDate: title.dueDate,
+    remainingCents: title.originalAmountCents - title.settlements.reduce((sum, settlement) => sum + settlement.principalAmountCents + settlement.discountCents, ZERO),
+  })).filter((title) => title.remainingCents > ZERO);
+  const receivables = obligations.filter((title) => title.type === "RECEIVABLE");
+  const payables = obligations.filter((title) => title.type === "PAYABLE");
+  const receivablesCents = receivables.reduce((sum, title) => sum + title.remainingCents, ZERO);
+  const payablesCents = payables.reduce((sum, title) => sum + title.remainingCents, ZERO);
   const accountsCents = base.accounts.reduce((sum, account) => sum + account.balanceCents, ZERO);
   const assetsCents = assets.reduce((sum, asset) => sum + asset.valueCents, ZERO);
   const cardDebtCents = cards ? summarizeCreditCardPortfolio(cards, base.today).totalDebtCents : ZERO;
-  const totalAssets = accountsCents + savings.totals.savedCents + assetsCents;
+  const totalAssets = accountsCents + savings.totals.savedCents + assetsCents + receivablesCents;
   const debtsCents = debts.debts.reduce((sum, debt) => sum + debt.balanceCents, ZERO);
-  const totalLiabilities = debtsCents + cardDebtCents;
+  const totalLiabilities = debtsCents + cardDebtCents + payablesCents;
   return {
     today: base.today,
+    receivables,
+    payables,
+    receivablesCents,
+    payablesCents,
     accounts: base.accounts,
     accountsCents,
     savingsCents: savings.totals.savedCents,

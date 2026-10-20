@@ -14,6 +14,9 @@ module.exports = {
   extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   env: { node: true, es2022: true },
   ignorePatterns: [
+    "axfinance/",
+    "entrega-grafana/",
+    "unifi-monitor/",
     "node_modules/",
     ".next/",
     "dist/",

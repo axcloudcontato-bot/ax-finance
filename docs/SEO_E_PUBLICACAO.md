@@ -31,15 +31,14 @@ Antes do deploy, confirme no `.env` do servidor:
 APP_BASE_URL=https://axfinance.axcloud.com.br
 ```
 
-O hostname público do túnel Cloudflare deve continuar apontando para `http://localhost:3000` no servidor. Com as alterações commitadas e enviadas ao GitHub, publique assim:
+O hostname público do túnel Cloudflare deve continuar apontando para `http://localhost:3000` no servidor. Depois da aprovação dos workflows CI e Security checks para o commit exato na master, publique assim:
 
 ```bash
 cd ~/ax-finance
-git pull --ff-only
-./deploy.sh
+./deploy.sh SHA_COMPLETO_DE_40_CARACTERES
 ```
 
-O `deploy.sh` executa o rebuild, aplica migrations, sobe `web` e `worker`, valida health checks e remove imagens Docker antigas.
+O `deploy.sh` consulta o CI, constrói as imagens, verifica um backup por restauração isolada, aplica as migrations e confere a saúde de `web` e `worker`. Preserva as imagens anteriores para recuperação. Veja `docs/ENTREGA_SEGURA.md`.
 
 ## Verificação pós-deploy
 

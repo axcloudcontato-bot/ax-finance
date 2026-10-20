@@ -158,6 +158,11 @@ services:
       ALERT_IMPORT_PENDING_SECONDS: ${ALERT_IMPORT_PENDING_SECONDS:-1800}
       BACKUP_MAX_AGE_SECONDS: ${BACKUP_MAX_AGE_SECONDS:-129600}
       DEPLOY_ENVIRONMENT: ${DEPLOY_ENVIRONMENT:-production}
+      RESTORE_DRILL_STATUS_FILE: /data/restore/.last_success
+      RESTORE_DRILL_FAILURE_FILE: /data/restore/.last_failure
+      RESTORE_DRILL_MAX_AGE_SECONDS: ${RESTORE_DRILL_MAX_AGE_SECONDS:-691200}
+      EXTERNAL_BACKUP_REQUIRED: ${EXTERNAL_BACKUP_REQUIRED:-false}
+      BACKUP_COPY_STATUS_FILE: /data/backups/.external_copy_success
       RETENTION_PROCESSED_OUTBOX_DAYS: ${RETENTION_PROCESSED_OUTBOX_DAYS:-30}
       RETENTION_DEAD_LETTER_DAYS: ${RETENTION_DEAD_LETTER_DAYS:-90}
       RETENTION_IDENTITY_ARTIFACT_DAYS: ${RETENTION_IDENTITY_ARTIFACT_DAYS:-30}
@@ -170,6 +175,7 @@ services:
       - worker_runtime:/var/run/ax-finance
       - imports_data:/data/imports
       - ${BACKUP_HOST_DIR:-./.backups}:/data/backups:ro
+      - restore_evidence:/data/restore:ro
     healthcheck:
       test: ["CMD", "node", "-e", "const fs=require('fs');const p='/var/run/ax-finance/worker-heartbeat';const age=Date.now()/1000-Number(fs.readFileSync(p,'utf8').split(/\\r?\\n/)[0]);if(!Number.isFinite(age)||age>120)process.exit(1)"]
       interval: 30s
@@ -207,6 +213,29 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10m
+    logging: *default-logging
+
+  restore-drill:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      BACKUP_DIR: /backups
+      RESTORE_DRILL_INTERVAL_HOURS: ${RESTORE_DRILL_INTERVAL_HOURS:-168}
+      RESTORE_DRILL_MAX_AGE_SECONDS: ${RESTORE_DRILL_MAX_AGE_SECONDS:-691200}
+    command: ["/bin/sh", "/ops/restore-drill-entrypoint.sh"]
+    depends_on:
+      backup:
+        condition: service_healthy
+    volumes:
+      - ./ops:/ops:ro
+      - ${BACKUP_HOST_DIR:-./.backups}:/backups:ro
+      - restore_evidence:/evidence
+    healthcheck:
+      test: ["CMD-SHELL", "test ! -f /evidence/.last_failure && test -f /evidence/.last_success && now=$$(date +%s) && last=$$(head -1 /evidence/.last_success) && test $$((now-last)) -le $${RESTORE_DRILL_MAX_AGE_SECONDS:-691200}"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30m
     logging: *default-logging
 
   restore-verify:
@@ -290,6 +319,7 @@ services:
     logging: *default-logging
 
 volumes:
+  restore_evidence:
   postgres_data:
   attachments_data:
   imports_data:

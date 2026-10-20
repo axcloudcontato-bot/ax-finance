@@ -8,3 +8,11 @@ node_modules
 !.env.example
 *.tsbuildinfo
 .claude
+entrega-grafana
+unifi-monitor
+.operations
+.backups
+.secrets
+test-results
+playwright-report
+axfinance/

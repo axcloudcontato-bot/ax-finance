@@ -55,5 +55,5 @@ export async function closePeriod(userId: string, companyId: string, input: unkn
     });
 
     return closure;
-  });
+  }, undefined, { timeout: 75_000, maxWait: 10_000 });
 }

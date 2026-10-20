@@ -24,13 +24,11 @@ e são ignorados pelo Git por poderem identificar topologia operacional.
 
 ## Janela de validação no servidor
 
-Atualize as imagens antes dos testes para que o worker contenha o comando de
-validação do webhook:
+Publique primeiro um commit aprovado pelos workflows CI e Security checks para
+que o worker contenha o comando de validação do webhook:
 
 ```bash
-git pull
-docker compose build web worker migrate
-docker compose up -d
+./deploy.sh SHA_COMPLETO_DE_40_CARACTERES
 ```
 
 Defina o operador sem espaços e execute a restauração efêmera:
