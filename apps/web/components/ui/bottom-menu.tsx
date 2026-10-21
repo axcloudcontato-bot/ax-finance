@@ -31,8 +31,9 @@ import type { AppNotification } from "@/components/app-topbar";
 import { openQuickCreate } from "@/components/quick-create";
 import { CHANGELOG, LATEST_CHANGELOG_ID, unreadChangelogCount } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
+import { initialsOf } from "@/lib/user-display";
 
-type MenuView = "default" | "actions" | "search" | "whatsnew" | "notifications" | "profile" | "theme";
+type MenuView = "default" | "actions" | "search" | "whatsnew" | "notifications" | "profile";
 type ThemePreference = "light" | "dark" | "system";
 
 interface SearchResults {
@@ -58,10 +59,9 @@ const CHANGELOG_SEEN_KEY = "ax-finance:changelog-seen:v1";
 const MENU_ITEMS = [
   { icon: PlusSignIcon, name: "actions", label: "Criar" },
   { icon: Search01Icon, name: "search", label: "Pesquisar" },
-  { icon: Megaphone01Icon, name: "whatsnew", label: "Novidades" },
   { icon: Notification03Icon, name: "notifications", label: "Notificações" },
+  // Perfil vira o avatar; Novidades e Aparência ficam dentro dele (menos ícones competindo no topo).
   { icon: UserEdit01Icon, name: "profile", label: "Perfil" },
-  { icon: Sun03Icon, name: "theme", label: "Aparência" },
 ] as const;
 
 const THEME_OPTIONS = [
@@ -322,13 +322,13 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
     if (view === "profile") {
       return (
         <div className="bottom-menu-list min-w-[245px]">
-          <div className="bottom-menu-user"><span>{userName.slice(0, 1).toUpperCase()}</span><div><strong>{userName}</strong><small>Minha conta</small></div></div>
+          <div className="bottom-menu-user"><span>{initialsOf(userName)}</span><div><strong>{userName}</strong><small>Minha conta</small></div></div>
           <MenuRow href="/dashboard" icon={DashboardSquare01Icon} onClick={closeMenu}>Dashboard</MenuRow>
-          {/* No celular, Novidades e Aparência saem do topo e ficam aqui (menos ícones na barra). */}
-          <button type="button" className="bottom-menu-row bottom-menu-mobile-only" onClick={() => setView("whatsnew")}>
-            <HugeiconsIcon icon={Megaphone01Icon} size={18} strokeWidth={1.8} /><span>Novidades{unreadNews > 0 ? " · há novas" : ""}</span>
+          {/* Acesso secundário: Novidades e Aparência moram aqui, não na barra do topo. */}
+          <button type="button" className="bottom-menu-row" onClick={() => setView("whatsnew")}>
+            <HugeiconsIcon icon={Megaphone01Icon} size={18} strokeWidth={1.8} /><span>Novidades{unreadNews > 0 ? <em className="bottom-menu-news-flag">novas</em> : null}</span>
           </button>
-          <div className="bottom-menu-mobile-only bottom-menu-theme-row" role="group" aria-label="Aparência">
+          <div className="bottom-menu-theme-row bottom-menu-theme-row-always" role="group" aria-label="Aparência">
             {THEME_OPTIONS.map((option) => (
               <button key={option.key} type="button" aria-pressed={theme === option.key} onClick={() => selectTheme(option.key)} className={cn("bottom-menu-theme", theme === option.key && "is-active")}>
                 <HugeiconsIcon icon={option.icon} size={18} strokeWidth={1.8} /><span>{option.text}</span>
@@ -350,18 +350,6 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
               Object.keys(sessionStorage).filter((key) => key.startsWith("ax-finance:dashboard-filters:v1:")).forEach((key) => sessionStorage.removeItem(key));
             }}><HugeiconsIcon icon={Logout03Icon} size={18} strokeWidth={1.8} /><span>Sair</span></button>
           </form>
-        </div>
-      );
-    }
-
-    if (view === "theme") {
-      return (
-        <div className="flex min-w-[286px] items-center gap-1.5 p-1.5">
-          {THEME_OPTIONS.map((option) => (
-            <button key={option.key} type="button" aria-pressed={theme === option.key} onClick={() => selectTheme(option.key)} className={cn("bottom-menu-theme", theme === option.key && "is-active")}>
-              <HugeiconsIcon icon={option.icon} size={18} strokeWidth={1.8} /><span>{option.text}</span>
-            </button>
-          ))}
         </div>
       );
     }
@@ -401,9 +389,9 @@ export function BottomMenu({ placement = "bottom", userName, canManageMembers, i
         {MENU_ITEMS.map((item) => {
           const active = view === item.name;
           return (
-            <button key={item.name} type="button" aria-label={item.name === "whatsnew" && unreadNews > 0 ? "Novidades (há novidades não vistas)" : item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", active && "is-active", (item.name === "whatsnew" || item.name === "theme") && "bottom-menu-desktop-only")}>
-              <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.8} />
-              {item.name === "whatsnew" && unreadNews > 0 ? <span className="bottom-menu-dot" aria-hidden="true" /> : null}
+            <button key={item.name} type="button" aria-label={item.name === "profile" ? `Perfil, novidades e aparência — ${userName}${unreadNews > 0 ? " (há novidades)" : ""}` : item.label} aria-keyshortcuts={item.name === "search" ? "Control+K Meta+K" : undefined} title={item.name === "search" ? "Pesquisar (Ctrl/⌘ K)" : item.name === "profile" ? userName : item.label} aria-expanded={active} onClick={() => setView(active ? "default" : item.name)} className={cn("bottom-menu-trigger", item.name === "profile" && "bottom-menu-avatar-trigger", active && "is-active")}>
+              {item.name === "profile" ? <span className="bottom-menu-avatar" aria-hidden="true">{initialsOf(userName)}</span> : <HugeiconsIcon icon={item.icon} size={22} strokeWidth={1.8} />}
+              {item.name === "profile" && unreadNews > 0 ? <span className="bottom-menu-dot" aria-hidden="true" /> : null}
               {item.name === "notifications" && unreadCount > 0 ? <span className="bottom-menu-badge">{Math.min(unreadCount, 9)}{unreadCount > 9 ? "+" : ""}</span> : null}
             </button>
           );

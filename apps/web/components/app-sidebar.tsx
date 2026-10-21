@@ -7,6 +7,7 @@ import {
   CreditCard,
   BookUser,
   CalendarDays,
+  ChevronRight,
   History,
   Landmark,
   LayoutDashboard,
@@ -103,6 +104,16 @@ const DASHBOARD_ITEM: NavItemData = {
 };
 
 const SIDEBAR_PREFERENCE_KEY = "ax-finance:sidebar-collapsed:v1";
+/** Grupos do menu que a pessoa fechou (lista de títulos). O grupo da página atual nunca fica fechado. */
+const SIDEBAR_GROUPS_KEY = "ax-finance:sidebar-groups-closed:v1";
+
+function routeMatches(href: string | undefined, pathname: string | null): boolean {
+  return !!href && !!pathname && (pathname === href || pathname.startsWith(`${href}/`));
+}
+
+function groupHasRoute(items: NavItemData[], pathname: string | null): boolean {
+  return items.some((item) => routeMatches(item.href, pathname) || (item.children ? groupHasRoute(item.children, pathname) : false));
+}
 
 export function AppSidebar({
   planCode,
@@ -120,6 +131,7 @@ export function AppSidebar({
   onMobileClose?: () => void;
 }) {
   const [storedCollapsed, setCollapsed] = useState(false);
+  const [closedGroups, setClosedGroups] = useState<string[]>([]);
   const [isDesktop, setIsDesktop] = useState(true);
   // Na gaveta o menu é sempre completo; a preferência de recolher só vale no desktop.
   const collapsed = storedCollapsed && isDesktop;
@@ -128,6 +140,8 @@ export function AppSidebar({
   useEffect(() => {
     try {
       setCollapsed(localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === "true");
+      const saved = JSON.parse(localStorage.getItem(SIDEBAR_GROUPS_KEY) ?? "[]");
+      if (Array.isArray(saved)) setClosedGroups(saved.filter((value): value is string => typeof value === "string"));
     } catch {
       // O menu continua funcional mesmo quando o navegador bloqueia storage.
     }
@@ -172,6 +186,18 @@ export function AppSidebar({
     }
   }
 
+  function toggleGroup(heading: string) {
+    setClosedGroups((current) => {
+      const next = current.includes(heading) ? current.filter((value) => value !== heading) : [...current, heading];
+      try {
+        localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify(next));
+      } catch {
+        // Sem storage o grupo só não lembra a escolha.
+      }
+      return next;
+    });
+  }
+
   const unavailableItems = new Set<string>(
     planCode === "PERSONAL" ? ["conciliacao", "rel-dre", "auditoria", "fechamento"] : [],
   );
@@ -214,27 +240,46 @@ export function AppSidebar({
             </div>
           </div>
 
-          {visibleGroups.map((group, index) => (
-            <div key={group.heading ?? index} className="flex flex-col gap-0.5">
-              {group.heading ? (
-                collapsed ? (
-                  <span className="mx-2 mb-1 border-t border-border" aria-hidden="true" />
-                ) : (
-                  <span className="mb-1 px-2.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    {group.heading}
-                  </span>
-                )
-              ) : null}
-              {group.items.map((item) => (
-                <NavItem
-                  key={item.id}
-                  item={item}
-                  collapsed={collapsed}
-                  onRequestExpand={() => updateCollapsed(false)}
-                />
-              ))}
-            </div>
-          ))}
+          {visibleGroups.map((group, index) => {
+            // Recolhível só com o menu aberto; o grupo da página atual fica sempre visível.
+            const current = groupHasRoute(group.items, pathname);
+            const open = collapsed || !group.heading || current || !closedGroups.includes(group.heading);
+            const panelId = `app-sidebar-group-${index}`;
+            return (
+              <div key={group.heading ?? index} className="flex flex-col gap-0.5">
+                {group.heading ? (
+                  collapsed ? (
+                    <span className="mx-2 mb-1 border-t border-border" aria-hidden="true" />
+                  ) : (
+                    <button
+                      type="button"
+                      className="app-sidebar-group-toggle"
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                      aria-disabled={current || undefined}
+                      title={current ? "Grupo da página atual" : open ? `Recolher ${group.heading}` : `Mostrar ${group.heading}`}
+                      onClick={() => { if (!current) toggleGroup(group.heading!); }}
+                    >
+                      <span>{group.heading}</span>
+                      <ChevronRight className="app-sidebar-group-chevron size-3.5" data-open={open || undefined} aria-hidden="true" />
+                    </button>
+                  )
+                ) : null}
+                <div id={panelId} className="app-sidebar-group-panel" data-open={open || undefined} inert={!open || undefined}>
+                  <div className="flex min-h-0 flex-col gap-0.5">
+                    {group.items.map((item) => (
+                      <NavItem
+                        key={item.id}
+                        item={item}
+                        collapsed={collapsed}
+                        onRequestExpand={() => updateCollapsed(false)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-auto flex flex-col gap-0.5 border-t border-border pt-3">

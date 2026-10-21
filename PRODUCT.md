@@ -45,7 +45,7 @@ Não são diferenciais comprovados: atendimento humano especializado e "empresa 
 - Português brasileiro e BRL; datas no fuso da empresa.
 - Ações irreversíveis exigem confirmação; valor e empresa visíveis antes de confirmar uma baixa.
 - Sem dados financeiros offline por padrão.
-- Tela de login: o desenho atual deve ser preservado (pedido do usuário).
+- Tela de login: redesenhada em 21/10/2026 a pedido do usuário (extrato de exemplo que fecha o saldo + formulário); mudanças futuras no login pedem aprovação dele.
 
 ## Brand Commitments
 

@@ -135,7 +135,8 @@ function MarketingHome({ dashboardHref }: { dashboardHref?: string }) {
               <p>Organize contas a pagar e receber, acompanhe o que foi realizado e antecipe o que ainda está previsto. Tudo em um só lugar, do seu jeito.</p>
               <div className="public-hero-actions">
                 <Link className="public-button" href={primaryHref}>{dashboardHref ? "Abrir meu painel" : "Começar avaliação"} <ArrowRight size={18} /></Link>
-                <Link className="public-button secondary" href="/demonstracao">Ver demonstração</Link>
+                {/* Ação secundária com outro peso: link discreto, não um segundo botão azul. */}
+                <Link className="public-hero-demo-link" href="/demonstracao">Ver demonstração <ArrowRight size={16} aria-hidden="true" /></Link>
               </div>
               <div className="public-v2-trust-row">
                 <div><ShieldCheck size={18} /><span><strong>Configuração rápida</strong><small>Comece em minutos</small></span></div>

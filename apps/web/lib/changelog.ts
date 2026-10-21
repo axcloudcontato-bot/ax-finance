@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-21-login-topo-menu",
+    date: "2026-10-21",
+    title: "Novo login, avatar no topo e menu recolhível",
+    summary: "Entrada redesenhada, topo mais limpo e grupos do menu lateral que você abre e fecha.",
+    changes: [
+      { kind: "IMPROVED", text: "Tela de entrar redesenhada no visual do app, com tema claro e escuro. No celular, o formulário vem primeiro." },
+      { kind: "IMPROVED", text: "No topo, o ícone de perfil virou um avatar com suas iniciais. Novidades e Aparência (claro, escuro ou sistema) agora ficam dentro dele." },
+      { kind: "NEW", text: "Os grupos do menu lateral (Dia a dia, Contas e patrimônio, Planejamento e gestão) podem ser recolhidos e o sistema lembra a escolha. O grupo da página em que você está fica sempre aberto." },
+    ],
+  },
+  {
     id: "2026-10-21-visual-mais-claro",
     date: "2026-10-21",
     title: "Telas mais claras e diretas",

@@ -8,6 +8,7 @@ import { AppShell } from "@/components/app-shell";
 import { logoutAction } from "./actions";
 import { noIndexMetadata } from "@/lib/site";
 import { writeBlockNotice } from "@/lib/write-block-notice";
+import { THEME_BOOTSTRAP } from "@/lib/theme-bootstrap";
 import "@fontsource/manrope/400.css";
 import "@fontsource/manrope/500.css";
 import "@fontsource/manrope/600.css";
@@ -17,7 +18,6 @@ import "./workspace.css";
 export const metadata: Metadata = noIndexMetadata;
 
 // Mesma regra do applyTheme() do BottomMenu (chave ax-finance:theme:v1).
-const THEME_BOOTSTRAP = `try{var p=localStorage.getItem("ax-finance:theme:v1");var t=p==="dark"||p==="light"?p:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");var r=document.documentElement;r.dataset.axTheme=t;r.style.colorScheme=t}catch(e){}`;
 
 // Casca compartilhada por toda tela autenticada (Seção 4 do DIRECAO.md: menu
 // principal fixo). P0 limita uma empresa por assinatura (Seção 17) — a

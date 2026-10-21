@@ -6,7 +6,7 @@ setup("login", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill(E2E_USER.email);
   await page.getByLabel("Senha", { exact: true }).fill(E2E_USER.password);
-  await page.getByRole("button", { name: /Entrar na minha conta/ }).click();
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/(painel|dashboard)/);
   await page.context().storageState({ path: "e2e/.auth/user.json" });
 });

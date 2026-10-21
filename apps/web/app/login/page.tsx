@@ -3,6 +3,7 @@ import "@fontsource/manrope/500.css";
 import "@fontsource/manrope/600.css";
 import "@fontsource/manrope/700.css";
 import "@fontsource/manrope/800.css";
+import { THEME_BOOTSTRAP } from "@/lib/theme-bootstrap";
 import { LoginExperience } from "./login-experience";
 import { loginAction } from "./actions";
 
@@ -13,6 +14,8 @@ export default async function LoginPage(
 ) {
   const searchParams = await props.searchParams;
   return (
+    <>
+    <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
     <LoginExperience
       action={loginAction}
       errorMessage={searchParams.erro}
@@ -23,5 +26,6 @@ export default async function LoginPage(
       emailVerified={Boolean(searchParams.emailVerificado)}
       passwordReset={Boolean(searchParams.senhaRedefinida)}
     />
+    </>
   );
 }
