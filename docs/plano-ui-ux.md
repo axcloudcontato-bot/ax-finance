@@ -100,7 +100,7 @@ O rodapé fixo desta entrega cobre a criação rápida de entradas e saídas. Fo
 - Patrimônio: metodologia em seção expansível de largura total; colunas de recursos e obrigações equilibradas. Aviso de visão parcial permanece visível quando o perfil não pode consultar cartões.
 - Cartões: agenda de faturas antes da previsão; projeção dos próximos seis meses expansível, com valores preservados. Resumo móvel em duas colunas.
 - Segurança: títulos com hierarquia consistente e botão Configurar proteção destacado. Nenhuma alteração de autenticação, dispositivos ou permissões.
-- Carregamento compartilhado nas rotas autenticadas, com mensagem acessível e blocos estáticos, sem animação contínua.
+- ~~Carregamento compartilhado nas rotas autenticadas~~ — retirado em 21/10/2026: o `loading.tsx` no nível de `app/(app)` deixava os formulários com redirecionamento (server actions) presos em "carregando" no build de produção (e2e do CI). Se voltar, precisa ser por rota e testado com `next start`.
 - Continuação pendente desta etapa: relatórios, estados vazios específicos e revisão dos formulários de edição/baixa/parcelamento/transferência. A entrega não conclui todas as sugestões da auditoria.
 ### Validação da primeira parte da etapa 4
 
