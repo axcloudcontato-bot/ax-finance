@@ -22,7 +22,7 @@ async function openModal(page: Page, trigger: string | RegExp) {
 test.describe("fluxos principais", () => {
   test("painel abre com o saldo da conta", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByText("Disponível na empresa")).toBeVisible();
+    await expect(page.getByText("Disponível hoje", { exact: true })).toBeVisible();
     await expect(page.getByText("R$ 1.000,00").first()).toBeVisible();
   });
 
@@ -34,7 +34,7 @@ test.describe("fluxos principais", () => {
     await dialog.locator("#qc-amount").fill("250");
     await dialog.locator("#qc-amount").blur();
     await expect(dialog.locator("#qc-amount")).toHaveValue("250,00"); // máscara de reais
-    await dialog.getByRole("button", { name: "Salvar", exact: true }).click();
+    await dialog.getByRole("button", { name: "Salvar entrada", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeHidden();
 
     const row = page.getByRole("row", { name: /Venda E2E balcão/ });

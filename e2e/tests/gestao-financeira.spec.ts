@@ -25,7 +25,7 @@ test.describe.serial("gestão financeira: histórico, caixa e margem", () => {
     await form.locator("#qc-amount").fill("500");
     await form.locator("#qc-competence").fill(`${month}-05`);
     await form.locator("#qc-due").fill(`${month}-05`);
-    await form.getByRole("button", { name: "Salvar", exact: true }).click();
+    await form.getByRole("button", { name: "Salvar entrada", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeHidden();
     await page.getByRole("link", { name: "Venda previsão E2E", exact: true }).click();
     const plan = await modal(page, "Planejar recebimento");

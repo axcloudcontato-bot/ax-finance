@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayInTimeZone } from "../shared/today";
 import { registerUser } from "../identity/register";
 import { createCompany } from "../companies/create-company";
 import { acceptCompanyInvitation, createCompanyInvitation, listCompanyMembers, updateCompanyMemberAccess } from "../companies/members";
@@ -295,7 +296,7 @@ describe("pagamento da fatura", () => {
 
   it("não deixa pagar fatura ainda aberta nem futura", async () => {
     const ctx = await setup("aberta");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInTimeZone();
     await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
     await buy(ctx, { purchaseDate: today, totalAmountCents: 9_000, installmentCount: 3 });
     const detail = await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id);
@@ -429,9 +430,17 @@ describe("integração com o resto do sistema", () => {
 });
 
 describe("antecipar fatura", () => {
+  beforeEach(() => {
+    // Já é dia 21 em UTC, mas ainda dia 20 no fuso padrão da empresa.
+    // Mantém a regressão da virada de data coberta em qualquer horário do CI.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-21T00:30:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it("paga parte da fatura aberta com valor livre: sai da conta, libera limite e o fechamento cobra só a diferença", async () => {
     const ctx = await setup("antecipa");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInTimeZone();
     await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
     const open = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "OPEN")!;
 
@@ -452,7 +461,7 @@ describe("antecipar fatura", () => {
 
   it("estornar a antecipação devolve o valor à conta e reabre o saldo da fatura", async () => {
     const ctx = await setup("antecipa-estorno");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInTimeZone();
     await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
     const open = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "OPEN")!;
     const payment = await anticipateCreditCardInvoice(ctx.user.id, ctx.company.id, open.id, { financialAccountId: ctx.account.id, amountCents: 5_000, effectiveDate: today });
@@ -471,7 +480,7 @@ describe("antecipar fatura", () => {
 
   it("recusa valor acima do total atual, data no fechamento ou depois e fatura já fechada", async () => {
     const ctx = await setup("antecipa-limites");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInTimeZone();
     await buy(ctx, { purchaseDate: today, totalAmountCents: 5_000 });
     const open = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "OPEN")!;
     const base = { financialAccountId: ctx.account.id, effectiveDate: today };
@@ -489,7 +498,7 @@ describe("antecipar fatura", () => {
 
   it("antecipa parcela de fatura futura e trava cancelar compra que deixe o total abaixo do antecipado", async () => {
     const ctx = await setup("antecipa-futura");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInTimeZone();
     const [first] = await buy(ctx, { purchaseDate: today, totalAmountCents: 9_000, installmentCount: 3 });
     const future = (await getCreditCard(ctx.user.id, ctx.company.id, ctx.card.id)).invoices.find((invoice) => invoice.stage === "FUTURE")!;
 
