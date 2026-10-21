@@ -28,6 +28,7 @@ import {
 } from "./actions";
 import { isComparisonMode, periodQuery as buildPeriodQuery, resolvePeriodRange } from "@/lib/month";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { ConciliationSteps, conciliationSteps } from "@/components/reconciliation/conciliation-steps";
 import { ActionModal } from "@/components/ui/action-modal";
 import { ArrowRight, Trash2 } from "@/components/ui/animated-icons";
 import { CategoryRuleForm } from "@/components/category-rule-form";
@@ -262,6 +263,16 @@ export default async function ConciliacaoPage(
       <div className="page-header">
         <div><h1>Conciliação</h1><p className="subtitle">{summary}</p></div>
       </div>
+      <ConciliationSteps
+        steps={conciliationSteps({
+          hasLines: counts.ALL > 0,
+          pendingCount: counts.PENDING,
+          totalCount: counts.ALL,
+          previewBatchId: importBatches.find((batch) => batch.status === "PREVIEW")?.id ?? null,
+          processing: importBatches.some((batch) => batch.status === "QUEUED" || batch.status === "PROCESSING"),
+          failed: importBatches.some((batch) => batch.status === "FAILED"),
+        })}
+      />
         {searchParams.lancado ? <p className="success-box">Lançamento criado, baixado e conciliado.</p> : null}
         {searchParams.lancadas ? <p className="success-box">{searchParams.lancadas} {searchParams.lancadas === "1" ? "linha lançada e conciliada" : "linhas lançadas e conciliadas"} pelas regras.{searchParams.falhas && searchParams.falhas !== "0" ? ` ${searchParams.falhas} ficaram pendentes (período fechado ou categoria arquivada).` : ""}</p> : null}
         {searchParams.regraCriada ? <p className="success-box">Regra criada. Ela já vale para esta linha e para as próximas.</p> : null}
@@ -274,7 +285,7 @@ export default async function ConciliacaoPage(
         ))}
       </div>
 
-      <details className="concil-import" open={importOpen}>
+      <details id="importar-extrato" className="concil-import" open={importOpen}>
         <summary>
           <span className="concil-import-title">Importar extrato</span>
           <span className="concil-import-meta">
@@ -345,7 +356,7 @@ export default async function ConciliacaoPage(
 
       <div className="concil-bench-wrap">
       <div className="concil-bench">
-        <section className="card concil-list" aria-label="Linhas do extrato">
+        <section id="linhas-extrato" className="card concil-list" aria-label="Linhas do extrato">
           <nav className="concil-tabs" aria-label="Situação das linhas">
             {tabs.map((tab) => (
               <Link key={tab.label} href={statusHref(tab.status)} className={tab.active ? "is-active" : ""} aria-current={tab.active ? "page" : undefined}>

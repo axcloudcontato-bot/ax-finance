@@ -60,6 +60,7 @@ export default async function EntradasRecorrenciasPage(
             parties={clients}
             costCenters={costCenters}
             partyLabel="Cliente"
+            kind="RECEIVABLE"
             error={searchParams.erro}
           />
         </Modal>

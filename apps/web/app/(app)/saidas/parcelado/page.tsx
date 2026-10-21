@@ -35,6 +35,7 @@ export default async function SaidaParceladaPage(
         parties={suppliers}
         costCenters={costCenters}
         partyLabel="Fornecedor"
+            kind="PAYABLE"
         error={searchParams.erro}
       />
     </main>

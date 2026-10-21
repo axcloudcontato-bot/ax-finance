@@ -35,6 +35,7 @@ export default async function EntradaParceladaPage(
         parties={clients}
         costCenters={costCenters}
         partyLabel="Cliente"
+            kind="RECEIVABLE"
         error={searchParams.erro}
       />
     </main>

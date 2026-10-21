@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { listActiveCategories, listCostCenters, listParties } from "@ax-finance/domain";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { CategoryPicker } from "@/components/categories/category-picker";
+import { PartyPicker } from "@/components/parties/party-picker";
 import { todayDateOnlyString } from "@/lib/dates";
 
 type CategoryOption = Awaited<ReturnType<typeof listActiveCategories>>[number];
@@ -13,9 +15,12 @@ export function InstallmentForm({
   parties,
   costCenters,
   partyLabel,
+  kind,
   error,
 }: {
   action: (formData: FormData) => void | Promise<void>;
+  /** Entrada ou saída: define o tipo da categoria e do cadastro criados pelo "+ Novo". */
+  kind: "RECEIVABLE" | "PAYABLE";
   categories: CategoryOption[];
   parties?: PartyOption[];
   costCenters?: CostCenterOption[];
@@ -33,12 +38,7 @@ export function InstallmentForm({
 
       {error ? <p className="error">{error}</p> : null}
 
-      {categories.length === 0 ? (
-        <p className="muted">
-          Cadastre uma categoria antes de lançar — nenhum título pode ficar sem classificação
-          (Seção 6).
-        </p>
-      ) : (
+      {(
         <form action={action}>
           <input type="hidden" name="idempotencyKey" value={randomUUID()} />
           <div className="form-grid">
@@ -49,29 +49,13 @@ export function InstallmentForm({
 
             <div>
               <label htmlFor="categoryId">Categoria</label>
-              <select id="categoryId" name="categoryId" required defaultValue="">
-                <option value="" disabled>
-                  Selecione
-                </option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.parentId ? `  ↳ ${category.name}` : category.name}
-                  </option>
-                ))}
-              </select>
+              <CategoryPicker id="categoryId" kind={kind} categories={categories.map(({ id, name, parentId }) => ({ id, name, parentId }))} />
             </div>
 
-            {parties && parties.length > 0 ? (
+            {parties ? (
               <div>
                 <label htmlFor="partyId">{partyLabel ?? "Cliente/fornecedor"} (opcional)</label>
-                <select id="partyId" name="partyId" defaultValue="">
-                  <option value="">Nenhum</option>
-                  {parties.map((party) => (
-                    <option key={party.id} value={party.id}>
-                      {party.name}
-                    </option>
-                  ))}
-                </select>
+                <PartyPicker id="partyId" role={kind === "RECEIVABLE" ? "CLIENT" : "SUPPLIER"} noun={kind === "RECEIVABLE" ? "cliente" : "fornecedor"} parties={parties.map(({ id, name }) => ({ id, name }))} />
               </div>
             ) : null}
 

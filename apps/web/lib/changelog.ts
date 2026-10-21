@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-21-conciliacao-etapas-graficos",
+    date: "2026-10-21",
+    title: "Conciliação por etapas e gráficos mais legíveis",
+    summary: "Veja em que passo está a conciliação, crie categorias em mais telas e leia os gráficos também em tabela.",
+    changes: [
+      { kind: "NEW", text: "Conciliação mostra as quatro etapas (importar extrato, revisar arquivo, vincular lançamentos, concluir), com o que falta em cada uma e atalho para o passo atual." },
+      { kind: "NEW", text: "\"+ Nova categoria\" e \"+ Novo cliente/fornecedor\" também na edição do lançamento, no parcelamento, nas recorrências e na reclassificação em lote." },
+      { kind: "IMPROVED", text: "Gráficos do painel com legenda que usa a mesma linha do gráfico (cheia, tracejada, barra), valores por toque ou pelo teclado (Tab e setas) e a opção \"Ver em tabela\"." },
+    ],
+  },
+  {
     id: "2026-10-21-login-topo-menu",
     date: "2026-10-21",
     title: "Novo login, avatar no topo e menu recolhível",

@@ -60,6 +60,7 @@ export default async function SaidasRecorrenciasPage(
             parties={suppliers}
             costCenters={costCenters}
             partyLabel="Fornecedor"
+            kind="PAYABLE"
             error={searchParams.erro}
           />
         </Modal>

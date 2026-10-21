@@ -316,3 +316,46 @@
 @media (prefers-reduced-motion: reduce) {
   .app-sidebar-group-panel, .app-sidebar-group-chevron { transition: none; }
 }
+
+/* Conciliação: as quatro etapas com o estado real (feito, atual, em andamento, a seguir). */
+.concil-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 16px; padding: 0; list-style: none; border: 1px solid var(--border); border-radius: var(--workspace-radius); background: var(--card); overflow: hidden; }
+.concil-step { position: relative; min-width: 0; }
+.concil-step + .concil-step { border-left: 1px solid var(--border); }
+.concil-step-body { display: flex; align-items: flex-start; gap: 10px; height: 100%; padding: 12px 14px; color: inherit; text-decoration: none; }
+a.concil-step-body:hover { background: color-mix(in srgb, var(--text) 4%, transparent); }
+a.concil-step-body:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.concil-step-mark { display: grid; flex: none; place-items: center; width: 24px; height: 24px; border: 1.5px solid var(--border); border-radius: 999px; color: var(--muted); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.concil-step-text { display: grid; gap: 2px; min-width: 0; }
+.concil-step-text strong { font-size: 13px; font-weight: 700; color: var(--muted); }
+.concil-step-text small { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.concil-step[data-state="done"] .concil-step-mark { border-color: var(--tone-in); background: var(--tone-in); color: #fff; }
+.concil-step[data-state="done"] .concil-step-text strong { color: var(--text); }
+.concil-step[data-state="current"] { background: var(--workspace-active); }
+.concil-step[data-state="current"]::after { content: ""; position: absolute; inset: auto 0 0; height: 2px; background: var(--workspace-active-text); }
+.concil-step[data-state="current"] .concil-step-mark { border-color: var(--workspace-active-text); color: var(--workspace-active-text); }
+.concil-step[data-state="current"] .concil-step-text strong { color: var(--workspace-active-text); }
+.concil-step[data-state="current"] .concil-step-text small { color: var(--text); }
+.concil-step[data-state="waiting"] .concil-step-mark { border-style: dashed; border-color: var(--tone-warn); color: var(--tone-warn); }
+.concil-step[data-state="waiting"] .concil-step-text strong { color: var(--text); }
+:root[data-ax-theme="dark"] .concil-step[data-state="done"] .concil-step-mark { color: #0f1726; }
+@media (max-width: 860px) {
+  .concil-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .concil-step:nth-child(3) { border-left: 0; }
+  .concil-step:nth-child(n + 3) { border-top: 1px solid var(--border); }
+}
+@media (max-width: 420px) {
+  .concil-steps { grid-template-columns: minmax(0, 1fr); }
+  .concil-step + .concil-step { border-left: 0; border-top: 1px solid var(--border); }
+}
+
+/* Gráficos do painel: legenda com a amostra real de cada série, dica de teclado e tabela alternativa. */
+.chart-legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 10px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 12.5px; }
+.chart-legend li { display: inline-flex; align-items: center; gap: 8px; }
+.chart-keyboard-hint { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.app-shell .recharts-surface:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; border-radius: 6px; }
+.chart-table-toggle { margin-top: 10px; }
+.chart-table-toggle > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--accent-text); font-size: 13px; font-weight: 600; cursor: pointer; }
+.chart-table-toggle > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.chart-data-table { max-height: 320px; margin-top: 8px; overflow-y: auto; }
+.chart-data-table table { font-variant-numeric: tabular-nums; }
+.chart-data-table :is(th, td).money { text-align: right; }

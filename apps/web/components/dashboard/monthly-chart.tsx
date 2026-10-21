@@ -32,7 +32,8 @@ export function MonthlyChart({ data }: { data: MonthlyPoint[] }) {
     <ChartContainer
       config={chartConfig}
       className="dashboard-monthly-chart aspect-auto"
-      role="img"
+      role="group"
+      aria-roledescription="gráfico"
       aria-label="Receitas, despesas e resultado de cada um dos últimos meses"
     >
       <ComposedChart accessibilityLayer data={data} margin={{ top: 12, left: 4, right: 14, bottom: 0 }} barGap={4}>
@@ -41,7 +42,7 @@ export function MonthlyChart({ data }: { data: MonthlyPoint[] }) {
         <YAxis tickLine={false} axisLine={false} tickMargin={8} width={72} tickFormatter={(value: number) => compactCurrency.format(value)} />
         <ReferenceLine y={0} stroke="var(--border)" />
         <ChartTooltip
-          cursor={false}
+          cursor={{ fill: "color-mix(in srgb, var(--text) 5%, transparent)" }}
           content={
             <ChartTooltipContent
               indicator="dot"

@@ -34,7 +34,8 @@ export function CashProjectionChart({ data, distinguishScenarios = false, planni
     <ChartContainer
       config={planning ? { projected: { ...chartConfig.projected, label: "Datas prováveis e probabilidades" }, withoutOverdue: { ...chartConfig.withoutOverdue, label: "Recebimentos atrasados" } } : chartConfig}
       className="dashboard-cash-chart aspect-auto"
-      role="img"
+      role="group"
+      aria-roledescription="gráfico"
       aria-label={planning ? "Saldo diário pelas datas prováveis e com atraso dos recebimentos, comparado com a reserva mínima" : "Projeção diária do saldo incluindo todos os recebíveis e sem os recebíveis vencidos"}
     >
       <AreaChart accessibilityLayer data={data} margin={{ top: 12, left: 4, right: 24, bottom: 0 }}>
@@ -44,7 +45,7 @@ export function CashProjectionChart({ data, distinguishScenarios = false, planni
         <ReferenceLine y={0} ifOverflow="extendDomain" stroke="var(--danger)" strokeDasharray="4 4" />
         {reserve !== undefined && reserve > 0 ? <ReferenceLine y={reserve} ifOverflow="extendDomain" stroke="var(--chart-3)" strokeDasharray="3 3" label={{ value: "Reserva mínima", position: "insideTopRight" }} /> : null}
         <ChartTooltip
-          cursor={false}
+          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
           content={
             <ChartTooltipContent
               indicator="dot"

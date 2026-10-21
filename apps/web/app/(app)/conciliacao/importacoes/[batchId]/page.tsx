@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ConciliationSteps } from "@/components/reconciliation/conciliation-steps";
 import {
   decodeImportSource,
   getBankImportBatch,
@@ -77,6 +78,14 @@ export default async function BankImportPreviewPage(
           <a className="button-link" href={`/conciliacao?conta=${batch.financialAccountId}`}>Voltar</a>
         </div>
       </div>
+      <ConciliationSteps
+        steps={[
+          { label: "Importar extrato", hint: "Arquivo enviado", state: "done", href: `/conciliacao?conta=${batch.financialAccountId}` },
+          { label: "Revisar arquivo", hint: "Confira a amostra e confirme", state: "current" },
+          { label: "Vincular lançamentos", hint: "Depois de confirmar", state: "upcoming" },
+          { label: "Concluir", hint: "Quando não sobrar pendência", state: "upcoming" },
+        ]}
+      />
 
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
 

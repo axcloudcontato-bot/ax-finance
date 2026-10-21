@@ -29,6 +29,7 @@ import { CashProjectionChart } from "@/components/dashboard/cash-projection-char
 import { DashboardFilters } from "@/components/dashboard/dashboard-filters";
 import { QuickCreateButton } from "@/components/quick-create";
 import { MonthlyChart } from "@/components/dashboard/monthly-chart";
+import { ChartLegend } from "@/components/dashboard/chart-legend";
 import { AgendaPanel, BudgetPanel, CardsPanel, CategoryBreakdown, HealthPanel, ResultPanel, cashRunwayDays, percentOf, type CardSummary } from "@/components/dashboard/insights";
 import { SavingsPanel } from "@/components/dashboard/savings-panel";
 
@@ -219,7 +220,18 @@ export default async function DashboardPage(
         </nav>
       </div>
       <CashProjectionChart data={cashProjectionSeries} distinguishScenarios />
-      <div className="dashboard-projection-legend"><span><i className="is-full" />Todos os recebíveis</span><span><i className="is-without-overdue" />Sem receber vencidos</span></div>
+      <ChartLegend items={[{ label: "Todos os recebíveis", mark: "area", color: "var(--chart-1)" }, { label: "Sem recebíveis vencidos (tracejada)", mark: "dashed", color: "var(--chart-2)" }]} />
+      <p className="chart-keyboard-hint">Passe o mouse, toque no gráfico ou use Tab e as setas para ver o saldo de cada dia.</p>
+      <details className="chart-table-toggle">
+        <summary>Ver em tabela</summary>
+        <div className="table-scroll chart-data-table">
+          <table className="workspace-table">
+            <caption className="sr-only">Saldo projetado por dia nos próximos {projectionDays} dias</caption>
+            <thead><tr><th scope="col">Dia</th><th scope="col" className="money">Todos os recebíveis</th><th scope="col" className="money">Sem receber vencidos</th></tr></thead>
+            <tbody>{overview.cashProjectionSeries.map((point) => <tr key={point.date}><td>{formatDateOnly(point.date)}</td><td className={`money${point.projectedBalanceCents < BigInt(0) ? " negative" : ""}`}>{formatCents(point.projectedBalanceCents)}</td><td className={`money${point.withoutOverdueReceivablesCents < BigInt(0) ? " negative" : ""}`}>{formatCents(point.withoutOverdueReceivablesCents)}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </details>
       <p className="dashboard-projection-note">As duas linhas consideram pagamentos e recebimentos futuros nas datas cadastradas. Confira os vencidos antes de usar a projeção para decidir pagamentos.</p>
       {accountOnly && overview.unassignedOpen ? <p className="dashboard-projection-note">Considera só os títulos com esta conta como conta prevista. {overview.unassignedOpen} {overview.unassignedOpen === 1 ? "título em aberto não tem" : "títulos em aberto não têm"} conta prevista e {overview.unassignedOpen === 1 ? "fica" : "ficam"} fora desta projeção.</p> : null}
     </section>
@@ -295,7 +307,17 @@ export default async function DashboardPage(
           <section className="card dashboard-insight-section">
             <div className="dashboard-section-heading"><div><h2>Evolução · últimos 6 meses</h2><p>Receitas, despesas e resultado de cada mês, por competência. A linha é o resultado.</p></div></div>
             <MonthlyChart data={insights.monthly.map((month) => ({ month: month.month, revenue: Number(month.revenueCents) / 100, expense: Number(month.expenseCents) / 100, result: Number(month.resultCents) / 100 }))} />
-            <div className="dashboard-projection-legend"><span><i className="is-revenue" />Receitas</span><span><i className="is-expense" />Despesas</span><span><i className="is-full" />Resultado</span></div>
+            <ChartLegend items={[{ label: "Receitas", mark: "bar", color: "var(--chart-3)" }, { label: "Despesas", mark: "bar", color: "var(--chart-4)" }, { label: "Resultado", mark: "line-dot", color: "var(--chart-1)" }]} />
+            <details className="chart-table-toggle">
+              <summary>Ver em tabela</summary>
+              <div className="table-scroll chart-data-table">
+                <table className="workspace-table">
+                  <caption className="sr-only">Receitas, despesas e resultado por mês, por competência</caption>
+                  <thead><tr><th scope="col">Mês</th><th scope="col" className="money">Receitas</th><th scope="col" className="money">Despesas</th><th scope="col" className="money">Resultado</th></tr></thead>
+                  <tbody>{insights.monthly.map((month) => <tr key={month.month}><td>{`${month.month.slice(5, 7)}/${month.month.slice(0, 4)}`}</td><td className="money">{formatCents(month.revenueCents)}</td><td className="money">{formatCents(month.expenseCents)}</td><td className={`money${month.resultCents < BigInt(0) ? " negative" : ""}`}>{formatCents(month.resultCents)}</td></tr>)}</tbody>
+                </table>
+              </div>
+            </details>
           </section>
 
 
