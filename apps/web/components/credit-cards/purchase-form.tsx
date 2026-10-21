@@ -133,7 +133,7 @@ export function PurchaseForm({
           <input id={`${idPrefix}-notes`} name="notes" type="text" maxLength={2000} defaultValue={defaults?.notes ?? ""} />
         </div>
       </div>
-      <SubmitButton>{submitLabel ?? (editing ? "Salvar alterações" : "Lançar compra")}</SubmitButton>
+      <div className="modal-form-footer"><SubmitButton>{submitLabel ?? (editing ? "Salvar alterações" : "Lançar compra")}</SubmitButton></div>
     </form>
   );
 }

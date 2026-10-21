@@ -102,17 +102,21 @@ export default async function NetWorthPage(props: { searchParams: Promise<{ erro
             ))}
           </ul>
           {worth.debts.length ? <p className="field-note">{worth.debts.map((debt) => `${debt.name}${debt.archived ? " (arquivada)" : ""}: ${formatCents(debt.balanceCents)}`).join(" · ")}</p> : null}
-          <p className="field-note">Contas a receber e a pagar incluem o saldo pendente dos lançamentos com competência até hoje. Competências futuras, lançamentos cancelados ou excluídos ficam fora. Pagamentos futuros ainda não abatem esse saldo. Dívidas arquivadas continuam incluídas; suas parcelas e as faturas não são somadas novamente.</p>
-          <p className="field-note">Esta posição depende dos cadastros e do acesso do seu perfil. Contas e cofrinhos ativos compõem os recursos. Um investimento já representado em uma conta não deve ser cadastrado novamente como bem.</p>
-          {!worth.cardsAvailable ? <p className="field-note">O saldo dos cartões não está disponível neste perfil e não compõe o total exibido.</p> : null}
         </section>
       </div>
+
+      {!worth.cardsAvailable ? <p className="workspace-method-note">Visão parcial: os cartões não estão disponíveis para este perfil e não compõem o patrimônio exibido.</p> : null}
+      <details className="card workspace-explainer">
+        <summary>Como o patrimônio é calculado</summary>
+          <p className="field-note">Contas a receber e a pagar incluem o saldo pendente dos lançamentos com competência até hoje. Competências futuras, lançamentos cancelados ou excluídos ficam fora. Pagamentos futuros ainda não abatem esse saldo. Dívidas arquivadas continuam incluídas; suas parcelas e as faturas não são somadas novamente.</p>
+          <p className="field-note">Esta posição depende dos cadastros e do acesso do seu perfil. Contas e cofrinhos ativos compõem os recursos. Um investimento já representado em uma conta não deve ser cadastrado novamente como bem.</p>
+      </details>
 
       <section className="card" id="composicao-titulos">
         <div className="workspace-card-heading"><div><h2>Composição dos direitos e obrigações</h2><p>Confira cada lançamento que participa do patrimônio.</p></div></div>
         {[{ label: "Contas a receber", rows: worth.receivables, total: worth.receivablesCents, path: "entradas" }, { label: "Outras contas a pagar", rows: worth.payables, total: worth.payablesCents, path: "saidas" }].map((group) => (
-          <details key={group.path}>
-            <summary>{group.label} · {group.rows.length} lançamentos · {formatCents(group.total)}</summary>
+          <details className="workspace-disclosure" key={group.path}>
+            <summary>{group.label} · {group.rows.length} {group.rows.length === 1 ? "lançamento" : "lançamentos"} · {formatCents(group.total)}</summary>
             {group.rows.length ? <div className="table-scroll"><table className="workspace-table">
               <thead><tr><th>Lançamento</th><th>Vencimento</th><th className="money">Saldo pendente hoje</th></tr></thead>
               <tbody>{group.rows.map((title) => <tr key={title.id}><td><Link href={`/${group.path}/${title.id}`}>{title.description}</Link></td><td>{formatDateOnly(title.dueDate)}</td><td className="money">{formatCents(title.remainingCents)}</td></tr>)}</tbody>

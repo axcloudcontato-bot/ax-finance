@@ -246,13 +246,23 @@ export default async function DashboardPage(
         {selected.categoria || selected.pessoa || selected.centroCusto ? <span>Categoria, pessoa e centro de custo filtram os movimentos, não o saldo das contas.</span> : null}
       </div>
       <Reveal className="stat-grid dashboard-primary-grid">
-        <StatCard prominent icon={<Wallet className="size-5" />} label={selected.conta ? "Saldo da conta hoje" : "Disponível hoje"} value={formatCents(selectedAccount?.currentBalanceCents ?? overview.availableBalanceCents)} footerLabel={selected.conta ? "Incluída no total" : "Contas incluídas"} footerValue={selected.conta ? (selectedAccount?.includedInAvailableTotal ? "Sim" : "Não") : String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
+        <StatCard prominent icon={<Wallet className="size-5" />} label={selected.conta ? "Saldo da conta hoje" : "Disponível para uso hoje"} value={formatCents(selectedAccount?.currentBalanceCents ?? overview.availableBalanceCents)} footerLabel={selected.conta ? "Incluída no total" : "Contas incluídas"} footerValue={selected.conta ? (selectedAccount?.includedInAvailableTotal ? "Sim" : "Não") : String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
+          {overview.accounts.length > 0 ? (() => {
+            // Composição: o disponível soma só as contas marcadas; o saldo total registrado inclui as demais (mesma moeda).
+            const outside = overview.accounts.filter((account) => !account.includedInAvailableTotal && account.currency === "BRL").reduce((sum, account) => sum + account.currentBalanceCents, BigInt(0));
+            return (
+              <p className="dashboard-balance-composition">
+                Disponível para uso: <strong>{formatCents(overview.availableBalanceCents)}</strong>
+                {outside !== BigInt(0) ? <> · Fora do disponível: <strong>{formatCents(outside)}</strong> · Saldo total registrado: <strong>{formatCents(overview.availableBalanceCents + outside)}</strong></> : " · Todas as contas entram no disponível."}
+              </p>
+            );
+          })() : null}
           {overview.accounts.length === 0 ? <p className="muted">Nenhuma conta disponível.</p> : <table className="dashboard-detail-table"><thead><tr><th>Conta</th><th>Tipo</th><th>Saldo</th><th>No disponível</th></tr></thead><tbody>{overview.accounts.map((account) => <tr key={account.id}><td data-label="Conta">{account.name}</td><td data-label="Tipo">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td><td data-label="Saldo">{formatCents(account.currentBalanceCents, account.currency)}</td><td data-label="No disponível">{account.includedInAvailableTotal ? "Sim" : "Não"}</td></tr>)}</tbody></table>}
         </StatCard>
         {segmentedView && !accountOnly ? (
           <div className="dashboard-projection-unavailable"><Landmark className="size-5" /><strong>Projeção no consolidado</strong><p>O saldo inicial é da empresa inteira, enquanto os títulos foram filtrados. Limpe os filtros ou escolha só uma conta para ver uma projeção com o mesmo escopo.</p></div>
         ) : (
-          <StatCard icon={<Landmark className="size-5" />} label={`Projetado em ${projectionDays} dias`} value={formatCents(overview.projectedBalanceCents)} footerLabel="Sem receber vencidos" footerValue={formatCents(overview.balanceWithoutOverdueReceivablesCents)} gradient={overview.projectedBalanceCents < BigInt(0) ? "pink" : "blue"} modalTitle={`Cenários para os próximos ${projectionDays} dias`}>
+          <StatCard icon={<Landmark className="size-5" />} label={`Projeção dos próximos ${projectionDays} dias`} value={formatCents(overview.projectedBalanceCents)} footerLabel="Sem receber vencidos" footerValue={formatCents(overview.balanceWithoutOverdueReceivablesCents)} gradient={overview.projectedBalanceCents < BigInt(0) ? "pink" : "blue"} modalTitle={`Cenários para os próximos ${projectionDays} dias`}>
             <p className="muted">O valor principal supõe que todos os títulos em aberto sejam pagos na data de vencimento. Recebíveis já vencidos entram hoje; o cenário alternativo os exclui. Nenhum dos dois é garantia de recebimento.</p>
             <TitleDetailList titles={overview.projectionTitles} />
           </StatCard>

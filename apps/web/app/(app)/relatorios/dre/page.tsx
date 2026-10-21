@@ -80,8 +80,8 @@ export default async function DrePage(
 
   return (
     <main className="wide reports-page">
-      <ReportNavigation active="dre" from={from} to={to} comparison={searchParams.comparar} snapshotId={searchParams.versao} />
       <div className="page-header"><h1>DRE gerencial</h1><a href={exportHref} className="button-link">Exportar CSV</a></div>
+      <ReportNavigation active="dre" from={from} to={to} comparison={searchParams.comparar} snapshotId={searchParams.versao} />
       {report.capturedAsOf ? <p className="report-notice">DRE preservada em {formatDateOnly(report.capturedAsOf)}. Valores, categorias e grupos mantêm a posição desta versão.</p> : null}
       <p className="muted" style={{ marginBottom: "1rem" }}>
         {company.name} · {formatDateOnly(from)} a {formatDateOnly(to)} · operacional e juros contratuais por competência · demais encargos por data da baixa ·

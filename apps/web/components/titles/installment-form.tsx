@@ -134,7 +134,7 @@ export function InstallmentForm({
             </div>
           </div>
 
-          <SubmitButton>Parcelar</SubmitButton>
+          <div className="modal-form-footer"><SubmitButton>Parcelar</SubmitButton></div>
         </form>
       )}
     </div>

@@ -9,7 +9,7 @@ Referência: auditoria de 20/10/2026. Implementação incremental, com revisão 
 | 1. Base visual e navegação | Tipografia, superfícies, espaçamento, contexto da empresa, menu e hierarquia de ações | Iniciada: primeira entrega implementada |
 | 2. Lançamentos e formulários | Entradas/Saídas, ações secundárias, filtros compactos, listas móveis e rodapé acessível nos modais | Entrega principal implementada; criação rápida coberta |
 | 3. Dashboard | Resumo prioritário, filtros compactos, escopo dos indicadores, gráficos e alertas | Implementada a reorganização visual e a explicação de escopo |
-| 4. Demais módulos e estados | Cartões, patrimônio, relatórios, segurança, carregamento, vazio e erro | Pendente |
+| 4. Demais módulos e estados | Cartões, patrimônio, relatórios, segurança, carregamento, vazio e erro | Em andamento: Patrimônio, Cartões, Segurança e carregamento |
 | 5. Acesso e apresentação | Login móvel, página comercial, consistência com o produto e revisão final | Pendente |
 
 ## Entrega 1 — implementada em 20/10/2026
@@ -93,3 +93,38 @@ O rodapé fixo desta entrega cobre a criação rápida de entradas e saídas. Fo
 - Remoção individual pela etiqueta restaurou o consolidado e retirou a categoria da URL.
 - Largura móvel conferida em 390 px, sem transbordamento horizontal da página.
 - Commit e envio direto à branch principal autorizados pelo usuário. Implantação em produção não executada nesta entrega.
+
+
+## Entrega 4 — primeira parte: módulos e carregamento
+
+- Patrimônio: metodologia em seção expansível de largura total; colunas de recursos e obrigações equilibradas. Aviso de visão parcial permanece visível quando o perfil não pode consultar cartões.
+- Cartões: agenda de faturas antes da previsão; projeção dos próximos seis meses expansível, com valores preservados. Resumo móvel em duas colunas.
+- Segurança: títulos com hierarquia consistente e botão Configurar proteção destacado. Nenhuma alteração de autenticação, dispositivos ou permissões.
+- Carregamento compartilhado nas rotas autenticadas, com mensagem acessível e blocos estáticos, sem animação contínua.
+- Continuação pendente desta etapa: relatórios, estados vazios específicos e revisão dos formulários de edição/baixa/parcelamento/transferência. A entrega não conclui todas as sugestões da auditoria.
+### Validação da primeira parte da etapa 4
+
+- TypeScript passou. ESLint sem erros; permanece o aviso preexistente sobre a imagem local do QR code na configuração de segurança.
+- Patrimônio conferido em desktop, incluindo abrir/fechar a metodologia.
+- Cartões conferido em 390 × 844: agenda adaptada para cartões sem rolagem lateral; previsão expansível mantém os seis meses e seus valores.
+- Segurança conferida no celular, com ação azul e largura da página de 390 px. Nenhuma configuração de autenticação foi alterada.
+- Estado de carregamento observado durante a navegação local.
+- Alterações locais, sem commit ou push desta entrega (commitadas junto com a segunda parte).
+
+## Entrega 4 — segunda parte (21/10/2026)
+
+- Rodapé fixo reutilizável (`modal-form-footer`) nos formulários em janela: edição de lançamento, baixa, parcelamento, transferência, compra no cartão e pagamento/antecipação de fatura. Fora de janela, a linha de ações segue no fluxo normal.
+- Lista de Entradas/Saídas vazia separa "nenhum lançamento neste período" (com atalho para lançar) de "nenhum resultado para estes filtros" (com Limpar filtros, preservando o período).
+- Dashboard: "Disponível para uso hoje" e "Projeção dos próximos N dias"; o detalhe do saldo mostra a composição (disponível, fora do disponível e saldo total registrado).
+- Pastas de outros projetos na mesma cópia local ignoradas pelo Git.
+
+### Validação da segunda parte
+
+- TypeScript, ESLint, testes de integração e build de produção.
+- Conferência local em 1280 × 720 e 375 × 812: edição e baixa com rodapé preso no fim do diálogo; transferência; listas vazias por período e por busca; detalhe do saldo.
+
+### Fora desta entrega (dependem de decisão do produto)
+
+- Login móvel (o desenho do login está congelado por decisão do responsável).
+- Topo com avatar e Aparência/Novidades em acesso secundário.
+- Grupos do menu recolhíveis.

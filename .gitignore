@@ -23,3 +23,8 @@ e2e/report/
 
 # Artefatos locais do impeccable (críticas, revisões, servidores de decisão)
 .impeccable/
+
+# Projetos que não fazem parte do AX Finance (ficam na mesma pasta local)
+axfinance/
+entrega-grafana/
+unifi-monitor/

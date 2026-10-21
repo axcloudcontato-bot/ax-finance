@@ -25,8 +25,8 @@ export default async function ProfitabilityPage({ searchParams }: { searchParams
   const money = (value: bigint | null) => value === null ? "—" : formatCents(value);
   const exportQuery = new URLSearchParams({ de: from, ate: to, rateio: fixedAllocation, ...(query.versao ? { versao: query.versao } : {}) });
   return <main className="wide reports-page">
-    <ReportNavigation active="profitability" from={from} to={to} snapshotId={query.versao} />
     <div className="page-header"><div><h1>Rentabilidade por projeto ou serviço</h1><p className="subtitle">Use centros de custo para separar projetos, contratos ou serviços. Resultado por competência, com os rateios cadastrados nos lançamentos.</p></div><a className="button-link" href={`/api/reports/profitability?${exportQuery}`}>Exportar CSV</a></div>
+    <ReportNavigation active="profitability" from={from} to={to} snapshotId={query.versao} />
     <section className="card"><form method="get" className="workspace-report-filters">
       {query.versao ? <input name="versao" value={query.versao} type="hidden" /> : null}
       <div><label htmlFor="from">De</label><input id="from" name="de" type="date" required readOnly={Boolean(query.versao)} defaultValue={from} /></div><div><label htmlFor="to">Até</label><input id="to" name="ate" type="date" required readOnly={Boolean(query.versao)} defaultValue={to} /></div>

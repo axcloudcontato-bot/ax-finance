@@ -22,7 +22,7 @@ async function openModal(page: Page, trigger: string | RegExp) {
 test.describe("fluxos principais", () => {
   test("painel abre com o saldo da conta", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByText("Disponível hoje", { exact: true })).toBeVisible();
+    await expect(page.getByText("Disponível para uso hoje", { exact: true })).toBeVisible();
     await expect(page.getByText("R$ 1.000,00").first()).toBeVisible();
   });
 

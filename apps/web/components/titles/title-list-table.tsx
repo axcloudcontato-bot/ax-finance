@@ -4,9 +4,10 @@ import { formatCents } from "@/lib/currency";
 import { formatDateOnly, toDateOnlyString } from "@/lib/dates";
 import { buildCollectionMessage } from "@/lib/collection-message";
 import { pixChargeForTitle, type PixSettingsView } from "@/lib/pix-charge";
-import { sortHref } from "@/lib/title-list-params";
+import { activeFilterCount, sortHref } from "@/lib/title-list-params";
 import { quickSettleTitleAction } from "@/app/(app)/titulos-actions";
 import { ActionModal } from "@/components/ui/action-modal";
+import { QuickCreateButton } from "@/components/quick-create";
 import { TitleStatusBadge } from "./title-status-badge";
 import { TitleColumnPreferences } from "./title-column-preferences";
 import { SettlementForm } from "./settlement-form";
@@ -18,6 +19,9 @@ type AccountOption = Awaited<ReturnType<typeof listFinancialAccounts>>[number];
 
 const DAY_MS = 86_400_000;
 const BATCH_FORM_ID = "titles-batch-form";
+
+/** Busca, filtros avançados e a aba de situação; o período fica fora (ele é o recorte da tela). */
+const LIST_FILTER_KEYS = ["q", "categoria", "pessoa", "centro", "min", "max", "filtro", "pagina", "ordem", "dir"];
 
 const money = (cents: bigint) => (Number(cents) / 100).toFixed(2).replace(".", ",");
 
@@ -60,7 +64,22 @@ export function TitleListTable({
 
   return (
     <TitleColumnPreferences scope={`${userId}:${companyId}`} pageName={receivable ? "Entradas" : "Saídas"}>
-      {titles.length === 0 ? <p className="muted">Nenhum lançamento encontrado.</p> : (
+      {titles.length === 0 ? (
+        // Lista vazia por filtro é diferente de não ter lançamento: cada caso pede uma saída diferente.
+        (activeFilterCount(params) > 0 || (params.filtro && params.filtro !== "todas")) ? (
+          <div className="workspace-empty">
+            <strong>Nenhum resultado para estes filtros</strong>
+            <p>Nenhuma {noun} deste período combina com a busca, a situação ou os filtros escolhidos.</p>
+            <Link href={(() => { const keep = new URLSearchParams(); for (const [key, value] of Object.entries(params)) if (value && !LIST_FILTER_KEYS.includes(key)) keep.set(key, value); return keep.toString() ? `${basePath}?${keep}` : basePath; })()} className="button-link">Limpar filtros</Link>
+          </div>
+        ) : (
+          <div className="workspace-empty">
+            <strong>{receivable ? "Nenhuma entrada neste período" : "Nenhuma saída neste período"}</strong>
+            <p>Lance {receivable ? "a primeira entrada" : "a primeira saída"} ou escolha outro período no topo da página.</p>
+            <QuickCreateButton kind={receivable ? "RECEIVABLE" : "PAYABLE"} className="button-link workspace-primary-action">{receivable ? "+ Nova entrada" : "+ Nova saída"}</QuickCreateButton>
+          </div>
+        )
+      ) : (
         <div data-selection-root>
           {/* Formulário do lote vazio e fora da tabela: as janelas de Pagar/Cobrar dentro das linhas têm
               os próprios formulários e formulário não pode conter formulário. As caixas apontam para ele. */}

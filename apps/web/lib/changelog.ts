@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-21-visual-mais-claro",
+    date: "2026-10-21",
+    title: "Telas mais claras e diretas",
+    summary: "Menu reorganizado, dashboard com o que importa primeiro e formulários com Salvar sempre à vista.",
+    changes: [
+      { kind: "IMPROVED", text: "Menu lateral agrupado pela rotina (Dia a dia, Contas e patrimônio, Planejamento e gestão) e nome da empresa no topo." },
+      { kind: "IMPROVED", text: "Dashboard com título, posição do saldo e compromissos antes dos gráficos. O detalhe de \"Disponível para uso hoje\" mostra o que entra no disponível e o saldo total registrado." },
+      { kind: "IMPROVED", text: "Entradas e Saídas agrupam as utilidades em \"Mais ações\" e mostram os lançamentos em cartões no celular. Lista vazia agora diz se não há lançamentos no período ou se os filtros esconderam tudo, com atalho para limpar." },
+      { kind: "IMPROVED", text: "Nas janelas de lançamento, edição, baixa, parcelamento, transferência e compra no cartão, os botões ficam presos no rodapé enquanto o formulário rola." },
+      { kind: "IMPROVED", text: "Patrimônio, Cartões, Segurança e Relatórios com explicações recolhíveis e o escopo de cada relatório logo abaixo das abas." },
+    ],
+  },
+  {
     id: "2026-10-20-exportacao-patrimonio-integridade",
     date: "2026-10-20",
     title: "Seus dados completos e um patrimônio mais claro",

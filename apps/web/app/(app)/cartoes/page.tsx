@@ -39,7 +39,7 @@ export default async function CartoesPage(props: {
   } catch (error) {
     if (error instanceof CreditCardAccessRestrictedError) {
       return (
-        <main className="wide">
+        <main className="wide credit-workspace">
           <div className="page-header"><h1>Cartões de crédito</h1></div>
           <div className="card"><div className="workspace-empty"><strong>Disponível só com acesso total</strong><p>{error.message}</p></div></div>
         </main>
@@ -64,7 +64,7 @@ export default async function CartoesPage(props: {
   const refreshKey = [searchParams.erro, searchParams.comprado, searchParams.arquivado, searchParams.reativado, searchParams.excluido].join("|");
 
   return (
-    <main className="wide">
+    <main className="wide credit-workspace">
       <div className="page-header">
         <div><h1>Cartões de crédito</h1><p className="subtitle">Acompanhe o que deve, quando vai pagar e quanto do limite já está comprometido.</p></div>
         <ActionModal
@@ -111,16 +111,17 @@ export default async function CartoesPage(props: {
 
       {summary.overdue.length > 0 ? <div className="credit-attention" role="status"><strong>{formatCents(summary.overdueCents)} precisam de atenção</strong><p>Há faturas vencidas. Confira os encargos na fatura do banco antes de registrar o pagamento. {cards.some((card) => card.status === "ARCHIVED" && card.usedLimitCents > BigInt(0)) ? "Um cartão arquivado voltou a ter saldo pendente e está incluído nesta visão." : ""}</p><a href="#agenda-cartoes">Conferir pendências →</a></div> : null}
 
-      {cards.length > 0 ? <section className="card" aria-label="Compromissos dos próximos meses">
+      {summary.overdue.length + summary.dueSoon.length > 0 ? <section className="card" id="agenda-cartoes" aria-label="Agenda de faturas">
+        <div className="workspace-card-heading"><div><h2>Faturas que pedem atenção</h2><p>Vencidas e com vencimento nos próximos 30 dias. Todas as faturas fechadas pendentes somam {formatCents(summary.payableCents)}.</p></div></div>
+        <div className="table-scroll"><table className="workspace-table credit-agenda-table" role="table"><thead><tr><th>Cartão / fatura</th><th>Vencimento</th><th className="money">Falta pagar</th><th>Situação</th><th aria-label="Abrir fatura" /></tr></thead><tbody>{[...summary.overdue, ...summary.dueSoon].map((invoice) => <tr key={invoice.id}><td><strong>{invoice.cardName}</strong><span className="muted"> · {formatReferenceMonth(invoice.referenceMonth)}{invoice.archived ? " · arquivado" : ""}</span></td><td data-label="Vencimento">{formatDateOnly(invoice.dueDate)}</td><td data-label="Falta pagar" className={`money${invoice.stage === "OVERDUE" ? " negative" : ""}`}>{formatCents(invoice.remainingCents)}</td><td data-label="Situação"><InvoiceStageBadge stage={invoice.stage} /></td><td><Link href={`/cartoes/${invoice.cardId}/faturas/${invoice.id}`} aria-label={`Conferir fatura ${formatReferenceMonth(invoice.referenceMonth)} de ${invoice.cardName}`}>Conferir →</Link></td></tr>)}</tbody></table></div>
+      </section> : null}
+
+      {cards.length > 0 ? <details className="card workspace-explainer credit-forecast">
+        <summary>Compromissos dos próximos 6 meses · {formatCents(summary.futureCents)} em parcelas futuras</summary>
         <div className="workspace-card-heading"><div><h2>O que já está comprometido</h2><p>Saldo a pagar por mês de vencimento, com as parcelas já lançadas. Faturas abertas ainda podem aumentar.</p></div><span className="credit-summary-note">Parcelas em faturas futuras: <strong>{formatCents(summary.futureCents)}</strong></span></div>
         <div className="credit-months">{summary.months.map((month) => <div className="credit-month" key={month.referenceMonth}><span>{formatReferenceMonth(month.referenceMonth)}</span><strong>{formatCents(month.remainingCents)}</strong><small>{month.invoiceCount} {month.invoiceCount === 1 ? "fatura" : "faturas"}</small></div>)}</div>
         <p className="credit-summary-note">{summary.beyondHorizonCents > BigInt(0) ? `Há ainda ${formatCents(summary.beyondHorizonCents)} após esses seis meses. ` : ""}Esta previsão considera compras registradas; novas compras e encargos ainda não lançados não estão incluídos. <Link href="/relatorios/fluxo-de-caixa">Comparar com o fluxo de caixa →</Link></p>
-      </section> : null}
-
-      {summary.overdue.length + summary.dueSoon.length > 0 ? <section className="card" id="agenda-cartoes" aria-label="Agenda de faturas">
-        <div className="workspace-card-heading"><div><h2>Faturas que pedem atenção</h2><p>Vencidas e com vencimento nos próximos 30 dias. Todas as faturas fechadas pendentes somam {formatCents(summary.payableCents)}.</p></div></div>
-        <div className="table-scroll"><table className="workspace-table"><thead><tr><th>Cartão / fatura</th><th>Vencimento</th><th className="money">Falta pagar</th><th>Situação</th><th aria-label="Abrir fatura" /></tr></thead><tbody>{[...summary.overdue, ...summary.dueSoon].map((invoice) => <tr key={invoice.id}><td><strong>{invoice.cardName}</strong><span className="muted"> · {formatReferenceMonth(invoice.referenceMonth)}{invoice.archived ? " · arquivado" : ""}</span></td><td>{formatDateOnly(invoice.dueDate)}</td><td className={`money${invoice.stage === "OVERDUE" ? " negative" : ""}`}>{formatCents(invoice.remainingCents)}</td><td><InvoiceStageBadge stage={invoice.stage} /></td><td><Link href={`/cartoes/${invoice.cardId}/faturas/${invoice.id}`} aria-label={`Conferir fatura ${formatReferenceMonth(invoice.referenceMonth)} de ${invoice.cardName}`}>Conferir →</Link></td></tr>)}</tbody></table></div>
-      </section> : null}
+      </details> : null}
 
       {cards.length === 0 ? (
         <div className="card">

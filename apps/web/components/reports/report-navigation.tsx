@@ -9,10 +9,16 @@ export function ReportNavigation({ active, from, to, comparison, snapshotId, sna
   if (snapshotMonth) preserved.set("mes", snapshotMonth);
   if (snapshotId) preserved.set("versao", snapshotId);
   const reportSuffix = preserved.size ? `?${preserved}` : "";
-  return <nav className="report-navigation" aria-label="Relatórios financeiros">
+  const scope = {
+    cash: "Caixa: recebimentos e pagamentos pela data efetiva. A projeção aparece separada do realizado.",
+    aging: "Carteira em aberto: valores a receber e a pagar, organizados por vencimento.",
+    dre: "Resultado gerencial: receitas, custos e despesas por competência. Lucro não é saldo disponível.",
+    profitability: "Rentabilidade: resultado por centro de custo, considerando a competência e os rateios.",
+  }[active];
+  return <div className="report-context"><nav className="report-navigation" aria-label="Relatórios financeiros">
     <Link href={`/relatorios/fluxo-de-caixa${suffix}`} aria-current={active === "cash" ? "page" : undefined}>Fluxo de caixa{snapshotId ? " (atual)" : ""}</Link>
     <Link href={`/relatorios/em-aberto${snapshotId ? `?versao=${snapshotId}` : ""}`} aria-current={active === "aging" ? "page" : undefined}>Contas a receber/pagar</Link>
     <Link href={`/relatorios/dre${reportSuffix}`} aria-current={active === "dre" ? "page" : undefined}>DRE gerencial</Link>
     <Link href={`/relatorios/rentabilidade${reportSuffix}`} aria-current={active === "profitability" ? "page" : undefined}>Rentabilidade</Link>
-  </nav>;
+  </nav><p className="report-scope">{scope}</p></div>;
 }

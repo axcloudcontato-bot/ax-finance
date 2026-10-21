@@ -45,8 +45,8 @@ export default async function EmAbertoPage(
 
   return (
     <main className="wide reports-page">
-      <ReportNavigation active="aging" snapshotId={searchParams.versao} snapshotMonth={report.snapshot?.period} />
       <div className="page-header"><h1>Contas a receber e a pagar</h1><a href={exportHref} className="button-link">Exportar seleção CSV</a></div>
+      <ReportNavigation active="aging" snapshotId={searchParams.versao} snapshotMonth={report.snapshot?.period} />
       <p className="muted" style={{ marginBottom: "1rem" }}>
         {company.name} · saldos em aberto de {formatDateOnly(report.balanceAsOfDate)} · atrasos em relação a {formatDateOnly(asOfDate)} · gerado em{" "}
         {new Date().toLocaleString("pt-BR", { timeZone: company.timezone })}

@@ -129,7 +129,7 @@ export default async function FaturaPage(props: {
                   </div>
                   <PaymentImpact remainingCents={invoice.remainingCents} />
                 </div>
-                <SubmitButton>Registrar pagamento</SubmitButton>
+                <div className="modal-form-footer"><SubmitButton>Registrar pagamento</SubmitButton></div>
               </form>
             )}
           </ActionModal>
@@ -175,7 +175,7 @@ export default async function FaturaPage(props: {
                     <input id="anticipate-notes" name="notes" type="text" maxLength={2000} />
                   </div>
                 </div>
-                <SubmitButton>Antecipar</SubmitButton>
+                <div className="modal-form-footer"><SubmitButton>Antecipar</SubmitButton></div>
               </form>
             )}
           </ActionModal>

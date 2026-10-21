@@ -81,7 +81,7 @@ export function TransferForm({
           <p>{amountParsed === null || feeParsed === null ? "Informe valores válidos com até duas casas decimais." : "Selecione duas contas diferentes e informe o valor para revisar o efeito nos saldos."}</p>
         )}
       </div>
-      <div className="record-detail-inline-actions">
+      <div className="record-detail-inline-actions modal-form-footer">
         <SubmitButton disabled={!ready}>Confirmar transferência</SubmitButton>
         {onCancel ? (
           <button type="button" className="secondary" onClick={onCancel}>Cancelar</button>

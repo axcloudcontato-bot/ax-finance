@@ -21,7 +21,7 @@ export default async function SecurityPage(
   const qrCode = pending ? await QRCode.toDataURL(pending.otpauthUri, { width: 220, margin: 1 }) : null;
 
   return (
-    <main className="wide settings-page">
+    <main className="wide settings-page security-workspace">
       <div className="page-header">
         <div><h1>Segurança da conta</h1><p className="subtitle">Proteja seu acesso ao AX Finance.</p></div>
       </div>
@@ -88,7 +88,7 @@ export default async function SecurityPage(
             <div className="security-empty-state">
               <Smartphone className="size-10" />
               <div><h3>Proteção adicional desativada</h3><p>Além da senha, você confirmará o acesso com um código temporário gerado no celular.</p></div>
-              <form action={beginMfaSetupAction}><SubmitButton>Configurar autenticação em duas etapas</SubmitButton></form>
+              <form action={beginMfaSetupAction}><SubmitButton className="button-link workspace-primary-action">Configurar proteção</SubmitButton></form>
             </div>
           )}
         </section>

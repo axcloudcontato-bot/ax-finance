@@ -100,7 +100,7 @@ export function SettlementForm({
             </div>
           </div>
 
-          <div className="form-actions">
+          <div className="form-actions modal-form-footer">
             <SubmitButton>{submitLabel}</SubmitButton>
           </div>
         </form>

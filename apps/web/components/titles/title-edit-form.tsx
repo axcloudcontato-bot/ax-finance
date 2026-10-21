@@ -30,6 +30,6 @@ export function TitleEditForm({ action, title, categories, parties, costCenters,
       <div><label htmlFor="edit-document">Nº do documento</label><input id="edit-document" name="documentNumber" defaultValue={title.documentNumber ?? ""} maxLength={60}/></div>
       <div><label htmlFor="edit-code">Linha digitável, chave PIX ou dados de pagamento</label><input id="edit-code" name="paymentCode" defaultValue={title.paymentCode ?? ""} maxLength={200}/></div>
       <div className="span-2"><label htmlFor="edit-title-notes">Observações</label><textarea id="edit-title-notes" name="notes" defaultValue={title.notes ?? ""} maxLength={2000}/></div>
-    </div><SubmitButton>Salvar alterações</SubmitButton>
+    </div><div className="modal-form-footer"><SubmitButton>Salvar alterações</SubmitButton></div>
   </form></>;
 }
