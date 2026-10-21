@@ -16,8 +16,12 @@ export interface NavItemData {
   children?: NavItemData[];
 }
 
+function matchesRoute(href: string | undefined, pathname: string | null): boolean {
+  return !!href && !!pathname && (pathname === href || pathname.startsWith(`${href}/`));
+}
+
 function hasActiveDescendant(item: NavItemData, pathname: string | null): boolean {
-  return !!item.children?.some((child) => child.href === pathname || hasActiveDescendant(child, pathname));
+  return !!item.children?.some((child) => matchesRoute(child.href, pathname) || hasActiveDescendant(child, pathname));
 }
 
 export function NavItem({
@@ -39,7 +43,7 @@ export function NavItem({
   // "Cadastros" recolhido.
   const activeDescendant = hasActiveDescendant(item, pathname);
   const [isOpen, setIsOpen] = useState(() => activeDescendant);
-  const isActive = !!item.href && pathname === item.href;
+  const isActive = matchesRoute(item.href, pathname);
   const isHighlighted = isActive || activeDescendant;
   const disabled = !item.href && !hasChildren;
   const submenuId = `nav-submenu-${item.id}`;
@@ -97,6 +101,7 @@ export function NavItem({
         }
       } : undefined}
       role={hasChildren ? "button" : undefined}
+      data-active={isHighlighted || undefined}
       tabIndex={hasChildren ? 0 : undefined}
       aria-expanded={hasChildren ? (!collapsed && isOpen) : undefined}
       aria-controls={hasChildren && !collapsed ? submenuId : undefined}

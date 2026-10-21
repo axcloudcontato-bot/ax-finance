@@ -61,7 +61,7 @@ export function QuickCreateModal() {
   const [round, setRound] = useState(0);
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   // Quem abriu (o "+" do topo, um atalho...): o modal cresce a partir dele.
   const originRef = useRef<HTMLElement | null>(null);
@@ -74,6 +74,7 @@ export function QuickCreateModal() {
   useEffect(() => {
     const onOpen = (event: Event) => {
       originRef.current = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
+      triggerRef.current = originRef.current instanceof HTMLButtonElement ? originRef.current : null;
       setOptions(null);
       setLoadError(null);
       setRound((value) => value + 1);
@@ -120,7 +121,7 @@ export function QuickCreateModal() {
     <div ref={overlayRef} className="modal-overlay" onClick={close}>
       <div
         ref={dialogRef}
-        className="modal-dialog"
+        className={`modal-dialog ${shownKind !== "TRANSFER" ? "quick-title-dialog" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -136,7 +137,7 @@ export function QuickCreateModal() {
           <QuickTransfer key={round} accounts={options.accounts} onDone={done} onCancel={close} />
         ) : null}
         {options && shownKind !== "TRANSFER" ? (
-          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onDone={done} onCategoryCreated={(category) => setOptions((current) => current ? { ...current, categories: withCategory(current.categories, category) } : current)} onPartyCreated={(party) => setOptions((current) => current && !current.parties.some((item) => item.id === party.id) ? { ...current, parties: [...current.parties, party].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")) } : current)} />
+          <QuickTitle key={`${shownKind}-${round}`} kind={shownKind} options={options} onCancel={close} onDone={done} onCategoryCreated={(category) => setOptions((current) => current ? { ...current, categories: withCategory(current.categories, category) } : current)} onPartyCreated={(party) => setOptions((current) => current && !current.parties.some((item) => item.id === party.id) ? { ...current, parties: [...current.parties, party].sort((a, b) => a.name.localeCompare(b.name, "pt-BR")) } : current)} />
         ) : null}
       </div>
     </div>
@@ -145,11 +146,15 @@ export function QuickCreateModal() {
 
 type QuickCategory = QuickCreateOptions["categories"][number];
 
-function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onDone: (message: string, keepOpen: boolean) => void; onCategoryCreated: (category: QuickCategory) => void; onPartyCreated: (party: QuickCreateOptions["parties"][number]) => void }) {
+function QuickTitle({ kind, options, onCancel, onDone, onCategoryCreated, onPartyCreated }: { kind: "RECEIVABLE" | "PAYABLE"; options: QuickCreateOptions; onCancel: () => void; onDone: (message: string, keepOpen: boolean) => void; onCategoryCreated: (category: QuickCategory) => void; onPartyCreated: (party: QuickCreateOptions["parties"][number]) => void }) {
   const [error, setError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState(false);
   const confirmDuplicate = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error || duplicate) feedbackRef.current?.focus();
+  }, [error, duplicate]);
   const [pending, startTransition] = useTransition();
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const today = todayDateOnlyString();
@@ -174,6 +179,8 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }
   // e aqui a pessoa precisa manter o que digitou se houver erro ou aviso de duplicidade.
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    keepOpen.current = submitter instanceof HTMLButtonElement && submitter.dataset.keepOpen === "true";
     const formData = new FormData(event.currentTarget);
     startTransition(async () => {
       await submit(formData);
@@ -188,8 +195,10 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }
   }
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} onChange={() => { if (duplicate) setDuplicate(false); }}>
-      {error ? <p className="error">{error}</p> : null}
+    <form className="quick-title-form" ref={formRef} onSubmit={onSubmit} onChange={() => { if (duplicate) setDuplicate(false); }}>
+      <div className="quick-title-body">
+      <div ref={feedbackRef} tabIndex={-1}>
+      {error ? <p className="error" role="alert">{error}</p> : null}
       {duplicate ? (
         <div className="duplicate-warning" role="alert">
           <strong>Possível lançamento em duplicidade</strong>
@@ -197,6 +206,7 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }
           <button type="button" className="secondary" disabled={pending} onClick={submitAnyway}>É outro lançamento, lançar mesmo assim</button>
         </div>
       ) : null}
+      </div>
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <div className="form-grid">
         <div className="span-2">
@@ -244,7 +254,7 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }
           </div>
         ) : null}
 
-        <div>
+        <div className={options.costCenters.length ? undefined : "span-2"}>
           <label htmlFor="qc-amount">Valor (R$)</label>
           <input id="qc-amount" name="amount" type="text" inputMode="decimal" placeholder="0,00" required />
         </div>
@@ -293,9 +303,11 @@ function QuickTitle({ kind, options, onDone, onCategoryCreated, onPartyCreated }
         </div>
       </details>
 
-      <div style={{ display: "flex", gap: "0.75rem" }}>
-        <button type="submit" disabled={pending} onClick={() => { keepOpen.current = false; }}>{pending ? "Salvando…" : "Salvar"}</button>
-        <button type="submit" className="secondary" disabled={pending} onClick={() => { keepOpen.current = true; }}>Salvar e nova</button>
+      </div>
+      <div className="quick-title-footer">
+        <button type="button" className="secondary" disabled={pending} onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="workspace-primary-action" disabled={pending}>{pending ? "Salvando…" : kind === "RECEIVABLE" ? "Salvar entrada" : "Salvar saída"}</button>
+        <button type="submit" className="secondary" data-keep-open="true" disabled={pending}>Salvar e criar outra</button>
       </div>
     </form>
   );

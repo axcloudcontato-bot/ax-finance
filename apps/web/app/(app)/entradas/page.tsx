@@ -81,10 +81,13 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
   const returnTo = returnQuery ? `/entradas?${returnQuery}` : "/entradas";
 
   return (
-    <main className="wide">
+    <main className="wide titles-workspace">
       <div className="page-header">
         <h1>Entradas</h1>
         <div className="page-header-actions">
+          <details className="title-extra-actions">
+            <summary>Mais ações</summary>
+            <div className="title-extra-actions-panel">
           <Link href="/entradas/recorrencias" className="button-link">
             Recorrências
           </Link>
@@ -118,6 +121,8 @@ export default async function EntradasPage(props: { searchParams: Promise<Search
               <SubmitButton>Salvar</SubmitButton>
             </form>
           </ActionModal>
+            </div>
+          </details>
           <QuickCreateButton kind="RECEIVABLE" className="button-link workspace-primary-action">+ Novo lançamento</QuickCreateButton>
         </div>
       </div>

@@ -13,7 +13,7 @@ export interface AppNotification {
 }
 
 // Marca à esquerda e, à direita, o menu de ações (criar, buscar, notificações, perfil e tema).
-export function AppTopbar({ leading, children }: { leading?: ReactNode; children?: ReactNode }) {
+export function AppTopbar({ leading, children, companyName }: { leading?: ReactNode; children?: ReactNode; companyName: string }) {
   return (
     <header
       className="app-topbar relative z-40 flex h-16 w-full shrink-0 items-center justify-between gap-2 px-3 sm:px-5"
@@ -23,7 +23,10 @@ export function AppTopbar({ leading, children }: { leading?: ReactNode; children
         <div className="grid size-8 shrink-0 place-items-center rounded-[6px] bg-[#2f63d6] text-white">
           <Wallet className="size-4" />
         </div>
-        <span className="hidden text-base font-semibold sm:inline">AX Finance</span>
+        <div className="app-workspace-identity min-w-0">
+          <span className="app-workspace-brand">AX Finance</span>
+          <span className="app-workspace-name" title={companyName}>{companyName}</span>
+        </div>
       </div>
       {children}
     </header>

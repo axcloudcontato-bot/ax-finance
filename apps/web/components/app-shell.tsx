@@ -12,6 +12,7 @@ import type { WriteBlockNotice } from "@/lib/write-block-notice";
 
 export function AppShell({
   userName,
+  companyName,
   canManageMembers,
   isPlatformAdmin,
   planCode,
@@ -22,6 +23,7 @@ export function AppShell({
   children,
 }: {
   userName: string;
+  companyName: string;
   canManageMembers: boolean;
   isPlatformAdmin: boolean;
   planCode: "PERSONAL" | "ESSENTIAL";
@@ -42,10 +44,11 @@ export function AppShell({
   const closeNav = useCallback(() => setNavOpen(false), []);
 
   return (
-    <div className="ax-model-buttons flex h-svh w-full min-w-0 flex-col bg-background">
+    <div className="app-shell ax-model-buttons flex h-svh w-full min-w-0 flex-col bg-background">
       {/* Primeiro item do Tab: pula a barra do topo e o menu lateral (WCAG 2.4.1). */}
       <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
       <AppTopbar
+        companyName={companyName}
         leading={
           <button
             type="button"
@@ -53,6 +56,7 @@ export function AppShell({
             onClick={() => setNavOpen((open) => !open)}
             aria-label={navOpen ? "Fechar menu de navegação" : "Abrir menu de navegação"}
             aria-expanded={navOpen}
+            aria-controls="app-sidebar-navigation"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               {navOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
