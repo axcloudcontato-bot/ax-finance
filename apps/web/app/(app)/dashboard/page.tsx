@@ -236,13 +236,18 @@ export default async function DashboardPage(
         parties={parties.map(({ id, name }) => ({ id, name }))} costCenters={costCenters.map(({ id, name }) => ({ id, name }))} values={selected}
         actions={(
           <div className="quick-actions">
-            <QuickCreateButton kind="RECEIVABLE" className="quick-action-card revenue"><span className="quick-action-icon"><ArrowDownCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova receita</QuickCreateButton>
-            <QuickCreateButton kind="PAYABLE" className="quick-action-card expense"><span className="quick-action-icon"><ArrowUpCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova despesa</QuickCreateButton>
+            <QuickCreateButton kind="RECEIVABLE" className="quick-action-card revenue"><span className="quick-action-icon"><ArrowDownCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova entrada</QuickCreateButton>
+            <QuickCreateButton kind="PAYABLE" className="quick-action-card expense"><span className="quick-action-icon"><ArrowUpCircle className="size-[18px]" strokeWidth={1.7} /></span>Nova saída</QuickCreateButton>
           </div>
         )} />
+      <div className="dashboard-scope-note">
+        <strong>Posição em {formatDateOnly(overview.today)}</strong>
+        <span>{selected.conta ? "Saldo atual da conta selecionada." : "Saldo atual das contas incluídas no disponível."} O período acima filtra resultados e movimentos; não altera o saldo atual.</span>
+        {selected.categoria || selected.pessoa || selected.centroCusto ? <span>Categoria, pessoa e centro de custo filtram os movimentos, não o saldo das contas.</span> : null}
+      </div>
       <Reveal className="stat-grid dashboard-primary-grid">
-        <StatCard prominent icon={<Wallet className="size-5" />} label={selected.conta ? "Saldo da conta" : "Disponível na empresa"} value={formatCents(selectedAccount?.currentBalanceCents ?? overview.availableBalanceCents)} footerLabel={selected.conta ? "Incluída no total" : "Contas incluídas"} footerValue={selected.conta ? (selectedAccount?.includedInAvailableTotal ? "Sim" : "Não") : String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
-          {overview.accounts.length === 0 ? <p className="muted">Nenhuma conta disponível.</p> : <table className="dashboard-detail-table"><thead><tr><th>Conta</th><th>Tipo</th><th>Saldo</th></tr></thead><tbody>{overview.accounts.map((account) => <tr key={account.id}><td data-label="Conta">{account.name}</td><td data-label="Tipo">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td><td data-label="Saldo">{formatCents(account.currentBalanceCents, account.currency)}</td></tr>)}</tbody></table>}
+        <StatCard prominent icon={<Wallet className="size-5" />} label={selected.conta ? "Saldo da conta hoje" : "Disponível hoje"} value={formatCents(selectedAccount?.currentBalanceCents ?? overview.availableBalanceCents)} footerLabel={selected.conta ? "Incluída no total" : "Contas incluídas"} footerValue={selected.conta ? (selectedAccount?.includedInAvailableTotal ? "Sim" : "Não") : String(overview.accounts.filter((account) => account.includedInAvailableTotal).length)} gradient="blue" modalTitle="Saldo por conta">
+          {overview.accounts.length === 0 ? <p className="muted">Nenhuma conta disponível.</p> : <table className="dashboard-detail-table"><thead><tr><th>Conta</th><th>Tipo</th><th>Saldo</th><th>No disponível</th></tr></thead><tbody>{overview.accounts.map((account) => <tr key={account.id}><td data-label="Conta">{account.name}</td><td data-label="Tipo">{ACCOUNT_TYPE_LABEL[account.type] ?? account.type}</td><td data-label="Saldo">{formatCents(account.currentBalanceCents, account.currency)}</td><td data-label="No disponível">{account.includedInAvailableTotal ? "Sim" : "Não"}</td></tr>)}</tbody></table>}
         </StatCard>
         {segmentedView && !accountOnly ? (
           <div className="dashboard-projection-unavailable"><Landmark className="size-5" /><strong>Projeção no consolidado</strong><p>O saldo inicial é da empresa inteira, enquanto os títulos foram filtrados. Limpe os filtros ou escolha só uma conta para ver uma projeção com o mesmo escopo.</p></div>
@@ -252,14 +257,14 @@ export default async function DashboardPage(
             <TitleDetailList titles={overview.projectionTitles} />
           </StatCard>
         )}
-        {segmentedView && !accountOnly ? <div className="dashboard-projection-unavailable dashboard-open-titles-unavailable"><strong>Títulos em aberto</strong><p>Com mais de um filtro, os valores a pagar e a receber não ficam comparáveis ao saldo. Limpe os filtros para vê-los.</p></div> : <>
+        {segmentedView && !accountOnly ? <div className="dashboard-projection-unavailable dashboard-open-titles-unavailable"><strong>Títulos em aberto</strong><p>Com filtro de categoria, pessoa ou centro de custo, os títulos têm um escopo diferente do saldo. Limpe esses filtros para comparar os valores.</p></div> : <>
           <StatCard icon={<ArrowUpCircle className="size-5" />} label={`A pagar até ${formatDateOnly(overview.projectionEnd)}`} value={formatCents(projectionPayables.totalCents)} footerLabel="Vencidos" footerValue={String(overduePayables.items.length)} gradient="orange" modalTitle="Obrigações até o fim da projeção"><TitleDetailList titles={projectionPayables.items} /></StatCard>
           <StatCard icon={<ArrowDownCircle className="size-5" />} label={`A receber até ${formatDateOnly(overview.projectionEnd)}`} value={formatCents(projectionReceivables.totalCents)} footerLabel="Vencidos" footerValue={String(overdueReceivables.items.length)} gradient="teal" modalTitle="Recebíveis até o fim da projeção"><TitleDetailList titles={projectionReceivables.items} /></StatCard>
         </>}
       </Reveal>
 
-      <section className="card dashboard-alerts">
-        <div className="dashboard-section-heading"><div><h2>O que precisa de atenção</h2><p>{selected.conta ? "Pendências dos títulos que têm a conta selecionada como conta prevista." : "Prioridades da empresa, com valores a pagar e a receber separados."}</p></div><span>{alerts.length} {alerts.length === 1 ? "pendência" : "pendências"}</span></div>
+      <section className={`card dashboard-alerts ${alerts.length === 0 ? "is-clear" : ""}`}>
+        {alerts.length > 0 ? <div className="dashboard-section-heading"><div><h2>O que precisa de atenção</h2><p>{selected.conta ? "Pendências dos títulos que têm a conta selecionada como conta prevista." : segmentedView ? "Pendências no recorte selecionado, com valores a pagar e a receber separados." : "Prioridades da empresa, com valores a pagar e a receber separados."}</p></div><span>{alerts.length} {alerts.length === 1 ? "pendência" : "pendências"}</span></div> : null}
         {alerts.length === 0 ? <div className="dashboard-alert success"><CircleCheck className="size-5" /><div><strong>Nenhuma pendência detectada</strong><p>Não há atrasos, importações com falha ou conciliações pendentes neste escopo.</p></div></div>
           : <div className="dashboard-alert-list">{alerts.map((alert) => <div key={alert.title} className={`dashboard-alert ${alert.tone}`}><AlertTriangle className="size-5" /><div><strong>{alert.title}</strong><p>{alert.body}</p></div><Link href={alert.href}>{alert.action}</Link></div>)}</div>}
       </section>
@@ -268,7 +273,14 @@ export default async function DashboardPage(
 
       {!segmentedView && insights && budget ? (
         <>
+          <div className="dashboard-insight-grid">
+            <AgendaPanel overview={overview} />
+            <CardsPanel cards={cards} today={overview.today} />
+          </div>
+          <p className="dashboard-scope-note"><strong>Resultado por competência</strong><span>{formatDateOnly(period.from)} a {formatDateOnly(period.to)} · considera lançamentos pagos e não pagos.</span></p>
           <ResultPanel insights={insights} personal={personal} compareLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} />
+
+          {projectionSection}
 
           <section className="card dashboard-insight-section">
             <div className="dashboard-section-heading"><div><h2>Evolução · últimos 6 meses</h2><p>Receitas, despesas e resultado de cada mês, por competência. A linha é o resultado.</p></div></div>
@@ -276,12 +288,8 @@ export default async function DashboardPage(
             <div className="dashboard-projection-legend"><span><i className="is-revenue" />Receitas</span><span><i className="is-expense" />Despesas</span><span><i className="is-full" />Resultado</span></div>
           </section>
 
-          {projectionSection}
 
-          <div className="dashboard-insight-grid">
-            <AgendaPanel overview={overview} />
-            <CardsPanel cards={cards} today={overview.today} />
-          </div>
+
           <div className="dashboard-insight-grid">
             <BudgetPanel budget={budget} personal={personal} />
             <HealthPanel insights={insights} availableCents={overview.availableBalanceCents} personal={personal} />
@@ -291,7 +299,7 @@ export default async function DashboardPage(
       ) : null}
 
       <section className="dashboard-period-section">
-        <div className="dashboard-section-heading"><div><h2>No período selecionado</h2><p>{selected.conta ? "Movimentos realizados na conta selecionada e títulos em aberto que têm essa conta como conta prevista." : "Movimentos realizados e títulos abertos com vencimento no período."}</p></div></div>
+        <div className="dashboard-section-heading"><div><h2>Movimentos do período</h2><p>{selected.conta ? "Movimentos realizados na conta selecionada e títulos em aberto que têm essa conta como conta prevista." : "Movimentos realizados e títulos abertos com vencimento no período."}</p></div></div>
         <Reveal className="stat-grid dashboard-secondary-grid">
         <StatCard icon={<ArrowDownCircle className="size-5" />} label="Recebimentos realizados" value={formatCents(overview.current.receivedCents)} footerLabel="Baixas no período" footerValue={String(realizedReceipts.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.receivedCents, overview.comparison.receivedCents) : undefined} gradient="teal" modalTitle="Recebimentos realizados"><SettlementList entries={realizedReceipts} /></StatCard>
         <StatCard icon={<ArrowUpCircle className="size-5" />} label="Pagamentos realizados" value={formatCents(overview.current.paidCents)} footerLabel="Baixas no período" footerValue={String(realizedPayments.length)} comparisonLabel={comparison ? `vs. ${comparison.label.toLowerCase()}` : undefined} comparisonValue={overview.comparison ? comparisonValue(overview.current.paidCents, overview.comparison.paidCents) : undefined} gradient="pink" modalTitle="Pagamentos realizados"><SettlementList entries={realizedPayments} /></StatCard>

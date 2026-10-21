@@ -8,7 +8,7 @@ Referência: auditoria de 20/10/2026. Implementação incremental, com revisão 
 | --- | --- | --- |
 | 1. Base visual e navegação | Tipografia, superfícies, espaçamento, contexto da empresa, menu e hierarquia de ações | Iniciada: primeira entrega implementada |
 | 2. Lançamentos e formulários | Entradas/Saídas, ações secundárias, filtros compactos, listas móveis e rodapé acessível nos modais | Entrega principal implementada; criação rápida coberta |
-| 3. Dashboard | Resumo prioritário, filtros compactos, escopo dos indicadores, gráficos e alertas | Pendente; título e linha tracejada antecipados |
+| 3. Dashboard | Resumo prioritário, filtros compactos, escopo dos indicadores, gráficos e alertas | Implementada a reorganização visual e a explicação de escopo |
 | 4. Demais módulos e estados | Cartões, patrimônio, relatórios, segurança, carregamento, vazio e erro | Pendente |
 | 5. Acesso e apresentação | Login móvel, página comercial, consistência com o produto e revisão final | Pendente |
 
@@ -72,3 +72,24 @@ Referência: auditoria de 20/10/2026. Implementação incremental, com revisão 
 ### Limites do escopo
 
 O rodapé fixo desta entrega cobre a criação rápida de entradas e saídas. Formulários de edição, baixa, parcelamento e transferência ainda precisam da revisão específica prevista na evolução dos módulos. Os filtros avançados existentes foram preservados, com navegação de situação e resumo adaptados ao celular.
+
+
+## Entrega 3 — dashboard (20/10/2026)
+
+- Barra compacta com período, filtros e criação de entrada/saída; retirada a chamada redundante Filtros analíticos.
+- Filtros aplicados visíveis como etiquetas, com remoção individual mantendo os demais parâmetros da navegação.
+- Saldo atual identificado pela data de posição. Explicação de que período e filtros de categoria/pessoa/centro não alteram o saldo das contas.
+- Detalhamento do saldo informa quais contas entram no disponível.
+- Quatro indicadores principais em duas colunas no celular.
+- Estado sem pendências compacto; alertas existentes preservados quando há problemas.
+- Agenda e cartões antecipados para antes dos gráficos; projeção de caixa antes do histórico de seis meses.
+- Resultado por competência com datas explícitas, separado dos movimentos realizados do período.
+- Fórmulas, permissões e regras financeiras preservadas. A linha tracejada foi corrigida na entrega 1.
+### Validação da entrega 3
+
+- TypeScript, ESLint e verificação de diferenças passaram.
+- Inspeção visual em 390 × 844 e 1280 × 720, na base local de testes.
+- Aplicação de categoria: etiqueta e explicação de escopo apareceram, mantendo o saldo atual e a restrição de projeção.
+- Remoção individual pela etiqueta restaurou o consolidado e retirou a categoria da URL.
+- Largura móvel conferida em 390 px, sem transbordamento horizontal da página.
+- Commit e envio direto à branch principal autorizados pelo usuário. Implantação em produção não executada nesta entrega.

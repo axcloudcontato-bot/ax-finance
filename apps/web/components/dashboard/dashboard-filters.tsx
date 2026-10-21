@@ -56,7 +56,7 @@ export function DashboardFilters({
 
   useEffect(() => {
     setDraft(values);
-  }, [values.conta, values.categoria, values.pessoa, values.centroCusto]);
+  }, [values]);
 
   useEffect(() => {
     if (hasFiltersInUrl) {
@@ -94,24 +94,16 @@ export function DashboardFilters({
   const update = (key: FilterKey, value: string) => setDraft((current) => ({ ...current, [key]: value || undefined }));
   const activeCount = FILTER_KEYS.filter((key) => values[key]).length;
 
+  const optionGroups = { conta: accounts, categoria: categories, pessoa: parties, centroCusto: costCenters };
+  const filterLabels = { conta: "Conta", categoria: "Categoria", pessoa: "Pessoa", centroCusto: "Centro de custo" };
+
   return (
     <section className="dashboard-filter-card dashboard-command-center" aria-label="Filtros analíticos do dashboard">
       <div className="dashboard-command-header">
-        <div className="dashboard-command-copy">
-          <span className="dashboard-command-icon"><Filter className="size-[18px]" /></span>
-          <span>
-            <strong>Filtros analíticos</strong>
-            <small>Refine a visão sem perder o contexto do período.</small>
-          </span>
-        </div>
-
         <div className="dashboard-command-period">
           <span className="dashboard-command-label">Período analisado</span>
           <GlobalMonthSelector />
         </div>
-
-        {actions ? <div className="dashboard-command-actions" aria-label="Ações financeiras rápidas">{actions}</div> : null}
-      </div>
 
       <button
         type="button"
@@ -121,9 +113,16 @@ export function DashboardFilters({
         aria-controls="dashboard-advanced-filters"
         onClick={() => setFiltersOpen((open) => !open)}
       >
-        <span><Filter className="size-4" /> Filtrar dados</span>
-        <span>{activeCount > 0 ? `${activeCount} ${activeCount === 1 ? "filtro ativo" : "filtros ativos"}` : "Conta, categoria, pessoa e centro de custo"}</span>
+        <span><Filter className="size-4" /> Filtros{activeCount ? ` (${activeCount})` : ""}</span>
       </button>
+        {actions ? <div className="dashboard-command-actions" aria-label="Ações financeiras rápidas">{actions}</div> : null}
+      </div>
+
+      {activeCount > 0 ? <div className="dashboard-active-filters" aria-label="Filtros aplicados">
+        {FILTER_KEYS.filter((key) => values[key]).map((key) => <button key={key} type="button" onClick={() => navigate({ ...values, [key]: undefined })} aria-label={`Remover filtro ${filterLabels[key]}: ${optionGroups[key].find((option) => option.id === values[key])?.name ?? ""}`}>
+          {filterLabels[key]}: {optionGroups[key].find((option) => option.id === values[key])?.name}<X className="size-3" aria-hidden="true" />
+        </button>)}
+      </div> : null}
       <div id="dashboard-advanced-filters" className="dashboard-filter-grid" hidden={!filtersOpen}>
         <label>
           Conta
