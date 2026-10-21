@@ -83,7 +83,7 @@ test.describe.serial("gestão financeira: histórico, caixa e margem", () => {
   });
 
   test("classifica comportamento de gasto e consulta rentabilidade preservada", async ({ page }, info) => {
-    await page.goto("/cadastros/categorias");
+    await page.goto("/cadastros/categorias?aba=despesas");
     const row = page.getByRole("row", { name: /Transporte/ });
     await row.getByRole("button", { name: "Gerenciar", exact: true }).click();
     const edit = await modal(page, "Editar");

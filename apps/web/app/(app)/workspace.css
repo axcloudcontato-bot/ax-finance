@@ -359,3 +359,64 @@ a.concil-step-body:focus-visible { outline: 2px solid var(--focus); outline-offs
 .chart-data-table { max-height: 320px; margin-top: 8px; overflow-y: auto; }
 .chart-data-table table { font-variant-numeric: tabular-nums; }
 .chart-data-table :is(th, td).money { text-align: right; }
+
+/* Categorias: um só cartão. Abas e busca na mesma linha (alturas iguais, alinhadas ao centro),
+   texto de apoio com a contagem e a tabela logo abaixo, no ritmo de 16/24 px do app. */
+.category-panel { padding-top: 16px; }
+.category-panel-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; }
+.app-shell .category-panel-toolbar .category-tabs { margin: 0; }
+.category-tab-count { display: inline-grid; min-width: 22px; height: 20px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; place-items: center; }
+.category-tabs a.active .category-tab-count { background: color-mix(in srgb, currentColor 16%, transparent); }
+.category-search { display: flex; align-items: center; gap: 8px; flex: 0 1 380px; min-width: 0; margin: 0; }
+/* Campo e botão com a mesma altura das abas (44 px), todos no mesmo eixo. */
+.app-shell .category-search input[type="search"] { flex: 1 1 auto; min-width: 0; height: 44px; margin: 0; }
+.app-shell.ax-model-buttons .category-search button.secondary[type="submit"] { height: 44px; min-height: 44px; margin: 0; padding: 0 16px; }
+.category-search-clear { color: var(--accent-text); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.category-panel > .success-box { margin: 16px 0 0; }
+.category-panel-hint { margin: 16px 0 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.category-panel-hint strong { color: var(--text); font-weight: 600; }
+@media (max-width: 640px) {
+  .category-panel-toolbar { flex-direction: column; align-items: stretch; }
+  .app-shell.ax-model-buttons main .category-panel-toolbar .category-tabs { display: flex; width: 100%; }
+  .category-tabs a { flex: 1 1 0; justify-content: center; text-align: center; }
+  .category-search { flex-basis: auto; }
+}
+
+/* Janela de categoria (mesmo enquadramento do cofrinho): prévia do ícone escolhido pelo nome. */
+.category-form-label { display: block; margin: 1rem 0 0.3rem; font-size: 0.875rem; font-weight: 600; }
+.category-icon-preview { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; background: color-mix(in srgb, var(--text) 2%, var(--card)); }
+.category-icon-preview strong, .category-icon-preview small { display: block; }
+.category-icon-preview strong { overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.category-icon-preview small { margin-top: 2px; color: var(--muted); font-size: 12px; }
+.category-icon-preview > div { min-width: 0; }
+.category-icon-preview .category-icon { width: 36px; height: 36px; flex: none; border-radius: 10px; }
+/* Criar e editar categoria com a mesma largura (760 px), tanto no Modal quanto no ActionModal. */
+.app-shell .modal-dialog.modal-dialog-wide:has(> .category-form) { max-width: 760px; }
+
+/* Seletor de categoria: ícone do mesmo tamanho do texto (16 px num quadro de 24 px), principais em
+   negrito, subcategorias recuadas. O select nativo fica no formulário, invisível, como dono do valor. */
+.cat-select { position: relative; }
+.cat-select-native { position: absolute; inset: auto 0 0; width: 100%; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.cat-select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; margin: 0; padding: 0 12px; border: 1px solid var(--field-border); border-radius: 6px; background: var(--card); color: var(--text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.app-shell .cat-select-trigger:focus-visible, .cat-select-trigger[aria-expanded="true"] { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 28%, transparent); }
+.cat-select-value { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cat-select-text { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cat-select-parent { color: var(--muted); font-size: 13px; }
+.cat-select-strong { font-weight: 700; }
+.cat-select-placeholder { color: var(--muted); }
+.cat-select-chevron { flex: none; color: var(--muted); }
+.cat-select .category-icon, .cat-select-popover .category-icon { width: 24px; height: 24px; flex: none; border-radius: 6px; }
+.cat-select .category-icon svg, .cat-select-popover .category-icon svg { width: 16px; height: 16px; }
+.cat-select-popover { position: fixed; z-index: 1030; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--card); box-shadow: 0 1px 2px rgba(15, 31, 61, 0.08), 0 18px 40px -18px rgba(15, 31, 61, 0.45); }
+.cat-select-search { display: flex; flex: none; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--muted); }
+.app-shell .cat-select-search input { flex: 1; min-width: 0; height: 32px; margin: 0; padding: 0; border: 0; background: transparent; color: var(--text); font-size: 14px; box-shadow: none; outline: none; }
+.cat-select-list { flex: 1; min-height: 0; margin: 0; padding: 6px; overflow-y: auto; list-style: none; }
+.cat-select-option { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: 6px; color: var(--text); font-size: 14.5px; line-height: 1.3; cursor: pointer; }
+.cat-select-option.is-parent { font-weight: 700; }
+.cat-select-option.is-parent:not(:first-child) { margin-top: 4px; }
+.cat-select-option.is-child { padding-left: 34px; font-weight: 400; }
+.cat-select-option > span:not(.category-icon) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-select-option[data-active] { background: var(--workspace-active); color: var(--workspace-active-text); }
+.cat-select-option[aria-selected="true"] { color: var(--workspace-active-text); }
+.cat-select-check { flex: none; }
+.cat-select-empty { padding: 12px; color: var(--muted); font-size: 13px; }

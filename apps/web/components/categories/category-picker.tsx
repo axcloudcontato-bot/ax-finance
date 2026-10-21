@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CategoryQuickAdd } from "./category-quick-add";
+import { CategorySelect } from "./category-select";
 import { useSelectAfterCreate } from "@/components/ui/use-select-after-create";
 
 type Category = { id: string; name: string; parentId: string | null };
@@ -37,12 +38,7 @@ export function CategoryPicker({
   const { selectRef, selectCreated } = useSelectAfterCreate(options);
   return (
     <>
-      <select ref={selectRef} id={id} name={name} required={required} defaultValue={defaultValue}>
-        <option value="" disabled={required}>Selecione</option>
-        {options.map((category) => (
-          <option key={category.id} value={category.id}>{category.parentId ? `  ↳ ${category.name}` : category.name}</option>
-        ))}
-      </select>
+      <CategorySelect ref={selectRef} id={id} name={name} required={required} defaultValue={defaultValue} categories={options} fallbackNature={kind === "RECEIVABLE" ? "OPERATING_REVENUE" : "EXPENSE"} />
       <CategoryQuickAdd
         kind={kind}
         parents={options.filter((category) => !category.parentId)}

@@ -8,6 +8,7 @@ import { ArrowDownCircle, ArrowUpCircle, Landmark } from "@/components/ui/animat
 import { CategorySuggestion } from "@/components/category-suggestion";
 import { CategoryQuickAdd } from "@/components/categories/category-quick-add";
 import { withCategory } from "@/components/categories/category-picker";
+import { CategorySelect } from "@/components/categories/category-select";
 import { PartyQuickAdd } from "@/components/parties/party-quick-add";
 import { useSelectAfterCreate } from "@/components/ui/use-select-after-create";
 import { TransferForm } from "@/components/transfers/transfer-form";
@@ -216,12 +217,7 @@ function QuickTitle({ kind, options, onCancel, onDone, onCategoryCreated, onPart
 
         <div>
           <label htmlFor="qc-category">Categoria</label>
-          <select ref={categoryRef} id="qc-category" name="categoryId" required defaultValue="">
-            <option value="" disabled>Selecione</option>
-            {options.categories.map((category) => (
-              <option key={category.id} value={category.id}>{category.parentId ? `  ↳ ${category.name}` : category.name}</option>
-            ))}
-          </select>
+          <CategorySelect ref={categoryRef} id="qc-category" categories={options.categories} fallbackNature={kind === "RECEIVABLE" ? "OPERATING_REVENUE" : "EXPENSE"} />
           {options.categories.length === 0 ? <small className="muted">Nenhuma categoria ainda: crie a primeira aqui embaixo.</small> : null}
           <CategorySuggestion type={kind} />
           <CategoryQuickAdd

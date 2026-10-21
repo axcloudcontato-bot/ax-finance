@@ -25,6 +25,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-21-categorias-abas",
+    date: "2026-10-21",
+    title: "Categorias em abas e janela nova",
+    summary: "Receitas e despesas em abas separadas no cadastro de categorias.",
+    changes: [
+      { kind: "IMPROVED", text: "Em Cadastros > Categorias, as abas Receitas e Despesas mostram quantas categorias há em cada uma. A busca vale para a aba aberta, e \"+ Nova categoria\" já vem com o tipo da aba escolhido." },
+      { kind: "IMPROVED", text: "Criar e editar categoria usam a mesma janela, no formato da de cofrinho: nome em destaque, campos em duas colunas e a prévia do ícone, que é escolhido pelo nome enquanto você digita." },
+      { kind: "IMPROVED", text: "O campo Categoria das janelas de entrada, saída, compra no cartão, edição, parcelamento e recorrência virou uma lista com ícone em cada categoria, as principais em negrito, as subcategorias recuadas e uma busca no topo." },
+    ],
+  },
+  {
     id: "2026-10-21-conciliacao-etapas-graficos",
     date: "2026-10-21",
     title: "Conciliação por etapas e gráficos mais legíveis",

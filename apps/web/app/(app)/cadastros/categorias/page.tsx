@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { CategoryIcon } from "@/components/categories/category-icon";
-import { Tag } from "@/components/ui/animated-icons";
+import { Tags } from "lucide-react";
 import { listCategories } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
@@ -11,6 +11,7 @@ import { ActionModal } from "@/components/ui/action-modal";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { archiveCategoryAction, createCategoryAction, reactivateCategoryAction, updateCategoryAction } from "./actions";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { CategoryForm } from "@/components/categories/category-form";
 
 type Category = Awaited<ReturnType<typeof listCategories>>[number];
 
@@ -20,6 +21,10 @@ const SECTIONS = [
   { key: "expense", title: "Despesas", hint: "Categorias de saída: custos, despesas, investimentos e financiamentos.", natures: ["COST", "EXPENSE", "INVESTMENT", "FINANCING", "EQUITY"] },
   { key: "other", title: "Outras", hint: "Movimentos técnicos que não são receita nem despesa.", natures: ["TECHNICAL_TRANSFER"] },
 ] as const;
+
+/** Aba de cada seção na URL (?aba=receitas|despesas|outras). */
+const TAB_SLUG = { revenue: "receitas", expense: "despesas", other: "outras" } as const;
+const DEFAULT_NATURE = { revenue: "OPERATING_REVENUE", expense: "EXPENSE", other: "TECHNICAL_TRANSFER" } as const;
 
 const sectionOf = (nature: string) => SECTIONS.find((section) => (section.natures as readonly string[]).includes(nature)) ?? SECTIONS[2];
 
@@ -37,7 +42,7 @@ function ParentOptions({ categories, exclude }: { categories: Category[]; exclud
 
 export default async function CategoriasPage(
   props: {
-    searchParams: Promise<{ erro?: string; atualizado?: string; busca?: string }>;
+    searchParams: Promise<{ erro?: string; atualizado?: string; busca?: string; aba?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -56,6 +61,15 @@ export default async function CategoriasPage(
   const visibleCategories = query
     ? ordered.filter((category) => searchable(`${category.name} ${category.managerialGroup ?? ""} ${NATURE_LABEL[category.nature] ?? ""}`).includes(query))
     : ordered;
+  // Receitas e despesas em abas; "Outras" só aparece quando há categoria técnica.
+  const countOf = (key: string) => visibleCategories.filter((category) => sectionOf(category.nature).key === key).length;
+  const tabs = SECTIONS.filter((section) => section.key !== "other" || categories.some((category) => sectionOf(category.nature).key === "other"));
+  const activeSection = tabs.find((section) => TAB_SLUG[section.key] === searchParams.aba) ?? tabs[0]!;
+  const tabHref = (key: keyof typeof TAB_SLUG) => {
+    const next = new URLSearchParams({ aba: TAB_SLUG[key] });
+    if (search) next.set("busca", search);
+    return `/cadastros/categorias?${next}`;
+  };
 
   return (
     <main className="wide">
@@ -65,74 +79,44 @@ export default async function CategoriasPage(
           triggerLabel="+ Nova categoria"
           triggerClassName="button-link workspace-primary-action"
           title="Nova categoria"
-          icon={<Tag className="size-5" strokeWidth={1.5} />}
+          icon={<Tags strokeWidth={1.8} />}
+          maxWidth="760px"
         >
-          <p className="subtitle">
-            Só dois níveis: categoria e subcategoria (Seção 9). Para uma subcategoria, selecione a
-            categoria pai.
-          </p>
-
           {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
-
-          <form action={createCategoryAction}>
-            <label htmlFor="name">Nome</label>
-            <input id="name" name="name" type="text" required maxLength={200} />
-
-            <label htmlFor="nature">Natureza</label>
-            <select id="nature" name="nature" required defaultValue="">
-              <option value="" disabled>
-                Selecione
-              </option>
-              {Object.entries(NATURE_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-
-            <label htmlFor="parentId">Categoria pai (opcional)</label>
-            <select id="parentId" name="parentId" defaultValue="">
-              <option value="">Nenhuma — categoria de topo</option>
-              <ParentOptions categories={topLevelActive} />
-            </select>
-
-            <label htmlFor="managerialGroup">Grupo gerencial (opcional)</label>
-            <input
-              id="managerialGroup"
-              name="managerialGroup"
-              type="text"
-              maxLength={200}
-              placeholder="Ex.: Receita de serviços, Pessoal, Estrutura..."
-            />
-
-            <label htmlFor="costBehavior">Comportamento do gasto</label><select id="costBehavior" name="costBehavior" defaultValue="UNCLASSIFIED"><option value="UNCLASSIFIED">Não classificado</option><option value="FIXED">Fixo</option><option value="VARIABLE">Variável</option></select><p className="muted">Usado em custos e despesas para calcular margem de contribuição. Escolha conforme o gasto varia com as vendas; a natureza não determina o comportamento.</p>
-            <SubmitButton>Criar categoria</SubmitButton>
-          </form>
+          <CategoryForm
+            action={createCategoryAction}
+            idPrefix="nova-categoria"
+            defaultNature={DEFAULT_NATURE[activeSection.key]}
+            parentOptions={<ParentOptions categories={topLevelActive} />}
+            submitLabel="Criar categoria"
+          />
         </Modal>
       </div>
 
-      <div className="card">
-        {searchParams.atualizado ? <p className="success-box">Categoria atualizada.</p> : null}
-        <div className="workspace-list-toolbar">
-          <p>{visibleCategories.length} {visibleCategories.length === 1 ? "categoria exibida" : "categorias exibidas"}</p>
-          <form method="get" action="/cadastros/categorias"><input name="busca" type="search" defaultValue={search} placeholder="Buscar categoria ou grupo" aria-label="Buscar categoria ou grupo" /><button type="submit" className="secondary">Buscar</button>{search ? <a href="/cadastros/categorias">Limpar</a> : null}</form>
-        </div>
-        {visibleCategories.length === 0 ? (
-          <div className="workspace-empty"><strong>{search ? "Nenhuma categoria encontrada" : "Nenhuma categoria cadastrada"}</strong><p>{search ? "Tente outro termo ou limpe a busca." : "Crie categorias para organizar lançamentos e relatórios."}</p></div>
-        ) : null}
-      </div>
-
-      {SECTIONS.map((section) => {
+      {[activeSection].map((section) => {
         const items = visibleCategories.filter((category) => sectionOf(category.nature).key === section.key);
-        if (items.length === 0 && (section.key === "other" || search)) return null;
         return (
-          <section key={section.key} className={`card category-section is-${section.key}`} aria-labelledby={`categorias-${section.key}`}>
-            <div className="workspace-card-heading">
-              <div>
-                <h2 id={`categorias-${section.key}`}>{section.title} <span className="muted">({items.length})</span></h2>
-                <p>{section.hint}</p>
-              </div>
+          <section key={section.key} className="card category-panel" aria-labelledby={`categorias-${section.key}`}>
+            {/* Uma linha só: abas à esquerda, busca à direita; o texto de apoio e a tabela logo abaixo. */}
+            <div className="category-panel-toolbar">
+              <nav className="filters category-tabs" aria-label="Tipo de categoria">
+                {tabs.map((tab) => (
+                  <a key={tab.key} href={tabHref(tab.key)} className={tab.key === section.key ? "active" : undefined} aria-current={tab.key === section.key ? "page" : undefined}>
+                    {tab.title} <span className="category-tab-count">{countOf(tab.key)}</span>
+                  </a>
+                ))}
+              </nav>
+              <form method="get" action="/cadastros/categorias" className="category-search" role="search">
+                <input type="hidden" name="aba" value={TAB_SLUG[section.key]} />
+                <input name="busca" type="search" defaultValue={search} placeholder="Buscar categoria ou grupo" aria-label="Buscar categoria ou grupo" />
+                <button type="submit" className="secondary">Buscar</button>
+                {search ? <a href={tabHref(section.key).replace(/&busca=[^&]*/, "")} className="category-search-clear">Limpar</a> : null}
+              </form>
             </div>
+            {searchParams.atualizado ? <p className="success-box">Categoria atualizada.</p> : null}
+            <p id={`categorias-${section.key}`} className="category-panel-hint">
+              <strong>{items.length} {items.length === 1 ? "categoria" : "categorias"}{search ? ` ${items.length === 1 ? "encontrada" : "encontradas"} para "${search}"` : ""}</strong> · {section.hint}
+            </p>
             {items.length === 0 ? (
               <div className="workspace-empty"><strong>Nenhuma categoria de {section.title.toLowerCase()}</strong><p>Crie em &ldquo;+ Nova categoria&rdquo;.</p></div>
             ) : (
@@ -155,24 +139,24 @@ export default async function CategoriasPage(
                   <td>{category.status === "ACTIVE" ? "Ativa" : "Arquivada"}</td>
                   <td>
                     <RowActionsMenu>
-                    <ActionModal triggerLabel="Editar" title={`Editar categoria — ${category.name}`}>
-                      <form action={updateCategoryAction.bind(null, category.id)}>
-                        <label htmlFor={`name-${category.id}`}>Nome</label><input id={`name-${category.id}`} name="name" defaultValue={category.name} required maxLength={200} />
-                        <label htmlFor={`nature-${category.id}`}>Natureza</label><select id={`nature-${category.id}`} name="nature" defaultValue={category.nature}>{Object.entries(NATURE_LABEL).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select>
-                        <label htmlFor={`parent-${category.id}`}>Categoria pai</label><select id={`parent-${category.id}`} name="parentId" defaultValue={category.parentId ?? ""}><option value="">Nenhuma</option><ParentOptions categories={topLevelActive} exclude={category.id} /></select>
-                        <label htmlFor={`group-${category.id}`}>Grupo gerencial</label><input id={`group-${category.id}`} name="managerialGroup" defaultValue={category.managerialGroup ?? ""} maxLength={200} />
-                        <label htmlFor={`behavior-${category.id}`}>Comportamento do gasto</label><select id={`behavior-${category.id}`} name="costBehavior" defaultValue={category.costBehavior}><option value="UNCLASSIFIED">Não classificado</option><option value="FIXED">Fixo</option><option value="VARIABLE">Variável</option></select>
-                        <SubmitButton>Salvar alterações</SubmitButton>
-                      </form>
+                    <ActionModal triggerLabel="Editar" title={`Editar categoria — ${category.name}`} size="wide" icon={<CategoryIcon name={category.name} nature={category.nature} size={20} />}>
+                      <CategoryForm
+                        action={updateCategoryAction.bind(null, category.id)}
+                        idPrefix={`categoria-${category.id}`}
+                        hidden={<input type="hidden" name="aba" value={TAB_SLUG[activeSection.key]} />}
+                        parentOptions={<ParentOptions categories={topLevelActive} exclude={category.id} />}
+                        defaults={{ name: category.name, nature: category.nature, parentId: category.parentId, managerialGroup: category.managerialGroup, costBehavior: category.costBehavior }}
+                        submitLabel="Salvar alterações"
+                      />
                     </ActionModal>
                     {category.status === "ACTIVE" ? (
-                      <form action={archiveCategoryAction} className="inline">
+                      <form action={archiveCategoryAction} className="inline"><input type="hidden" name="aba" value={TAB_SLUG[activeSection.key]} />
                         <input type="hidden" name="categoryId" value={category.id} />
                         <SubmitButton className="secondary">
                           Arquivar
                         </SubmitButton>
                       </form>
-                    ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><SubmitButton className="secondary">Reativar</SubmitButton></form>}
+                    ) : <form action={reactivateCategoryAction.bind(null, category.id)} className="inline"><input type="hidden" name="aba" value={TAB_SLUG[activeSection.key]} /><SubmitButton className="secondary">Reativar</SubmitButton></form>}
                     </RowActionsMenu>
                   </td>
                 </tr>

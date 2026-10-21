@@ -6,6 +6,16 @@ import { getCurrentUser } from "@/lib/session";
 import { requirePrimaryCompany } from "@/lib/company";
 import { actionErrorMessage } from "@/lib/action-errors";
 
+/** Volta para a aba da categoria (receitas, despesas ou outras) depois de criar, editar ou arquivar. */
+function tabOf(nature: string): string {
+  return nature === "OPERATING_REVENUE" ? "receitas" : nature === "TECHNICAL_TRANSFER" ? "outras" : "despesas";
+}
+
+function pageUrl(tab: string, extra = ""): string {
+  const safeTab = ["receitas", "despesas", "outras"].includes(tab) ? tab : "receitas";
+  return `/cadastros/categorias?aba=${safeTab}${extra}`;
+}
+
 export async function createCategoryAction(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) {
@@ -23,10 +33,10 @@ export async function createCategoryAction(formData: FormData) {
     category = await createCategory(user.id, company.id, { name, nature, parentId, managerialGroup, costBehavior: String(formData.get("costBehavior") ?? "UNCLASSIFIED") });
   } catch (error) {
     const message = actionErrorMessage(error, "Não foi possível criar a categoria.");
-    redirect(`/cadastros/categorias?erro=${encodeURIComponent(message)}`);
+    redirect(pageUrl(tabOf(nature), `&erro=${encodeURIComponent(message)}`));
   }
 
-  redirect(`/cadastros/categorias?criado=${category.id}`);
+  redirect(pageUrl(tabOf(nature), `&criado=${category.id}`));
 }
 
 export async function archiveCategoryAction(formData: FormData) {
@@ -39,7 +49,7 @@ export async function archiveCategoryAction(formData: FormData) {
 
   await archiveCategory(user.id, company.id, categoryId);
 
-  redirect("/cadastros/categorias");
+  redirect(pageUrl(String(formData.get("aba") ?? "")));
 }
 
 export async function updateCategoryAction(categoryId: string, formData: FormData) {
@@ -54,15 +64,15 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
       costBehavior: String(formData.get("costBehavior") ?? "UNCLASSIFIED"),
     });
   } catch (error) {
-    redirect(`/cadastros/categorias?erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar a categoria."))}`);
+    redirect(pageUrl(String(formData.get("aba") ?? ""), `&erro=${encodeURIComponent(actionErrorMessage(error, "Não foi possível editar a categoria."))}`));
   }
-  redirect("/cadastros/categorias?atualizado=1");
+  redirect(pageUrl(tabOf(String(formData.get("nature") ?? "")), "&atualizado=1"));
 }
 
-export async function reactivateCategoryAction(categoryId: string) {
+export async function reactivateCategoryAction(categoryId: string, formData: FormData) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const company = await requirePrimaryCompany(user.id);
   await reactivateCategory(user.id, company.id, categoryId);
-  redirect("/cadastros/categorias");
+  redirect(pageUrl(String(formData.get("aba") ?? "")));
 }
