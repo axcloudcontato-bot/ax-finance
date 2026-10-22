@@ -18,6 +18,6 @@
     "@ax-finance/domain": "workspace:*",
     "prisma": "^5.18.0",
     "tsx": "^4.16.2",
-    "typescript": "^5.5.4"
+    "typescript": "^6.0.3"
   }
 }
