@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-22-cadastro-redesenhado",
+    date: "2026-10-22",
+    title: "Cadastro de conta redesenhado",
+    summary: "Criar conta ficou mais limpo e direto, com a escolha do plano na própria página.",
+    changes: [
+      { kind: "IMPROVED", text: "Criar conta agora é uma coluna só, com o plano (Gestão Pessoal ou Essencial) num seletor, nome, e-mail e senha com opção de mostrar. No computador, ao lado, aparece um exemplo de como o AX Finance explica o saldo. Funciona nos temas claro e escuro e no celular." },
+    ]
+  },
+  {
     id: "2026-10-21-categorias-abas",
     date: "2026-10-21",
     title: "Categorias em abas e janela nova",

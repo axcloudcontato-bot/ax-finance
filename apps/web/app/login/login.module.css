@@ -500,3 +500,7 @@
   .movement td, .inputWrap input, .primaryButton { transition: none; }
   .spinner { animation-duration: 2s; }
 }
+
+/* Os rótulos globais do app têm margem no topo; aqui o espaço vem do gap do formulário. */
+.field label, .labelRow label { margin: 0; }
+.story h1 { font-variant-numeric: proportional-nums; }

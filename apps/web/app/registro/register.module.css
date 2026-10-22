@@ -1,0 +1,298 @@
+/* Cadastro: duas metades. Coluna do formulário calma (sem ícones, rótulos simples, um só azul na
+   ação) e painel marinho com o extrato de exemplo. Os tokens --l-* vêm do .page do login. */
+.root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: none;
+  min-height: 100dvh;
+  background: var(--l-card);
+}
+
+.root ::selection { background: var(--l-focus); }
+
+/* Formulário */
+.formSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: none;
+  margin: 0;
+  padding: 48px 32px;
+}
+
+.formInner { width: 100%; max-width: 380px; }
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--l-text);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--l-accent);
+  color: #fff;
+}
+
+.brand:focus-visible,
+.switch a:focus-visible,
+.legal a:focus-visible {
+  outline: 2px solid var(--l-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.header { margin-top: 48px; }
+
+.header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.header p {
+  margin: 8px 0 0;
+  color: var(--l-muted);
+  font-size: 0.95rem;
+}
+
+.error {
+  margin: 24px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--l-error-bg);
+  color: var(--l-error-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.form { display: grid; gap: 20px; margin-top: 32px; }
+
+.field { display: grid; gap: 8px; }
+
+.field label,
+.labelRow label,
+.plan legend {
+  margin: 0;
+  padding: 0;
+  color: var(--l-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.labelRow { display: flex; align-items: baseline; justify-content: space-between; }
+
+.field input {
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid var(--l-border);
+  border-radius: 8px;
+  background: var(--l-field-bg);
+  color: var(--l-text);
+  font: inherit;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 1px rgba(15, 31, 61, 0.04);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.field input:hover { border-color: var(--l-field); }
+
+.field input:focus {
+  outline: none;
+  border-color: var(--l-accent);
+  box-shadow: 0 0 0 3px var(--l-focus);
+}
+
+.hint { color: var(--l-faint); font-size: 0.8rem; }
+
+.reveal {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--l-accent-text);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reveal:hover { text-decoration: underline; text-underline-offset: 3px; }
+.reveal:focus-visible { outline: 2px solid var(--l-accent); outline-offset: 2px; border-radius: 3px; }
+
+/* Plano: seletor de duas opções, um trilho só. */
+.plan { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
+
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--l-border);
+  border-radius: 10px;
+  background: var(--l-bg);
+}
+
+/* .root na frente: vence o "label:has(> input[type=radio])" global, que vira flex. */
+.root .segmented > label {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 7px;
+  color: var(--l-muted);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.segmented > label:hover { color: var(--l-text); }
+
+.segmented > label[data-checked] {
+  background: var(--l-card);
+  color: var(--l-text);
+  box-shadow: 0 1px 2px rgba(15, 31, 61, 0.1), 0 0 0 1px var(--l-border);
+}
+
+.segmented input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented > label:has(input:focus-visible) { outline: 2px solid var(--l-accent); outline-offset: 1px; }
+
+.planName { font-size: 0.875rem; font-weight: 700; }
+.planPrice { font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.segmented > label[data-checked] .planPrice { color: var(--l-accent-text); font-weight: 600; }
+
+.planDetail { margin: 0; color: var(--l-muted); font-size: 0.82rem; line-height: 1.5; }
+
+.submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 46px;
+  margin: 4px 0 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--l-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 31, 61, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: background-color 150ms ease;
+}
+
+.submit:hover:not(:disabled) { background: var(--l-accent-hover); }
+.submit:focus-visible { outline: 3px solid var(--l-focus); outline-offset: 2px; }
+.submit:disabled { cursor: progress; opacity: 0.8; }
+
+.legal { margin: 0; color: var(--l-faint); font-size: 0.78rem; line-height: 1.55; }
+.legal a { color: var(--l-muted); text-decoration: underline; text-underline-offset: 2px; }
+.legal a:hover { color: var(--l-text); }
+
+.switch {
+  margin: 32px 0 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--l-rule);
+  color: var(--l-muted);
+  font-size: 0.9rem;
+}
+
+.switch a { color: var(--l-accent-text); font-weight: 700; text-decoration: none; }
+.switch a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Painel de prova: marinho liso nos dois temas, só com um brilho suave no canto. */
+.proofSide {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 48px;
+  background-color: #0c1a33;
+  color: #e8eefb;
+}
+
+.proofSide::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -40% auto;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(closest-side, rgba(79, 132, 240, 0.22), transparent);
+  pointer-events: none;
+}
+
+.proofInner { position: relative; z-index: 1; width: 100%; max-width: 480px; }
+
+.proofTitle {
+  margin: 0 0 28px;
+  color: #ffffff;
+  font-size: clamp(1.35rem, 0.9rem + 1vw, 1.75rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+/* O extrato reaproveita o componente do login; aqui ele ganha profundidade sobre o marinho. */
+.proofLedger > figure {
+  margin: 0;
+  color: var(--l-text); /* o painel marinho tem texto claro; o extrato é um cartão claro */
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.6);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  color: #b7c5e0;
+  font-size: 0.85rem;
+}
+
+.facts li { display: inline-flex; align-items: center; gap: 8px; }
+
+.facts li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #6f9cff;
+}
+
+@media (max-width: 1024px) {
+  .root { grid-template-columns: minmax(0, 1fr); }
+  .proofSide { display: none; }
+  .formSide { align-items: flex-start; padding: 32px 20px 40px; }
+  .header { margin-top: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field input, .segmented > label, .submit { transition: none; }
+}
