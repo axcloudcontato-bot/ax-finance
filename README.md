@@ -33,7 +33,7 @@ fechamento de período e ajuste manual de saldo — não só a fundação.
 ## Deploy via Docker
 
 `docker compose up -d --build` (ver `.env.docker.example` para as variáveis necessárias).
-`./deploy.sh SHA_COMPLETO` publica um commit aprovado pelo CI, preserva imagens anteriores,
+`./deploy.sh` publica o último commit da master aprovado pelo CI (ou `./deploy.sh SHA_COMPLETO` para um commit específico), preserva imagens anteriores,
 gera e testa um backup antes das migrations e verifica a saúde dos serviços.
 O procedimento de retorno e os pré-requisitos estão em [Entrega segura](docs/ENTREGA_SEGURA.md).
 

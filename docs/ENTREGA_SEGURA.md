@@ -13,11 +13,20 @@ Após o commit chegar à master e os workflows **CI** e **Security checks** conc
 com sucesso para aquele SHA:
 
 ```bash
+./deploy.sh
+```
+
+Sem argumento, publica o último commit da master remota. Para publicar (ou voltar
+para) um commit específico, informe o SHA completo:
+
+```bash
 ./deploy.sh SHA_COMPLETO_DE_40_CARACTERES
 ```
 
-O script trava publicações concorrentes, confere o CI do commit exato, preserva
-as imagens anteriores com tags locais, constrói a versão nova sem parar os
+Nos dois casos o script trava publicações concorrentes, confere o CI do commit exato
+(recusa se ainda não concluiu com sucesso), preserva as imagens anteriores com tags
+locais (pelo ID da imagem ou, quando o armazenamento do containerd não aceita o ID,
+pelo nome; se nenhum funcionar, avisa e segue sem o retorno automático das imagens), constrói a versão nova sem parar os
 serviços, gera backup e ensaia sua restauração antes das migrations. Só depois
 atualiza web e worker e aguarda os health checks.
 

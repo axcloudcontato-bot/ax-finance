@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Publica somente um commit explícito aprovado pelo CI. Veja docs/ENTREGA_SEGURA.md.
+# Publica um commit aprovado pelo CI. Sem argumento, usa o último commit da master remota;
+# com um SHA, publica (ou volta para) aquele commit. Veja docs/ENTREGA_SEGURA.md.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 umask 077
 target="${1:-}"
-if [[ ! "$target" =~ ^[a-f0-9]{40}$ ]]; then
-  echo "Uso: ./deploy.sh SHA_COMPLETO_DO_COMMIT" >&2
+if [ -n "$target" ] && [[ ! "$target" =~ ^[a-f0-9]{40}$ ]]; then
+  echo "Uso: ./deploy.sh [SHA_COMPLETO_DO_COMMIT]  (sem SHA, publica o último commit da master)" >&2
   exit 1
 fi
 for command in git docker gh flock; do command -v "$command" >/dev/null || { echo "Falta instalar: $command" >&2; exit 1; }; done
@@ -15,6 +16,10 @@ flock -n 9 || { echo "Outra publicação está em andamento." >&2; exit 1; }
 test ! -f .operations/releases/recovery-required || { echo "A publicação anterior exige recuperação. Confira .operations/releases/recovery-required e o runbook." >&2; exit 1; }
 test -z "$(git status --porcelain --untracked-files=no)" || { echo "Há alterações locais em arquivos versionados." >&2; exit 1; }
 git fetch origin
+if [ -z "$target" ]; then
+  target="$(git rev-parse origin/master)"
+  echo "Publicando o último commit da master: $target"
+fi
 git cat-file -e "$target^{commit}"
 git merge-base --is-ancestor "$target" origin/master || { echo "O commit precisa pertencer à master remota." >&2; exit 1; }
 for workflow in ci.yml security.yml; do
@@ -32,14 +37,24 @@ mkdir -p "$evidence"
 previous_web="$(docker compose ps -q web)"
 previous_worker="$(docker compose ps -q worker)"
 rollback_ready=false
+# Guarda a imagem em execução para o retorno automático. Com o armazenamento de imagens do containerd,
+# o ID que o contêiner informa pode não servir para "docker image tag": tenta o ID e depois o nome.
+preserve_image() {
+  local container="$1" target="$2" ref
+  ref="$(docker inspect --format '{{.Image}}' "$container" 2>/dev/null || true)"
+  if [ -n "$ref" ] && docker image tag "$ref" "$target" 2>/dev/null; then return 0; fi
+  ref="$(docker inspect --format '{{.Config.Image}}' "$container" 2>/dev/null || true)"
+  if [ -n "$ref" ] && docker image tag "$ref" "$target" 2>/dev/null; then return 0; fi
+  return 1
+}
 if [ -n "$previous_web" ] && [ -n "$previous_worker" ]; then
-  web_image="$(docker inspect --format '{{.Image}}' "$previous_web")"
-  worker_image="$(docker inspect --format '{{.Image}}' "$previous_worker")"
-  docker image tag "$web_image" "ax-finance-web:rollback-$run_id"
-  docker image tag "$worker_image" "ax-finance-worker:rollback-$run_id"
-  git show "$previous:docker-compose.yml" > "$evidence/previous-compose.yml"
-  printf 'services:\n  web:\n    image: ax-finance-web:rollback-%s\n  worker:\n    image: ax-finance-worker:rollback-%s\n' "$run_id" "$run_id" > "$evidence/rollback.yml"
-  rollback_ready=true
+  if preserve_image "$previous_web" "ax-finance-web:rollback-$run_id" && preserve_image "$previous_worker" "ax-finance-worker:rollback-$run_id"; then
+    git show "$previous:docker-compose.yml" > "$evidence/previous-compose.yml"
+    printf 'services:\n  web:\n    image: ax-finance-web:rollback-%s\n  worker:\n    image: ax-finance-worker:rollback-%s\n' "$run_id" "$run_id" > "$evidence/rollback.yml"
+    rollback_ready=true
+  else
+    echo "Aviso: não foi possível guardar as imagens em execução; esta publicação segue sem retorno automático das imagens (o backup antes das migrações continua)." >&2
+  fi
   printf '%s\n' "$previous" > .operations/releases/current_commit
 fi
 schema_changed=false
