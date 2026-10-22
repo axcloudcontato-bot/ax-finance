@@ -420,3 +420,8 @@ a.concil-step-body:focus-visible { outline: 2px solid var(--focus); outline-offs
 .cat-select-option[aria-selected="true"] { color: var(--workspace-active-text); }
 .cat-select-check { flex: none; }
 .cat-select-empty { padding: 12px; color: var(--muted); font-size: 13px; }
+
+/* Foco nunca escondido atrás do rodapé fixo das janelas (WCAG 2.4.11): ao navegar com Tab ou com o
+   teclado do celular aberto, o campo ativo para acima do rodapé. */
+.app-shell .modal-dialog:has(.modal-form-footer) { scroll-padding-bottom: 96px; }
+.app-shell .quick-title-body { scroll-padding-bottom: 16px; }

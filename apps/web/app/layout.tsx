@@ -1,8 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { MoneyInputMask } from "@/components/money-input-mask";
 import "./globals.css";
+
+// Teclado do celular redimensiona a área útil (Chrome/Android): janelas com rodapé fixo mantêm o
+// campo ativo e o botão Salvar acima do teclado. Zoom continua livre (sem maximumScale).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

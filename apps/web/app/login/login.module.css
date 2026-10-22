@@ -5,7 +5,7 @@
   --l-card: #ffffff;
   --l-text: #0f1f3d;
   --l-muted: #556178;
-  --l-faint: #7a8599;
+  --l-faint: #646e82; /* 4,5:1 ou mais sobre branco, fundo e destaque (WCAG AA) */
   --l-border: #dde3ec;
   --l-rule: #e7ebf2;
   --l-field: #858e9e;

@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-22-acessibilidade",
+    date: "2026-10-22",
+    title: "Mais fácil de ler e de usar pelo teclado",
+    summary: "Textos com mais contraste, menu do celular acessível e janelas que não somem atrás do teclado.",
+    changes: [
+      { kind: "IMPROVED", text: "Textos de apoio na página inicial, no login e no cadastro ficaram mais escuros e fáceis de ler." },
+      { kind: "IMPROVED", text: "No celular, ao abrir o menu pelo teclado, o foco vai direto para o primeiro item e não escapa para a página de trás. Ao fechar, volta para o botão do menu." },
+      { kind: "IMPROVED", text: "O calendário agora é lido semana a semana por leitores de tela, com o dia de hoje anunciado." },
+      { kind: "IMPROVED", text: "No celular, o teclado virtual não cobre mais o campo que você está preenchendo nem o botão Salvar das janelas." },
+    ]
+  },
+  {
     id: "2026-10-22-cadastro-redesenhado",
     date: "2026-10-22",
     title: "Cadastro de conta redesenhado",

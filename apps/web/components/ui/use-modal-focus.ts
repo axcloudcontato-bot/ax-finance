@@ -12,6 +12,7 @@ export function useModalFocus(
     if (!open) return;
     const dialog = dialogRef.current;
     if (!dialog) return;
+    const trigger = triggerRef.current;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -50,7 +51,7 @@ export function useModalFocus(
     return () => {
       document.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousOverflow;
-      if (triggerRef.current?.isConnected) triggerRef.current.focus();
+      if (trigger?.isConnected) trigger.focus();
     };
   }, [open, setOpen, triggerRef, dialogRef]);
 }

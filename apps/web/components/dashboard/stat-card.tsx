@@ -41,6 +41,7 @@ export function StatCard({
   useEffect(() => {
     if (!open) return;
     const dialog = dialogRef.current;
+    const trigger = triggerRef.current;
     const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])') ?? []);
     focusable()[0]?.focus();
     function onKeyDown(event: KeyboardEvent) {
@@ -64,7 +65,7 @@ export function StatCard({
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      triggerRef.current?.focus();
+      trigger?.focus();
     };
   }, [open]);
 

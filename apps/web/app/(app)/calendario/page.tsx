@@ -106,24 +106,36 @@ export default async function CalendarPage(props: { searchParams: Promise<{ mes?
 
       <div className="calendar-layout">
         <section className="card calendar-card" aria-label={`Calendário de ${monthLabel(month)}`}>
-          <div className="calendar-grid" role="grid">
-            {WEEKDAYS.map((weekday) => <span key={weekday} className="calendar-weekday" role="columnheader">{weekday}</span>)}
-            {Array.from({ length: leading }, (_, index) => <span key={`vazio-${index}`} className="calendar-cell is-empty" aria-hidden="true" />)}
-            {calendar.days.map((day) => {
-              const classes = ["calendar-cell"];
-              if (day.date === calendar.today) classes.push("is-today");
-              if (day.date < calendar.today) classes.push("is-past");
-              if (selected?.date === day.date) classes.push("is-selected");
-              if (day.projectedBalanceCents !== null && day.projectedBalanceCents < ZERO) classes.push("is-negative");
-              return (
-                <Link key={day.date} href={dayHref(month, day.date)} className={classes.join(" ")} role="gridcell" aria-label={`${formatDateOnly(day.date)}: a receber ${formatCents(day.receivableCents)}, a pagar ${formatCents(day.payableCents)}`}>
-                  <span className="calendar-day-number">{Number(day.date.slice(8))}</span>
-                  {day.receivableCents > ZERO ? <span className="calendar-amount positive">+ {short(day.receivableCents)}</span> : null}
-                  {day.payableCents > ZERO ? <span className="calendar-amount negative">− {short(day.payableCents)}</span> : null}
-                  {day.projectedBalanceCents !== null && (day.items.length > 0 || day.date === calendar.today) ? <span className="calendar-balance">{short(day.projectedBalanceCents)}</span> : null}
-                </Link>
-              );
-            })}
+          {/* Grade ARIA com linhas (uma por semana); display: contents mantém o layout em 7 colunas. */}
+          <div className="calendar-grid" role="grid" aria-label={`Dias de ${monthLabel(month)}`}>
+            <div className="calendar-row" role="row">
+              {WEEKDAYS.map((weekday) => <span key={weekday} className="calendar-weekday" role="columnheader">{weekday}</span>)}
+            </div>
+            {(() => {
+              const cells = [
+                ...Array.from({ length: leading }, (_, index) => <span key={`vazio-${index}`} className="calendar-cell is-empty" role="gridcell" aria-hidden="true" />),
+                ...calendar.days.map((day) => {
+                  const classes = ["calendar-cell"];
+                  if (day.date === calendar.today) classes.push("is-today");
+                  if (day.date < calendar.today) classes.push("is-past");
+                  if (selected?.date === day.date) classes.push("is-selected");
+                  if (day.projectedBalanceCents !== null && day.projectedBalanceCents < ZERO) classes.push("is-negative");
+                  return (
+                    <span key={day.date} role="gridcell" className="calendar-gridcell" aria-selected={selected?.date === day.date || undefined}>
+                      <Link href={dayHref(month, day.date)} className={classes.join(" ")} aria-current={day.date === calendar.today ? "date" : undefined} aria-label={`${formatDateOnly(day.date)}: a receber ${formatCents(day.receivableCents)}, a pagar ${formatCents(day.payableCents)}`}>
+                        <span className="calendar-day-number">{Number(day.date.slice(8))}</span>
+                        {day.receivableCents > ZERO ? <span className="calendar-amount positive">+ {short(day.receivableCents)}</span> : null}
+                        {day.payableCents > ZERO ? <span className="calendar-amount negative">− {short(day.payableCents)}</span> : null}
+                        {day.projectedBalanceCents !== null && (day.items.length > 0 || day.date === calendar.today) ? <span className="calendar-balance">{short(day.projectedBalanceCents)}</span> : null}
+                      </Link>
+                    </span>
+                  );
+                }),
+              ];
+              const weeks = [];
+              for (let index = 0; index < cells.length; index += 7) weeks.push(cells.slice(index, index + 7));
+              return weeks.map((week, index) => <div key={`semana-${index}`} className="calendar-row" role="row">{week}</div>);
+            })()}
           </div>
           <p className="calendar-legend"><span className="positive">+ a receber</span><span className="negative">− a pagar</span><span>saldo previsto ao fim do dia</span></p>
         </section>

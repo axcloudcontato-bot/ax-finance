@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppTopbar, type AppNotification } from "@/components/app-topbar";
@@ -42,6 +42,21 @@ export function AppShell({
   ]).has(pathname);
   const [navOpen, setNavOpen] = useState(false);
   const closeNav = useCallback(() => setNavOpen(false), []);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const pathnameRef = useRef(pathname);
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+
+  // Menu do celular como diálogo: ao abrir, o foco vai para o primeiro item e o resto da página fica
+  // inerte (Tab não escapa); ao fechar sem trocar de página, o foco volta para o botão do menu.
+  useEffect(() => {
+    if (!navOpen) return;
+    const openedAt = pathnameRef.current;
+    document.querySelector<HTMLElement>("#app-sidebar-navigation a[href], #app-sidebar-navigation button")?.focus();
+    const toggle = toggleRef.current;
+    return () => {
+      if (pathnameRef.current === openedAt) toggle?.focus();
+    };
+  }, [navOpen]);
 
   return (
     <div className="app-shell ax-model-buttons flex h-svh w-full min-w-0 flex-col bg-background">
@@ -51,6 +66,7 @@ export function AppShell({
         companyName={companyName}
         leading={
           <button
+            ref={toggleRef}
             type="button"
             className="app-nav-toggle md:hidden"
             onClick={() => setNavOpen((open) => !open)}
@@ -64,14 +80,16 @@ export function AppShell({
           </button>
         }
       >
-        <BottomMenu
-          placement="top"
-          userName={userName}
-          canManageMembers={canManageMembers}
-          isPlatformAdmin={isPlatformAdmin}
-          notifications={notifications}
-          logoutAction={logoutAction}
-        />
+        <div className="contents" inert={navOpen || undefined}>
+          <BottomMenu
+            placement="top"
+            userName={userName}
+            canManageMembers={canManageMembers}
+            isPlatformAdmin={isPlatformAdmin}
+            notifications={notifications}
+            logoutAction={logoutAction}
+          />
+        </div>
       </AppTopbar>
 
       <div className="flex min-h-0 flex-1">
@@ -83,7 +101,7 @@ export function AppShell({
           onMobileClose={closeNav}
         />
 
-        <div id="conteudo" tabIndex={-1} className="app-content flex min-w-0 flex-1 flex-col overflow-y-auto">
+        <div id="conteudo" tabIndex={-1} inert={navOpen || undefined} className="app-content flex min-w-0 flex-1 flex-col overflow-y-auto">
           {!dashboardOwnsToolbar && showsPeriod ? (
             <div className="app-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 pt-4 md:px-6">
               <GlobalMonthSelector />

@@ -6,9 +6,7 @@ import {
   EVENT_TYPE_LABEL,
   TitleNotFoundError,
   getTitle,
-  getLateFeeSettings,
   paymentMethodLabel,
-  suggestLateCharges,
   listAuditEvents,
   listFinancialAccounts,
   listActiveCategories,
@@ -93,10 +91,7 @@ export default async function SaidaDetailPage(
     ? deleteSaidaInstallmentPlanAction.bind(null, title.installmentGroupId, title.id)
     : null;
   const cardInvoice = title.creditCardInvoice;
-  const today = todayDateOnlyString();
-  const dueDay = toDateOnlyString(title.dueDate);
   const isOpen = title.status !== "CANCELLED" && title.remainingCents > BigInt(0);
-  const daysLate = Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${dueDay}T00:00:00Z`)) / 86_400_000));
   const returnTo = `/saidas/${title.id}`;
   const expectedAccount = accounts.find((account) => account.id === title.expectedAccountId) ?? null;
   const moneyField = (cents: bigint) => (Number(cents) / 100).toFixed(2).replace(".", ",");

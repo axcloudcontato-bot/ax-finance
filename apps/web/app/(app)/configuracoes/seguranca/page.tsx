@@ -78,6 +78,8 @@ export default async function SecurityPage(
             <>
               <div className="security-step"><span>1</span><div><strong>Conecte o autenticador</strong><p>Leia o QR code ou use a chave manual.</p></div></div>
               <div className="mfa-setup">
+                {/* QR gerado em memória (data: URL): o otimizador do next/image não traz ganho aqui. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className="mfa-qr" src={qrCode} alt="QR code para configurar o autenticador" width={220} height={220} />
                 <div><p className="muted">Chave para configuração manual:</p><code className="mfa-secret">{pending.secret}</code><p className="muted">Compatível com Google Authenticator, Microsoft Authenticator, 1Password e aplicativos TOTP.</p></div>
               </div>
