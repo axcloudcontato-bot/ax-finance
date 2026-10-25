@@ -29,7 +29,9 @@ function signUpValidationMessage(error: ZodError): { field?: RegisterField; mess
       ? { field, message: "A senha pode ter no máximo 200 caracteres." }
       : { field, message: "A senha precisa ter pelo menos 8 caracteres." };
   }
-  return { message: "Verifique o e-mail, nome e senha (mínimo 8 caracteres)." };
+  // Campo que a pessoa não preenche (ex.: retorno do e-mail de confirmação): é defeito nosso, vai para o log.
+  console.error("[cadastro] validação inesperada", error.issues.map((item) => ({ path: item.path.join("."), code: item.code })));
+  return { message: "Não foi possível concluir o cadastro agora. Tente de novo em instantes." };
 }
 
 export async function registerAction(_previous: RegisterState, formData: FormData): Promise<RegisterState> {

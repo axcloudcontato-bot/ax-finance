@@ -18,7 +18,9 @@ const emailPayloadSchema = z.object({
   name: z.string().min(1).max(200),
   rawToken: z.string().regex(/^[a-f0-9]{64}$/i),
   baseUrl: z.string().url().refine((value) => value.startsWith("http://") || value.startsWith("https://")),
-  returnTo: z.string().startsWith("/convites/").optional(),
+  // Mesmos destinos que safeAuthReturnTo aceita depois da confirmação: convite ou onboarding do plano
+  // escolhido no cadastro. Recusar o onboarding derrubava todo cadastro novo.
+  returnTo: z.string().max(500).regex(/^\/(convites\/[^\s\\/?#]+|onboarding(\?plano=(PERSONAL|ESSENTIAL))?)$/).optional(),
 });
 
 const deliveryBaseSchema = z.object({

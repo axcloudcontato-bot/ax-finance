@@ -103,6 +103,18 @@ describe("endurecimento da autenticação", () => {
     await expect(login({ email, password: "senha-forte-123" })).resolves.toMatchObject({ mfaRequired: false });
   });
 
+  it("cadastro pelo site leva ao onboarding do plano escolhido ou ao convite", async () => {
+    for (const returnTo of ["/onboarding?plano=PERSONAL", "/onboarding?plano=ESSENTIAL", "/convites/abc123"]) {
+      const email = uniqueEmail("plano");
+      const result = await requestSignUp({ email, name: "Ana", password: "senha-forte-123" }, { verificationDelivery: { baseUrl: "https://app.ax.finance", returnTo } });
+      expect(result.createdUser?.email).toBe(email);
+    }
+    expect(await rootClient.outboxEvent.count({ where: { type: "EMAIL_VERIFICATION" } })).toBe(3);
+    await expect(
+      requestSignUp({ email: uniqueEmail("externo"), name: "Ana", password: "senha-forte-123" }, { verificationDelivery: { baseUrl: "https://app.ax.finance", returnTo: "//evil.example/x" } })
+    ).rejects.toThrow();
+  });
+
   it("conta falhas de login simultâneas sem perder nenhuma", async () => {
     const email = uniqueEmail("race");
     const results = await Promise.all(Array.from({ length: 12 }, () => recordLoginFailure(email, "198.51.100.20")));

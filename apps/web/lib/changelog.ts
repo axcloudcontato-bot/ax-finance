@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-25-cadastro-volta-a-funcionar",
+    date: "2026-10-25",
+    title: "Criar conta voltou a funcionar",
+    summary: "Corrigido o erro que impedia novos cadastros pelo site.",
+    changes: [
+      { kind: "FIXED", text: "Criar conta pelo site mostrava \"Verifique o e-mail, nome e senha\" mesmo com tudo certo. Agora a conta é criada, o e-mail de confirmação é enviado e, depois de confirmar, você segue para a configuração do plano escolhido." },
+    ]
+  },
+  {
     id: "2026-10-25-cadastro-erros-claros",
     date: "2026-10-25",
     title: "Cadastro diz o que corrigir",
