@@ -25,6 +25,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-25-cadastro-erros-claros",
+    date: "2026-10-25",
+    title: "Cadastro diz o que corrigir",
+    summary: "Se algo estiver errado ao criar a conta, a mensagem aponta o campo e o que você digitou continua lá.",
+    changes: [
+      { kind: "FIXED", text: "Ao criar conta, um e-mail fora do formato (sem \".com\", com acento ou espaço) ou uma senha curta preenchida pelo navegador agora mostram uma mensagem própria, com o campo destacado. O nome e o e-mail continuam preenchidos para corrigir e tentar de novo." },
+    ]
+  },
+  {
     id: "2026-10-22-acessibilidade",
     date: "2026-10-22",
     title: "Mais fácil de ler e de usar pelo teclado",

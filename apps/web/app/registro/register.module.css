@@ -115,6 +115,10 @@
   box-shadow: 0 0 0 3px var(--l-focus);
 }
 
+/* Campo apontado pelo erro do servidor. */
+.field input[aria-invalid="true"] { border-color: var(--l-out); }
+.field input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--l-out) 22%, transparent); }
+
 .hint { color: var(--l-faint); font-size: 0.8rem; }
 
 .reveal {

@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { CircleNotch, Wallet } from "@/components/ui/animated-icons";
 import { Ledger } from "../login/ledger";
 import loginStyles from "../login/login.module.css";
 import styles from "./register.module.css";
+import type { RegisterField, RegisterState } from "./actions";
 
 type PlanCode = "PERSONAL" | "ESSENTIAL";
 
@@ -35,13 +36,20 @@ export function RegisterExperience({
   returnTo,
   initialPlan,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (previous: RegisterState, formData: FormData) => Promise<RegisterState>;
   errorMessage?: string;
   returnTo?: string;
   initialPlan: PlanCode;
 }) {
   const [plan, setPlan] = useState<PlanCode>(initialPlan);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [state, formAction] = useActionState(action, { error: errorMessage });
+  const formRef = useRef<HTMLFormElement>(null);
+  // Depois de um erro, o foco vai para o campo a corrigir (o nome e o e-mail voltam preenchidos).
+  useEffect(() => {
+    if (state.field) formRef.current?.querySelector<HTMLInputElement>(`#${state.field}`)?.focus();
+  }, [state]);
+  const invalid = (field: RegisterField) => (state.field === field ? { "aria-invalid": true, "aria-errormessage": "register-error" } : {});
   const loginHref = returnTo ? `/login?retorno=${encodeURIComponent(returnTo)}` : "/login";
   const chosen = PLANS.find((item) => item.code === plan)!;
 
@@ -59,9 +67,9 @@ export function RegisterExperience({
             <p>14 dias grátis. Sem cartão de crédito.</p>
           </header>
 
-          {errorMessage ? <p className={styles.error} role="alert">{errorMessage}</p> : null}
+          {state.error ? <p id="register-error" className={styles.error} role="alert">{state.error}</p> : null}
 
-          <form action={action} className={styles.form}>
+          <form ref={formRef} action={formAction} className={styles.form}>
             {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
 
             <fieldset className={styles.plan}>
@@ -80,12 +88,12 @@ export function RegisterExperience({
 
             <div className={styles.field}>
               <label htmlFor="name">Nome</label>
-              <input id="name" name="name" type="text" autoComplete="name" required maxLength={200} />
+              <input id="name" name="name" type="text" autoComplete="name" required maxLength={200} defaultValue={state.name} {...invalid("name")} />
             </div>
 
             <div className={styles.field}>
               <label htmlFor="email">E-mail</label>
-              <input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} />
+              <input id="email" name="email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required maxLength={254} defaultValue={state.email} {...invalid("email")} />
             </div>
 
             <div className={styles.field}>
@@ -95,7 +103,7 @@ export function RegisterExperience({
                   {passwordVisible ? "Ocultar" : "Mostrar"}
                 </button>
               </div>
-              <input id="password" name="password" type={passwordVisible ? "text" : "password"} autoComplete="new-password" required minLength={8} aria-describedby="password-hint" />
+              <input id="password" name="password" type={passwordVisible ? "text" : "password"} autoComplete="new-password" required minLength={8} aria-describedby="password-hint" {...invalid("password")} />
               <small id="password-hint" className={styles.hint}>Use pelo menos 8 caracteres.</small>
             </div>
 

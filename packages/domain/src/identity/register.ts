@@ -6,7 +6,7 @@ import { enqueueAccountExistsEmail } from "../outbox/events";
 import { hashPassword } from "./password";
 
 export const registerUserInput = z.object({
-  email: z.string().email().toLowerCase(),
+  email: z.string().trim().email().toLowerCase(),
   name: z.string().trim().min(1).max(200),
   password: z.string().min(8).max(200),
 });
