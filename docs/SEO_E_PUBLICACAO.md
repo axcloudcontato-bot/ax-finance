@@ -1,6 +1,6 @@
 # SEO e publicação do site AX Finance
 
-Domínio canônico: `https://axfinance.axcloud.com.br`
+Domínio canônico: `https://openfix.axcloud.com.br`
 
 ## Arquitetura escolhida
 
@@ -17,9 +17,9 @@ Essa estratégia reaproveita o domínio, o túnel Cloudflare, o deploy Docker e 
 
 Depois do deploy, devem responder com HTTP 200:
 
-- `https://axfinance.axcloud.com.br/robots.txt`
-- `https://axfinance.axcloud.com.br/sitemap.xml`
-- `https://axfinance.axcloud.com.br/llms.txt`
+- `https://openfix.axcloud.com.br/robots.txt`
+- `https://openfix.axcloud.com.br/sitemap.xml`
+- `https://openfix.axcloud.com.br/llms.txt`
 
 O sitemap contém somente páginas públicas canônicas. O `robots.txt` referencia o sitemap e evita o rastreamento de APIs, painéis e módulos financeiros. O `llms.txt` resume o produto, planos, políticas e fontes canônicas para agentes de IA; ele é uma convenção emergente e não deve ser tratado como fator garantido de ranking no Google.
 
@@ -28,7 +28,7 @@ O sitemap contém somente páginas públicas canônicas. O `robots.txt` referenc
 Antes do deploy, confirme no `.env` do servidor:
 
 ```env
-APP_BASE_URL=https://axfinance.axcloud.com.br
+APP_BASE_URL=https://openfix.axcloud.com.br
 ```
 
 O hostname público do túnel Cloudflare deve continuar apontando para `http://localhost:3000` no servidor. Depois da aprovação dos workflows CI e Security checks para o commit exato na master, publique assim:
@@ -43,11 +43,11 @@ O `deploy.sh` consulta o CI, constrói as imagens, verifica um backup por restau
 ## Verificação pós-deploy
 
 ```bash
-curl -fsS https://axfinance.axcloud.com.br/robots.txt
-curl -fsS https://axfinance.axcloud.com.br/sitemap.xml
-curl -fsS https://axfinance.axcloud.com.br/llms.txt
-curl -I https://axfinance.axcloud.com.br/
-curl -I https://axfinance.axcloud.com.br/login
+curl -fsS https://openfix.axcloud.com.br/robots.txt
+curl -fsS https://openfix.axcloud.com.br/sitemap.xml
+curl -fsS https://openfix.axcloud.com.br/llms.txt
+curl -I https://openfix.axcloud.com.br/
+curl -I https://openfix.axcloud.com.br/login
 ```
 
 Confirme que:
@@ -63,15 +63,15 @@ Confirme que:
 A submissão exige acesso à conta Google que administra o domínio e à zona DNS no Cloudflare.
 
 1. Abra `https://search.google.com/search-console`.
-2. Adicione uma propriedade do tipo **Domínio** com `axfinance.axcloud.com.br`.
+2. Adicione uma propriedade do tipo **Domínio** com `openfix.axcloud.com.br`.
 3. Copie o registro TXT fornecido pelo Google.
 4. No Cloudflare, adicione o TXT à zona de `axcloud.com.br` exatamente como informado.
 5. Volte ao Search Console e conclua a verificação.
-6. Abra **Sitemaps** e envie `https://axfinance.axcloud.com.br/sitemap.xml`.
+6. Abra **Sitemaps** e envie `https://openfix.axcloud.com.br/sitemap.xml`.
 7. Em **Inspeção de URL**, teste e solicite indexação para:
-   - `https://axfinance.axcloud.com.br/`
-   - `https://axfinance.axcloud.com.br/demonstracao`
-   - `https://axfinance.axcloud.com.br/faq`
+   - `https://openfix.axcloud.com.br/`
+   - `https://openfix.axcloud.com.br/demonstracao`
+   - `https://openfix.axcloud.com.br/faq`
 8. Valide a home no teste de resultados avançados: `https://search.google.com/test/rich-results`.
 9. Acompanhe os relatórios de páginas, HTTPS, dados estruturados e desempenho nas semanas seguintes.
 
@@ -83,3 +83,17 @@ Enviar um sitemap informa URLs preferenciais, mas não garante rastreamento, ind
 - Inclua novas páginas no sitemap apenas se forem públicas, canônicas e úteis nos resultados de busca.
 - Mantenha preços e recursos iguais entre a página, os dados estruturados e o `llms.txt`.
 - Não coloque rotas autenticadas, parâmetros de sessão, convites ou tokens no sitemap.
+
+## Troca de domínio (25/10/2026)
+
+O produto virou **Openfix** e o domínio canônico passou de `axfinance.axcloud.com.br` para
+`openfix.axcloud.com.br`. O endereço antigo foi **desligado** (sem redirecionamento): links de
+e-mails antigos de confirmação e redefinição de senha deixam de funcionar e quem estava logado
+entra de novo no endereço novo. Passos fora do código:
+
+1. Túnel Cloudflare `axcloud-infra-tunnel`: hostname público `openfix.axcloud.com.br` →
+   `http://localhost:3000`; remover o hostname `axfinance.axcloud.com.br` depois do deploy.
+2. Servidor: `APP_BASE_URL=https://openfix.axcloud.com.br` no `.env` antes do `./deploy.sh`.
+3. Stripe (produção): endpoint do webhook em `https://openfix.axcloud.com.br/api/webhooks/stripe`
+   (o segredo `whsec_` muda se o endpoint for recriado; atualize `STRIPE_WEBHOOK_SECRET`).
+4. Google Search Console: nova propriedade para `openfix.axcloud.com.br` e reenvio do sitemap.

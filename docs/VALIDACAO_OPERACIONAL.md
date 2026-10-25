@@ -127,7 +127,7 @@ O teste versionado limita por padrão a 5 req/s por 30 segundos e só permite os
 health checks. Exemplo:
 
 ```bash
-LOAD_BASE_URL=https://axfinance.axcloud.com.br \
+LOAD_BASE_URL=https://openfix.axcloud.com.br \
 LOAD_PATH=/api/health/ready \
 LOAD_DURATION_SECONDS=30 \
 LOAD_REQUESTS_PER_SECOND=5 \

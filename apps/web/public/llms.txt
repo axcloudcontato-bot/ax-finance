@@ -6,10 +6,10 @@ O Openfix é um software web operado pela AX Cloud. O conteúdo público está e
 
 ## Produto
 
-- [Página inicial](https://axfinance.axcloud.com.br/): visão geral, benefícios e comparação dos planos.
-- [Demonstração](https://axfinance.axcloud.com.br/demonstracao): fluxo do produto com dados fictícios e explicação dos indicadores.
-- [Perguntas frequentes](https://axfinance.axcloud.com.br/faq): implantação, preços, cancelamento, segurança e suporte.
-- [Suporte](https://axfinance.axcloud.com.br/suporte): canais, horários e prioridades de atendimento.
+- [Página inicial](https://openfix.axcloud.com.br/): visão geral, benefícios e comparação dos planos.
+- [Demonstração](https://openfix.axcloud.com.br/demonstracao): fluxo do produto com dados fictícios e explicação dos indicadores.
+- [Perguntas frequentes](https://openfix.axcloud.com.br/faq): implantação, preços, cancelamento, segurança e suporte.
+- [Suporte](https://openfix.axcloud.com.br/suporte): canais, horários e prioridades de atendimento.
 
 ## Planos
 
@@ -19,15 +19,15 @@ O Openfix é um software web operado pela AX Cloud. O conteúdo público está e
 
 ## Políticas
 
-- [Termos de uso](https://axfinance.axcloud.com.br/termos): condições de uso do serviço.
-- [Política de privacidade](https://axfinance.axcloud.com.br/privacidade): tratamento de dados pessoais e financeiros conforme a LGPD.
-- [Cancelamento e exportação](https://axfinance.axcloud.com.br/cancelamento): encerramento e portabilidade dos dados.
-- [Informações fiscais](https://axfinance.axcloud.com.br/informacoes-fiscais): escopo fiscal da assinatura e limitações do produto.
+- [Termos de uso](https://openfix.axcloud.com.br/termos): condições de uso do serviço.
+- [Política de privacidade](https://openfix.axcloud.com.br/privacidade): tratamento de dados pessoais e financeiros conforme a LGPD.
+- [Cancelamento e exportação](https://openfix.axcloud.com.br/cancelamento): encerramento e portabilidade dos dados.
+- [Informações fiscais](https://openfix.axcloud.com.br/informacoes-fiscais): escopo fiscal da assinatura e limitações do produto.
 
 ## Contato
 
 - E-mail: contato@axcloud.com.br
-- Site: https://axfinance.axcloud.com.br/
+- Site: https://openfix.axcloud.com.br/
 
 ## Orientações para agentes
 
