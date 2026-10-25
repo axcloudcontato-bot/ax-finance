@@ -1,5 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
-import { E2E_APP_DATABASE_URL, E2E_BASE_URL, E2E_DATABASE_URL, E2E_PORT } from "./e2e/env";
+import { E2E_APP_DATABASE_URL, E2E_BASE_URL, E2E_DATABASE_URL, E2E_OUTBOX_ENCRYPTION_KEY, E2E_PORT } from "./e2e/env";
 
 /**
  * Testes de ponta a ponta: o app de verdade, num navegador de verdade, contra o banco ax_finance_e2e.
@@ -40,6 +40,7 @@ export default defineConfig({
       APP_DATABASE_URL: E2E_APP_DATABASE_URL,
       APP_BASE_URL: E2E_BASE_URL,
       COOKIE_SECURE: "false",
+      OUTBOX_ENCRYPTION_KEY: E2E_OUTBOX_ENCRYPTION_KEY,
     },
   },
 });
