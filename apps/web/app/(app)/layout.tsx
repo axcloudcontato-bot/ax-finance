@@ -9,10 +9,6 @@ import { logoutAction } from "./actions";
 import { noIndexMetadata } from "@/lib/site";
 import { writeBlockNotice } from "@/lib/write-block-notice";
 import { THEME_BOOTSTRAP } from "@/lib/theme-bootstrap";
-import "@fontsource/manrope/400.css";
-import "@fontsource/manrope/500.css";
-import "@fontsource/manrope/600.css";
-import "@fontsource/manrope/700.css";
 import "./workspace.css";
 
 export const metadata: Metadata = noIndexMetadata;

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const SITE_NAME = "AX Finance";
+export const SITE_NAME = "Openfix";
 export const SITE_URL = "https://axfinance.axcloud.com.br";
 export const SITE_DESCRIPTION =
   "Controle financeiro pessoal e empresarial com contas a pagar e receber, fluxo de caixa, importação OFX e CSV e conciliação bancária.";

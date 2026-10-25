@@ -82,7 +82,7 @@ export async function* companyExportZip(
       yield* add(`anexos/${attachment.id}.${extension}`, bytes, false);
     }
     yield* add("LEIA-ME.txt", encode(
-      `AX Finance — exportação da empresa ${archive.company.name}\nGerada em ${archive.exportedAt}\n\n` +
+      `Openfix — exportação da empresa ${archive.company.name}\nGerada em ${archive.exportedAt}\n\n` +
       `Situação: ${unavailable.length ? "PARCIAL — confira unavailableAttachments em manifesto.json." : "COMPLETA para os registros e anexos inventariados."}\n\n` +
       "dados.json: registros estruturados, vínculos por ID e versões dos relatórios.\n" +
       "planilhas/: CSV UTF-8, separados por ponto e vírgula; colunas Cents são centavos inteiros.\n" +

@@ -1,14 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ArrowRight, Wallet } from "@/components/ui/animated-icons";
+import { ArrowRight } from "@/components/ui/animated-icons";
+import { OpenfixLogo } from "@/components/brand/openfix-logo";
 
 export function PublicHeader({ dashboardHref }: { dashboardHref?: string } = {}) {
   return (
     <header className="public-header">
       <div className="public-container public-header-inner">
-        <Link className="public-brand" href="/" aria-label="AX Finance — início">
-          <div className="public-brand-mark"><Wallet className="size-5" /></div>
-          <span>AX Finance</span>
+        <Link className="public-brand" href="/" aria-label="Openfix — início">
+          <OpenfixLogo size={30} />
         </Link>
         <nav className="public-nav" aria-label="Navegação pública">
           <Link href="/#recursos">Recursos</Link>
@@ -30,14 +30,14 @@ export function PublicFooter() {
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
         <div>
-          <Link className="public-brand" href="/"><div className="public-brand-mark"><Wallet className="size-5" /></div><span>AX Finance</span></Link>
+          <Link className="public-brand" href="/" aria-label="Openfix — início"><OpenfixLogo size={30} /></Link>
           <p>Gestão financeira clara para sua rotina pessoal ou para uma pequena empresa de serviços.</p>
         </div>
         <div><strong>Produto</strong><Link href="/#recursos">Recursos</Link><Link href="/#precos">Preço</Link><Link href="/demonstracao">Demonstração</Link><Link href="/faq">Perguntas frequentes</Link></div>
         <div><strong>Atendimento</strong><Link href="/suporte">Suporte</Link><a href="mailto:contato@axcloud.com.br">contato@axcloud.com.br</a><Link href="/informacoes-fiscais">Informações fiscais</Link></div>
         <div><strong>Legal</strong><Link href="/termos">Termos de uso</Link><Link href="/privacidade">Privacidade</Link><Link href="/cancelamento">Cancelamento e exportação</Link></div>
       </div>
-      <div className="public-container public-footer-bottom"><span>© 2026 AX Finance.</span><span>Dados financeiros são privados e não são vendidos.</span></div>
+      <div className="public-container public-footer-bottom"><span>© 2026 Openfix.</span><span>Dados financeiros são privados e não são vendidos.</span></div>
     </footer>
   );
 }

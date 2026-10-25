@@ -11,7 +11,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <main style={{ maxWidth: 520, margin: "0 auto", padding: "4rem 1.25rem", textAlign: "center" }}>
           <h1 style={{ fontSize: "1.4rem" }}>Algo deu errado</h1>
           <p style={{ lineHeight: 1.5 }}>
-            O AX Finance não conseguiu carregar. Tente de novo; se continuar, escreva para o suporte
+            O Openfix não conseguiu carregar. Tente de novo; se continuar, escreva para o suporte
             {error.digest ? <> informando o código <code>{error.digest}</code></> : null}.
           </p>
           <button

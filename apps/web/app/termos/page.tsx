@@ -3,14 +3,14 @@ import { publicPageMetadata } from "@/lib/site";
 
 export const metadata = publicPageMetadata({
   title: "Termos de uso",
-  description: "Consulte as condições aplicáveis ao acesso, uso, cobrança, suporte e encerramento do AX Finance.",
+  description: "Consulte as condições aplicáveis ao acesso, uso, cobrança, suporte e encerramento do Openfix.",
   path: "/termos",
 });
 
 export default function TermsPage() {
-  return <PublicPage eyebrow="Versão 1.0 · vigência em 29/09/2026" title="Termos de uso" intro="Regras aplicáveis ao acesso e uso do AX Finance, serviço operado pela AX Cloud.">
-    <section><h2>1. Objeto e aceite</h2><p>Estes Termos regulam o uso do AX Finance, plataforma de organização e acompanhamento financeiro empresarial. Ao criar uma conta ou aceitar um convite, o usuário declara que leu e concorda com estes Termos e com a Política de Privacidade.</p></section>
-    <section><h2>2. Natureza do serviço</h2><p>O AX Finance oferece registro de contas a pagar e receber, movimentações, importação e conciliação, relatórios e recursos de colaboração. O serviço não presta consultoria contábil, jurídica, tributária ou de investimentos e não substitui a conferência profissional aplicável à empresa contratante.</p></section>
+  return <PublicPage eyebrow="Versão 1.0 · vigência em 29/09/2026" title="Termos de uso" intro="Regras aplicáveis ao acesso e uso do Openfix, serviço operado pela AX Cloud.">
+    <section><h2>1. Objeto e aceite</h2><p>Estes Termos regulam o uso do Openfix, plataforma de organização e acompanhamento financeiro empresarial. Ao criar uma conta ou aceitar um convite, o usuário declara que leu e concorda com estes Termos e com a Política de Privacidade.</p></section>
+    <section><h2>2. Natureza do serviço</h2><p>O Openfix oferece registro de contas a pagar e receber, movimentações, importação e conciliação, relatórios e recursos de colaboração. O serviço não presta consultoria contábil, jurídica, tributária ou de investimentos e não substitui a conferência profissional aplicável à empresa contratante.</p></section>
     <section><h2>3. Conta e responsabilidades</h2><ul><li>O proprietário da empresa é responsável por convidar usuários e revisar suas permissões.</li><li>Cada usuário deve manter credenciais individuais, seguras e atualizadas.</li><li>Os dados inseridos, importados e conciliados devem ser conferidos pela contratante.</li><li>É proibido usar o serviço para fraude, invasão, distribuição de malware ou violação de direitos de terceiros.</li></ul></section>
     <section><h2>4. Planos, avaliação e cobrança</h2><p>O período de avaliação, preço, ciclo e limites aplicáveis são apresentados antes da contratação. Alterações de preço para ciclos futuros serão comunicadas com antecedência razoável. Tributos e documentos fiscais da assinatura seguem a legislação e o processo descrito em Informações fiscais.</p></section>
     <section><h2>5. Cancelamento e portabilidade</h2><p>O proprietário pode agendar o cancelamento na área Assinatura. A data efetiva será exibida antes da confirmação. Enquanto a conta estiver acessível, o proprietário poderá gerar a exportação final. O cancelamento não apaga automaticamente registros que precisem ser preservados para segurança, defesa de direitos ou obrigação legal.</p></section>

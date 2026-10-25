@@ -23,7 +23,7 @@ export default async function SecurityPage(
   return (
     <main className="wide settings-page security-workspace">
       <div className="page-header">
-        <div><h1>Segurança da conta</h1><p className="subtitle">Proteja seu acesso ao AX Finance.</p></div>
+        <div><h1>Segurança da conta</h1><p className="subtitle">Proteja seu acesso ao Openfix.</p></div>
       </div>
       {searchParams.erro ? <p className="error">{searchParams.erro}</p> : null}
       {searchParams.desativado ? <p className="success-box">Autenticação em duas etapas desativada.</p> : null}

@@ -19,7 +19,7 @@ Uso principal: **computador, no escritório**, em sessões de trabalho (lançar,
 
 ## Product Purpose
 
-Gestão financeira para quem não é do financeiro. Promessa: "Saiba quanto sua empresa tem, o que precisa pagar e como ficará o caixa nas próximas semanas." O cliente compra organização, previsibilidade e menos trabalho manual. Sucesso é a pessoa trocar a planilha pelo AX Finance, registrar a rotina com confiança nos saldos e voltar toda semana.
+Gestão financeira para quem não é do financeiro. Promessa: "Saiba quanto sua empresa tem, o que precisa pagar e como ficará o caixa nas próximas semanas." O cliente compra organização, previsibilidade e menos trabalho manual. Sucesso é a pessoa trocar a planilha pelo Openfix, registrar a rotina com confiança nos saldos e voltar toda semana.
 
 ## Positioning
 
@@ -45,11 +45,11 @@ Não são diferenciais comprovados: atendimento humano especializado e "empresa 
 - Português brasileiro e BRL; datas no fuso da empresa.
 - Ações irreversíveis exigem confirmação; valor e empresa visíveis antes de confirmar uma baixa.
 - Sem dados financeiros offline por padrão.
-- Tela de login: redesenhada em 21/10/2026 a pedido do usuário (extrato de exemplo que fecha o saldo + formulário); mudanças futuras no login pedem aprovação dele.
+- Login e cadastro: redesenhados em 25/10/2026 com a marca Openfix (formulário + painel Azul Escuro com o arco da marca e o extrato de exemplo que fecha o saldo); mudanças futuras pedem aprovação do usuário.
 
 ## Brand Commitments
 
-Nenhum compromisso fixo: o redesenho pode propor nome visual, ícone e identidade novos. "AX Finance" é nome de trabalho (o DIRECAO.md pede pesquisa de nome, domínio e marca antes do uso comercial). Voz já praticada na interface: direta, didática e honesta, explicando a regra por trás do número.
+Marca **Openfix** (definida em 25/10/2026, brand book em `Logo/Brand.png`; antes "AX Finance"). Slogan: "Conecte, organize e assuma o controle". Logo: anel em degradê Verde Menta → Azul Tech → Roxo Digital com o nome "openfix" em minúsculas; versão branca sobre fundo escuro. Paleta: Verde Menta #2ED6A8, Azul Tech #3B82F6, Roxo Digital #8B5CF6, Azul Escuro #0B1F3B, Cinza Claro #E5E7EB. Tipografia Montserrat. Operada pela AX Cloud. Voz já praticada na interface: direta, didática e honesta, explicando a regra por trás do número.
 
 ## Evidence on Hand
 

@@ -9,7 +9,7 @@ export function escapeHtml(value: string): string {
 }
 
 /** Identificador da logo anexada inline pelo envio (ver `sendOutboxEmail`). */
-export const LOGO_CID = "ax-finance-logo";
+export const LOGO_CID = "openfix-logo";
 
 export type EmailLayoutInput = {
   preheader: string;
@@ -23,7 +23,7 @@ export type EmailLayoutInput = {
   footerNote?: string;
 };
 
-const DEFAULT_FOOTER = "Você recebeu este e-mail porque tem acesso ao AX Finance.";
+const DEFAULT_FOOTER = "Você recebeu este e-mail porque tem acesso ao Openfix.";
 
 /**
  * Layout base dos e-mails transacionais: tabelas com estilo inline (não
@@ -39,13 +39,13 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
     ? `<tr>
               <td class="ax-pad" style="padding:28px 40px 8px 40px;">
                 <!--[if mso]>
-                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="14%" strokecolor="#3478ff" fillcolor="#3478ff">
+                <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="14%" strokecolor="#2563eb" fillcolor="#2563eb">
                 <w:anchorlock/>
                 <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${safeLabel}</center>
                 </v:roundrect>
                 <![endif]-->
                 <!--[if !mso]><!-->
-                <a href="${safeUrl}" style="background-color:#3478ff;border-radius:10px;color:#ffffff;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:48px;text-align:center;text-decoration:none;width:240px;">${safeLabel}</a>
+                <a href="${safeUrl}" style="background-color:#2563eb;border-radius:10px;color:#ffffff;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:48px;text-align:center;text-decoration:none;width:240px;">${safeLabel}</a>
                 <!--<![endif]-->
               </td>
             </tr>`
@@ -53,7 +53,7 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
 
   const noteRow = note
     ? `<tr>
-              <td class="ax-pad" style="padding:16px 40px 0 40px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#8393b2;">
+              <td class="ax-pad" style="padding:16px 40px 0 40px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#5f6b80;">
                 ${note}
               </td>
             </tr>`
@@ -66,7 +66,7 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
               </td>
             </tr>
             <tr>
-              <td class="ax-pad" style="padding:0 40px 32px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#8393b2;">
+              <td class="ax-pad" style="padding:0 40px 32px 40px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#5f6b80;">
                 Se o botão acima não funcionar, copie e cole este link no navegador:<br />
                 <a href="${safeUrl}" style="color:#2765ec;word-break:break-all;">${safeUrl}</a>
               </td>
@@ -78,7 +78,7 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AX Finance</title>
+    <title>Openfix</title>
     <!--[if mso]>
     <noscript>
       <xml>
@@ -101,19 +101,22 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f6fd;">
       <tr>
         <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;border:1px solid #dce4f0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;border:1px solid #dce4f0;overflow:hidden;">
+            <tr>
+              <td height="4" style="height:4px;line-height:4px;font-size:0;background-color:#3b82f6;background-image:linear-gradient(90deg,#2ed6a8,#3b82f6 55%,#8b5cf6);">&nbsp;</td>
+            </tr>
             <tr>
               <td class="ax-pad" style="padding:32px 40px 0 40px;">
                 <table role="presentation" cellpadding="0" cellspacing="0">
                   <tr>
-                    <td style="width:40px;height:40px;vertical-align:middle;"><img src="cid:${LOGO_CID}" width="40" height="40" alt="" style="display:block;border:0;border-radius:10px;" /></td>
-                    <td style="padding-left:12px;font-family:Arial,Helvetica,sans-serif;font-size:18px;font-weight:800;color:#0c193d;">AX Finance</td>
+                    <td style="width:40px;height:40px;vertical-align:middle;"><img src="cid:${LOGO_CID}" width="36" height="36" alt="" style="display:block;border:0;" /></td>
+                    <td style="padding-left:10px;font-family:Montserrat,Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;color:#0b1f3b;">openfix</td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
-              <td class="ax-pad ax-heading" style="padding:28px 40px 8px 40px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:800;color:#0c193d;">
+              <td class="ax-pad ax-heading" style="padding:28px 40px 8px 40px;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:800;color:#0b1f3b;">
                 ${escapeHtml(heading)}
               </td>
             </tr>
@@ -128,8 +131,8 @@ export function renderEmailLayout(input: EmailLayoutInput): string {
           </table>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
             <tr>
-              <td style="padding:20px 24px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#8393b2;">
-                AX Finance · Gestão financeira para empresas de serviço<br />
+              <td style="padding:20px 24px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#5f6b80;">
+                Openfix · Conecte, organize e assuma o controle<br />
                 ${escapeHtml(footerNote)}
               </td>
             </tr>
@@ -215,10 +218,10 @@ export function itemList(rows: ItemRow[]): string {
     return `<tr>` +
       `<td style="${border}padding:12px 14px;${FONT}vertical-align:top;">` +
       `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background-color:${badge.background};color:${badge.text};font-size:11px;line-height:1.5;font-weight:700;">${escapeHtml(row.badge.label)}</span>` +
-      `<div style="padding-top:5px;font-size:14px;line-height:1.4;font-weight:700;"><a href="${escapeHtml(row.href)}" style="color:#0c193d;text-decoration:none;">${escapeHtml(row.title)}</a></div>` +
+      `<div style="padding-top:5px;font-size:14px;line-height:1.4;font-weight:700;"><a href="${escapeHtml(row.href)}" style="color:#0b1f3b;text-decoration:none;">${escapeHtml(row.title)}</a></div>` +
       (meta ? `<div style="padding-top:2px;font-size:12px;line-height:1.5;">${meta}</div>` : "") +
       `</td>` +
-      `<td align="right" style="${border}padding:12px 14px;${FONT}vertical-align:top;white-space:nowrap;font-size:14px;line-height:1.4;font-weight:800;color:#0c193d;">${row.amount ? escapeHtml(row.amount) : ""}</td>` +
+      `<td align="right" style="${border}padding:12px 14px;${FONT}vertical-align:top;white-space:nowrap;font-size:14px;line-height:1.4;font-weight:800;color:#0b1f3b;">${row.amount ? escapeHtml(row.amount) : ""}</td>` +
       `</tr>`;
   }).join("");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #dce4f0;border-radius:12px;border-collapse:separate;">${body}</table>`;

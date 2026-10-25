@@ -12,7 +12,7 @@ export default function WhatsNewPage() {
       <div className="page-header">
         <div>
           <h1>Novidades</h1>
-          <p className="subtitle">O que mudou no AX Finance, da mais recente para a mais antiga.</p>
+          <p className="subtitle">O que mudou no Openfix, da mais recente para a mais antiga.</p>
         </div>
       </div>
 

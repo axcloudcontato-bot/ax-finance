@@ -5,7 +5,7 @@ import { publicPageMetadata } from "@/lib/site";
 
 export const metadata = publicPageMetadata({
   title: "Demonstração do controle financeiro",
-  description: "Veja como o AX Finance organiza saldos, contas a pagar e receber, fluxo de caixa, importação e conciliação bancária.",
+  description: "Veja como o Openfix organiza saldos, contas a pagar e receber, fluxo de caixa, importação e conciliação bancária.",
   path: "/demonstracao",
 });
 

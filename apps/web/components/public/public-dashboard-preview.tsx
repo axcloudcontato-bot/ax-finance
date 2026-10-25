@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/animated-icons";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { OpenfixMark } from "@/components/brand/openfix-logo";
 
 /**
  * Prévia da tela real do painel (dados fictícios, marcados como tal): mesmo menu agrupado, mesmos
@@ -50,9 +51,9 @@ const metrics = [
 
 export function PublicDashboardPreview() {
   return (
-    <div className="public-v3-product" aria-label="Prévia do painel do AX Finance com dados fictícios">
+    <div className="public-v3-product" aria-label="Prévia do painel do Openfix com dados fictícios">
       <header className="public-v3-topbar" aria-hidden="true">
-        <div className="public-v3-brand"><span><Wallet size={13} /></span><div><strong>AX Finance</strong><small>Instalações Exemplo Ltda</small></div></div>
+        <div className="public-v3-brand"><OpenfixMark size={22} /><div><strong>Openfix</strong><small>Instalações Exemplo Ltda</small></div></div>
         <span className="public-v3-avatar">JS</span>
       </header>
       <div className="public-v3-body">

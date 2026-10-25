@@ -4,7 +4,7 @@ import { publicPageMetadata } from "@/lib/site";
 
 export const metadata = publicPageMetadata({
   title: "Suporte",
-  description: "Conheça os canais, horários, prioridades e orientações para solicitar suporte do AX Finance.",
+  description: "Conheça os canais, horários, prioridades e orientações para solicitar suporte do Openfix.",
   path: "/suporte",
 });
 

@@ -1,5 +1,6 @@
-/* Cadastro: duas metades. Coluna do formulário calma (sem ícones, rótulos simples, um só azul na
-   ação) e painel marinho com o extrato de exemplo. Os tokens --l-* vêm do .page do login. */
+/* Login e cadastro: duas metades. Coluna do formulário calma (sem ícones, rótulos simples, um só azul
+   na ação) e painel da marca Openfix: Azul Escuro com o arco em degradê e o extrato de exemplo.
+   Os tokens --l-* vêm do .page de login.module.css. */
 .root {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -25,26 +26,14 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  color: var(--l-text);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 1.35rem;
   text-decoration: none;
-}
-
-.brandMark {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background: var(--l-accent);
-  color: #fff;
 }
 
 .brand:focus-visible,
 .switch a:focus-visible,
-.legal a:focus-visible {
+.legal a:focus-visible,
+.textLink:focus-visible {
   outline: 2px solid var(--l-accent);
   outline-offset: 3px;
   border-radius: 4px;
@@ -76,7 +65,55 @@
   line-height: 1.5;
 }
 
+.notice {
+  margin: 24px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--l-success-bg);
+  color: var(--l-success-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.notice a,
+.error a { color: inherit; font-weight: 700; }
+
+.notice + .notice,
+.notice + .error,
+.error + .notice { margin-top: 10px; }
+
 .form { display: grid; gap: 20px; margin-top: 32px; }
+
+.textLink {
+  color: var(--l-accent-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.textLink:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* .root na frente: vence o label global (bloco com margem). */
+.root .checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 0;
+  color: var(--l-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.root .checkbox input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--l-accent);
+}
+
 
 .field { display: grid; gap: 8px; }
 
@@ -210,6 +247,22 @@
 }
 
 .submit:hover:not(:disabled) { background: var(--l-accent-hover); }
+
+/* O botão de envio global (pílula com borda animada) é mais específico que .submit: aqui vence o
+   botão sólido da marca, com os mesmos cantos dos campos. */
+.root .form button.submit[type="submit"] {
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: var(--l-accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  animation: none;
+  box-shadow: 0 1px 2px rgba(11, 31, 59, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.root .form button.submit[type="submit"]:hover:not(:disabled) { background: var(--l-accent-hover); transform: none; filter: none; }
 .submit:focus-visible { outline: 3px solid var(--l-focus); outline-offset: 2px; }
 .submit:disabled { cursor: progress; opacity: 0.8; }
 
@@ -228,7 +281,8 @@
 .switch a { color: var(--l-accent-text); font-weight: 700; text-decoration: none; }
 .switch a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* Painel de prova: marinho liso nos dois temas, só com um brilho suave no canto. */
+/* Painel da marca: Azul Escuro nos dois temas, com o arco do anel Openfix saindo pelo canto
+   (o "padrão de marca" do brand book) e um brilho azul suave do lado oposto. */
 .proofSide {
   position: relative;
   display: flex;
@@ -236,18 +290,43 @@
   justify-content: center;
   overflow: hidden;
   padding: 48px;
-  background-color: #0c1a33;
-  color: #e8eefb;
+  background-color: #0b1f3b;
+  color: #e5e7eb;
+}
+
+.proofSide::before {
+  content: "";
+  position: absolute;
+  top: -52%;
+  right: -48%;
+  width: 104%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  /* Só o quadrante de baixo à esquerda aparece: roxo → azul → verde ao longo dele. */
+  background: conic-gradient(from 150deg, rgba(139, 92, 246, 0) 0deg, #8b5cf6 30deg, #3b82f6 75deg, #2ed6a8 125deg, rgba(46, 214, 168, 0) 165deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 72%, #000 73%);
+  mask: radial-gradient(closest-side, transparent 72%, #000 73%);
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .proofSide::after {
   content: "";
   position: absolute;
-  inset: auto -20% -40% auto;
+  inset: auto auto -30% -25%;
   width: 70%;
   height: 70%;
-  background: radial-gradient(closest-side, rgba(79, 132, 240, 0.22), transparent);
+  background: radial-gradient(closest-side, rgba(59, 130, 246, 0.2), transparent);
   pointer-events: none;
+}
+
+.proofEyebrow {
+  margin: 0 0 14px;
+  color: #2ed6a8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .proofInner { position: relative; z-index: 1; width: 100%; max-width: 480px; }
@@ -287,7 +366,7 @@
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: #6f9cff;
+  background: linear-gradient(135deg, #2ed6a8, #8b5cf6);
 }
 
 @media (max-width: 1024px) {
@@ -300,3 +379,5 @@
 @media (prefers-reduced-motion: reduce) {
   .field input, .segmented > label, .submit { transition: none; }
 }
+
+.legalLinks { margin-top: 16px; }

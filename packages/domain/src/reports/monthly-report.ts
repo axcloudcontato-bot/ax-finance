@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-import { axLogoPng } from "../brand/logo";
+import { brandLogoPng } from "../brand/logo";
 import { z } from "zod";
 import { withCompanyContext } from "@ax-finance/db";
 import { assertActiveMembership } from "../companies/assert-membership";
@@ -112,7 +112,7 @@ export async function getLiveMonthlyReportData(userId: string, companyId: string
 
 // ---------- PDF ----------
 
-const COLORS = { ink: "#1a1d23", muted: "#5b6270", line: "#d9dce1", soft: "#f3f5f9", accent: "#3675ec", positive: "#0c8465", negative: "#c23d68" };
+const COLORS = { ink: "#0b1f3b", muted: "#52607a", line: "#dde2ea", soft: "#f4f6fa", accent: "#2563eb", brand: "#0b1f3b", positive: "#0c8465", negative: "#c23d68" };
 
 const money = (cents: bigint) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(cents) / 100).replace(/\u00a0/g, " ");
 const percent = (bpsValue: number) => `${(bpsValue / 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
@@ -128,7 +128,7 @@ function variation(current: bigint, before: bigint | undefined): string {
 /** PDF A4 do relatório mensal (pdfkit, fontes padrão: acentos do português suportados). */
 export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `Relatório mensal ${data.monthLabel} - ${data.companyName}`, Author: "AX Finance" } });
+    const doc = new PDFDocument({ size: "A4", margin: 48, info: { Title: `Relatório mensal ${data.monthLabel} - ${data.companyName}`, Author: "Openfix" } });
     const chunks: Buffer[] = [];
     doc.on("data", (chunk: Buffer) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -137,9 +137,12 @@ export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer>
     const left = doc.page.margins.left;
     const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-    // Cabeçalho
-    doc.rect(0, 0, doc.page.width, 96).fill(COLORS.accent);
-    doc.image(axLogoPng(), left, 22, { width: 52, height: 52 });
+    // Cabeçalho na marca Openfix: Azul Escuro com a faixa do degradê do anel embaixo.
+    doc.rect(0, 0, doc.page.width, 96).fill(COLORS.brand);
+    const brandBar = doc.linearGradient(0, 0, doc.page.width, 0);
+    brandBar.stop(0, "#2ed6a8").stop(0.55, "#3b82f6").stop(1, "#8b5cf6");
+    doc.rect(0, 96, doc.page.width, 4).fill(brandBar);
+    doc.image(brandLogoPng(), left, 22, { width: 52, height: 52 });
     doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(20).text("Relatório mensal", left + 66, 28, { width: width - 66 });
     doc.font("Helvetica").fontSize(11).text(`${data.companyName} · ${data.monthLabel}`, left + 66, 56, { width: width - 66 });
     doc.y = 120;
@@ -235,7 +238,7 @@ export function renderMonthlyReportPdf(data: MonthlyReportData): Promise<Buffer>
     paragraph(`Resultado operacional por competência (receitas, custos e despesas do mês, pagos ou não; juros e movimentações de capital ficam na DRE). Caixa pelas baixas e devoluções efetivadas até a data de geração. Contas a receber e projeção na posição de ${dateBr(data.generatedOn)}: a projeção soma o saldo disponível de hoje e os títulos em aberto até 30 dias, como no painel.`);
 
     doc.page.margins.bottom = 0;
-    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(`Gerado pelo AX Finance em ${dateBr(data.generatedOn)}.`, left, doc.page.height - doc.page.margins.bottom - 12, { width, align: "center", lineBreak: false });
+    doc.fillColor(COLORS.muted).font("Helvetica").fontSize(8).text(`Gerado pelo Openfix em ${dateBr(data.generatedOn)}.`, left, doc.page.height - doc.page.margins.bottom - 12, { width, align: "center", lineBreak: false });
     doc.end();
   });
 }

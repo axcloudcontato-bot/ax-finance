@@ -49,7 +49,7 @@ export default async function NotificationSettingsPage(
             <div className="settings-choice-grid">
               <label className="notification-channel">
                 <input name="inAppDue" type="checkbox" defaultChecked={preference.inAppDue} />
-                <span><strong>Central de notificações</strong><small>Exibir na campainha do AX Finance.</small></span>
+                <span><strong>Central de notificações</strong><small>Exibir na campainha do Openfix.</small></span>
               </label>
               <label className="notification-channel">
                 <input name="emailDue" type="checkbox" defaultChecked={preference.emailDue} />

@@ -4,13 +4,13 @@ import { publicPageMetadata } from "@/lib/site";
 
 export const metadata = publicPageMetadata({
   title: "Perguntas frequentes",
-  description: "Tire dúvidas sobre planos, preços, implantação, segurança, suporte, cancelamento e exportação de dados do AX Finance.",
+  description: "Tire dúvidas sobre planos, preços, implantação, segurança, suporte, cancelamento e exportação de dados do Openfix.",
   path: "/faq",
 });
 
 const groups = [
   { title: "Produto e implantação", items: [
-    ["Para quem é o AX Finance?", "Para pequenas empresas de serviços que precisam controlar caixa, contas a pagar e receber, extratos e fechamento sem adotar um ERP complexo."],
+    ["Para quem é o Openfix?", "Para pequenas empresas de serviços que precisam controlar caixa, contas a pagar e receber, extratos e fechamento sem adotar um ERP complexo."],
     ["Preciso importar uma planilha para começar?", "Não. Você pode cadastrar uma conta, informar o saldo inicial e começar com novos lançamentos. A importação pode ser feita depois."],
     ["Quais arquivos podem ser importados?", "CSV com mapeamento assistido de colunas e OFX 1.x ou 2.x. Todo arquivo passa por pré-visualização antes da confirmação."],
     ["Há implantação assistida?", "Sim, como serviço opcional com escopo e preço definidos conforme o volume e a qualidade dos dados."],
@@ -24,9 +24,9 @@ const groups = [
   ]},
   { title: "Segurança e suporte", items: [
     ["Outras empresas conseguem ver meus dados?", "Não. O acesso é isolado por empresa na aplicação e no banco de dados, com testes automatizados de isolamento."],
-    ["Posso ativar autenticação em duas etapas?", "Sim. O AX Finance oferece TOTP e códigos de recuperação na área Segurança."],
+    ["Posso ativar autenticação em duas etapas?", "Sim. O Openfix oferece TOTP e códigos de recuperação na área Segurança."],
     ["Como peço ajuda?", "Use o formulário autenticado dentro do produto ou envie e-mail para contato@axcloud.com.br. Nunca envie senhas ou códigos de autenticação."],
-    ["O sistema emite nota fiscal para meus clientes?", "Não. O AX Finance controla o financeiro, mas não emite documentos fiscais das operações da sua empresa."],
+    ["O sistema emite nota fiscal para meus clientes?", "Não. O Openfix controla o financeiro, mas não emite documentos fiscais das operações da sua empresa."],
   ]},
 ];
 

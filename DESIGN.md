@@ -1,76 +1,80 @@
 ---
-name: AX Finance
-description: Gestão financeira para quem não é do financeiro — mesa de trabalho clara, em claro e escuro.
+name: Openfix
+description: Conecte, organize e assuma o controle — gestão financeira clara, em claro e escuro.
 colors:
-  ink: "#1a1d23"
-  ink-muted: "#5b6270"
-  paper: "#f4f7fb"
+  brand-mint: "#2ed6a8"
+  brand-blue: "#3b82f6"
+  brand-violet: "#8b5cf6"
+  brand-navy: "#0b1f3b"
+  brand-gray: "#e5e7eb"
+  ink: "#0b1f3b"
+  ink-muted: "#52607a"
+  paper: "#f4f6fa"
   card: "#ffffff"
-  hairline: "#d9dce1"
+  hairline: "#dde2ea"
   field-border: "#858e9e"
-  brand-blue: "#4680ff"
-  brand-blue-text: "#2f63d6"
-  action-blue: "#2e66db"
-  action-blue-hover: "#2453b8"
-  focus: "#2f63d6"
-  nav-active-bg: "#eaf0ff"
-  nav-active-text: "#2453b8"
+  brand-blue-text: "#2563eb"
+  action-blue: "#2563eb"
+  action-blue-hover: "#1d4ed8"
+  focus: "#2563eb"
+  nav-active-bg: "#e8f0fe"
+  nav-active-text: "#1d4ed8"
   money-in: "#0a7a5d"
   money-out: "#b42d5f"
   warn: "#96600a"
   danger: "#a4302f"
-  chart-1: "#3978db"
+  chart-1: "#3b82f6"
   chart-2: "#d58a25"
-  chart-3: "#078f85"
+  chart-3: "#0e9f78"
   chart-4: "#c23d68"
-  chart-5: "#7655d8"
-  dark-ink: "#eef4ff"
-  dark-ink-muted: "#aab6ca"
-  dark-paper: "#0f1726"
-  dark-card: "#182235"
-  dark-hairline: "#34425a"
-  dark-brand-blue: "#6f9cff"
-  dark-brand-blue-text: "#8fb2ff"
-  dark-focus: "#9fbcff"
-  dark-money-in: "#3cc79b"
+  chart-5: "#8b5cf6"
+  dark-ink: "#eef2f8"
+  dark-ink-muted: "#a8b6cc"
+  dark-paper: "#081629"
+  dark-card: "#0e2140"
+  dark-hairline: "#23406b"
+  dark-brand-blue: "#60a5fa"
+  dark-brand-blue-text: "#8ec5ff"
+  dark-focus: "#93c5fd"
+  dark-money-in: "#2ed6a8"
   dark-money-out: "#ff7aa8"
   dark-warn: "#ffc266"
 typography:
   page-title:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "clamp(1.4rem, 1.8vw, 1.8rem)"
     fontWeight: 700
     lineHeight: 1.25
     letterSpacing: "-0.035em"
   metric:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "clamp(1.22rem, 1.7vw, 1.62rem)"
     fontWeight: 700
     lineHeight: 1.25
     letterSpacing: "-0.035em"
     fontFeature: "tnum"
   modal-title:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "1.125rem"
     fontWeight: 650
     lineHeight: 1.3
     letterSpacing: "-0.01em"
   body:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 600
   metric-label:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "0.76rem"
     fontWeight: 650
     letterSpacing: "0.015em"
   button:
-    fontFamily: "Manrope, system-ui, sans-serif"
+    fontFamily: "Montserrat, system-ui, sans-serif"
     fontSize: "0.8125rem"
     fontWeight: 500
     lineHeight: 1.2
@@ -129,34 +133,36 @@ components:
     size: "40px"
 ---
 
-# Design System: AX Finance
+# Design System: Openfix
 
-Documento de referência do sistema visual. Vale para mim (Claude), para o ChatGPT/Codex e para qualquer pessoa que mexa na interface. Os tokens do topo são a fonte da verdade; o texto explica onde e por que usar cada um. Fonte técnica: `apps/web/app/globals.css` (tokens `:root` e tema escuro), `apps/web/app/(app)/workspace.css` (camada da área logada) e `apps/web/app/login/login.module.css` (login e cadastro). Contexto de produto em `PRODUCT.md`.
+Documento de referência do sistema visual. Vale para mim (Claude), para o ChatGPT/Codex e para qualquer pessoa que mexa na interface. Os tokens do topo são a fonte da verdade; o texto explica onde e por que usar cada um. Fonte técnica: `apps/web/app/globals.css` (tokens `:root` e tema escuro), `apps/web/app/(app)/workspace.css` (camada da área logada) e `apps/web/app/login/login.module.css` (login e cadastro). Contexto de produto em `PRODUCT.md`; brand book em `Logo/Brand.png`; logo-fonte em `Logo/openfix-icon.svg`.
 
 ## Overview
 
 **Creative North Star: "A Mesa de Trabalho Organizada"**
 
-O AX Finance é usado no computador do escritório, em sessões de lançar, conciliar, conferir e fechar o mês. A interface se comporta como uma mesa limpa: papel claro (ou ardósia no tema escuro), cartões brancos com borda fina, um único azul para ação e foco, e cor de dinheiro (verde, rosa, âmbar) só onde existe dinheiro entrando, saindo ou atrasado. Nada compete com o número.
+O Openfix é usado no computador do escritório, em sessões de lançar, conciliar, conferir e fechar o mês. A interface se comporta como uma mesa limpa: papel claro (ou o Azul Escuro da marca no tema escuro), cartões brancos com borda fina, um único azul para ação e foco, e cor de dinheiro (verde, rosa, âmbar) só onde existe dinheiro entrando, saindo ou atrasado. Nada compete com o número.
 
-A densidade é de ferramenta de trabalho, não de vitrine: tabelas legíveis, métricas com números tabulares, janelas com cabeçalho padronizado e rodapé de ações fixo. A marca aparece nos detalhes (o ícone em quadro azul-claro dos modais, o item ativo do menu, o botão principal), não em fundos decorativos. Banners grandes no topo foram rejeitados pelo usuário; avisos são cartões pequenos no canto inferior direito.
+A densidade é de ferramenta de trabalho, não de vitrine: tabelas legíveis, métricas com números tabulares, janelas com cabeçalho padronizado e rodapé de ações fixo. A marca aparece nos detalhes (o anel Openfix no topo, o ícone em quadro azul-claro dos modais, o item ativo do menu, o botão principal). A assinatura forte (Azul Escuro + arco do anel em degradê) fica reservada ao painel do login e cadastro e à chamada final da página comercial. Banners grandes no topo foram rejeitados pelo usuário; avisos são cartões pequenos no canto inferior direito.
 
 Os dois temas são de primeira classe. Toda cor nova precisa do par claro/escuro e de contraste WCAG 2.2 AA (4,5:1 para texto, 3:1 para borda de campo e ícone).
 
 **Key Characteristics:**
 - Fundo papel + cartões brancos com borda fina; profundidade quase toda tonal.
 - Um azul de ação; cores de dinheiro reservadas a valores e status.
-- Manrope em toda a área logada, com números tabulares nos valores.
+- Montserrat em todo o produto, com números tabulares nos valores.
 - Cantos suaves e consistentes (6 a 14px); pílula só para selos e chips.
 - Janelas com o mesmo esqueleto: ícone, título, contexto, fechar, rodapé fixo.
 
 ## Colors
 
-Paleta fria e contida: tinta grafite sobre papel azulado, um azul de marca e três cores semânticas de dinheiro.
+Paleta Openfix: tinta Azul Escuro sobre papel azulado, o Azul Tech na ação, Verde Menta e Roxo Digital só no degradê da marca e nos gráficos, e três cores semânticas de dinheiro.
 
 ### Primary
-- **Azul AX** (brand-blue): preenchimentos de marca, gráficos, tinta do ícone de modal e fundos com `color-mix` (9 a 24% sobre o card). Não serve para texto sobre branco (só 3,6:1).
-- **Azul de Texto** (brand-blue-text): links, texto em azul, anel de foco (`--focus`). É a versão do Azul AX que passa 4,5:1.
+- **Azul Tech** (brand-blue): preenchimentos de marca, gráficos, tinta do ícone de modal e fundos com `color-mix` (9 a 24% sobre o card). Não serve para texto sobre branco (só 3,7:1).
+- **Degradê da marca** (brand-mint → brand-blue → brand-violet, `--brand-gradient`): o anel do logo, o nome "openfix", faixas finas de destaque e o arco dos painéis de marca. Nunca como fundo de texto.
+- **Azul Escuro** (brand-navy): tinta principal no tema claro e fundo dos painéis de marca (login, cadastro, chamada final, cabeçalho do PDF).
+- **Azul de Texto** (brand-blue-text): links, texto em azul, anel de foco (`--focus`). É a versão do Azul Tech que passa 4,5:1.
 - **Azul de Ação** (action-blue / action-blue-hover): fundo do botão principal (`.workspace-primary-action`, "Salvar" das janelas). Um por tela ou por janela.
 
 ### Neutral
@@ -178,10 +184,10 @@ Paleta fria e contida: tinta grafite sobre papel azulado, um azul de marca e tr�
 - `chart-1` a `chart-5` (`--chart-*`): séries de gráfico, nessa ordem. Sempre acompanhadas de legenda em texto (`ChartLegend`), nunca só cor.
 
 ### Tema escuro
-Os tokens `dark-*` substituem os claros sob `:root[data-ax-theme="dark"]`: ardósia (`dark-paper`, `dark-card`), tinta clara, azul mais luminoso e tons de dinheiro mais claros para manter 4,5:1.
+Os tokens `dark-*` substituem os claros sob `:root[data-ax-theme="dark"]`: a família do Azul Escuro da marca (`dark-paper`, `dark-card`), tinta clara, azul mais luminoso e o Verde Menta como "entrou", mantendo 4,5:1.
 
 ### Named Rules
-**The Money Color Rule.** Verde, rosa e âmbar significam dinheiro e prazo. Não use essas cores para decorar, destacar seção ou diferenciar categoria.
+**The Money Color Rule.** Verde, rosa e âmbar significam dinheiro e prazo. Não use essas cores para decorar, destacar seção ou diferenciar categoria. Verde Menta e Roxo da marca aparecem juntos, no degradê; sozinho, o verde é "entrou".
 
 **The Never Color Alone Rule.** Toda informação em cor também aparece em texto, sinal (+ / −) ou ícone (WCAG 1.4.1, Seção 15 do DIRECAO.md).
 
@@ -189,10 +195,10 @@ Os tokens `dark-*` substituem os claros sob `:root[data-ax-theme="dark"]`: ardó
 
 ## Typography
 
-**Display Font:** Manrope (com system-ui, sans-serif)
-**Body Font:** Manrope (com system-ui, sans-serif)
+**Display Font:** Montserrat (com system-ui, sans-serif)
+**Body Font:** Montserrat (com system-ui, sans-serif)
 
-**Character:** Manrope é geométrica, legível em tamanho pequeno e tem números tabulares bons para colunas de valores. Carregada por `@fontsource/manrope` (400, 500, 600 e 700) só na área logada. Páginas públicas usam a pilha do sistema, exceto a prévia do produto na landing.
+**Character:** Montserrat é a fonte da marca Openfix: geométrica, moderna e com números tabulares para colunas de valores. Carregada por `@fontsource/montserrat` (400, 500, 600 e 700) no layout raiz, vale para o site inteiro. E-mails usam Montserrat com Arial de reserva.
 
 ### Hierarchy
 - **Page title** (700, clamp 1.4–1.8rem, 1.25, −0.035em): `h1` dentro de `.page-header`, um por página, acompanhado de `.subtitle`.
@@ -276,8 +282,13 @@ Todo modal segue o mesmo esqueleto (`ActionModal`, `Modal`, criação rápida e 
 ### Avisos
 Retorno de ação por `?salvo=1` / `?erro=...` vira `.success-box` ou `.error` no topo do conteúdo. Notificações ficam em cartão pequeno no canto inferior direito (`NotificationToasts`). Nada de faixa larga no topo da página.
 
+### Logo
+- `OpenfixMark` (anel) e `OpenfixLogo` (anel + "openfix" em minúsculas, Montserrat 700, degradê da marca), em `components/brand/openfix-logo.tsx`. `tone="light"` deixa o nome branco sobre fundo escuro.
+- Ícones (`app/icon.png`, `app/apple-icon.png`), o PNG embutido em e-mails e PDF (`packages/domain/src/brand/logo.ts`) e `public/brand/openfix-icon.svg` saem de `Logo/openfix-icon.svg`. Mudou o desenho, gere todos de novo.
+- No texto corrido o nome é "Openfix" (o Openfix, no Openfix); a grafia em minúsculas é só do logotipo.
+
 ### Login e cadastro
-Têm identidade própria (`login.module.css`, tokens `--l-*` em `.page`): coluna limpa com o formulário e painel com um extrato de exemplo que fecha o saldo. Usam o mesmo azul e as mesmas cores de dinheiro, mas não herdam `.ax-model-buttons`. Mudanças nessas telas pedem aprovação do usuário.
+Mesmo layout nos dois (`app/login/auth.module.css`, tokens `--l-*` em `.page` de `login.module.css`): coluna limpa com o formulário e o botão sólido Azul Tech; à direita, painel Azul Escuro com o arco do anel em degradê saindo pelo canto, o slogan em verde-menta e o extrato de exemplo que fecha o saldo. Não herdam `.ax-model-buttons`. Mudanças nessas telas pedem aprovação do usuário.
 
 ## Do's and Don'ts
 
@@ -293,7 +304,8 @@ Têm identidade própria (`login.module.css`, tokens `--l-*` em `.page`): coluna
 ### Don't:
 - **Don't** criar banner grande no topo da página para aviso ou notificação.
 - **Don't** usar popover, menu ou lista translúcida.
-- **Don't** usar o Azul AX (#4680ff) como cor de texto sobre fundo claro.
+- **Don't** usar o Azul Tech (#3B82F6) como cor de texto sobre fundo claro; use o Azul de Texto.
+- **Don't** usar o degradê da marca como fundo de bloco de texto, nem espalhar o arco pelo app logado.
 - **Don't** usar verde, rosa ou âmbar fora do significado de dinheiro e prazo.
 - **Don't** colocar mais de um botão principal azul na mesma tela ou janela.
 - **Don't** encostar a seta de select na borda; use o padrão global de `--select-arrow`.

@@ -22,7 +22,7 @@ export function billingReconciliationIntervalMs(env: Record<string, string | und
 let client: Stripe | null = null;
 
 function stripeClient() {
-  client ??= new Stripe(process.env.STRIPE_SECRET_KEY!, { appInfo: { name: "AX Finance worker" }, maxNetworkRetries: 2 });
+  client ??= new Stripe(process.env.STRIPE_SECRET_KEY!, { appInfo: { name: "Openfix worker" }, maxNetworkRetries: 2 });
   return client;
 }
 

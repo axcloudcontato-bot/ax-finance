@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="ofx-ring" x1="12" y1="10" x2="52" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2ED6A8"/>
+      <stop offset="0.5" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="ofx-fold" x1="53" y1="36" x2="37" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#686DF6"/>
+      <stop offset="1" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <clipPath id="ofx-band">
+      <path d="M32 5.5a26.5 26.5 0 1 1 0 53a26.5 26.5 0 1 1 0-53zm0 11a15.5 15.5 0 1 0 0 31a15.5 15.5 0 1 0 0-31z" clip-rule="evenodd"/>
+    </clipPath>
+    <filter id="ofx-blur" filterUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      <feGaussianBlur stdDeviation="2.2"/>
+    </filter>
+  </defs>
+  <circle cx="32" cy="32" r="21" stroke="url(#ofx-ring)" stroke-width="11"/>
+  <g clip-path="url(#ofx-band)">
+    <path d="M37.4 11.7A21 21 0 0 0 33.6 11.06" stroke="#0B1F3B" stroke-opacity="0.22" stroke-width="13" filter="url(#ofx-blur)"/>
+  </g>
+  <path d="M52.7 35.6A21 21 0 0 0 37.4 11.7" stroke="url(#ofx-fold)" stroke-width="11"/>
+</svg>

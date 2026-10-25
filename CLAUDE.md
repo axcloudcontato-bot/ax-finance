@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-AX Finance is a multi-company financial-control SaaS (business and personal plans), built as a modular monolith. The product spec is `DIRECAO.md` (sections are referenced in code comments as "Seção N"). All UI text, code comments, commit messages and user-facing errors are in Brazilian Portuguese.
+Openfix (formerly AX Finance; internal package, DB and storage-key names keep `ax-finance`) is a multi-company financial-control SaaS (business and personal plans), built as a modular monolith. The product spec is `DIRECAO.md` (sections are referenced in code comments as "Seção N"). All UI text, code comments, commit messages and user-facing errors are in Brazilian Portuguese.
 
 ## Commands
 

@@ -18,7 +18,7 @@ const SOURCE = {
 
 /** "Nome" <email> → partes para o formulário. */
 function splitFrom(value: string | undefined) {
-  if (!value) return { name: "AX Finance", email: "" };
+  if (!value) return { name: "Openfix", email: "" };
   const match = value.match(/^"?([^"<]*?)"?\s*<([^>]+)>$/);
   return match ? { name: match[1]!.trim(), email: match[2]!.trim() } : { name: "", email: value.trim() };
 }
@@ -41,7 +41,7 @@ export default async function AdminEmailPage(props: { searchParams: Promise<{ er
 
   return (
     <main className="admin-content">
-      <AdminPageHeader eyebrow="Configurações" title="E-mail (SMTP)" description="Servidor usado para todos os e-mails do AX Finance: confirmação de conta, senha, convites, resumos e relatórios." />
+      <AdminPageHeader eyebrow="Configurações" title="E-mail (SMTP)" description="Servidor usado para todos os e-mails do Openfix: confirmação de conta, senha, convites, resumos e relatórios." />
       {searchParams.erro ? <div className="admin-alert is-error">{searchParams.erro}</div> : null}
       {searchParams.salvo ? <div className="admin-alert is-success">Configuração salva. O worker passa a usá-la em até um minuto. A alteração foi auditada.</div> : null}
       {searchParams.erroTeste ? <div className="admin-alert is-error">{searchParams.erroTeste}</div> : null}
@@ -104,7 +104,7 @@ export default async function AdminEmailPage(props: { searchParams: Promise<{ er
             </div>
             <div>
               <label htmlFor="smtp-from-name">Nome do remetente</label>
-              <input id="smtp-from-name" name="fromName" maxLength={120} defaultValue={from.name} placeholder="AX Finance" />
+              <input id="smtp-from-name" name="fromName" maxLength={120} defaultValue={from.name} placeholder="Openfix" />
             </div>
             <div>
               <label htmlFor="smtp-from-email">E-mail do remetente</label>

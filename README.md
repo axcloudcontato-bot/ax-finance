@@ -1,4 +1,6 @@
-# AX Finance
+# Openfix
+
+> Produto antes chamado AX Finance. Pacotes internos (`@ax-finance/*`), banco (`ax_finance`) e chaves de preferência (`ax-finance:*`) mantêm o nome antigo de propósito.
 
 Monólito modular para o SaaS descrito em [DIRECAO.md](./DIRECAO.md) — controle financeiro
 multiempresa para empresas de serviços. Já é um MVP funcional: identidade, contas, títulos,

@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { CircleNotch, Wallet } from "@/components/ui/animated-icons";
+import { CircleNotch } from "@/components/ui/animated-icons";
+import { OpenfixLogo } from "@/components/brand/openfix-logo";
 import { Ledger } from "../login/ledger";
 import loginStyles from "../login/login.module.css";
-import styles from "./register.module.css";
+import styles from "../login/auth.module.css";
 import type { RegisterField, RegisterState } from "./actions";
 
 type PlanCode = "PERSONAL" | "ESSENTIAL";
@@ -57,9 +58,8 @@ export function RegisterExperience({
     <div className={`${loginStyles.page} ${styles.root}`}>
       <main className={styles.formSide}>
         <div className={styles.formInner}>
-          <Link href="/" className={styles.brand} aria-label="AX Finance, página inicial">
-            <span className={styles.brandMark} aria-hidden="true"><Wallet size={16} /></span>
-            AX Finance
+          <Link href="/" className={styles.brand} aria-label="Openfix, página inicial">
+            <OpenfixLogo size={30} />
           </Link>
 
           <header className={styles.header}>
@@ -118,8 +118,9 @@ export function RegisterExperience({
         </div>
       </main>
 
-      <aside className={styles.proofSide} aria-label="Como o AX Finance mostra o seu saldo">
+      <aside className={styles.proofSide} aria-label="Como o Openfix mostra o seu saldo">
         <div className={styles.proofInner}>
+          <p className={styles.proofEyebrow}>Conecte, organize e assuma o controle</p>
           <p className={styles.proofTitle}>O saldo de hoje e o das próximas semanas, explicados linha a linha.</p>
           <div className={styles.proofLedger}><Ledger /></div>
           <ul className={styles.facts}>

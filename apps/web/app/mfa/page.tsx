@@ -1,8 +1,3 @@
-import "@fontsource/manrope/400.css";
-import "@fontsource/manrope/500.css";
-import "@fontsource/manrope/600.css";
-import "@fontsource/manrope/700.css";
-import "@fontsource/manrope/800.css";
 import { THEME_BOOTSTRAP } from "@/lib/theme-bootstrap";
 import { redirect } from "next/navigation";
 import { getMfaChallengeToken } from "@/lib/session";

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Wallet } from "@/components/ui/animated-icons";
+import { OpenfixMark } from "@/components/brand/openfix-logo";
 
 export interface AppNotification {
   id: string;
@@ -20,11 +20,9 @@ export function AppTopbar({ leading, children, companyName }: { leading?: ReactN
     >
       <div className="flex min-w-0 items-center gap-2">
         {leading}
-        <div className="grid size-8 shrink-0 place-items-center rounded-[6px] bg-[#2f63d6] text-white">
-          <Wallet className="size-4" />
-        </div>
+        <OpenfixMark size={30} className="shrink-0" />
         <div className="app-workspace-identity min-w-0">
-          <span className="app-workspace-brand">AX Finance</span>
+          <span className="app-workspace-brand openfix-wordmark">openfix</span>
           <span className="app-workspace-name" title={companyName}>{companyName}</span>
         </div>
       </div>

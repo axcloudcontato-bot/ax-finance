@@ -2,6 +2,10 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { MoneyInputMask } from "@/components/money-input-mask";
+import "@fontsource/montserrat/400.css";
+import "@fontsource/montserrat/500.css";
+import "@fontsource/montserrat/600.css";
+import "@fontsource/montserrat/700.css";
 import "./globals.css";
 
 // Teclado do celular redimensiona a área útil (Chrome/Android): janelas com rodapé fixo mantêm o
@@ -10,13 +14,18 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   interactiveWidget: "resizes-content",
+  // Barra do navegador no celular na cor do fundo de cada tema (Openfix).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f6fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#081629" },
+  ],
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "AX Finance | Gestão financeira pessoal e empresarial",
-    template: "%s | AX Finance",
+    default: "Openfix | Gestão financeira pessoal e empresarial",
+    template: "%s | Openfix",
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
@@ -36,7 +45,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "AX Finance | Gestão financeira pessoal e empresarial",
+    title: "Openfix | Gestão financeira pessoal e empresarial",
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: SITE_NAME,
@@ -45,7 +54,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "AX Finance | Gestão financeira pessoal e empresarial",
+    title: "Openfix | Gestão financeira pessoal e empresarial",
     description: SITE_DESCRIPTION,
   },
 };

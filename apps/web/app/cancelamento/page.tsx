@@ -4,7 +4,7 @@ import { publicPageMetadata } from "@/lib/site";
 
 export const metadata = publicPageMetadata({
   title: "Cancelamento e exportação",
-  description: "Saiba como cancelar o AX Finance, manter acesso até a data efetiva e exportar os dados financeiros da empresa.",
+  description: "Saiba como cancelar o Openfix, manter acesso até a data efetiva e exportar os dados financeiros da empresa.",
   path: "/cancelamento",
 });
 

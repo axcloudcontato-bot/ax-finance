@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, LogOut, ShieldCheck, WalletCards } from "@/components/ui/animated-icons";
+import { ArrowUpRight, LogOut, ShieldCheck } from "@/components/ui/animated-icons";
 import { countOpenSupportCases, getPlatformAdminAccess } from "@ax-finance/domain";
 import { getCurrentUser } from "@/lib/session";
 import { loginPathFor } from "@/lib/auth-return";
@@ -11,6 +11,7 @@ import { ForceLightTheme } from "@/components/admin/force-light-theme";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { logoutAction } from "../../(app)/actions";
 import { noIndexMetadata } from "@/lib/site";
+import { OpenfixMark } from "@/components/brand/openfix-logo";
 
 export const metadata: Metadata = noIndexMetadata;
 
@@ -29,8 +30,8 @@ export default async function InternalAdminLayout({ children }: { children: Reac
       <ForceLightTheme />
       <aside className="admin-sidebar">
         <Link href="/admin" className="admin-brand">
-          <span className="admin-brand-mark"><WalletCards size={22} /></span>
-          <span><strong>AX Finance</strong><small>Admin console</small></span>
+          <OpenfixMark size={34} />
+          <span><strong className="openfix-wordmark is-light">openfix</strong><small>Admin console</small></span>
         </Link>
         <AdminNav openCases={openCases} />
         <div className="admin-sidebar-footer">

@@ -27,10 +27,10 @@ export async function GET(request: Request) {
         },
         async cancel() { await iterator.return(undefined); },
       });
-      return new Response(stream, { headers: { "content-type": "application/zip", "content-disposition": `attachment; filename="ax-finance-export-${date}.zip"`, "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
+      return new Response(stream, { headers: { "content-type": "application/zip", "content-disposition": `attachment; filename="openfix-export-${date}.zip"`, "cache-control": "private, no-store", "x-content-type-options": "nosniff" } });
     }
     const body = exportJson(publicCompanyExport(archive));
-    return new NextResponse(body, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="ax-finance-export-${date}.json"`, "cache-control": "no-store", "x-content-type-options": "nosniff" } });
+    return new NextResponse(body, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "content-disposition": `attachment; filename="openfix-export-${date}.json"`, "cache-control": "no-store", "x-content-type-options": "nosniff" } });
   } catch (error) {
     return NextResponse.json({ error: actionErrorMessage(error, "Não foi possível gerar a exportação.") }, { status: 403 });
   }

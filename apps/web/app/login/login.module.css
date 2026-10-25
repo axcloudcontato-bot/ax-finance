@@ -1,22 +1,22 @@
 /* Login e confirmação em duas etapas, no mesmo mundo do app: fundo de trabalho, cartão neutro,
-   texto marinho, Manrope, valores tabulares e azul só na ação. O extrato de exemplo é o desenho. */
+   texto marinho, Montserrat, valores tabulares e azul só na ação. O extrato de exemplo é o desenho. */
 .page {
-  --l-bg: #eef2f7;
+  --l-bg: #f4f6fa;
   --l-card: #ffffff;
-  --l-text: #0f1f3d;
-  --l-muted: #556178;
-  --l-faint: #646e82; /* 4,5:1 ou mais sobre branco, fundo e destaque (WCAG AA) */
-  --l-border: #dde3ec;
-  --l-rule: #e7ebf2;
+  --l-text: #0b1f3b;
+  --l-muted: #52607a;
+  --l-faint: #5f6b80; /* 4,5:1 ou mais sobre branco, fundo e destaque (WCAG AA) */
+  --l-border: #dde2ea;
+  --l-rule: #e6eaf1;
   --l-field: #858e9e;
   --l-field-bg: #ffffff;
-  --l-accent: #2e66db;
-  --l-accent-hover: #2453b8;
-  --l-accent-text: #2453b8;
-  --l-focus: rgba(46, 102, 219, 0.28);
+  --l-accent: #2563eb;
+  --l-accent-hover: #1d4ed8;
+  --l-accent-text: #1d4ed8;
+  --l-focus: rgba(37, 99, 235, 0.28);
   --l-in: #0a7a5d;
   --l-out: #b42d5f;
-  --l-lit: #f2f6ff;
+  --l-lit: #eef4ff;
   --l-tag-bg: #fff4e0;
   --l-tag-text: #8a5a00;
   --l-success-bg: #ecf8f2;
@@ -30,27 +30,27 @@
   grid-template-rows: auto 1fr auto;
   background: var(--l-bg);
   color: var(--l-text);
-  font-family: "Manrope", system-ui, sans-serif;
+  font-family: "Montserrat", system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
 :global(:root[data-ax-theme="dark"]) .page {
-  --l-bg: #0f1726;
-  --l-card: #182235;
-  --l-text: #eef4ff;
-  --l-muted: #aab6ca;
-  --l-faint: #8d9ab0;
-  --l-border: #2c3a52;
-  --l-rule: #26334a;
-  --l-field: #6b7a94;
-  --l-field-bg: #121b2b;
-  --l-accent: #4f84f0;
-  --l-accent-hover: #6f9cff;
-  --l-accent-text: #9fbcff;
-  --l-focus: rgba(111, 156, 255, 0.35);
-  --l-in: #3cc79b;
+  --l-bg: #081629;
+  --l-card: #0e2140;
+  --l-text: #eef2f8;
+  --l-muted: #a8b6cc;
+  --l-faint: #93a3bd;
+  --l-border: #23406b;
+  --l-rule: #1b3559;
+  --l-field: #5f7699;
+  --l-field-bg: #0b1c38;
+  --l-accent: #3b82f6;
+  --l-accent-hover: #60a5fa;
+  --l-accent-text: #8ec5ff;
+  --l-focus: rgba(96, 165, 250, 0.35);
+  --l-in: #2ed6a8;
   --l-out: #ff7aa8;
-  --l-lit: #1d2a42;
+  --l-lit: #12294d;
   --l-tag-bg: #3a2d12;
   --l-tag-text: #ffc266;
   --l-success-bg: #12302a;

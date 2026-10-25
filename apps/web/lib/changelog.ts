@@ -25,6 +25,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-25-openfix",
+    date: "2026-10-25",
+    title: "Agora somos Openfix",
+    summary: "Nome, logo, cores e fonte novos. Conecte, organize e assuma o controle.",
+    changes: [
+      { kind: "NEW", text: "O AX Finance passa a se chamar Openfix. Seus dados, contas, senhas e configurações continuam exatamente como estavam." },
+      { kind: "IMPROVED", text: "Visual novo em todo o sistema: o anel em degradê da marca, a fonte Montserrat e as cores Openfix, nos temas claro e escuro." },
+      { kind: "IMPROVED", text: "Entrar e criar conta ganharam o mesmo desenho: o formulário de um lado e, no computador, o painel da marca com o exemplo de extrato do outro." },
+      { kind: "IMPROVED", text: "Os e-mails e o relatório mensal em PDF também chegam com a identidade Openfix." },
+    ]
+  },
+  {
     id: "2026-10-25-cadastro-volta-a-funcionar",
     date: "2026-10-25",
     title: "Criar conta voltou a funcionar",

@@ -28,7 +28,7 @@ const structuredData = [
     "@type": "Organization",
     "@id": `${SITE_URL}/#organization`,
     name: "AX Cloud",
-    alternateName: "AX Finance",
+    alternateName: "Openfix",
     url: SITE_URL,
     logo: `${SITE_URL}/icon.png`,
     email: "contato@axcloud.com.br",
@@ -37,8 +37,8 @@ const structuredData = [
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${SITE_URL}/#website`,
-    name: "AX Finance",
-    alternateName: "AX Financeiro",
+    name: "Openfix",
+    alternateName: "AX Finance",
     url: SITE_URL,
     inLanguage: "pt-BR",
     publisher: { "@id": `${SITE_URL}/#organization` },
@@ -47,7 +47,7 @@ const structuredData = [
     "@context": "https://schema.org",
     "@type": "Product",
     "@id": `${SITE_URL}/#product`,
-    name: "AX Finance",
+    name: "Openfix",
     url: SITE_URL,
     description: SITE_DESCRIPTION,
     category: "Software de gestão financeira",
@@ -199,7 +199,7 @@ function MarketingHome({ dashboardHref }: { dashboardHref?: string }) {
         </section>
 
         <section className="public-v2-demo-band">
-          <div className="public-container"><div><span className="public-eyebrow">Demonstração guiada</span><h2>Veja o AX Finance funcionando antes de começar.</h2><p>Conheça o fluxo completo com dados fictícios e entenda como cada indicador é calculado.</p></div><Link className="public-button light" href="/demonstracao">Abrir demonstração <ArrowRight size={18} /></Link></div>
+          <div className="public-container"><div><span className="public-eyebrow">Demonstração guiada</span><h2>Veja o Openfix funcionando antes de começar.</h2><p>Conheça o fluxo completo com dados fictícios e entenda como cada indicador é calculado.</p></div><Link className="public-button light" href="/demonstracao">Abrir demonstração <ArrowRight size={18} /></Link></div>
         </section>
 
         <section className="public-section public-v2-faq">
@@ -209,7 +209,7 @@ function MarketingHome({ dashboardHref }: { dashboardHref?: string }) {
           </div>
         </section>
 
-        <section className="public-final-cta public-v2-final-cta"><div className="public-container"><span className="public-eyebrow">Mais clareza hoje</span><h2>Um futuro mais tranquilo amanhã.</h2><p>Teste por 14 dias, sem cartão, e descubra como o AX Finance pode simplificar sua rotina financeira.</p><Link className="public-button light" href={primaryHref}>{dashboardHref ? "Voltar ao painel" : "Criar minha conta"} <ArrowRight size={18} /></Link></div></section>
+        <section className="public-final-cta public-v2-final-cta"><div className="public-container"><span className="public-eyebrow">Mais clareza hoje</span><h2>Um futuro mais tranquilo amanhã.</h2><p>Teste por 14 dias, sem cartão, e descubra como o Openfix pode simplificar sua rotina financeira.</p><Link className="public-button light" href={primaryHref}>{dashboardHref ? "Voltar ao painel" : "Criar minha conta"} <ArrowRight size={18} /></Link></div></section>
       </main>
       <PublicFooter />
     </div>

@@ -135,7 +135,7 @@ function createRecoveryCodes(userId: string) {
 }
 
 function provisioningDetails(email: string, secret: string) {
-  const issuer = "AX Finance";
+  const issuer = "Openfix";
   const label = `${issuer}:${email}`;
   return {
     secret,

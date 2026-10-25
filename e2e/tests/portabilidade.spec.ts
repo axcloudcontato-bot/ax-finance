@@ -16,7 +16,7 @@ test("patrimônio explica a composição e a assinatura entrega ZIP e JSON", asy
   const downloaded = page.waitForEvent("download");
   await page.getByRole("link", { name: "Baixar pacote completo", exact: true }).click();
   const download = await downloaded;
-  expect(download.suggestedFilename()).toMatch(/ax-finance-export-.*\.zip$/);
+  expect(download.suggestedFilename()).toMatch(/openfix-export-.*\.zip$/);
   const output = info.outputPath("empresa.zip");
   await download.saveAs(output);
   expect(await download.failure()).toBeNull();

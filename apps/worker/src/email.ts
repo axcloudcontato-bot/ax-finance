@@ -13,7 +13,7 @@ import {
   type MonthlyReportData,
   decodeOutboxEmailPayload,
   decodeWeeklySummaryPayload,
-  axLogoPng,
+  brandLogoPng,
   createSmtpTransport,
   resolveSmtpConfig,
 } from "@ax-finance/domain";
@@ -80,7 +80,7 @@ export function renderMonthlyReportEmail(payload: { to: string; name: string; co
       bodyHtml:
         paragraph(`Olá, ${escapeHtml(payload.name)}. O relatório completo de <strong>${escapeHtml(payload.companyName)}</strong> está em anexo, em PDF. Os principais números:`) +
         metricTiles(tiles),
-      cta: { url, label: "Ver no AX Finance" },
+      cta: { url, label: "Ver no Openfix" },
       note: "Você recebe este e-mail no início de cada mês. Para parar, desligue em Configurações > Notificações.",
     }),
     attachments: [{ filename: `relatorio-${payload.month}.pdf`, content: pdf, contentType: "application/pdf" }],
@@ -171,7 +171,7 @@ export function renderDueDateSummaryEmail(payload: DueDateSummaryPayload): Rende
     subject: attention > 0
       ? `${countLabel(attention)} ${attention === 1 ? "precisa" : "precisam"} de atenção — ${payload.companyName}`
       : `Próximos vencimentos — ${payload.companyName}`,
-    text: `Olá, ${payload.name}.\nEstes são os vencimentos que precisam de atenção em ${payload.companyName}:\n${textLines.join("\n")}\n\nVer no AX Finance: ${url}`,
+    text: `Olá, ${payload.name}.\nEstes são os vencimentos que precisam de atenção em ${payload.companyName}:\n${textLines.join("\n")}\n\nVer no Openfix: ${url}`,
     html: renderEmailLayout({
       preheader: sections.map((section) => `${section.title}: ${groups[section.key].length}`).join(" · "),
       heading: "Seu resumo do dia",
@@ -221,12 +221,12 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
     const url = `${payload.baseUrl}${path}`;
     return {
       recipient: payload.to,
-      subject: "Confirme seu e-mail no AX Finance",
+      subject: "Confirme seu e-mail no Openfix",
       text: `Olá, ${payload.name}. Confirme seu e-mail acessando: ${url}\nO link expira em 24 horas.`,
       html: renderEmailLayout({
-        preheader: "Confirme seu e-mail para ativar o acesso ao AX Finance.",
+        preheader: "Confirme seu e-mail para ativar o acesso ao Openfix.",
         heading: "Confirme seu e-mail",
-        bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph("Confirme seu e-mail para ativar o acesso ao AX Finance:", true),
+        bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph("Confirme seu e-mail para ativar o acesso ao Openfix:", true),
         cta: { url, label: "Confirmar e-mail" },
         note: "O link expira em 24 horas.",
         footerNote: ACTION_FOOTER,
@@ -239,10 +239,10 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
     const url = `${payload.baseUrl}/redefinir-senha/${payload.rawToken}`;
     return {
       recipient: payload.to,
-      subject: "Redefinição de senha do AX Finance",
+      subject: "Redefinição de senha do Openfix",
       text: `Olá, ${payload.name}. Redefina sua senha acessando: ${url}\nO link expira em 1 hora.`,
       html: renderEmailLayout({
-        preheader: "Redefina sua senha do AX Finance. O link expira em 1 hora.",
+        preheader: "Redefina sua senha do Openfix. O link expira em 1 hora.",
         heading: "Redefinir senha",
         bodyHtml: paragraph(`Olá, ${escapeHtml(payload.name)}.`) + paragraph("Recebemos uma solicitação para redefinir a senha da sua conta:", true),
         cta: { url, label: "Redefinir senha" },
@@ -258,16 +258,16 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
     const resetUrl = `${payload.baseUrl}/recuperar-senha`;
     return {
       recipient: payload.to,
-      subject: "Você já tem conta no AX Finance",
-      text: `Olá, ${payload.name}. Alguém tentou criar uma conta no AX Finance com este e-mail, mas você já tem uma. Entre em ${loginUrl} ou, se esqueceu a senha, redefina em ${resetUrl}. Se não foi você, ignore esta mensagem: nada mudou na sua conta.`,
+      subject: "Você já tem conta no Openfix",
+      text: `Olá, ${payload.name}. Alguém tentou criar uma conta no Openfix com este e-mail, mas você já tem uma. Entre em ${loginUrl} ou, se esqueceu a senha, redefina em ${resetUrl}. Se não foi você, ignore esta mensagem: nada mudou na sua conta.`,
       html: renderEmailLayout({
-        preheader: "Este e-mail já tem uma conta no AX Finance.",
+        preheader: "Este e-mail já tem uma conta no Openfix.",
         heading: "Você já tem conta",
         bodyHtml:
           paragraph(`Olá, ${escapeHtml(payload.name)}.`) +
-          paragraph("Alguém tentou criar uma conta no AX Finance com este e-mail, mas você já tem uma. Entre com sua senha ou redefina-a se não lembrar.") +
+          paragraph("Alguém tentou criar uma conta no Openfix com este e-mail, mas você já tem uma. Entre com sua senha ou redefina-a se não lembrar.") +
           paragraph(`Esqueceu a senha? <a href="${escapeHtml(resetUrl)}">Redefinir senha</a>.`, true),
-        cta: { url: loginUrl, label: "Entrar no AX Finance" },
+        cta: { url: loginUrl, label: "Entrar no Openfix" },
         note: "Se não foi você, ignore esta mensagem: nada mudou na sua conta.",
         footerNote: ACTION_FOOTER,
       }),
@@ -322,7 +322,7 @@ export function renderOutboxEmail(event: OutboxEvent): RenderedEmail {
         bodyHtml:
           paragraph(escapeHtml(message), !payload.actorName) +
           (payload.actorName ? paragraph(`Alteração realizada por ${escapeHtml(payload.actorName)}.`, true) : ""),
-        footerNote: `Você recebeu este e-mail porque tem ou tinha acesso a ${payload.companyName} no AX Finance.`,
+        footerNote: `Você recebeu este e-mail porque tem ou tinha acesso a ${payload.companyName} no Openfix.`,
       }),
     };
   }
@@ -388,7 +388,7 @@ export function renderSupportCaseOpenedEmail(payload: ReturnType<typeof decodeSu
         paragraph(escapeHtml(payload.summary).replace(/\n/g, "<br>")) +
         paragraph(`Aberto por <strong>${escapeHtml(payload.openedByName)}</strong> · responda para ${escapeHtml(payload.contactEmail)}.`, true),
       cta: { url, label: "Atender no Admin" },
-      footerNote: "Você recebeu este aviso porque atende chamados no painel interno do AX Finance.",
+      footerNote: "Você recebeu este aviso porque atende chamados no painel interno do Openfix.",
     }),
   };
 }
@@ -435,7 +435,7 @@ export async function sendOutboxEmail(event: OutboxEvent) {
     subject,
     text,
     html,
-    attachments: [...(attachments ?? []), { filename: "ax-finance.png", content: axLogoPng(), contentType: "image/png", cid: LOGO_CID, contentDisposition: "inline" as const }],
+    attachments: [...(attachments ?? []), { filename: "openfix.png", content: brandLogoPng(), contentType: "image/png", cid: LOGO_CID, contentDisposition: "inline" as const }],
     // Identificador estável ajuda provedores que deduplicam mensagens repetidas.
     messageId: `<${event.id}@ax-finance-outbox>`,
   });

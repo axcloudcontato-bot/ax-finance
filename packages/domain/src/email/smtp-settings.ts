@@ -170,9 +170,9 @@ export async function sendSmtpTestEmail(userId: string) {
     await transport.sendMail({
       from: config.from,
       to: admin.email,
-      subject: "Teste de envio — AX Finance",
-      text: `Olá, ${admin.name}.\n\nEste é um e-mail de teste do AX Finance. Se ele chegou, o servidor de e-mail (${config.host}:${config.port}) está funcionando.`,
-      html: `<p>Olá, ${admin.name.replace(/[<>&"]/g, "")}.</p><p>Este é um e-mail de teste do AX Finance. Se ele chegou, o servidor de e-mail (<strong>${config.host}:${config.port}</strong>) está funcionando.</p>`,
+      subject: "Teste de envio — Openfix",
+      text: `Olá, ${admin.name}.\n\nEste é um e-mail de teste do Openfix. Se ele chegou, o servidor de e-mail (${config.host}:${config.port}) está funcionando.`,
+      html: `<p>Olá, ${admin.name.replace(/[<>&"]/g, "")}.</p><p>Este é um e-mail de teste do Openfix. Se ele chegou, o servidor de e-mail (<strong>${config.host}:${config.port}</strong>) está funcionando.</p>`,
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message.slice(0, 300) : "erro desconhecido";

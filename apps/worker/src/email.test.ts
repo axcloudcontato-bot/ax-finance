@@ -33,8 +33,8 @@ describe("renderização dos e-mails da outbox", () => {
     const email = renderOutboxEmail(event);
 
     expect(email.recipient).toBe(user.email);
-    expect(email.subject).toBe("Redefinição de senha do AX Finance");
-    expect(email.html).toContain("AX Finance");
+    expect(email.subject).toBe("Redefinição de senha do Openfix");
+    expect(email.html).toContain("Openfix");
     expect(email.html).toContain("Redefinir senha");
     expect(email.html).toMatch(/href="https:\/\/financeiro\.example\.com\/redefinir-senha\/[a-f0-9]+"/);
     expect(email.html).toContain("copie e cole este link");
@@ -51,7 +51,7 @@ describe("renderização dos e-mails da outbox", () => {
     const email = renderOutboxEmail(event);
 
     expect(email.recipient).toBe(user.email);
-    expect(email.subject).toBe("Você já tem conta no AX Finance");
+    expect(email.subject).toBe("Você já tem conta no Openfix");
     expect(email.html).toContain("Dona da Conta");
     expect(email.html).toContain('href="https://financeiro.example.com/login"');
     expect(email.html).toContain('href="https://financeiro.example.com/recuperar-senha"');
@@ -97,7 +97,7 @@ describe("renderização dos e-mails da outbox", () => {
     expect(invitation.html).not.toContain("Empresa <Layout>");
     expect(invitation.html).toMatch(/\/convites\/[a-f0-9]{64}/);
     expect(billing.html).toContain("Abrir assinatura");
-    expect(billing.html).toContain("AX Finance · Gestão financeira");
+    expect(billing.html).toContain("Openfix · Conecte, organize");
   });
 
   it("resumo do dia separa vencidos, do dia e próximos, com valor e cliente, sem misturar entradas e saídas", () => {

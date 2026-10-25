@@ -98,5 +98,5 @@ export async function runBillingCheck(env: Record<string, string | undefined> = 
   if (!env.STRIPE_SECRET_KEY) {
     return checkBillingConfiguration({ prices: { retrieve: async () => { throw new Error("sem chave"); } } }, env);
   }
-  return checkBillingConfiguration(new Stripe(env.STRIPE_SECRET_KEY, { appInfo: { name: "AX Finance worker" } }) as unknown as PriceReader, env);
+  return checkBillingConfiguration(new Stripe(env.STRIPE_SECRET_KEY, { appInfo: { name: "Openfix worker" } }) as unknown as PriceReader, env);
 }

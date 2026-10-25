@@ -19,7 +19,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
     <main className="wide">
       <div className="card">
         <div className="workspace-empty app-error">
-          <strong>{stale ? "O AX Finance foi atualizado" : "Não foi possível abrir esta tela"}</strong>
+          <strong>{stale ? "O Openfix foi atualizado" : "Não foi possível abrir esta tela"}</strong>
           <p>
             {stale
               ? "Esta tela estava aberta desde antes da atualização. Recarregue a página e repita a última ação; o que não foi salvo precisa ser digitado de novo."

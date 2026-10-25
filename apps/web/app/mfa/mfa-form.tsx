@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
-import { ArrowRight, CircleNotch, Key, ShieldCheck, Wallet } from "@/components/ui/animated-icons";
+import { ArrowRight, CircleNotch, Key, ShieldCheck } from "@/components/ui/animated-icons";
 import type { MfaLoginState } from "./actions";
 import styles from "../login/login.module.css";
+import { OpenfixMark } from "@/components/brand/openfix-logo";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -26,9 +27,9 @@ export function MfaForm({
   return (
     <div className={styles.page}>
       <header className={styles.topbar}>
-        <Link href="/" className={styles.brand} aria-label="AX Finance, página inicial">
-          <span className={styles.brandMark} aria-hidden="true"><Wallet size={18} /></span>
-          AX Finance
+        <Link href="/" className={styles.brand} aria-label="Openfix, página inicial">
+          <OpenfixMark size={30} />
+          Openfix
         </Link>
       </header>
       <main className={styles.layoutSingle}>
@@ -58,7 +59,7 @@ export function MfaForm({
         </section>
       </main>
       <footer className={styles.footer}>
-        <p>AX Finance · gestão financeira para empresa e casa</p>
+        <p>Openfix · gestão financeira para empresa e casa</p>
         <nav aria-label="Informações legais">
           <Link href="/privacidade">Privacidade</Link>
           <Link href="/termos">Termos de uso</Link>

@@ -22,7 +22,7 @@ const input = {
   security: "starttls",
   username: "envio@exemplo.com",
   password: "segredo-super-forte",
-  fromName: "AX Finance",
+  fromName: "Openfix",
   fromEmail: "no-reply@exemplo.com",
 };
 
@@ -46,7 +46,7 @@ describe("configuração do SMTP no painel", () => {
     const row = await rootClient.smtpSettings.findUniqueOrThrow({ where: { id: "default" } });
     expect(row.passwordEncrypted).toMatch(/^v1:/);
     expect(row.passwordEncrypted).not.toContain("segredo");
-    expect(row.fromAddress).toBe('"AX Finance" <no-reply@exemplo.com>');
+    expect(row.fromAddress).toBe('"Openfix" <no-reply@exemplo.com>');
 
     const view = await getSmtpSettingsForAdmin(admin.id);
     expect(view.source).toBe("database");

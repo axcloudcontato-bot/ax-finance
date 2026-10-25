@@ -68,7 +68,7 @@ async function deliverAlert(
 export async function testAlertWebhook(now = new Date()) {
   return deliverAlert(
     "operational_test",
-    "Teste operacional do canal de alertas do AX Finance.",
+    "Teste operacional do canal de alertas do Openfix.",
     1,
     now,
     { bypassCooldown: true, requireWebhook: true, test: true }
