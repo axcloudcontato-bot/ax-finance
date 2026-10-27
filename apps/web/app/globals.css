@@ -4964,10 +4964,9 @@ select:not([multiple]):not([size]) {
 }
 
 /* ===== Marca Openfix ===== */
-/* Anel + nome em minúsculas. O degradê do nome é o do anel; logotipo não entra na regra de contraste,
-   mas o verde do começo é um tom mais fundo que o Verde Menta para não sumir sobre o branco. */
+/* A assinatura usa a arte oficial transparente; o nome em texto segue disponível no painel. */
 .openfix-logo { display: inline-flex; align-items: center; gap: 0.42em; line-height: 1; }
-.openfix-logo > svg { flex: none; }
+.openfix-logo > img { display: block; flex: none; }
 .openfix-wordmark {
   background: linear-gradient(90deg, #12b386, #3b82f6 55%, #8b5cf6);
   -webkit-background-clip: text;

@@ -135,7 +135,7 @@ components:
 
 # Design System: Openfix
 
-Documento de referência do sistema visual. Vale para mim (Claude), para o ChatGPT/Codex e para qualquer pessoa que mexa na interface. Os tokens do topo são a fonte da verdade; o texto explica onde e por que usar cada um. Fonte técnica: `apps/web/app/globals.css` (tokens `:root` e tema escuro), `apps/web/app/(app)/workspace.css` (camada da área logada) e `apps/web/app/login/login.module.css` (login e cadastro). Contexto de produto em `PRODUCT.md`; brand book em `Logo/Brand.png`; logo-fonte em `Logo/openfix-icon.svg`.
+Documento de referência do sistema visual. Vale para mim (Claude), para o ChatGPT/Codex e para qualquer pessoa que mexa na interface. Os tokens do topo são a fonte da verdade; o texto explica onde e por que usar cada um. Fonte técnica: `apps/web/app/globals.css` (tokens `:root` e tema escuro), `apps/web/app/(app)/workspace.css` (camada da área logada) e `apps/web/app/login/login.module.css` (login e cadastro). Contexto de produto em `PRODUCT.md`; artes oficiais e referências em `Logo/`, com o mapeamento em `Logo/README.md`.
 
 ## Overview
 
@@ -283,8 +283,8 @@ Todo modal segue o mesmo esqueleto (`ActionModal`, `Modal`, criação rápida e 
 Retorno de ação por `?salvo=1` / `?erro=...` vira `.success-box` ou `.error` no topo do conteúdo. Notificações ficam em cartão pequeno no canto inferior direito (`NotificationToasts`). Nada de faixa larga no topo da página.
 
 ### Logo
-- `OpenfixMark` (anel) e `OpenfixLogo` (anel + "openfix" em minúsculas, Montserrat 700, degradê da marca), em `components/brand/openfix-logo.tsx`. `tone="light"` deixa o nome branco sobre fundo escuro.
-- Ícones (`app/icon.png`, `app/apple-icon.png`), o PNG embutido em e-mails e PDF (`packages/domain/src/brand/logo.ts`) e `public/brand/openfix-icon.svg` saem de `Logo/openfix-icon.svg`. Mudou o desenho, gere todos de novo.
+- `OpenfixMark` (anel) e `OpenfixLogo` (assinatura horizontal com o lettering original), em `components/brand/openfix-logo.tsx`, usam as artes transparentes oficiais em WebP. `tone="light"` seleciona a assinatura branca, usada no rodapé escuro.
+- Ícones (`app/favicon.ico`, `app/icon.png`, `app/apple-icon.png`), arquivos em `public/brand/` e o PNG embutido em e-mails e PDF (`packages/domain/src/brand/logo.ts`) são preparados por `python ops/prepare-brand-assets.py` (Pillow). As fontes estão mapeadas em `Logo/README.md`. O manifesto declara ícones de 192 e 512 px; a imagem social de 1200×630 é compartilhada pelos metadados Open Graph/Twitter das páginas públicas.
 - No texto corrido o nome é "Openfix" (o Openfix, no Openfix); a grafia em minúsculas é só do logotipo.
 
 ### Login e cadastro

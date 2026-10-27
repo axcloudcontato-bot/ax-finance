@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_SOCIAL_IMAGE, SITE_URL } from "@/lib/site";
 import { MoneyInputMask } from "@/components/money-input-mask";
 import "@fontsource/montserrat/400.css";
 import "@fontsource/montserrat/500.css";
@@ -32,6 +32,7 @@ export const metadata: Metadata = {
   creator: "AX Cloud",
   publisher: "AX Cloud",
   category: "finance",
+  manifest: "/manifest.webmanifest",
   alternates: { canonical: SITE_URL },
   robots: {
     index: true,
@@ -51,11 +52,13 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "pt_BR",
     type: "website",
+    images: [SITE_SOCIAL_IMAGE],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Openfix | Gestão financeira pessoal e empresarial",
     description: SITE_DESCRIPTION,
+    images: [SITE_SOCIAL_IMAGE],
   },
 };
 

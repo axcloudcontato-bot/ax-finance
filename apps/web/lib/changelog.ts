@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    id: "2026-10-27-marca-oficial",
+    date: "2026-10-27",
+    title: "Marca Openfix atualizada",
+    summary: "A arte oficial da marca agora acompanha o site e os ícones do aplicativo.",
+    changes: [
+      { kind: "IMPROVED", text: "Site, login e cadastro usam o novo logotipo, com versão branca no rodapé e novos ícones no navegador e no celular." },
+      { kind: "IMPROVED", text: "Links das páginas públicas ganham uma imagem da marca ao compartilhar. E-mails e relatórios também usam o novo símbolo." },
+    ],
+  },
+  {
     id: "2026-10-25-openfix",
     date: "2026-10-25",
     title: "Agora somos Openfix",

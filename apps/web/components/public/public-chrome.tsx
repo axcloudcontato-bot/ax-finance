@@ -30,7 +30,7 @@ export function PublicFooter() {
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
         <div>
-          <Link className="public-brand" href="/" aria-label="Openfix — início"><OpenfixLogo size={30} /></Link>
+          <Link className="public-brand" href="/" aria-label="Openfix — início"><OpenfixLogo size={30} tone="light" /></Link>
           <p>Gestão financeira clara para sua rotina pessoal ou para uma pequena empresa de serviços.</p>
         </div>
         <div><strong>Produto</strong><Link href="/#recursos">Recursos</Link><Link href="/#precos">Preço</Link><Link href="/demonstracao">Demonstração</Link><Link href="/faq">Perguntas frequentes</Link></div>

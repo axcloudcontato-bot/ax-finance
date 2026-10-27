@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/animated-icons";
 import { PublicFooter, PublicHeader } from "@/components/public/public-chrome";
 import { PublicDashboardPreview } from "@/components/public/public-dashboard-preview";
-import { publicPageMetadata, SITE_DESCRIPTION, SITE_URL } from "@/lib/site";
+import { publicPageMetadata, SITE_DESCRIPTION, SITE_SOCIAL_IMAGE, SITE_URL } from "@/lib/site";
 
 export const metadata = publicPageMetadata({
   title: "Controle financeiro pessoal e empresarial",
@@ -50,6 +50,7 @@ const structuredData = [
     name: "Openfix",
     url: SITE_URL,
     description: SITE_DESCRIPTION,
+    image: `${SITE_URL}${SITE_SOCIAL_IMAGE.url}`,
     category: "Software de gestão financeira",
     brand: { "@id": `${SITE_URL}/#organization` },
     offers: [

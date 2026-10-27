@@ -4,6 +4,12 @@ export const SITE_NAME = "Openfix";
 export const SITE_URL = "https://openfix.axcloud.com.br";
 export const SITE_DESCRIPTION =
   "Controle financeiro pessoal e empresarial com contas a pagar e receber, fluxo de caixa, importação OFX e CSV e conciliação bancária.";
+export const SITE_SOCIAL_IMAGE = {
+  url: "/brand/openfix-social.jpg",
+  width: 1200,
+  height: 630,
+  alt: "Openfix — gestão financeira pessoal e empresarial",
+};
 
 export function publicPageMetadata({
   title,
@@ -18,7 +24,7 @@ export function publicPageMetadata({
   const fullTitle = `${title} | ${SITE_NAME}`;
 
   return {
-    title: fullTitle,
+    title: { absolute: fullTitle },
     description,
     alternates: { canonical },
     openGraph: {
@@ -28,11 +34,13 @@ export function publicPageMetadata({
       siteName: SITE_NAME,
       locale: "pt_BR",
       type: "website",
+      images: [SITE_SOCIAL_IMAGE],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: fullTitle,
       description,
+      images: [SITE_SOCIAL_IMAGE],
     },
   };
 }
