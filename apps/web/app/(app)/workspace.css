@@ -9,8 +9,8 @@
 }
 
 :root[data-ax-theme="dark"] .app-shell {
-  --workspace-active: #16325c;
-  --workspace-active-text: #bcd5ff;
+  --workspace-active: #2b2b2b;
+  --workspace-active-text: var(--text);
 }
 
 .app-shell .app-content { background: var(--bg); }
@@ -337,7 +337,7 @@ a.concil-step-body:focus-visible { outline: 2px solid var(--focus); outline-offs
 .concil-step[data-state="current"] .concil-step-text small { color: var(--text); }
 .concil-step[data-state="waiting"] .concil-step-mark { border-style: dashed; border-color: var(--tone-warn); color: var(--tone-warn); }
 .concil-step[data-state="waiting"] .concil-step-text strong { color: var(--text); }
-:root[data-ax-theme="dark"] .concil-step[data-state="done"] .concil-step-mark { color: #081629; }
+:root[data-ax-theme="dark"] .concil-step[data-state="done"] .concil-step-mark { color: var(--bg); }
 @media (max-width: 860px) {
   .concil-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .concil-step:nth-child(3) { border-left: 0; }

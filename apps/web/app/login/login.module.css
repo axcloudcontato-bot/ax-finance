@@ -35,22 +35,22 @@
 }
 
 :global(:root[data-ax-theme="dark"]) .page {
-  --l-bg: #081629;
-  --l-card: #0e2140;
-  --l-text: #eef2f8;
-  --l-muted: #a8b6cc;
-  --l-faint: #93a3bd;
-  --l-border: #23406b;
-  --l-rule: #1b3559;
-  --l-field: #5f7699;
-  --l-field-bg: #0b1c38;
+  --l-bg: var(--bg);
+  --l-card: var(--card);
+  --l-text: var(--text);
+  --l-muted: var(--muted);
+  --l-faint: #999999;
+  --l-border: var(--border);
+  --l-rule: #2b2b2b;
+  --l-field: var(--field-border);
+  --l-field-bg: #141414;
   --l-accent: #3b82f6;
   --l-accent-hover: #60a5fa;
   --l-accent-text: #8ec5ff;
   --l-focus: rgba(96, 165, 250, 0.35);
   --l-in: #2ed6a8;
   --l-out: #ff7aa8;
-  --l-lit: #12294d;
+  --l-lit: #262626;
   --l-tag-bg: #3a2d12;
   --l-tag-text: #ffc266;
   --l-success-bg: #12302a;

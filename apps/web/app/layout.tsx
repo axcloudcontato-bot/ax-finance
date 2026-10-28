@@ -17,7 +17,7 @@ export const viewport: Viewport = {
   // Barra do navegador no celular na cor do fundo de cada tema (Openfix).
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f4f6fa" },
-    { media: "(prefers-color-scheme: dark)", color: "#081629" },
+    { media: "(prefers-color-scheme: dark)", color: "#101010" },
   ],
 };
 

@@ -281,7 +281,7 @@
 .switch a { color: var(--l-accent-text); font-weight: 700; text-decoration: none; }
 .switch a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* Painel da marca: Azul Escuro nos dois temas, com o arco do anel Openfix saindo pelo canto
+/* Painel da marca: azul no tema claro e grafite no escuro, com o arco do anel Openfix saindo pelo canto
    (o "padrão de marca" do brand book) e um brilho azul suave do lado oposto. */
 .proofSide {
   position: relative;
@@ -319,6 +319,17 @@
   background: radial-gradient(closest-side, rgba(59, 130, 246, 0.2), transparent);
   pointer-events: none;
 }
+
+:global(:root[data-ax-theme="dark"]) .proofSide {
+  background-color: var(--l-bg);
+  color: var(--l-text);
+}
+
+:global(:root[data-ax-theme="dark"]) .proofSide::after {
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.04), transparent);
+}
+
+:global(:root[data-ax-theme="dark"]) .facts { color: var(--l-muted); }
 
 .proofEyebrow {
   margin: 0 0 14px;

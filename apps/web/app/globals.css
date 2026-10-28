@@ -368,28 +368,28 @@ main.admin-content { max-width: 1600px; margin: 0 auto; padding: 2.4rem clamp(1.
 
 :root[data-ax-theme="dark"] {
   color-scheme: dark;
-  --color-background: #081629;
-  --color-foreground: #eef2f8;
-  --color-card: #0e2140;
-  --color-card-foreground: #eef2f8;
-  --color-muted: #17305a;
-  --color-muted-foreground: #a8b6cc;
-  --color-border: #23406b;
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--card);
+  --color-card-foreground: var(--text);
+  --color-muted: #262626;
+  --color-muted-foreground: var(--muted);
+  --color-border: var(--border);
   --color-primary: #60a5fa;
   --color-primary-foreground: #fff;
   --color-ring: #7cb4ff;
-  --bg: #081629;
-  --card: #0e2140;
-  --border: #23406b;
-  --text: #eef2f8;
-  --muted: #a8b6cc;
+  --bg: #101010;
+  --card: #1a1a1a;
+  --border: #333333;
+  --text: #f2f2f2;
+  --muted: #aaaaaa;
   --accent: #60a5fa;
   --accent-text: #8ec5ff;
   --danger: #ff789a;
   --tone-in: #2ed6a8;
   --tone-out: #ff7aa8;
   --focus: #93c5fd;
-  --field-border: #5f7699;
+  --field-border: #767676;
   --chart-1: #60a5fa;
   --chart-2: #ffc266;
   --chart-3: #2ed6a8;
@@ -611,13 +611,13 @@ button:disabled {
 
 :root[data-ax-theme="dark"] .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply) {
   border-color: rgba(255, 255, 255, 0.14);
-  background: color-mix(in srgb, var(--card) 80%, #93c5fd 20%);
+  background: color-mix(in srgb, var(--card) 94%, #fff 6%);
   color: var(--text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 :root[data-ax-theme="dark"] .ax-model-buttons :is(button[type="submit"]:not(.app-sidebar-logout):not(.admin-profile-action-button), button.secondary:not(.app-sidebar-toggle):not(.app-sidebar-logout), .button-link, .dashboard-filter-actions button, .period-filter-shortcuts button, .period-filter-row button, .period-filter-apply):hover:not(:disabled) {
-  background: color-mix(in srgb, var(--card) 72%, #93c5fd 28%);
+  background: color-mix(in srgb, var(--card) 90%, #fff 10%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
@@ -3794,7 +3794,7 @@ main.dashboard-page h2:not(.modal-dialog *) { font-weight: 700; }
 .ax-activities-toggle:focus-visible, .ax-activities-close:focus-visible, .ax-activities-item:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .ax-activities-badge { position: relative; display: grid; flex: none; place-items: center; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--accent) 9%, var(--card)); color: var(--accent-text); }
 .ax-activities-count { position: absolute; top: -6px; right: -6px; display: grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border: 2px solid var(--card); border-radius: 999px; background: var(--tone-out); color: var(--card); font-size: 0.62rem; font-weight: 750; line-height: 1; }
-:root[data-ax-theme="dark"] .ax-activities-count { color: #0b1f3b; }
+:root[data-ax-theme="dark"] .ax-activities-count { color: var(--bg); }
 .ax-activities-titles { display: grid; min-width: 0; flex: 1; }
 .ax-activities-titles strong { overflow: hidden; font-size: 0.86rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .ax-activities-titles small { overflow: hidden; color: var(--muted); font-size: 0.76rem; text-overflow: ellipsis; white-space: nowrap; }
@@ -4882,7 +4882,7 @@ td .modal-overlay { white-space: normal; text-align: left; }
    select de uma linha usa a mesma seta fina, com respiro fixo da borda e espaço reservado para o texto
    não passar por baixo dela. !important porque vários campos definem `background` em atalho. */
 :root { --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%235b6270' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); }
-:root[data-ax-theme="dark"] { --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23aab6ca' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); }
+:root[data-ax-theme="dark"] { --select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23aaaaaa' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E"); }
 select:not([multiple]):not([size]) {
   -webkit-appearance: none;
   appearance: none;
